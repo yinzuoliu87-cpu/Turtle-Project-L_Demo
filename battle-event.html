@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>法国 vs 巴西 · 开战广场</title>
+<!-- Google Fonts removed for China compatibility -->
+<style>
+/* Google Fonts loaded via <link> in <head> */
+
+:root {
+  --bg:#0a0909; --surface:#111010; --surface2:#181616; --surface3:#222020;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.14);
+  --ink:#f0ede8; --muted:#6b6760; --dim:#3a3836;
+  --fr:#3c8eff; --fr-dim:rgba(60,142,255,.12); --fr-glow:rgba(60,142,255,.3);
+  --br:#00d68f; --br-dim:rgba(0,214,143,.12); --br-glow:rgba(0,214,143,.3);
+  --gold:#ffc94d; --red:#ff3c3c; --orange:#ff7b2c;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;overflow:hidden;}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC',sans-serif;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:repeating-linear-gradient(0deg,transparent,transparent 2px,rgba(0,0,0,.03) 2px,rgba(0,0,0,.03) 4px);}
+
+/* ── NAV ── */
+.top-nav{
+  position:relative;z-index:10;height:50px;
+  background:rgba(10,9,9,.92);backdrop-filter:blur(20px);
+  border-bottom:1px solid var(--border2);
+  display:flex;align-items:center;padding:0 16px;gap:12px;flex-shrink:0;
+}
+.back-btn{
+  display:flex;align-items:center;gap:5px;font-size:13px;font-weight:700;
+  color:var(--muted);cursor:pointer;padding:5px 10px;border-radius:8px;
+  transition:.15s;border:1px solid transparent;text-decoration:none;
+}
+.back-btn:hover{color:var(--ink);background:var(--surface2);border-color:var(--border);}
+.nav-title{font-family:'Syne';font-size:15px;font-weight:800;}
+.nav-title .fr{color:var(--fr);}
+.nav-title .br{color:var(--br);}
+.nav-live{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--br);
+  background:rgba(0,214,143,.08);border:1px solid rgba(0,214,143,.2);
+  border-radius:16px;padding:3px 10px;margin-left:auto;}
+.live-dot{width:6px;height:6px;border-radius:50%;background:var(--br);animation:blink 1.3s infinite;}
+@keyframes blink{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.3;transform:scale(1.6)}}
+
+/* ── EVENT HEADER ── */
+.event-header{
+  position:relative;z-index:5;flex-shrink:0;
+  background:var(--surface);border-bottom:1px solid var(--border2);
+  padding:10px 18px 10px;
+}
+.event-title{
+  font-family:'Syne';font-size:16px;font-weight:800;
+  text-align:center;margin-bottom:8px;
+}
+.event-title .fr{color:var(--fr);}
+.event-title .br{color:var(--br);}
+
+/* Odds bar */
+.odds-bar-wrap{
+  position:relative;height:28px;border-radius:8px;overflow:hidden;
+  margin-bottom:8px;border:1px solid var(--border2);
+}
+.ob-fr{position:absolute;left:0;top:0;bottom:0;background:var(--fr);opacity:.25;transition:width 1s ease;}
+.ob-br{position:absolute;right:0;top:0;bottom:0;background:var(--br);opacity:.25;transition:width 1s ease;}
+.ob-row{position:absolute;inset:0;display:flex;align-items:center;justify-content:space-between;padding:0 10px;z-index:1;}
+.ob-fr-pct{font-family:'Space Mono';font-size:13px;font-weight:700;color:var(--fr);}
+.ob-br-pct{font-family:'Space Mono';font-size:13px;font-weight:700;color:var(--br);}
+.ob-mid{font-size:10px;color:var(--muted);}
+
+.header-meta{display:flex;align-items:center;justify-content:space-between;}
+.faction-tag{
+  display:inline-flex;align-items:center;gap:5px;
+  font-size:11px;font-weight:700;padding:3px 10px;border-radius:12px;
+  background:var(--fr-dim);color:var(--fr);border:1px solid rgba(60,142,255,.25);
+  transition:.3s;
+}
+.settle-row{display:flex;gap:6px;}
+.settle-btn{
+  font-size:10px;font-weight:700;padding:3px 9px;border-radius:8px;border:none;
+  cursor:pointer;font-family:'Noto Sans SC',sans-serif;transition:.15s;
+}
+.settle-btn.fr{background:rgba(60,142,255,.15);color:var(--fr);border:1px solid rgba(60,142,255,.3);}
+.settle-btn.fr:hover{background:rgba(60,142,255,.25);}
+.settle-btn.br{background:rgba(0,214,143,.15);color:var(--br);border:1px solid rgba(0,214,143,.3);}
+.settle-btn.br:hover{background:rgba(0,214,143,.25);}
+
+/* ── POWER STAGE ── */
+.power-stage{
+  flex-shrink:0;display:flex;align-items:stretch;
+  border-bottom:1px solid var(--border2);
+  background:linear-gradient(180deg,var(--surface) 0%,var(--bg) 100%);
+  position:relative;z-index:2;min-height:160px;
+}
+
+/* Side data panels */
+.side-panel{flex:1;padding:14px 16px;display:flex;flex-direction:column;justify-content:center;gap:9px;}
+.fr-panel{border-right:1px solid var(--border);}
+.br-panel{border-left:1px solid var(--border);}
+.sp-row{display:flex;align-items:center;gap:6px;font-size:11px;}
+.br-panel .sp-row{flex-direction:row-reverse;}
+.sp-ico{font-size:13px;flex-shrink:0;}
+.sp-lbl{color:var(--muted);font-size:10px;flex:1;}
+.br-panel .sp-lbl{text-align:right;}
+.sp-val{font-family:'Space Mono';font-weight:700;font-size:12px;}
+.sp-val.fr{color:var(--fr);}
+.sp-val.br{color:var(--br);}
+.sp-vol-bar{height:3px;border-radius:2px;background:var(--surface3);margin-top:2px;overflow:hidden;}
+.sp-vol-fill{height:100%;border-radius:2px;transition:width .8s ease;}
+.fr-panel .sp-vol-fill{background:var(--fr);}
+.br-panel .sp-vol-fill{background:var(--br);}
+
+/* Turtle center */
+.turtle-center{
+  width:210px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:space-around;
+  padding:18px 10px;position:relative;
+  background:radial-gradient(ellipse at 50% 60%,rgba(255,255,255,.025) 0%,transparent 70%);
+}
+.turtle-entity{display:flex;flex-direction:column;align-items:center;gap:6px;}
+.big-turtle-wrap{width:80px;height:80px;display:grid;place-items:center;}
+.big-turtle{
+  font-size:54px;line-height:1;display:block;
+  transition:transform .9s cubic-bezier(.34,1.15,.64,1);
+  transform-origin:center bottom;
+}
+.fr-t{filter:drop-shadow(0 0 16px var(--fr-glow)) drop-shadow(0 3px 8px rgba(0,0,0,.5));}
+.br-t{filter:drop-shadow(0 0 16px var(--br-glow)) drop-shadow(0 3px 8px rgba(0,0,0,.5));}
+@keyframes victoryFr{0%,100%{transform:scale(var(--ts,1))}50%{transform:scale(calc(var(--ts,1)*1.18)) translateY(-8px)}}
+@keyframes victoryBr{0%,100%{transform:scaleX(-1) scale(var(--ts,1))}50%{transform:scaleX(-1) scale(calc(var(--ts,1)*1.18)) translateY(-8px)}}
+.fr-t.victory{animation:victoryFr .7s ease infinite;}
+.br-t.victory{animation:victoryBr .7s ease infinite;}
+.turtle-lbl{font-size:9px;color:var(--muted);font-family:'Space Mono';font-weight:700;letter-spacing:1.5px;}
+.stage-vs{font-family:'Syne';font-size:15px;font-weight:800;color:var(--dim);letter-spacing:2px;}
+
+/* ── COMMENT LAYOUT ── */
+.comment-layout{flex:1;display:flex;overflow:hidden;position:relative;z-index:1;min-height:0;}
+.comment-col{flex:1;display:flex;flex-direction:column;min-height:0;overflow:hidden;}
+.france-col{border-right:1px solid var(--border);}
+.col-head{
+  flex-shrink:0;padding:8px 12px;
+  display:flex;align-items:center;justify-content:space-between;
+  border-bottom:1px solid var(--border);background:var(--surface);
+}
+.col-head-name{font-family:'Syne';font-size:13px;font-weight:800;}
+.france-col .col-head-name{color:var(--fr);}
+.brazil-col .col-head-name{color:var(--br);}
+.col-head-cnt{font-family:'Space Mono';font-size:10px;color:var(--muted);}
+.comment-list{flex:1;overflow-y:auto;padding:8px 10px;display:flex;flex-direction:column;gap:8px;}
+.comment-list::-webkit-scrollbar{width:3px;}
+.comment-list::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+
+/* Comment cards */
+@keyframes slideIn{from{transform:translateY(-16px) scale(.95);opacity:0}to{transform:none;opacity:1}}
+.cmt-card{
+  background:var(--surface2);border:1px solid var(--border);border-radius:12px;
+  padding:10px 12px;transition:border-color .2s;
+}
+.cmt-card:hover{border-color:var(--border2);}
+.cmt-card.rebut{border-color:rgba(255,120,60,.2);background:rgba(255,70,20,.03);}
+.cc-top{display:flex;align-items:center;gap:8px;margin-bottom:6px;}
+.cc-ava{
+  width:26px;height:26px;border-radius:50%;display:grid;place-items:center;
+  font-size:13px;flex-shrink:0;border:1.5px solid var(--border2);
+}
+.cc-name{font-size:12px;font-weight:700;flex:1;}
+.rb-badge{
+  font-size:8px;font-weight:800;padding:1px 5px;border-radius:5px;margin-left:4px;
+  background:rgba(255,120,60,.15);color:#ff7840;border:1px solid rgba(255,120,60,.3);
+}
+.cc-text{font-size:12px;line-height:1.6;color:rgba(240,237,232,.8);margin-bottom:8px;}
+.cc-actions{display:flex;align-items:center;gap:6px;}
+.cc-like{
+  display:flex;align-items:center;gap:5px;cursor:pointer;
+  padding:3px 7px;border-radius:7px;font-size:11px;font-weight:700;
+  transition:background .15s;
+}
+.cc-like:hover{background:var(--surface3);}
+.cc-like.maxed{opacity:.4;cursor:default;pointer-events:none;}
+.cc-pips{display:flex;gap:2px;align-items:center;}
+.lpip{width:5px;height:5px;border-radius:50%;background:var(--dim);transition:background .2s;}
+.lpip.on.fr{background:var(--fr);}
+.lpip.on.br{background:var(--br);}
+.cc-rebut-btn{
+  margin-left:auto;font-size:10px;padding:2px 8px;border-radius:6px;
+  border:1px solid var(--border2);background:transparent;
+  color:var(--muted);cursor:pointer;font-family:'Noto Sans SC';transition:.15s;
+}
+.cc-rebut-btn:hover{background:var(--surface3);color:var(--ink);}
+
+/* Inline rebut form */
+.rebut-form{display:none;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;}
+.rebut-form.open{display:block;}
+.rebut-inp{
+  width:100%;background:var(--surface3);border:1px solid var(--border2);
+  border-radius:8px;color:var(--ink);font-size:11px;font-family:'Noto Sans SC';
+  padding:6px 8px;resize:none;
+}
+.rebut-inp:focus{outline:none;border-color:rgba(255,120,60,.4);}
+.rebut-send{
+  margin-top:5px;padding:4px 10px;border-radius:7px;border:none;cursor:pointer;
+  font-size:11px;font-weight:700;font-family:'Noto Sans SC';
+  background:rgba(255,120,60,.15);color:#ff7840;
+}
+.rebut-send:hover{background:rgba(255,120,60,.25);}
+
+/* Nested reply */
+.rebut-reply{
+  display:flex;gap:8px;margin-top:8px;border-top:1px solid var(--border);padding-top:8px;
+  animation:slideIn .3s cubic-bezier(.34,1.4,.64,1) both;
+}
+.rr-bar{width:2px;background:rgba(255,120,60,.35);border-radius:2px;flex-shrink:0;}
+.rr-body{flex:1;}
+.rr-top{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.rr-ava{font-size:11px;}
+.rr-name{font-size:11px;font-weight:700;color:var(--ink);}
+.rr-text{font-size:11px;color:rgba(240,237,232,.75);line-height:1.5;}
+
+/* Compose */
+.compose-area{flex-shrink:0;border-top:1px solid var(--border);padding:10px 12px;background:var(--surface);}
+.compose-row{display:flex;gap:8px;align-items:flex-start;}
+.compose-ava{
+  width:28px;height:28px;border-radius:50%;
+  background:linear-gradient(135deg,var(--fr),#7ab8ff);
+  display:grid;place-items:center;font-size:13px;flex-shrink:0;
+}
+.compose-ava.br-ava{background:linear-gradient(135deg,var(--br),#7fffd4);}
+.compose-inp{
+  flex:1;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:10px;color:var(--ink);font-size:12px;font-family:'Noto Sans SC';
+  padding:7px 10px;resize:none;
+}
+.compose-inp:focus{outline:none;}
+.compose-send{
+  padding:6px 12px;border-radius:9px;border:none;cursor:pointer;
+  font-size:12px;font-weight:700;font-family:'Noto Sans SC';
+  background:var(--fr);color:#fff;flex-shrink:0;align-self:flex-end;
+}
+.compose-hint{margin-top:5px;font-size:10px;color:var(--muted);}
+.compose-locked{
+  padding:10px 12px;border-top:1px solid var(--border);
+  background:var(--surface);display:flex;align-items:center;gap:8px;
+  font-size:11px;color:var(--muted);flex-shrink:0;
+}
+
+/* ── SETTLEMENT OVERLAY ── */
+.settlement-overlay{
+  position:fixed;inset:0;z-index:500;
+  background:rgba(0,0,0,.82);backdrop-filter:blur(14px);
+  display:none;align-items:center;justify-content:center;
+}
+.settlement-card{
+  background:var(--surface2);border:1px solid var(--border2);
+  border-radius:20px;padding:30px 36px;max-width:400px;width:90%;text-align:center;
+}
+.settle-title{font-family:'Syne';font-size:17px;font-weight:800;margin-bottom:14px;}
+.settle-winner{font-size:24px;font-weight:700;margin-bottom:14px;}
+.settle-case{border-radius:12px;padding:14px 16px;margin-bottom:12px;text-align:left;}
+.settle-case.a{background:rgba(60,142,255,.08);border:1px solid rgba(60,142,255,.2);}
+.settle-case.b{background:rgba(255,201,77,.08);border:1px solid rgba(255,201,77,.2);}
+.settle-case-tag{
+  font-size:9px;font-weight:800;letter-spacing:1.2px;text-transform:uppercase;
+  color:var(--muted);margin-bottom:8px;
+}
+.settle-line{font-size:13px;color:var(--ink);margin-bottom:5px;}
+.settle-hint{font-size:11px;color:var(--muted);margin-top:8px;line-height:1.6;}
+.settle-close{
+  margin-top:14px;padding:8px 24px;border-radius:12px;border:none;cursor:pointer;
+  font-size:13px;font-weight:700;font-family:'Noto Sans SC';
+  background:var(--surface3);color:var(--ink);
+}
+.settle-close:hover{background:var(--dim);}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:16px;right:16px;z-index:600;
+  background:var(--surface2);color:var(--ink);border:1px solid var(--border2);
+  border-radius:12px;padding:10px 16px;display:flex;align-items:center;gap:8px;
+  box-shadow:0 8px 32px rgba(0,0,0,.5);font-size:12px;font-weight:600;
+  transform:translateY(60px);opacity:0;transition:.35s cubic-bezier(.34,1.4,.64,1);
+}
+.toast.show{transform:translateY(0);opacity:1;}
+
+@media(max-width:600px){
+  /* Nav */
+  .top-nav{padding:0 10px;height:44px;gap:8px;}
+  .back-btn{font-size:12px;padding:4px 8px;}
+  .nav-title{font-size:13px;}
+  .nav-live{font-size:11px;padding:3px 8px;}
+
+  /* Event header */
+  .event-header{padding:14px 12px;border-radius:12px;margin:10px 8px 10px;}
+  .event-title{font-size:16px;}
+  .odds-bar-wrap{height:30px;border-radius:8px;}
+  .ob-row{font-size:11px;}
+  .header-meta{flex-wrap:wrap;gap:6px;}
+  .faction-tag{font-size:11px;padding:4px 10px;}
+  .settle-btn{font-size:11px;padding:4px 10px;}
+
+  /* Power stage */
+  .power-stage{flex-direction:column;gap:0;padding:0 8px;}
+  .side-panel{padding:10px;gap:7px;border-radius:12px;}
+  .sp-row{gap:6px;}
+  .sp-val{font-size:13px;}
+  .sp-lbl{font-size:11px;}
+
+  /* Turtle center */
+  .turtle-center{width:150px;}
+  .big-turtle{font-size:40px;}
+
+  /* Comment cards */
+  .cmt-card{padding:10px 12px;margin:0 8px 8px;border-radius:12px;}
+  .cmt-head{gap:6px;}
+  .cmt-ava{width:28px;height:28px;font-size:13px;}
+  .cmt-user{font-size:12px;}
+  .cmt-time{font-size:9px;}
+  .cmt-text{font-size:12px;}
+  .cmt-actions{gap:6px;}
+  .cmt-act{font-size:11px;padding:3px 8px;}
+
+  /* Compose */
+  .compose-area{margin:0 8px 8px;padding:10px;border-radius:12px;}
+  .compose-input{font-size:12px;min-height:48px;padding:8px 10px;}
+  .compose-bar{gap:6px;}
+  .compose-submit{font-size:12px;padding:6px 16px;}
+
+  /* Toast */
+  .toast{left:10px;right:10px;bottom:10px;font-size:11px;padding:8px 12px;}
+
+  /* Settlement overlay */
+  .settle-modal{width:calc(100vw - 20px);padding:18px;border-radius:16px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="top-nav">
+  <a class="back-btn" href="index.html">← 返回</a>
+  <div class="nav-title"><span class="fr">法国</span> vs <span class="br">巴西</span></div>
+  <div class="nav-live"><div class="live-dot"></div>激战中</div>
+</nav>
+
+<!-- EVENT HEADER -->
+<div class="event-header">
+  <div class="event-title">
+    2026世界杯 —— <span class="fr">法国</span> vs <span class="br">巴西</span>，谁是真正的统治者？
+  </div>
+  <div class="odds-bar-wrap">
+    <div class="ob-fr" id="ob-fr-fill" style="width:50%"></div>
+    <div class="ob-br" id="ob-br-fill" style="width:50%"></div>
+    <div class="ob-row">
+      <div class="ob-fr-pct" id="ob-fr-pct">🔵 50%</div>
+      <div class="ob-mid">当前龟势</div>
+      <div class="ob-br-pct" id="ob-br-pct">50% 🟢</div>
+    </div>
+  </div>
+  <div class="header-meta">
+    <div class="faction-tag" id="faction-tag">你在：🔵 法国阵营</div>
+    <div class="settle-row">
+      <button class="settle-btn fr" onclick="triggerSettlement('france')">⚽ 法国胜</button>
+      <button class="settle-btn br" onclick="triggerSettlement('brazil')">⚽ 巴西胜</button>
+    </div>
+  </div>
+</div>
+
+<!-- POWER STAGE -->
+<div class="power-stage">
+
+  <!-- France panel -->
+  <div class="side-panel fr-panel">
+    <div class="sp-row">
+      <span class="sp-ico">💰</span>
+      <span class="sp-lbl">下注总额</span>
+      <span class="sp-val fr" id="fr-stake">¥12,340</span>
+    </div>
+    <div class="sp-row">
+      <span class="sp-ico">👍</span>
+      <span class="sp-lbl">总点赞</span>
+      <span class="sp-val fr" id="fr-likes">0</span>
+    </div>
+    <div class="sp-row">
+      <span class="sp-ico">📊</span>
+      <span class="sp-lbl">龟势占比</span>
+      <span class="sp-val fr" id="fr-vol-pct">50%</span>
+    </div>
+    <div class="sp-vol-bar"><div class="sp-vol-fill" id="fr-vol-bar" style="width:50%"></div></div>
+  </div>
+
+  <!-- Turtle arena -->
+  <div class="turtle-center">
+    <div class="turtle-entity">
+      <div class="big-turtle-wrap">
+        <span class="big-turtle fr-t" id="fr-turtle">🐢</span>
+      </div>
+      <div class="turtle-lbl">法国</div>
+    </div>
+    <div class="stage-vs">VS</div>
+    <div class="turtle-entity">
+      <div class="big-turtle-wrap">
+        <span class="big-turtle br-t" id="br-turtle" style="transform:scaleX(-1)">🐢</span>
+      </div>
+      <div class="turtle-lbl">巴西</div>
+    </div>
+  </div>
+
+  <!-- Brazil panel -->
+  <div class="side-panel br-panel">
+    <div class="sp-row">
+      <span class="sp-val br" id="br-stake">¥9,876</span>
+      <span class="sp-lbl">下注总额</span>
+      <span class="sp-ico">💰</span>
+    </div>
+    <div class="sp-row">
+      <span class="sp-val br" id="br-likes">0</span>
+      <span class="sp-lbl">总点赞</span>
+      <span class="sp-ico">👍</span>
+    </div>
+    <div class="sp-row">
+      <span class="sp-val br" id="br-vol-pct">50%</span>
+      <span class="sp-lbl">龟势占比</span>
+      <span class="sp-ico">📊</span>
+    </div>
+    <div class="sp-vol-bar"><div class="sp-vol-fill" id="br-vol-bar" style="width:50%"></div></div>
+  </div>
+
+</div>
+
+<!-- COMMENT LAYOUT -->
+<div class="comment-layout">
+
+  <!-- France column -->
+  <div class="comment-col france-col">
+    <div class="col-head">
+      <div class="col-head-name">🇫🇷 法国阵营</div>
+      <div class="col-head-cnt" id="fr-cnt">0 评论</div>
+    </div>
+    <div class="comment-list" id="cmts-france"></div>
+    <div id="compose-france">
+      <div class="compose-area">
+        <div class="compose-row">
+          <div class="compose-ava">🦊</div>
+          <textarea class="compose-inp" id="inp-france" placeholder="支持法国的理由…" rows="2"></textarea>
+          <button class="compose-send" onclick="postComment('france')">发表</button>
+        </div>
+        <div class="compose-hint">💡 发评论 → 点赞 → 壮大龟势 | 可反驳对方评论</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Brazil column -->
+  <div class="comment-col brazil-col">
+    <div class="col-head">
+      <div class="col-head-name">🇧🇷 巴西阵营</div>
+      <div class="col-head-cnt" id="br-cnt">0 评论</div>
+    </div>
+    <div class="comment-list" id="cmts-brazil"></div>
+    <div id="compose-brazil">
+      <div class="compose-locked">
+        <span style="font-size:16px">🔒</span>
+        你在法国阵营 ·
+        <span style="cursor:pointer;color:var(--fr);font-weight:700" onclick="switchFaction()">切换阵营</span>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- SETTLEMENT OVERLAY -->
+<div class="settlement-overlay" id="settlement">
+  <div class="settlement-card">
+    <div class="settle-title">⚖️ 比赛结果宣判</div>
+    <div id="settlement-body"></div>
+    <button class="settle-close" onclick="closeSettlement()">关闭</button>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="tst"><span id="tico"></span> <span id="tmsg"></span></div>
+
+<script>
+// ══════════════════════════════════════════
+// 参数
+// ══════════════════════════════════════════
+const HATCH_THRESHOLD = 5;    // 点赞满后龟势+1
+const ALPHA           = 0.6;  // 下注权重（log scale）
+const BETA            = 0.4;  // 点赞权重（sqrt scale）
+const BASE_SCALE      = 1.0;  // 龟基础 scale
+const MAX_SCALE       = 2.5;  // 龟最大 scale（2.5x）
+const AUTO_LIKE_MS    = 1000; // Bot 点赞间隔
+const AUTO_CMT_MS     = 2000; // Bot 发言间隔
+
+// ══════════════════════════════════════════
+// 状态
+// ══════════════════════════════════════════
+let myFaction = 'france';
+let matchResult = null;
+let cid = 100;
+
+const sides = {
+  france: { comments:[], stake:12340, totalLikes:0, scale:1.0 },
+  brazil: { comments:[], stake: 9876, totalLikes:0, scale:1.0 }
+};
+
+// ══════════════════════════════════════════
+// 评论池
+// ══════════════════════════════════════════
+const seedComments = {
+  france: [
+    { avatar:'🐉', name:'DragonSeer', text:'姆巴佩现在状态巅峰，独自撕碎任何后防线。法国中场控制力无人能及！🔵', stake:580 },
+    { avatar:'🦅', name:'EagleEye',   text:'法国2018年冠军骨架还在，经验+阵容，巴西心理素质历届大赛都是谜。', stake:320 },
+    { avatar:'🐺', name:'CryptoWolf', text:'三后卫压制体系验证可以限制巴西边路，法国有世界最优秀的战术大脑。', stake:460 },
+  ],
+  brazil: [
+    { avatar:'🦁', name:'LionMaster',   text:'维尼修斯+罗德里戈双翼轰炸，阵容深度冠绝全球！🟢 巴西必胜！', stake:720 },
+    { avatar:'🐼', name:'PandaPredict', text:'巴西这届年轻力壮，技术派打法加身体素质，史上最强巴西之一。', stake:410 },
+    { avatar:'🦊', name:'NightFox',     text:'卡塞米罗在中场镇守，法国进攻根本组织不起来。2022年吸取教训！', stake:530 },
+  ]
+};
+const botComments = {
+  france: [
+    { avatar:'🌟', name:'StarSeer',   text:'姆巴佩今天状态神勇，进球就靠他！🔵', stake:200 },
+    { avatar:'🐯', name:'TigerBlue',  text:'法国中场压制力太强，巴西喘不过气！', stake:150 },
+    { avatar:'🦁', name:'BlueLion',   text:'格里兹曼传球视野世界顶级，完全不虚！', stake:300 },
+    { avatar:'🦋', name:'BleuWing',   text:'法国防线稳如泰山，巴西攻门无解！🔵', stake:180 },
+    { avatar:'⚜️', name:'FleurDeLis', text:'历史数据支持法国，高卢雄鸡必夺冠！', stake:250 },
+    { avatar:'🌊', name:'WaveFr',     text:'法国阵容深度远超巴西，替补席都是巨星！', stake:120 },
+  ],
+  brazil: [
+    { avatar:'🌿', name:'SelecaoFan', text:'维尼修斯速度炸裂，法国边后卫追不上！🟢', stake:280 },
+    { avatar:'🐆', name:'Jaguar',     text:'桑巴足球的魅力无可替代，今天必赢！', stake:160 },
+    { avatar:'🌺', name:'Samba',      text:'罗德里戈状态正盛，进球机器启动！🟢', stake:220 },
+    { avatar:'🦅', name:'GreenEagle', text:'卡塞米罗断球太狠，法国中场根本过不来！', stake:190 },
+    { avatar:'🌙', name:'NightBr',    text:'巴西这届攻防俱佳，史上最完整阵容！', stake:340 },
+    { avatar:'🏆', name:'CopaBr',     text:'五星巴西！冠军只能是我们！🟢 BRASIL！', stake:500 },
+  ]
+};
+
+// ══════════════════════════════════════════
+// 龟势（Power）计算
+// ══════════════════════════════════════════
+function calcRawPower(side) {
+  return Math.log(sides[side].stake + 1) * ALPHA
+       + Math.sqrt(sides[side].totalLikes + 1) * BETA;
+}
+
+function updateTurtleScales() {
+  const fp = calcRawPower('france');
+  const bp = calcRawPower('brazil');
+  const maxP = Math.max(fp, bp, 1);
+
+  const frS = (BASE_SCALE + (MAX_SCALE - BASE_SCALE) * (fp / maxP)).toFixed(3);
+  const brS = (BASE_SCALE + (MAX_SCALE - BASE_SCALE) * (bp / maxP)).toFixed(3);
+  sides.france.scale = +frS;
+  sides.brazil.scale = +brS;
+
+  const frEl = document.getElementById('fr-turtle');
+  const brEl = document.getElementById('br-turtle');
+  frEl.style.transform = `scale(${frS})`;
+  frEl.style.setProperty('--ts', frS);
+  brEl.style.transform = `scaleX(-1) scale(${brS})`;
+  brEl.style.setProperty('--ts', brS);
+
+  const total = fp + bp;
+  const frPct = total > 0 ? Math.round(fp / total * 100) : 50;
+  const brPct = 100 - frPct;
+
+  document.getElementById('ob-fr-fill').style.width = frPct + '%';
+  document.getElementById('ob-br-fill').style.width = brPct + '%';
+  document.getElementById('ob-fr-pct').textContent = '🔵 ' + frPct + '%';
+  document.getElementById('ob-br-pct').textContent = brPct + '% 🟢';
+  document.getElementById('fr-vol-pct').textContent = frPct + '%';
+  document.getElementById('br-vol-pct').textContent = brPct + '%';
+  document.getElementById('fr-vol-bar').style.width = Math.max(fp / maxP * 100, 20) + '%';
+  document.getElementById('br-vol-bar').style.width = Math.max(bp / maxP * 100, 20) + '%';
+
+  document.getElementById('fr-stake').textContent = '¥' + sides.france.stake.toLocaleString('zh');
+  document.getElementById('br-stake').textContent = '¥' + sides.brazil.stake.toLocaleString('zh');
+  document.getElementById('fr-likes').textContent = sides.france.totalLikes;
+  document.getElementById('br-likes').textContent = sides.brazil.totalLikes;
+}
+
+// ══════════════════════════════════════════
+// 评论 & 渲染
+// ══════════════════════════════════════════
+function addComment(side, avatar, name, text, stake, animate) {
+  const id = ++cid;
+  const comment = { id, side, avatar, name, text, likes:0, isRebut:false };
+  sides[side].comments.push(comment);
+  sides[side].stake += stake;
+  renderComment(comment, side, animate);
+  updateCounters();
+  updateTurtleScales();
+  return comment;
+}
+
+function renderComment(comment, column, animate) {
+  const list = document.getElementById('cmts-' + column);
+  const div = document.createElement('div');
+  div.className = 'cmt-card' + (comment.isRebut ? ' rebut' : '');
+  div.id = 'cmt-' + comment.id;
+  div.innerHTML = buildCommentHTML(comment);
+  if (animate) div.style.animation = 'slideIn .35s cubic-bezier(.34,1.4,.64,1) both';
+  list.prepend(div);
+}
+
+function buildCommentHTML(c) {
+  const sc = c.side === 'france' ? 'fr' : 'br';
+  const badge = c.isRebut ? '<span class="rb-badge">⚔️ 反驳</span>' : '';
+  const pips = Array.from({length: HATCH_THRESHOLD}, (_, i) =>
+    `<span class="lpip ${i < c.likes ? 'on ' + sc : ''}"></span>`).join('');
+  const maxed = c.likes >= HATCH_THRESHOLD ? 'maxed' : '';
+  return `
+    <div class="cc-top">
+      <div class="cc-ava">${c.avatar}</div>
+      <div class="cc-name">${c.name}${badge}</div>
+    </div>
+    <div class="cc-text">${c.text}</div>
+    <div class="cc-actions">
+      <div class="cc-like ${maxed}" onclick="likeComment(${c.id})" id="like-btn-${c.id}">
+        👍 <span id="like-cnt-${c.id}">${c.likes}</span>
+        <div class="cc-pips">${pips}</div>
+      </div>
+      <button class="cc-rebut-btn" onclick="toggleRebut(${c.id})">⚔️ 反驳</button>
+    </div>
+    <div class="rebut-form" id="rf-${c.id}">
+      <textarea class="rebut-inp" id="ri-${c.id}" rows="2"
+        placeholder="反驳 ${c.name} 的观点…"></textarea>
+      <button class="rebut-send" onclick="submitRebut(${c.id})">发出反驳</button>
+    </div>`;
+}
+
+function updateCounters() {
+  document.getElementById('fr-cnt').textContent = sides.france.comments.length + ' 评论';
+  document.getElementById('br-cnt').textContent = sides.brazil.comments.length + ' 评论';
+}
+
+// ══════════════════════════════════════════
+// 点赞
+// ══════════════════════════════════════════
+function likeComment(id) {
+  const c = findComment(id);
+  if (!c || c.likes >= HATCH_THRESHOLD) return;
+  c.likes++;
+  sides[c.side].totalLikes++;
+
+  const cntEl = document.getElementById('like-cnt-' + id);
+  if (cntEl) cntEl.textContent = c.likes;
+
+  const sc = c.side === 'france' ? 'fr' : 'br';
+  const pipsEl = document.querySelector('#like-btn-' + id + ' .cc-pips');
+  if (pipsEl) {
+    pipsEl.replaceChildren(...Array.from({length: HATCH_THRESHOLD}, (_, i) => {
+      const s = document.createElement('span');
+      s.className = 'lpip ' + (i < c.likes ? 'on ' + sc : '');
+      return s;
+    }));
+  }
+  if (c.likes >= HATCH_THRESHOLD) {
+    document.getElementById('like-btn-' + id)?.classList.add('maxed');
+    toast('✨', '赞数满了，龟势增强！');
+  }
+  updateTurtleScales();
+}
+
+function findComment(id) {
+  for (const s of ['france','brazil']) {
+    const f = sides[s].comments.find(c => c.id === id);
+    if (f) return f;
+  }
+  return null;
+}
+
+// ══════════════════════════════════════════
+// 反驳（inline reply）
+// ══════════════════════════════════════════
+function toggleRebut(commentId) {
+  const form = document.getElementById('rf-' + commentId);
+  if (!form) return;
+  form.classList.toggle('open');
+  if (form.classList.contains('open'))
+    document.getElementById('ri-' + commentId)?.focus();
+}
+
+function submitRebut(commentId) {
+  const inp = document.getElementById('ri-' + commentId);
+  if (!inp) return;
+  const text = inp.value.trim();
+  if (!text) { toast('⚠️', '请输入反驳内容！'); return; }
+
+  const form = document.getElementById('rf-' + commentId);
+  form.classList.remove('open');
+  inp.value = '';
+
+  // Append nested reply DOM under the form
+  const reply = document.createElement('div');
+  reply.className = 'rebut-reply';
+  const ava = myFaction === 'france' ? '🔵' : '🟢';
+  reply.innerHTML = `
+    <div class="rr-bar"></div>
+    <div class="rr-body">
+      <div class="rr-top">
+        <span class="rr-ava">${ava}</span>
+        <span class="rr-name">你</span>
+        <span class="rb-badge">⚔️ 反驳</span>
+      </div>
+      <div class="rr-text">${text}</div>
+    </div>`;
+  form.after(reply);
+  toast('⚔️', '反驳已发出！');
+}
+
+// ══════════════════════════════════════════
+// 发帖 & 切换阵营
+// ══════════════════════════════════════════
+function postComment(side) {
+  if (side !== myFaction) { toast('🔒', '只能在自己阵营发帖！'); return; }
+  const inp = document.getElementById('inp-' + side);
+  const text = inp.value.trim();
+  if (!text) { toast('⚠️', '请输入你的观点！'); return; }
+  const stake = 80 + Math.floor(Math.random() * 420);
+  addComment(side, '🦊', '你', text, stake, true);
+  inp.value = '';
+  toast('🥚', `评论已发出！投入 ¥${stake}`);
+}
+
+function switchFaction() {
+  myFaction = myFaction === 'france' ? 'brazil' : 'france';
+  const isFr = myFaction === 'france';
+  const name = isFr ? '🔵 法国阵营' : '🟢 巴西阵营';
+  const tag = document.getElementById('faction-tag');
+  tag.textContent = '你在：' + name;
+  tag.style.cssText = isFr
+    ? 'background:var(--fr-dim);color:var(--fr);border-color:rgba(60,142,255,.25)'
+    : 'background:var(--br-dim);color:var(--br);border-color:rgba(0,214,143,.25)';
+
+  const hint = '💡 发评论 → 点赞 → 壮大龟势 | 可反驳对方评论';
+  if (isFr) {
+    document.getElementById('compose-france').innerHTML = `<div class="compose-area"><div class="compose-row"><div class="compose-ava">🦊</div><textarea class="compose-inp" id="inp-france" placeholder="支持法国的理由…" rows="2"></textarea><button class="compose-send" onclick="postComment('france')">发表</button></div><div class="compose-hint">${hint}</div></div>`;
+    document.getElementById('compose-brazil').innerHTML = `<div class="compose-locked"><span style="font-size:16px">🔒</span> 你在法国阵营 · <span style="cursor:pointer;color:var(--fr);font-weight:700" onclick="switchFaction()">切换阵营</span></div>`;
+  } else {
+    document.getElementById('compose-brazil').innerHTML = `<div class="compose-area"><div class="compose-row"><div class="compose-ava br-ava">🦊</div><textarea class="compose-inp" id="inp-brazil" placeholder="支持巴西的理由…" rows="2"></textarea><button class="compose-send" style="background:var(--br);color:#000" onclick="postComment('brazil')">发表</button></div><div class="compose-hint">${hint}</div></div>`;
+    document.getElementById('compose-france').innerHTML = `<div class="compose-locked"><span style="font-size:16px">🔒</span> 你在巴西阵营 · <span style="cursor:pointer;color:var(--br);font-weight:700" onclick="switchFaction()">切换阵营</span></div>`;
+  }
+  toast('🔄', '已切换到 ' + name);
+}
+
+// ══════════════════════════════════════════
+// 结算
+// ══════════════════════════════════════════
+function triggerSettlement(winner) {
+  if (matchResult) return;
+  matchResult = winner;
+
+  const frPow = calcRawPower('france');
+  const brPow = calcRawPower('brazil');
+  const turtleWinner = frPow >= brPow ? 'france' : 'brazil';
+
+  const winClr = winner === 'france' ? 'var(--fr)' : 'var(--br)';
+  const winName = winner === 'france' ? '🔵 法国' : '🟢 巴西';
+  const turtleName = turtleWinner === 'france' ? '🔵 法国' : '🟢 巴西';
+
+  let bodyHTML = `<div class="settle-winner" style="color:${winClr}">⚽ ${winName} 获得真实胜利！</div>`;
+
+  if (winner === turtleWinner) {
+    // Case A: turtle predicted correctly
+    const reward = '¥' + Math.round(sides[winner].stake * 0.8).toLocaleString('zh');
+    bodyHTML += `
+      <div class="settle-case a">
+        <div class="settle-case-tag">情况 A — 社区预测成功</div>
+        <div class="settle-line">🐢 ${winName}龟势占优，判断正确</div>
+        <div class="settle-line">💰 ${winName}阵营下注者获得收益</div>
+        <div class="settle-line">🏆 预计回报：${reward}（×1.8）</div>
+        <div class="settle-line">🎖️ 获得「胜利龟」战场徽章</div>
+      </div>`;
+    document.getElementById(winner === 'france' ? 'fr-turtle' : 'br-turtle').classList.add('victory');
+  } else {
+    // Case B: turtle favored wrong side
+    const consolePts = Math.round(sides[turtleWinner].totalLikes * 12);
+    bodyHTML += `
+      <div class="settle-case b">
+        <div class="settle-case-tag">情况 B — 社区支持胜利，但预测失误</div>
+        <div class="settle-line">🐢 ${turtleName}龟势领先，但结果出乎意料</div>
+        <div class="settle-line">🪙 ${turtleName}阵营获得安慰龟币 ${consolePts} 枚</div>
+        <div class="settle-hint">社区热情支持了 ${turtleName}，<br>但比赛结果出乎意料<br>龟币将作为参与奖励发放</div>
+      </div>`;
+    document.getElementById(winner === 'france' ? 'fr-turtle' : 'br-turtle').classList.add('victory');
+  }
+
+  document.getElementById('settlement-body').innerHTML = bodyHTML;
+  document.getElementById('settlement').style.display = 'flex';
+}
+
+function closeSettlement() {
+  document.getElementById('settlement').style.display = 'none';
+}
+
+// ══════════════════════════════════════════
+// Toast
+// ══════════════════════════════════════════
+let toastTimer;
+function toast(ico, msg) {
+  const el = document.getElementById('tst');
+  document.getElementById('tico').textContent = ico;
+  document.getElementById('tmsg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+
+// ══════════════════════════════════════════
+// Bot
+// ══════════════════════════════════════════
+function autoLikeDemo() {
+  const all = [...sides.france.comments, ...sides.brazil.comments]
+    .filter(c => c.likes < HATCH_THRESHOLD);
+  if (!all.length) return;
+  likeComment(all[Math.floor(Math.random() * all.length)].id);
+}
+
+function autoCommentDemo() {
+  const side = Math.random() < 0.5 ? 'france' : 'brazil';
+  const pool = botComments[side];
+  const c = pool[Math.floor(Math.random() * pool.length)];
+  addComment(side, c.avatar, c.name, c.text, c.stake, true);
+}
+
+setInterval(autoLikeDemo, AUTO_LIKE_MS);
+setInterval(autoCommentDemo, AUTO_CMT_MS);
+
+// ══════════════════════════════════════════
+// 启动
+// ══════════════════════════════════════════
+function init() {
+  Object.entries(seedComments).forEach(([side, cmts]) => {
+    cmts.forEach((c, i) => {
+      setTimeout(() => addComment(side, c.avatar, c.name, c.text, c.stake, false), i * 250);
+    });
+  });
+  updateTurtleScales();
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(sed -n '911,1275p' index.html)",
+      "Read(//tmp/**)",
+      "Bash(mv *.aseprite *.json assets/source/)",
+      "Bash(mv *v1.png assets/source/)"
+    ]
+  }
+}

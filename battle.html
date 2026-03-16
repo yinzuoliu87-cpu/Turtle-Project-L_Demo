@@ -1,0 +1,1831 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龟投 — 开战广场</title>
+<link rel="stylesheet" href="style.css?v=2">
+<style>
+/* ═══ 开战广场独立页 — 全局暗色 ═══ */
+body {
+  background:#0a0909; color:#f0ede8;
+  font-family:'Noto Sans SC','Nunito',sans-serif;
+  margin:0; min-height:100vh;
+}
+body * { box-sizing:border-box; }
+
+/* 复用 battle 色板 */
+:root {
+  --red:#ff3c3c; --red-dim:rgba(255,60,60,.12); --red-glow:rgba(255,60,60,.25);
+  --blue:#3c8eff; --blue-dim:rgba(60,142,255,.12); --blue-glow:rgba(60,142,255,.25);
+  --gold:#ffc94d; --gold-dim:rgba(255,201,77,.1);
+  --green:#00d68f; --orange:#ff7b2c; --purple:#c77dff;
+  --surface:#111010; --surface2:#1a1818; --surface3:#222020;
+  --border:rgba(255,255,255,.07); --border2:rgba(255,255,255,.13);
+  --ink:#f0ede8; --muted:#6b6760;
+}
+
+/* NAV override for dark */
+nav {
+  background:#0e0d0d !important; border-bottom:1px solid var(--border) !important;
+  box-shadow:0 2px 12px rgba(0,0,0,.5) !important;
+}
+nav .brand { color:var(--ink) !important; }
+nav .coin-chip { background:var(--surface2) !important; border-color:var(--border) !important; color:var(--gold) !important; }
+
+/* 主布局 — 无侧栏，居中单列 */
+.bp-wrap { max-width:760px; margin:0 auto; padding:80px 16px 40px; }
+
+/* 返回链接 */
+.bp-back { display:inline-flex; align-items:center; gap:6px; font-size:12px; font-weight:600; color:var(--muted); text-decoration:none; margin-bottom:14px; transition:.15s; }
+.bp-back:hover { color:var(--ink); }
+
+/* ── 做庄表单 ── */
+.duel-compose { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.dc-header { padding:14px 18px; display:flex; align-items:center; gap:10px; border-bottom:1px solid var(--border); background:var(--surface2); }
+.dc-ava { width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,var(--red),var(--orange)); display:grid; place-items:center; font-size:16px; }
+.dc-placeholder { flex:1; font-size:13px; color:var(--muted); cursor:pointer; }
+.dc-placeholder:hover { color:var(--ink); }
+.dc-btn { padding:7px 16px; border-radius:9px; background:var(--red); color:#fff; border:none; font-family:'Syne',sans-serif; font-size:12px; font-weight:700; cursor:pointer; transition:.15s; }
+.dc-btn:hover { background:#ff5555; }
+
+.dc-form { display:none; padding:18px; }
+.dc-form.open { display:block; }
+.dc-row { margin-bottom:12px; }
+.dc-label { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:6px; }
+.dc-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:14px; color:var(--ink); outline:none; font-family:'Syne',sans-serif; font-weight:700; transition:border-color .15s; }
+.dc-input:focus { border-color:var(--border2); }
+.dc-input::placeholder { color:var(--muted); font-family:'Noto Sans SC'; font-weight:400; }
+.dc-textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--ink); outline:none; font-family:'Noto Sans SC',sans-serif; resize:none; min-height:56px; line-height:1.5; transition:border-color .15s; }
+.dc-textarea:focus { border-color:var(--border2); }
+.dc-textarea::placeholder { color:var(--muted); }
+
+.dc-inline { display:flex; gap:10px; align-items:flex-end; flex-wrap:wrap; }
+.dc-inline .dc-row { flex:1; min-width:140px; margin-bottom:0; }
+
+/* 押注金额快选 */
+.dc-stake-opts { display:flex; gap:6px; flex-wrap:wrap; }
+.dc-stake-opt { padding:6px 14px; border-radius:8px; border:1.5px solid var(--border); font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:var(--muted); cursor:pointer; transition:.15s; }
+.dc-stake-opt:hover { color:var(--ink); border-color:var(--border2); }
+.dc-stake-opt.on { border-color:var(--gold); background:var(--gold-dim); color:var(--gold); }
+
+/* 公开/私人切换 */
+.dc-vis-toggle { display:flex; gap:6px; }
+.dc-vis-btn { padding:7px 16px; border-radius:9px; border:1.5px solid var(--border); font-size:12px; font-weight:700; cursor:pointer; transition:.15s; color:var(--muted); background:transparent; }
+.dc-vis-btn.on { border-color:var(--gold); background:var(--gold-dim); color:var(--gold); }
+
+.dc-footer { display:flex; align-items:center; gap:8px; margin-top:14px; }
+.dc-cancel { padding:8px 16px; border-radius:9px; background:transparent; color:var(--muted); border:1px solid var(--border); font-size:13px; cursor:pointer; transition:.15s; }
+.dc-cancel:hover { color:var(--ink); border-color:var(--border2); }
+.dc-submit { padding:8px 22px; border-radius:9px; background:var(--red); color:#fff; border:none; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; cursor:pointer; transition:.15s; margin-left:auto; }
+.dc-submit:hover { background:#ff5555; }
+.dc-fee-hint { font-size:11px; color:var(--muted); flex:1; }
+
+/* ── 我的赌局 Tab ── */
+.my-duel-bar { display:flex; gap:6px; margin-bottom:14px; }
+.my-duel-tab { padding:6px 14px; border-radius:9px; font-size:12px; font-weight:700; cursor:pointer; transition:.15s; color:var(--muted); border:1px solid transparent; }
+.my-duel-tab:hover { color:var(--ink); background:var(--surface2); }
+.my-duel-tab.on { background:var(--surface3); color:var(--ink); border-color:var(--border2); }
+
+/* ── 赌局卡片 (庄家模式) ── */
+.duel-card {
+  background:var(--surface); border:1px solid var(--border);
+  border-radius:16px; overflow:hidden; margin-bottom:14px;
+  transition:border-color .2s, box-shadow .2s; position:relative;
+}
+.duel-card:hover { border-color:var(--border2); box-shadow:0 8px 40px rgba(0,0,0,.4); }
+
+/* 状态条 */
+.duel-status-bar { padding:10px 16px; display:flex; align-items:center; gap:8px; border-bottom:1px solid var(--border); }
+.duel-cat { font-size:10px; font-weight:700; letter-spacing:1px; text-transform:uppercase; padding:3px 8px; border-radius:5px; }
+.duel-title { font-family:'Syne',sans-serif; font-size:15px; font-weight:700; line-height:1.4; flex:1; color:var(--ink); }
+.duel-badge { font-size:10px; font-weight:700; padding:3px 8px; border-radius:5px; flex-shrink:0; }
+.dbadge-open { background:rgba(0,214,143,.1); color:var(--green); border:1px solid rgba(0,214,143,.2); }
+.dbadge-sealed { background:rgba(255,123,44,.15); color:var(--orange); border:1px solid rgba(255,123,44,.25); }
+.dbadge-pending { background:rgba(255,201,77,.1); color:var(--gold); border:1px solid rgba(255,201,77,.2); animation:bblink .8s ease infinite; }
+.dbadge-settled { background:rgba(60,142,255,.1); color:var(--blue); border:1px solid rgba(60,142,255,.2); }
+.dbadge-voided { background:rgba(107,103,96,.15); color:var(--muted); border:1px solid rgba(107,103,96,.3); }
+.dbadge-private { background:rgba(199,125,255,.1); color:var(--purple); border:1px solid rgba(199,125,255,.2); }
+@keyframes bblink { 0%,100%{opacity:1} 50%{opacity:.5} }
+
+/* 庄家信息区 */
+.duel-banker-area { padding:16px; border-bottom:1px solid var(--border); }
+.duel-banker-row { display:flex; align-items:center; gap:10px; margin-bottom:10px; }
+.duel-banker-ava { width:42px; height:42px; border-radius:50%; display:grid; place-items:center; font-size:20px; border:2px solid rgba(255,60,60,.3); background:rgba(255,60,60,.08); flex-shrink:0; }
+.duel-banker-info { flex:1; }
+.duel-banker-name { font-size:14px; font-weight:700; color:var(--ink); display:flex; align-items:center; gap:6px; }
+.duel-banker-tag { font-size:9px; font-weight:700; padding:2px 6px; border-radius:4px; background:rgba(255,60,60,.12); color:var(--red); border:1px solid rgba(255,60,60,.2); }
+.duel-banker-meta { font-size:11px; color:var(--muted); margin-top:2px; }
+.duel-banker-stake { font-family:'Space Mono',monospace; font-size:16px; font-weight:700; color:var(--gold); text-align:right; }
+.duel-banker-stake small { font-size:10px; color:var(--muted); display:block; font-weight:400; font-family:'Noto Sans SC'; margin-top:2px; }
+
+/* 庄家立场 */
+.duel-opinion-box { background:var(--surface2); border:1px solid rgba(255,60,60,.15); border-radius:12px; padding:12px 14px; }
+.duel-opinion-label { font-size:10px; font-weight:700; color:var(--red); letter-spacing:.8px; text-transform:uppercase; margin-bottom:4px; }
+.duel-opinion-text { font-size:13px; line-height:1.6; color:rgba(240,237,232,.8); }
+.duel-vs-label { text-align:center; font-family:'Syne',sans-serif; font-size:10px; font-weight:700; color:var(--muted); letter-spacing:1px; margin:8px 0; }
+.duel-challenger-opinion { background:var(--surface2); border:1px solid rgba(60,142,255,.15); border-radius:12px; padding:12px 14px; }
+.duel-challenger-label { font-size:10px; font-weight:700; color:var(--blue); letter-spacing:.8px; text-transform:uppercase; margin-bottom:4px; }
+
+/* 容量进度条 */
+.duel-capacity { padding:12px 16px; border-bottom:1px solid var(--border); }
+.duel-cap-header { display:flex; justify-content:space-between; align-items:center; margin-bottom:6px; }
+.duel-cap-label { font-size:11px; color:var(--muted); }
+.duel-cap-nums { font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:var(--ink); }
+.duel-cap-bar { height:6px; border-radius:3px; background:var(--surface3); overflow:hidden; }
+.duel-cap-fill { height:100%; border-radius:3px; background:linear-gradient(90deg,var(--blue),var(--green)); transition:width 1s cubic-bezier(.4,0,.2,1); }
+.duel-cap-fill.full { background:var(--orange); }
+.duel-cap-detail { display:flex; justify-content:space-between; margin-top:5px; font-size:10px; color:var(--muted); }
+
+/* 挑战者列表 */
+.duel-challengers { padding:12px 16px; border-bottom:1px solid var(--border); }
+.duel-ch-title { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; margin-bottom:8px; }
+.duel-ch-list { display:flex; flex-direction:column; gap:6px; }
+.duel-ch-row { display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); }
+.duel-ch-ava { width:26px; height:26px; border-radius:50%; display:grid; place-items:center; font-size:13px; border:1.5px solid rgba(60,142,255,.25); background:rgba(60,142,255,.06); flex-shrink:0; }
+.duel-ch-name { font-size:12px; font-weight:600; color:var(--ink); flex:1; }
+.duel-ch-amt { font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--blue); }
+.duel-ch-fee { font-size:10px; color:var(--muted); margin-left:4px; }
+.duel-ch-empty { font-size:12px; color:var(--muted); text-align:center; padding:14px 0; }
+
+/* 卡片底栏 */
+.duel-foot { padding:10px 16px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
+.duel-foot-btn { display:flex; align-items:center; gap:5px; padding:5px 10px; border-radius:8px; font-size:12px; font-weight:600; cursor:pointer; color:var(--muted); transition:.15s; background:transparent; border:1px solid transparent; }
+.duel-foot-btn:hover { background:var(--surface2); color:var(--ink); border-color:var(--border); }
+.duel-foot-btn.liked { color:var(--red); }
+.duel-foot-join { padding:5px 14px; border-radius:8px; font-size:12px; font-weight:700; cursor:pointer; background:var(--blue-dim); color:var(--blue); border:1.5px solid rgba(60,142,255,.3); font-family:'Syne',sans-serif; transition:.15s; }
+.duel-foot-join:hover { background:rgba(60,142,255,.22); }
+.duel-foot-time { margin-left:auto; font-family:'Space Mono',monospace; font-size:10px; color:var(--muted); }
+
+/* ── 挑战弹窗 ── */
+.duel-overlay { position:fixed; inset:0; background:rgba(10,9,9,.85); backdrop-filter:blur(16px); z-index:600; display:none; place-items:center; }
+.duel-overlay.show { display:grid; }
+.duel-modal {
+  background:#111010; border:1px solid var(--border2); border-radius:18px;
+  padding:24px; width:400px; max-width:92vw;
+  box-shadow:0 24px 80px rgba(0,0,0,.6);
+  animation:dpop .3s cubic-bezier(.34,1.4,.64,1); position:relative;
+}
+@keyframes dpop { from{opacity:0;transform:scale(.88) translateY(16px)} to{opacity:1;transform:scale(1) translateY(0)} }
+.dm-close { position:absolute; top:14px; right:14px; cursor:pointer; color:var(--muted); font-size:18px; transition:color .15s; }
+.dm-close:hover { color:var(--ink); }
+.dm-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; margin-bottom:4px; color:var(--ink); }
+.dm-sub { font-size:12px; color:var(--muted); margin-bottom:16px; }
+.dm-info-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:16px; }
+.dm-info-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.dm-info-label { font-size:10px; color:var(--muted); margin-bottom:4px; }
+.dm-info-value { font-family:'Space Mono',monospace; font-size:14px; font-weight:700; color:var(--ink); }
+.dm-info-value.gold { color:var(--gold); }
+.dm-label { font-size:11px; font-weight:700; letter-spacing:.8px; text-transform:uppercase; color:var(--muted); margin-bottom:8px; }
+.dm-stake-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-family:'Space Mono',monospace; font-size:16px; font-weight:700; color:var(--gold); outline:none; text-align:center; margin-bottom:6px; transition:border-color .15s; }
+.dm-stake-input:focus { border-color:var(--gold); }
+.dm-amts { display:flex; gap:6px; flex-wrap:wrap; margin-bottom:14px; }
+.dm-amt { padding:5px 12px; border-radius:7px; border:1.5px solid var(--border); font-family:'Space Mono',monospace; font-size:11px; font-weight:700; color:var(--muted); cursor:pointer; transition:.15s; }
+.dm-amt:hover { color:var(--ink); border-color:var(--border2); }
+.dm-amt.on { border-color:var(--gold); background:var(--gold-dim); color:var(--gold); }
+.dm-fee-note { font-size:11px; color:var(--muted); text-align:center; margin-bottom:14px; padding:8px; border-radius:8px; background:var(--surface2); border:1px solid var(--border); }
+.dm-fee-note strong { color:var(--ink); }
+.dm-cta { width:100%; padding:13px; border-radius:11px; border:none; background:var(--blue); color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:.15s; box-shadow:0 0 20px rgba(60,142,255,.3); }
+.dm-cta:hover { background:#5a9eff; transform:translateY(-1px); }
+
+/* ── 宣布结果弹窗 ── */
+.dm-declare-opts { display:grid; grid-template-columns:1fr 1fr; gap:10px; margin-bottom:16px; }
+.dm-declare-opt { padding:16px 10px; border-radius:12px; border:2px solid var(--border); text-align:center; cursor:pointer; transition:.2s; }
+.dm-declare-opt:hover { border-color:var(--border2); }
+.dm-declare-opt.sel-win { border-color:var(--green); background:rgba(0,214,143,.08); }
+.dm-declare-opt.sel-lose { border-color:var(--red); background:rgba(255,60,60,.08); }
+.dm-declare-ico { font-size:28px; margin-bottom:6px; }
+.dm-declare-lbl { font-size:13px; font-weight:700; color:var(--ink); }
+.dm-declare-sub { font-size:10px; color:var(--muted); margin-top:3px; }
+.dm-cta-green { width:100%; padding:13px; border-radius:11px; border:none; background:var(--green); color:#0a0909; font-family:'Syne',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:.15s; }
+.dm-cta-green:hover { background:#2ee6a8; transform:translateY(-1px); }
+
+/* ── 确认/异议弹窗 ── */
+.dm-result-box { background:var(--surface2); border:1px solid var(--border); border-radius:12px; padding:14px; margin-bottom:16px; text-align:center; }
+.dm-result-text { font-size:14px; font-weight:700; color:var(--ink); margin-bottom:4px; }
+.dm-result-sub { font-size:11px; color:var(--muted); }
+.dm-btn-row { display:flex; gap:8px; }
+.dm-btn-approve { flex:1; padding:12px; border-radius:10px; border:none; background:var(--green); color:#0a0909; font-family:'Syne',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; }
+.dm-btn-approve:hover { background:#2ee6a8; }
+.dm-btn-dispute { flex:1; padding:12px; border-radius:10px; border:2px solid var(--red); background:transparent; color:var(--red); font-family:'Syne',sans-serif; font-size:14px; font-weight:700; cursor:pointer; transition:.15s; }
+.dm-btn-dispute:hover { background:var(--red-dim); }
+.dm-dispute-form { display:none; margin-top:12px; }
+.dm-dispute-form.show { display:block; }
+.dm-dispute-ta { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--ink); outline:none; font-family:'Noto Sans SC',sans-serif; resize:none; min-height:70px; margin-bottom:8px; transition:border-color .15s; }
+.dm-dispute-ta:focus { border-color:var(--red); }
+.dm-dispute-ta::placeholder { color:var(--muted); }
+.dm-dispute-submit { width:100%; padding:10px; border-radius:9px; border:none; background:var(--red); color:#fff; font-family:'Syne',sans-serif; font-size:13px; font-weight:700; cursor:pointer; }
+
+/* ── 邀请码入口 ── */
+.invite-entry { background:var(--surface); border:1px solid rgba(199,125,255,.15); border-radius:16px; padding:14px 18px; display:flex; align-items:center; gap:12px; margin-bottom:14px; }
+.invite-entry-ico { font-size:28px; }
+.invite-entry-info { flex:1; }
+.invite-entry-title { font-size:13px; font-weight:700; color:var(--ink); margin-bottom:2px; }
+.invite-entry-sub { font-size:11px; color:var(--muted); }
+.invite-entry-input { width:140px; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:6px 10px; font-family:'Space Mono',monospace; font-size:13px; font-weight:700; color:var(--purple); outline:none; text-align:center; letter-spacing:2px; }
+.invite-entry-input::placeholder { color:var(--muted); letter-spacing:0; font-size:11px; }
+.invite-entry-btn { padding:6px 14px; border-radius:8px; background:rgba(199,125,255,.12); color:var(--purple); border:1.5px solid rgba(199,125,255,.25); font-size:12px; font-weight:700; cursor:pointer; transition:.15s; }
+.invite-entry-btn:hover { background:rgba(199,125,255,.2); }
+
+/* ── 评论区（复用样式）── */
+.duel-cmt-thread { background:var(--surface); border-top:1px solid var(--border); overflow:hidden; max-height:0; transition:max-height .4s ease; }
+.duel-cmt-thread.open { max-height:600px; }
+
+/* ── Toast ── */
+.toast { position:fixed; bottom:30px; left:50%; transform:translateX(-50%) translateY(80px); background:#1a1818; color:var(--ink); border:1px solid var(--border2); border-radius:12px; padding:10px 20px; font-size:13px; font-weight:600; z-index:999; display:flex; align-items:center; gap:8px; box-shadow:0 8px 32px rgba(0,0,0,.5); transition:transform .3s cubic-bezier(.34,1.4,.64,1), opacity .3s; opacity:0; pointer-events:none; }
+.toast.show { transform:translateX(-50%) translateY(0); opacity:1; }
+
+/* ── 结算结果标签 ── */
+.duel-result-tag { display:inline-flex; align-items:center; gap:4px; padding:4px 10px; border-radius:6px; font-size:11px; font-weight:700; }
+.result-win { background:rgba(0,214,143,.1); color:var(--green); border:1px solid rgba(0,214,143,.2); }
+.result-lose { background:rgba(255,60,60,.1); color:var(--red); border:1px solid rgba(255,60,60,.2); }
+.result-void { background:rgba(107,103,96,.1); color:var(--muted); border:1px solid rgba(107,103,96,.2); }
+
+/* ── 赌局内邀请码显示 ── */
+.duel-invite-code { display:inline-flex; align-items:center; gap:6px; background:rgba(199,125,255,.08); border:1px solid rgba(199,125,255,.2); border-radius:8px; padding:4px 10px; font-family:'Space Mono',monospace; font-size:12px; font-weight:700; color:var(--purple); cursor:pointer; transition:.15s; margin-left:8px; }
+.duel-invite-code:hover { background:rgba(199,125,255,.15); }
+
+/* ── 广场规则 ── */
+.plaza-rules { background:var(--surface); border:1px solid var(--border); border-radius:16px; overflow:hidden; margin-bottom:16px; }
+.plaza-rules-header { padding:12px 18px; display:flex; align-items:center; gap:8px; cursor:pointer; transition:.15s; }
+.plaza-rules-header:hover { background:var(--surface2); }
+.plaza-rules-ico { font-size:18px; }
+.plaza-rules-title { font-size:13px; font-weight:700; color:var(--ink); flex:1; }
+.plaza-rules-chev { font-size:12px; color:var(--muted); transition:transform .2s; }
+.plaza-rules-chev.open { transform:rotate(90deg); }
+.plaza-rules-body { display:none; padding:0 18px 16px; }
+.plaza-rules-body.open { display:block; }
+.pr-grid { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+.pr-item { background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 12px; }
+.pr-item-title { font-size:11px; font-weight:700; color:var(--gold); margin-bottom:4px; display:flex; align-items:center; gap:4px; }
+.pr-item-text { font-size:11px; color:rgba(240,237,232,.65); line-height:1.5; }
+.pr-warn { margin-top:10px; background:rgba(255,60,60,.06); border:1px solid rgba(255,60,60,.12); border-radius:10px; padding:10px 14px; }
+.pr-warn-title { font-size:11px; font-weight:700; color:var(--red); margin-bottom:4px; }
+.pr-warn-text { font-size:11px; color:rgba(240,237,232,.6); line-height:1.5; }
+
+/* ── Tab 面板 ── */
+.tab-panel { display:none; }
+.tab-panel.active { display:block; }
+
+/* ── 庄家提示卡 ── */
+.banker-tips { background:linear-gradient(135deg,rgba(255,201,77,.06),rgba(255,123,44,.06)); border:1px solid rgba(255,201,77,.12); border-radius:14px; padding:14px 18px; margin-bottom:14px; }
+.bt-header { display:flex; align-items:center; gap:8px; margin-bottom:10px; }
+.bt-ico { font-size:22px; }
+.bt-title { font-size:14px; font-weight:700; color:var(--gold); }
+.bt-list { display:flex; flex-direction:column; gap:6px; }
+.bt-tip { display:flex; align-items:flex-start; gap:8px; font-size:12px; color:rgba(240,237,232,.7); line-height:1.5; }
+.bt-tip-ico { font-size:14px; flex-shrink:0; margin-top:1px; }
+.bt-tip-text b { color:var(--ink); font-weight:600; }
+
+/* ── 挑战提示卡 ── */
+.challenger-tips { background:linear-gradient(135deg,rgba(60,142,255,.06),rgba(0,214,143,.06)); border:1px solid rgba(60,142,255,.12); border-radius:14px; padding:14px 18px; margin-bottom:14px; }
+.ct-title { font-size:14px; font-weight:700; color:var(--blue); margin-bottom:10px; display:flex; align-items:center; gap:8px; }
+
+/* ── 空状态 ── */
+.empty-state { text-align:center; padding:40px 20px; }
+.empty-ico { font-size:48px; margin-bottom:12px; }
+.empty-title { font-size:15px; font-weight:700; color:var(--ink); margin-bottom:6px; }
+.empty-sub { font-size:12px; color:var(--muted); line-height:1.6; }
+.empty-btn { display:inline-block; margin-top:14px; padding:8px 20px; border-radius:9px; font-size:13px; font-weight:700; cursor:pointer; transition:.15s; border:none; }
+.empty-btn-red { background:var(--red); color:#fff; }
+.empty-btn-red:hover { background:#ff5555; }
+.empty-btn-blue { background:var(--blue); color:#fff; }
+.empty-btn-blue:hover { background:#5a9eff; }
+
+/* ── 庄家统计概览 ── */
+.banker-overview { display:grid; grid-template-columns:repeat(4,1fr); gap:8px; margin-bottom:14px; }
+.bo-item { background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:12px; text-align:center; }
+.bo-num { font-family:'Space Mono',monospace; font-size:18px; font-weight:700; color:var(--gold); }
+.bo-label { font-size:10px; color:var(--muted); margin-top:3px; }
+
+/* ── 挑战者异议小按钮 ── */
+.duel-ch-dispute { padding:3px 8px; border-radius:5px; font-size:9px; font-weight:700; cursor:pointer; transition:.15s; background:rgba(255,60,60,.08); color:var(--red); border:1px solid rgba(255,60,60,.15); margin-left:auto; flex-shrink:0; }
+.duel-ch-dispute:hover { background:rgba(255,60,60,.15); }
+
+/* ── 底部弹窗（Sheet） ── */
+.bottom-sheet-overlay { position:fixed; inset:0; background:rgba(10,9,9,.7); backdrop-filter:blur(8px); z-index:700; display:none; }
+.bottom-sheet-overlay.show { display:block; }
+.bottom-sheet {
+  position:fixed; bottom:0; left:0; right:0; z-index:701;
+  background:#131212; border-top:1px solid var(--border2);
+  border-radius:20px 20px 0 0; padding:0 20px 24px;
+  max-height:80vh; overflow-y:auto;
+  transform:translateY(100%); transition:transform .35s cubic-bezier(.32,1.2,.54,1);
+}
+.bottom-sheet.show { transform:translateY(0); }
+.bs-handle { width:36px; height:4px; border-radius:2px; background:rgba(255,255,255,.15); margin:10px auto 16px; }
+.bs-title { font-family:'Syne',sans-serif; font-size:17px; font-weight:800; color:var(--ink); margin-bottom:4px; }
+.bs-sub { font-size:12px; color:var(--muted); margin-bottom:16px; line-height:1.5; }
+.bs-field { margin-bottom:14px; }
+.bs-field-label { font-size:11px; font-weight:700; color:var(--muted); letter-spacing:.8px; text-transform:uppercase; margin-bottom:6px; }
+.bs-textarea { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:10px; padding:10px 14px; font-size:13px; color:var(--ink); outline:none; font-family:'Noto Sans SC',sans-serif; resize:none; min-height:80px; line-height:1.6; transition:border-color .15s; }
+.bs-textarea:focus { border-color:var(--border2); }
+.bs-textarea::placeholder { color:var(--muted); }
+
+/* 图片上传区 */
+.bs-upload { display:flex; gap:8px; flex-wrap:wrap; }
+.bs-upload-btn { width:72px; height:72px; border-radius:10px; border:2px dashed rgba(255,255,255,.12); display:grid; place-items:center; cursor:pointer; transition:.15s; color:var(--muted); font-size:22px; }
+.bs-upload-btn:hover { border-color:rgba(255,255,255,.25); color:var(--ink); }
+.bs-upload-preview { width:72px; height:72px; border-radius:10px; background:var(--surface2); border:1px solid var(--border); overflow:hidden; position:relative; }
+.bs-upload-preview img { width:100%; height:100%; object-fit:cover; }
+.bs-upload-preview .bs-remove { position:absolute; top:2px; right:2px; width:18px; height:18px; border-radius:50%; background:rgba(0,0,0,.7); color:#fff; font-size:10px; display:grid; place-items:center; cursor:pointer; }
+
+.bs-url-input { width:100%; background:var(--surface2); border:1px solid var(--border); border-radius:8px; padding:8px 12px; font-size:12px; color:var(--ink); outline:none; font-family:'Noto Sans SC',sans-serif; transition:border-color .15s; }
+.bs-url-input:focus { border-color:var(--border2); }
+.bs-url-input::placeholder { color:var(--muted); }
+
+.bs-warn { background:rgba(255,60,60,.06); border:1px solid rgba(255,60,60,.12); border-radius:8px; padding:8px 12px; font-size:11px; color:rgba(240,237,232,.6); line-height:1.5; margin-bottom:16px; }
+.bs-warn b { color:var(--red); }
+
+.bs-submit { width:100%; padding:13px; border-radius:11px; border:none; background:var(--red); color:#fff; font-family:'Syne',sans-serif; font-size:15px; font-weight:800; cursor:pointer; transition:.15s; }
+.bs-submit:hover { background:#ff5555; transform:translateY(-1px); }
+.bs-cancel { width:100%; padding:10px; border-radius:9px; border:1px solid var(--border); background:transparent; color:var(--muted); font-size:13px; cursor:pointer; transition:.15s; margin-top:8px; }
+.bs-cancel:hover { color:var(--ink); border-color:var(--border2); }
+
+/* 响应式 */
+@media(max-width:600px) {
+  /* Layout */
+  .bp-wrap { padding:60px 10px 30px; }
+
+  /* Nav */
+  nav { height:46px; padding:0 10px; }
+  .brand { font-size:16px; gap:4px; }
+  .brand-ico { width:26px; height:26px; font-size:13px; }
+  .coin-chip { font-size:12px; padding:4px 10px; }
+  .ava { width:28px; height:28px; font-size:13px; }
+
+  /* Hero */
+  .page-hero-battle { padding:14px 16px; border-radius:12px; }
+  .phb-title { font-size:20px; }
+  .phb-sub { font-size:11px; }
+  .phb-stats { gap:6px; }
+  .phb-stat { font-size:10px; padding:3px 8px; }
+
+  /* Rules */
+  .plaza-rules { border-radius:12px; }
+  .plaza-rules-header { padding:10px 14px; }
+  .pr-grid { grid-template-columns:1fr; }
+  .pr-item { padding:8px 10px; }
+
+  /* Compose */
+  .dc-inline { flex-direction:column; }
+  .duel-compose { border-radius:12px; }
+  .dc-header { padding:10px 14px; }
+  .dc-form { padding:14px; }
+  .dc-input { font-size:13px; padding:8px 12px; }
+  .dc-textarea { font-size:12px; padding:8px 12px; }
+  .dc-stake-opts { gap:4px; }
+  .dc-stake-opt { padding:5px 10px; font-size:11px; }
+
+  /* Tabs */
+  .my-duel-bar { gap:4px; flex-wrap:wrap; }
+  .my-duel-tab { padding:5px 10px; font-size:11px; }
+
+  /* Duel cards */
+  .duel-card { border-radius:12px; }
+  .duel-status-bar { padding:8px 12px; }
+  .duel-banker-area { padding:12px; }
+  .duel-banker-row { gap:8px; }
+  .duel-banker-ava { width:36px; height:36px; font-size:17px; }
+  .duel-banker-name { font-size:13px; }
+  .duel-banker-stake { font-size:14px; }
+  .duel-opinion-box { padding:10px 12px; border-radius:10px; }
+  .duel-opinion-text { font-size:12px; }
+  .duel-capacity { padding:10px 12px; }
+  .duel-challengers { padding:10px 12px; }
+  .duel-ch-row { padding:5px 8px; }
+  .duel-foot { padding:8px 12px; gap:6px; }
+  .duel-foot-btn { font-size:11px; padding:4px 8px; }
+
+  /* Modal */
+  .duel-modal { width:calc(100vw - 16px); padding:18px; border-radius:16px; }
+  .dm-title { font-size:15px; }
+  .dm-info-grid { grid-template-columns:1fr; }
+  .dm-stake-input { font-size:14px; padding:8px 12px; }
+  .dm-amts { gap:4px; }
+  .dm-amt { padding:4px 10px; font-size:10px; }
+  .dm-cta { padding:11px; font-size:14px; }
+  .dm-declare-opts { grid-template-columns:1fr; }
+  .dm-btn-row { flex-direction:column; }
+
+  /* Bottom sheet */
+  .bottom-sheet { padding:0 14px 20px; border-radius:16px 16px 0 0; }
+  .bs-title { font-size:15px; }
+  .bs-submit { padding:11px; font-size:14px; }
+
+  /* Banker overview */
+  .banker-overview { grid-template-columns:repeat(2,1fr); gap:6px; }
+  .bo-item { padding:10px; }
+  .bo-num { font-size:16px; }
+
+  /* Invite entry */
+  .invite-entry { flex-wrap:wrap; padding:12px 14px; gap:8px; border-radius:12px; }
+  .invite-entry-input { width:100%; }
+  .invite-entry-btn { width:100%; text-align:center; }
+
+  /* Toast */
+  .toast { left:12px; right:12px; bottom:16px; transform:translateX(0) translateY(80px); font-size:12px; }
+  .toast.show { transform:translateX(0) translateY(0); }
+
+  /* Tips */
+  .banker-tips { padding:12px 14px; border-radius:12px; }
+  .challenger-tips { padding:12px 14px; border-radius:12px; }
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="brand" href="index.html">
+    <div class="brand-ico">🐢</div>龟投
+  </a>
+  <div style="flex:1"></div>
+  <div class="nav-r">
+    <div class="coin-chip">🪙 2,480</div>
+    <div class="ava-dd">
+      <div class="ava">🦊</div>
+    </div>
+  </div>
+</nav>
+
+<div class="bp-wrap">
+
+  <!-- 返回 -->
+  <a class="bp-back" href="index.html">← 返回龟投首页</a>
+
+  <!-- HERO -->
+  <div class="page-hero-battle">
+    <div class="phb-label">⚔️ 庄家赌局</div>
+    <div class="phb-title">开<span>战</span>广场</div>
+    <div class="phb-sub">做庄开局 · 挑战接战 · 龟币对赌</div>
+    <div class="phb-stats">
+      <div class="phb-stat">🔥 今日 23 场赌局</div>
+      <div class="phb-stat">💰 冻结 86K 龟币</div>
+      <div class="phb-stat">👥 127 位庄家</div>
+      <div class="phb-stat">⚡ 9 场等待结算</div>
+    </div>
+  </div>
+
+  <!-- 广场规则 -->
+  <div class="plaza-rules">
+    <div class="plaza-rules-header" onclick="toggleRules()">
+      <div class="plaza-rules-ico">📜</div>
+      <div class="plaza-rules-title">广场规则 · 开局前必读</div>
+      <div class="plaza-rules-chev" id="rulesChev">▸</div>
+    </div>
+    <div class="plaza-rules-body" id="rulesBody">
+
+      <!-- 第一部分：基本机制 -->
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin-bottom:8px">基本机制</div>
+      <div class="pr-grid">
+        <div class="pr-item">
+          <div class="pr-item-title">🎲 做庄（1v多）</div>
+          <div class="pr-item-text">
+            庄家自定议题和双方立场，押注 100~10,000🪙（立即冻结）。<br>
+            所有加入的人自动站对立面，形成「一个庄家 vs 多个挑战者」。<br>
+            赌局分<b style="color:var(--ink)">公开</b>（所有人可见）和<b style="color:var(--purple)">私人</b>（邀请码加入）。
+          </div>
+        </div>
+        <div class="pr-item">
+          <div class="pr-item-title">⚔️ 挑战庄家</div>
+          <div class="pr-item-text">
+            押注 50~5,000🪙 挑战庄家。<br>
+            <b style="color:var(--ink)">公开赌局</b>：扣 5% 入场费直接给庄家，剩余 95% 冻结。<br>
+            <b style="color:var(--purple)">私人赌局</b>：无入场费，100% 冻结。<br>
+            挑战者冻结总额 ≤ 庄家押注，满额自动封盘。
+          </div>
+        </div>
+      </div>
+
+      <!-- 第二部分：结算流程 -->
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin:14px 0 8px">结算流程</div>
+      <div style="background:var(--surface2);border:1px solid var(--border);border-radius:12px;padding:14px;font-size:12px;color:rgba(240,237,232,.7);line-height:1.8">
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">
+          <span style="background:rgba(255,201,77,.15);color:var(--gold);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0">1</span>
+          <span><b style="color:var(--ink)">到达结算时间</b> — 赌局自动封盘，不再接受新挑战者</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">
+          <span style="background:rgba(255,201,77,.15);color:var(--gold);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0">2</span>
+          <span><b style="color:var(--ink)">庄家 24h 内宣布结果</b> — 选择「庄家赢」或「庄家输」。<span style="color:var(--red)">超时未宣布 = 庄家直接判输</span></span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">
+          <span style="background:rgba(255,201,77,.15);color:var(--gold);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0">3</span>
+          <span><b style="color:var(--ink)">挑战者 24h 确认</b> — 每位挑战者选择「同意」或「异议」。未操作视为同意</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px">
+          <span style="background:rgba(255,201,77,.15);color:var(--gold);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0">4</span>
+          <span><b style="color:var(--ink)">全部通过 → 立即结算</b>；<b style="color:var(--red)">任一人异议 → 管理员仲裁</b>（不可再申诉）</span>
+        </div>
+        <div style="display:flex;align-items:flex-start;gap:8px">
+          <span style="background:rgba(107,103,96,.2);color:var(--muted);border-radius:50%;width:20px;height:20px;display:grid;place-items:center;font-size:10px;font-weight:700;flex-shrink:0">*</span>
+          <span>结算时间到后无任何挑战者 → 赌局自动取消，庄家押注全额退还</span>
+        </div>
+      </div>
+
+      <!-- 第三部分：赢输计算 -->
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin:14px 0 8px">赢输计算</div>
+      <div class="pr-grid">
+        <div class="pr-item" style="border-color:rgba(0,214,143,.15)">
+          <div class="pr-item-title" style="color:var(--green)">🏆 庄家赢</div>
+          <div class="pr-item-text">
+            庄家获得：<b style="color:var(--ink)">本金退回 + 全部挑战者冻结额</b><br>
+            公开赌局还有已收的入场费（加入时就到账了）。<br>
+            <span style="color:var(--muted)">例：庄家押5000，3人共冻结4000，入场费共210 → 庄家拿回 5000+4000=9000，加上入场费210，总计 9210🪙</span>
+          </div>
+        </div>
+        <div class="pr-item" style="border-color:rgba(255,60,60,.15)">
+          <div class="pr-item-title" style="color:var(--red)">😞 庄家输</div>
+          <div class="pr-item-text">
+            每位挑战者获得：<b style="color:var(--ink)">冻结额退回 + 庄家押注 × (我的冻结额 / 冻结总额)</b><br>
+            庄家仍保留已收入场费。<br>
+            <span style="color:var(--muted)">例：庄家押5000，挑战者A冻结2000/总4000 → A拿回 2000 + 5000×(2000/4000) = 4500🪙</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 第四部分：不可修改 & 取消 -->
+      <div style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.8px;text-transform:uppercase;margin:14px 0 8px">重要须知</div>
+      <div class="pr-grid">
+        <div class="pr-item">
+          <div class="pr-item-title">🔒 不可修改</div>
+          <div class="pr-item-text">赌局创建后，议题、双方立场、押注金额、结算时间<b style="color:var(--ink)">全部锁定不可更改</b>。开局前请仔细确认。</div>
+        </div>
+        <div class="pr-item">
+          <div class="pr-item-title">🗑️ 取消规则</div>
+          <div class="pr-item-text">仅在<b style="color:var(--ink)">无任何挑战者加入时</b>可取消，押注全额退还。一旦有人加入，赌局不可取消。</div>
+        </div>
+      </div>
+
+      <!-- 第五部分：处罚 -->
+      <div class="pr-warn" style="margin-top:14px">
+        <div class="pr-warn-title">⚠️ 违规处罚（罚金直接销毁，不给任何一方）</div>
+        <div class="pr-warn-text" style="line-height:1.8">
+          <b style="color:var(--red)">庄家虚报结果</b>（仲裁判定 banker_loses）<br>
+          → 按庄家输正常结算 + 额外扣庄家押注的 <b style="color:var(--ink)">10% 罚金</b> + <b style="color:var(--ink)">禁止坐庄 7 天</b><br><br>
+          <b style="color:var(--orange)">议题模糊导致作废</b>（仲裁判定 void）<br>
+          → 挑战者冻结额<b style="color:var(--green)">全额退还，不罚</b><br>
+          → 庄家扣押注 <b style="color:var(--ink)">10% 罚金</b> + <b style="color:var(--ink)">禁止坐庄 7 天</b>，剩余押注退还<br>
+          → 公开赌局的入场费不退<br><br>
+          <b style="color:var(--blue)">恶意/虚假异议</b>（仲裁判定 banker_wins）<br>
+          → 按庄家赢正常结算 + 提出异议的挑战者额外扣冻结额 <b style="color:var(--ink)">10% 罚金</b>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 做庄发起 -->
+  <div class="duel-compose">
+    <div class="dc-header">
+      <div class="dc-ava">🦊</div>
+      <div class="dc-placeholder" onclick="openComposeForm()">想开一局？点击做庄，设定议题和押注…</div>
+      <button class="dc-btn" onclick="openComposeForm()">🎲 我要做庄</button>
+    </div>
+    <div class="dc-form" id="composeForm">
+      <div class="dc-row">
+        <div class="dc-label">议题（事件标题）</div>
+        <input class="dc-input" id="cf-title" placeholder="例：2026世界杯决赛巴西夺冠" />
+      </div>
+      <div class="dc-row">
+        <div class="dc-label">🔴 庄家立场（你认为会发生的结果）</div>
+        <textarea class="dc-textarea" id="cf-banker-op" placeholder="写出你的立场和理由…"></textarea>
+      </div>
+      <div class="dc-row">
+        <div class="dc-label">🔵 挑战者立场（对立面，自动填充给挑战者）</div>
+        <textarea class="dc-textarea" id="cf-challenger-op" placeholder="反方立场…"></textarea>
+      </div>
+      <div class="dc-inline">
+        <div class="dc-row">
+          <div class="dc-label">押注金额（100~10,000 🪙）</div>
+          <div class="dc-stake-opts">
+            <div class="dc-stake-opt" onclick="pickStake(this,100)">100</div>
+            <div class="dc-stake-opt" onclick="pickStake(this,500)">500</div>
+            <div class="dc-stake-opt on" onclick="pickStake(this,1000)">1,000</div>
+            <div class="dc-stake-opt" onclick="pickStake(this,2000)">2,000</div>
+            <div class="dc-stake-opt" onclick="pickStake(this,5000)">5,000</div>
+            <div class="dc-stake-opt" onclick="pickStake(this,10000)">10,000</div>
+          </div>
+        </div>
+        <div class="dc-row">
+          <div class="dc-label">公开/私人</div>
+          <div class="dc-vis-toggle">
+            <div class="dc-vis-btn on" onclick="pickVis(this,'public')">🌐 公开</div>
+            <div class="dc-vis-btn" onclick="pickVis(this,'private')">🔒 私人</div>
+          </div>
+        </div>
+      </div>
+      <div class="dc-row" style="margin-top:12px">
+        <div class="dc-label">结算时间（到期自动封盘）</div>
+        <input class="dc-input" id="cf-settle" type="datetime-local" style="font-family:'Space Mono',monospace;font-size:13px;" />
+      </div>
+      <div class="dc-footer">
+        <div class="dc-fee-hint" id="feeHint">公开赌局：挑战者将支付押注额 5% 入场费给庄家</div>
+        <button class="dc-cancel" onclick="closeComposeForm()">取消</button>
+        <button class="dc-submit" onclick="submitDuel()">🎲 确认开局 · 冻结 1,000🪙</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 邀请码入口 -->
+  <div class="invite-entry">
+    <div class="invite-entry-ico">🔒</div>
+    <div class="invite-entry-info">
+      <div class="invite-entry-title">加入私人赌局</div>
+      <div class="invite-entry-sub">输入庄家发给你的邀请码</div>
+    </div>
+    <input class="invite-entry-input" id="inviteInput" placeholder="邀请码" maxlength="8" />
+    <div class="invite-entry-btn" onclick="joinByInvite()">加入</div>
+  </div>
+
+  <!-- 我的赌局/广场 Tab -->
+  <div class="my-duel-bar">
+    <div class="my-duel-tab on" onclick="switchDuelTab(this,'plaza')">🏟️ 赌局广场</div>
+    <div class="my-duel-tab" onclick="switchDuelTab(this,'my-banker')">🎲 我做的庄</div>
+    <div class="my-duel-tab" onclick="switchDuelTab(this,'my-challenger')">⚔️ 我的挑战</div>
+  </div>
+
+  <!-- ═══ TAB: 赌局广场 ═══ -->
+  <div class="tab-panel active" id="panel-plaza">
+
+    <!-- 排序行 -->
+    <div class="battle-sort" id="sortRow">
+      <div class="bst on" onclick="battleSetSort(this)">🔥 热门</div>
+      <div class="bst" onclick="battleSetSort(this)">⚡ 最新</div>
+      <div class="bst" onclick="battleSetSort(this)">💰 大额</div>
+      <div class="bst" onclick="battleSetSort(this)">⏱ 快结算</div>
+      <div class="bsort-sep"></div>
+      <div class="bst" onclick="battleSetSort(this)">📖 进行中</div>
+      <div class="bst" onclick="battleSetSort(this)">🔒 已封盘</div>
+      <div class="bst" onclick="battleSetSort(this)">⏳ 等结果</div>
+    </div>
+
+    <div id="duel-list">
+
+    <!-- ═══ 赌局1 — 公开 · 进行中（open）═══ -->
+    <div class="duel-card" id="d1">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-wc">⚽ 世界杯</div>
+        <div class="duel-title">2026世界杯决赛 — 巴西能夺冠吗？</div>
+        <div class="duel-badge dbadge-open">🟢 进行中</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🦁</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">LionMaster <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">公开赌局 · 进行中</div>
+          </div>
+          <div class="duel-banker-stake">5,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box">
+          <div class="duel-opinion-label">🔴 庄家立场</div>
+          <div class="duel-opinion-text">巴西阵容深度冠绝全球，维尼修斯+罗德里戈攻击组合无人能挡。2022失利教训已被吸收，这次必拿冠军。</div>
+        </div>
+        <div class="duel-vs-label">—— VS ——</div>
+        <div class="duel-challenger-opinion">
+          <div class="duel-challenger-label">🔵 挑战者立场（加入即站此方）</div>
+          <div class="duel-opinion-text">巴西历史大赛心理素质存疑，法国/阿根廷实力更均衡，巴西拿不到冠军。</div>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">3,200 / 5,000 🪙</div>
+        </div>
+        <div class="duel-cap-bar">
+          <div class="duel-cap-fill" style="width:64%"></div>
+        </div>
+        <div class="duel-cap-detail">
+          <span>已加入 4 人</span>
+          <span>剩余容量 1,800🪙</span>
+        </div>
+      </div>
+      <div class="duel-challengers">
+        <div class="duel-ch-title">挑战者 (4人)</div>
+        <div class="duel-ch-list">
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐉</div>
+            <div class="duel-ch-name">DragonSeer</div>
+            <div class="duel-ch-amt">1,200🪙</div>
+            <div class="duel-ch-fee">(-60 入场费)</div>
+          </div>
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐺</div>
+            <div class="duel-ch-name">CryptoWolf</div>
+            <div class="duel-ch-amt">800🪙</div>
+            <div class="duel-ch-fee">(-40 入场费)</div>
+          </div>
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🦅</div>
+            <div class="duel-ch-name">EagleEye</div>
+            <div class="duel-ch-amt">700🪙</div>
+            <div class="duel-ch-fee">(-35 入场费)</div>
+          </div>
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐼</div>
+            <div class="duel-ch-name">PandaPredict</div>
+            <div class="duel-ch-amt">500🪙</div>
+            <div class="duel-ch-fee">(-25 入场费)</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d1-cmt')">💬 <span>12</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>48</span></div>
+        <div class="duel-foot-join" onclick="openJoinModal('2026世界杯决赛 — 巴西能夺冠吗？', 5000, 3200, 'public')">⚔️ 挑战庄家</div>
+        <div class="duel-foot-time">⏱ 结算 2026-07-19</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d1-cmt">
+      <div class="bct-inner">
+        <div class="bcmt">
+          <div class="bcmt-ava">🐉</div>
+          <div class="bcmt-body">
+            <div class="bcmt-head"><div class="bcmt-name">DragonSeer</div><div class="bcmt-side bside-b">挑战者</div><div class="bcmt-time">1h</div></div>
+            <div class="bcmt-text">巴西在大赛心理关上从未完全过关，我看好法国夺冠。</div>
+            <div class="bcmt-acts"><span class="bca blike-b" onclick="toast('❤️','点赞！')">❤️ 14</span></div>
+          </div>
+        </div>
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="加入讨论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 赌局2 — 公开 · 已封盘（sealed）═══ -->
+    <div class="duel-card" id="d2">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-ai">🤖 AI</div>
+        <div class="duel-title">Claude 5 会在2026年底前发布吗？</div>
+        <div class="duel-badge dbadge-sealed">🔒 已封盘</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🐺</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">CryptoWolf <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">公开赌局 · 已封盘</div>
+          </div>
+          <div class="duel-banker-stake">2,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box">
+          <div class="duel-opinion-label">🔴 庄家立场</div>
+          <div class="duel-opinion-text">Anthropic 研发节奏非常快，Claude 4.6 已出，Claude 5 在年底前发布完全可能。</div>
+        </div>
+        <div class="duel-vs-label">—— VS ——</div>
+        <div class="duel-challenger-opinion">
+          <div class="duel-challenger-label">🔵 挑战者立场</div>
+          <div class="duel-opinion-text">大模型代际跨越需要更长时间，2026年底之前不可能出 Claude 5。</div>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">2,000 / 2,000 🪙 (满额)</div>
+        </div>
+        <div class="duel-cap-bar">
+          <div class="duel-cap-fill full" style="width:100%"></div>
+        </div>
+        <div class="duel-cap-detail">
+          <span>已加入 3 人</span>
+          <span style="color:var(--orange)">已满额封盘</span>
+        </div>
+      </div>
+      <div class="duel-challengers">
+        <div class="duel-ch-title">挑战者 (3人)</div>
+        <div class="duel-ch-list">
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🦈</div>
+            <div class="duel-ch-name">SharkTrader</div>
+            <div class="duel-ch-amt">1,000🪙</div>
+            <div class="duel-ch-fee">(-50 入场费)</div>
+          </div>
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🦋</div>
+            <div class="duel-ch-name">ButterFly88</div>
+            <div class="duel-ch-amt">600🪙</div>
+            <div class="duel-ch-fee">(-30 入场费)</div>
+          </div>
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐸</div>
+            <div class="duel-ch-name">FrogKing</div>
+            <div class="duel-ch-amt">400🪙</div>
+            <div class="duel-ch-fee">(-20 入场费)</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d2-cmt')">💬 <span>7</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>31</span></div>
+        <div class="duel-foot-time">⏱ 结算 2026-12-31 · 已封盘等待结果</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d2-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 赌局3 — 等待庄家宣布（pending_result）═══ -->
+    <div class="duel-card" id="d3">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-finance">📈 财经</div>
+        <div class="duel-title">上证指数3月底能站上3500吗？</div>
+        <div class="duel-badge dbadge-pending">⏳ 等庄家宣布</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🐯</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">TigerQuant <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">公开赌局 · 等待宣布结果</div>
+          </div>
+          <div class="duel-banker-stake">3,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box">
+          <div class="duel-opinion-label">🔴 庄家立场</div>
+          <div class="duel-opinion-text">政策底已明确，外资持续回流，3月底站上3500没问题。</div>
+        </div>
+        <div class="duel-vs-label">—— VS ——</div>
+        <div class="duel-challenger-opinion">
+          <div class="duel-challenger-label">🔵 挑战者立场</div>
+          <div class="duel-opinion-text">消费疲软+外部风险，3500根本守不住。</div>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">2,400 / 3,000 🪙</div>
+        </div>
+        <div class="duel-cap-bar">
+          <div class="duel-cap-fill" style="width:80%"></div>
+        </div>
+        <div class="duel-cap-detail">
+          <span>已加入 3 人</span>
+          <span style="color:var(--orange)">已到结算时间 · 等庄家24h内宣布结果</span>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d3-cmt')">💬 <span>19</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>63</span></div>
+        <div class="duel-foot-time" style="color:var(--orange)">⚠️ 庄家需在 24h 内宣布结果</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d3-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 赌局4 — 私人赌局 ═══ -->
+    <div class="duel-card" id="d4">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-ent">🎬 娱乐</div>
+        <div class="duel-title">周杰伦2026年会出新专辑吗？</div>
+        <div class="duel-badge dbadge-private">🔒 私人</div>
+        <div class="duel-badge dbadge-open" style="margin-left:4px">🟢 进行中</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava" style="border-color:rgba(199,125,255,.3);background:rgba(199,125,255,.08)">🦊</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">你 <span class="duel-banker-tag" style="background:rgba(199,125,255,.12);color:var(--purple);border-color:rgba(199,125,255,.2)">庄家 · 私人</span></div>
+            <div class="duel-banker-meta">私人赌局 · 进行中</div>
+          </div>
+          <div class="duel-banker-stake">1,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box" style="border-color:rgba(199,125,255,.15)">
+          <div class="duel-opinion-label" style="color:var(--purple)">🔴 庄家立场（你）</div>
+          <div class="duel-opinion-text">不会出。他2022年出了「最伟大的作品」，这种级别后至少沉淀3年。</div>
+        </div>
+        <div class="duel-vs-label">—— VS ——</div>
+        <div class="duel-challenger-opinion">
+          <div class="duel-challenger-label">🔵 挑战者立场</div>
+          <div class="duel-opinion-text">会出新专辑！录音棚照片频频曝光，已准备好了。</div>
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <span class="duel-invite-code" onclick="copyInviteCode('JKF2026')">邀请码: JKF2026 📋</span>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">500 / 1,000 🪙</div>
+        </div>
+        <div class="duel-cap-bar">
+          <div class="duel-cap-fill" style="width:50%"></div>
+        </div>
+        <div class="duel-cap-detail">
+          <span>已加入 1 人</span>
+          <span>剩余容量 500🪙 · 无入场费</span>
+        </div>
+      </div>
+      <div class="duel-challengers">
+        <div class="duel-ch-title">挑战者 (1人)</div>
+        <div class="duel-ch-list">
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐼</div>
+            <div class="duel-ch-name">PandaPredict <span style="font-size:9px;color:var(--green);margin-left:4px">好友</span></div>
+            <div class="duel-ch-amt">500🪙</div>
+            <div class="duel-ch-fee">(无入场费)</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d4-cmt')">💬 <span>3</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>8</span></div>
+        <div class="duel-foot-btn" onclick="openSealModal()" style="color:var(--orange);border:1px solid rgba(255,123,44,.2);border-radius:6px;padding:3px 10px;">🔒 手动封盘</div>
+        <div class="duel-foot-time">⏱ 结算 2026-12-31</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d4-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 赌局5 — 已结算（settled）— 庄家赢 ═══ -->
+    <div class="duel-card" id="d5" style="opacity:.75">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-hot">🔥 热点</div>
+        <div class="duel-title">比特币3月突破10万美元？</div>
+        <div class="duel-badge dbadge-settled">✅ 已结算</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🦈</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">SharkTrader <span class="duel-banker-tag">庄家</span> <span class="duel-result-tag result-win">🏆 庄家赢</span></div>
+            <div class="duel-banker-meta">获得 +4,200🪙（本金退回 + 挑战者冻结额 + 入场费）</div>
+          </div>
+          <div class="duel-banker-stake">3,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box">
+          <div class="duel-opinion-label">🔴 庄家立场（胜）</div>
+          <div class="duel-opinion-text">比特币在减半效应和 ETF 资金持续流入下，3月必破10万。</div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d5-cmt')">💬 <span>24</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>91</span></div>
+        <div class="duel-foot-time">✅ 2026-03-08 结算完毕</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d5-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ 赌局6 — 争议中（disputing）═══ -->
+    <div class="duel-card" id="d6">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-tech">💻 科技</div>
+        <div class="duel-title">苹果2026年会发布折叠屏 iPhone 吗？</div>
+        <div class="duel-badge" style="background:rgba(255,60,60,.12);color:var(--red);border:1px solid rgba(255,60,60,.2)">⚠️ 争议中</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🐉</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">DragonSeer <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">庄家宣布「庄家赢」· 1位挑战者提出异议 · 等管理员仲裁</div>
+          </div>
+          <div class="duel-banker-stake">1,500🪙<small>庄家押注</small></div>
+        </div>
+        <div style="padding:10px 0 0">
+          <div style="background:rgba(255,60,60,.06);border:1px solid rgba(255,60,60,.15);border-radius:10px;padding:10px 14px;">
+            <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:4px">⚠️ 异议详情</div>
+            <div style="font-size:12px;color:rgba(240,237,232,.7);line-height:1.5">挑战者 EagleEye 提出异议：「苹果发布的是 iPad 折叠屏，不是 iPhone 折叠屏，议题说的是 iPhone，庄家不应赢」</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('d6-cmt')">💬 <span>37</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>56</span></div>
+        <div class="duel-foot-time" style="color:var(--red)">⚠️ 管理员仲裁中</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="d6-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /duel-list -->
+
+  </div><!-- /panel-plaza -->
+
+  <!-- ═══ TAB: 我做的庄 ═══ -->
+  <div class="tab-panel" id="panel-my-banker">
+
+    <!-- 庄家贴心提示 -->
+    <div class="banker-tips">
+      <div class="bt-header">
+        <div class="bt-ico">💡</div>
+        <div class="bt-title">做庄小贴士</div>
+      </div>
+      <div class="bt-list">
+        <div class="bt-tip">
+          <div class="bt-tip-ico">📌</div>
+          <div class="bt-tip-text"><b>议题要明确</b> — 避免模糊表述，否则可能被判作废（扣10%罚金+禁庄7天）。例如用「上证3月底 ≥3500」而不是「A股涨很多」</div>
+        </div>
+        <div class="bt-tip">
+          <div class="bt-tip-ico">⏰</div>
+          <div class="bt-tip-text"><b>结算时间到后24h内必须宣布结果</b> — 超时系统自动判你输！记得设好提醒</div>
+        </div>
+        <div class="bt-tip">
+          <div class="bt-tip-ico">🔒</div>
+          <div class="bt-tip-text"><b>一旦有人加入就不能取消</b> — 开局前想清楚，创建后议题、立场、金额都不可修改</div>
+        </div>
+        <div class="bt-tip">
+          <div class="bt-tip-ico">💰</div>
+          <div class="bt-tip-text"><b>公开赌局赚入场费</b> — 每位挑战者加入时支付押注额的5%给你，即使你输了也保留入场费</div>
+        </div>
+        <div class="bt-tip">
+          <div class="bt-tip-ico">🤝</div>
+          <div class="bt-tip-text"><b>如实宣布结果</b> — 虚报结果被仲裁后扣10%罚金+禁庄7天，得不偿失</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 庄家统计 -->
+    <div class="banker-overview" style="grid-template-columns:repeat(3,1fr)">
+      <div class="bo-item">
+        <div class="bo-num">3</div>
+        <div class="bo-label">进行中</div>
+      </div>
+      <div class="bo-item">
+        <div class="bo-num">5</div>
+        <div class="bo-label">已结算</div>
+      </div>
+      <div class="bo-item">
+        <div class="bo-num">+3,420</div>
+        <div class="bo-label">累计盈亏</div>
+      </div>
+    </div>
+
+    <!-- 我做庄的赌局 -->
+    <!-- 赌局4(私人) 是"我"做庄的 -->
+    <div class="duel-card" id="mb-d4">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-ent">🎬 娱乐</div>
+        <div class="duel-title">周杰伦2026年会出新专辑吗？</div>
+        <div class="duel-badge dbadge-private">🔒 私人</div>
+        <div class="duel-badge dbadge-open" style="margin-left:4px">🟢 进行中</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava" style="border-color:rgba(199,125,255,.3);background:rgba(199,125,255,.08)">🦊</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">你 <span class="duel-banker-tag" style="background:rgba(199,125,255,.12);color:var(--purple);border-color:rgba(199,125,255,.2)">庄家 · 私人</span></div>
+            <div class="duel-banker-meta">私人赌局 · 创建于 2天前</div>
+          </div>
+          <div class="duel-banker-stake">1,000🪙<small>庄家押注</small></div>
+        </div>
+        <div class="duel-opinion-box" style="border-color:rgba(199,125,255,.15)">
+          <div class="duel-opinion-label" style="color:var(--purple)">🔴 庄家立场（你）</div>
+          <div class="duel-opinion-text">不会出。他2022年出了「最伟大的作品」，这种级别后至少沉淀3年。</div>
+        </div>
+        <div class="duel-vs-label">—— VS ——</div>
+        <div class="duel-challenger-opinion">
+          <div class="duel-challenger-label">🔵 挑战者立场</div>
+          <div class="duel-opinion-text">会出新专辑！录音棚照片频频曝光，已准备好了。</div>
+        </div>
+        <div style="text-align:center;margin-top:10px">
+          <span class="duel-invite-code" onclick="copyInviteCode('JKF2026')">邀请码: JKF2026 📋</span>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">500 / 1,000 🪙</div>
+        </div>
+        <div class="duel-cap-bar"><div class="duel-cap-fill" style="width:50%"></div></div>
+        <div class="duel-cap-detail">
+          <span>已加入 1 人</span>
+          <span>剩余容量 500🪙 · 无入场费</span>
+        </div>
+      </div>
+      <div class="duel-challengers">
+        <div class="duel-ch-title">挑战者 (1人)</div>
+        <div class="duel-ch-list">
+          <div class="duel-ch-row">
+            <div class="duel-ch-ava">🐼</div>
+            <div class="duel-ch-name">PandaPredict <span style="font-size:9px;color:var(--green);margin-left:4px">好友</span></div>
+            <div class="duel-ch-amt">500🪙</div>
+            <div class="duel-ch-fee">(无入场费)</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('mb-d4-cmt')">💬 <span>3</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>8</span></div>
+        <div class="duel-foot-btn" onclick="openSealModal()" style="color:var(--orange);border:1px solid rgba(255,123,44,.2);border-radius:6px;padding:3px 10px;">🔒 手动封盘</div>
+        <div class="duel-foot-time">⏱ 结算 2026-12-31</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="mb-d4-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我做庄 — 已结算示例 -->
+    <div class="duel-card" style="opacity:.75">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-hot">🔥 热点</div>
+        <div class="duel-title">特斯拉3月发布Model 2？</div>
+        <div class="duel-badge dbadge-settled">✅ 已结算</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava" style="border-color:rgba(0,214,143,.3);background:rgba(0,214,143,.08)">🦊</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">你 <span class="duel-banker-tag">庄家</span> <span class="duel-result-tag result-win">🏆 你赢了</span></div>
+            <div class="duel-banker-meta">获得 +2,800🪙（本金退回 + 挑战者冻结额 + 入场费140🪙）</div>
+          </div>
+          <div class="duel-banker-stake">2,000🪙<small>庄家押注</small></div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn">💬 <span>11</span></div>
+        <div class="duel-foot-btn">🤍 <span>23</span></div>
+        <div class="duel-foot-time">✅ 2026-03-05 结算完毕</div>
+      </div>
+    </div>
+
+    <!-- 我做庄 — 等宣布结果示例 -->
+    <div class="duel-card" style="border-color:rgba(255,123,44,.2)">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-ai">🤖 AI</div>
+        <div class="duel-title">GPT-5 在3月之前发布？</div>
+        <div class="duel-badge dbadge-pending">⏳ 等你宣布</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava" style="border-color:rgba(255,123,44,.3);background:rgba(255,123,44,.08)">🦊</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">你 <span class="duel-banker-tag" style="background:rgba(255,123,44,.12);color:var(--orange);border-color:rgba(255,123,44,.2)">庄家 · 需操作</span></div>
+            <div class="duel-banker-meta" style="color:var(--orange)">⚠️ 结算时间已到！请在 18h32m 内宣布结果，否则自动判输</div>
+          </div>
+          <div class="duel-banker-stake">1,500🪙<small>庄家押注</small></div>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">1,200 / 1,500 🪙</div>
+        </div>
+        <div class="duel-cap-bar"><div class="duel-cap-fill" style="width:80%"></div></div>
+        <div class="duel-cap-detail">
+          <span>已加入 2 人</span>
+          <span style="color:var(--orange)">已封盘 · 等你操作</span>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn">💬 <span>6</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>14</span></div>
+        <div class="duel-foot-join" onclick="openDeclareModal()" style="background:rgba(255,123,44,.12);color:var(--orange);border-color:rgba(255,123,44,.3);">📢 宣布结果</div>
+        <div class="duel-foot-time" style="color:var(--orange)">⚠️ 剩余 18h32m</div>
+      </div>
+    </div>
+
+    <!-- 新发起的赌局插入区（做庄Tab） -->
+    <div id="user-duels"></div>
+
+  </div><!-- /panel-my-banker -->
+
+  <!-- ═══ TAB: 我的挑战 ═══ -->
+  <div class="tab-panel" id="panel-my-challenger">
+
+    <!-- 挑战提示 -->
+    <div class="challenger-tips">
+      <div class="ct-title">⚔️ 我的挑战</div>
+      <div class="bt-list">
+        <div class="bt-tip">
+          <div class="bt-tip-ico">👀</div>
+          <div class="bt-tip-text"><b>关注结算时间</b> — 结算后庄家会宣布结果，你有24h确认窗口</div>
+        </div>
+        <div class="bt-tip">
+          <div class="bt-tip-ico">⚠️</div>
+          <div class="bt-tip-text"><b>异议要有理有据</b> — 恶意提出异议会被扣冻结额10%罚金</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我参与的挑战 — 等确认结果 -->
+    <div class="duel-card" style="border-color:rgba(255,201,77,.15)">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-finance">📈 财经</div>
+        <div class="duel-title">上证指数3月底能站上3500吗？</div>
+        <div class="duel-badge dbadge-pending">⏳ 等你确认</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🐯</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">TigerQuant <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">庄家宣布：🏆 庄家赢 · 等你确认</div>
+          </div>
+          <div class="duel-banker-stake">3,000🪙<small>庄家押注</small></div>
+        </div>
+        <div style="padding:8px 0 0">
+          <div style="background:rgba(255,201,77,.06);border:1px solid rgba(255,201,77,.12);border-radius:10px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between">
+            <div>
+              <div style="font-size:11px;font-weight:700;color:var(--gold);margin-bottom:2px">你的挑战信息</div>
+              <div style="font-size:12px;color:rgba(240,237,232,.7)">押注 800🪙 · 冻结 760🪙 · 入场费 40🪙 · 确认截止还剩 16h</div>
+            </div>
+            <div style="display:flex;gap:6px;flex-shrink:0">
+              <div class="duel-foot-join" onclick="openConfirmModal()" style="background:rgba(255,201,77,.12);color:var(--gold);border-color:rgba(255,201,77,.3);margin:0;">✅ 同意</div>
+              <div class="duel-ch-dispute" onclick="openDisputeSheet()" style="font-size:11px;padding:5px 10px;">⚠️ 提出异议</div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('mc-d3-cmt')">💬 <span>19</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>63</span></div>
+        <div class="duel-foot-time" style="color:var(--gold)">⏳ 庄家已宣布，等你确认</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="mc-d3-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我参与的挑战 — 进行中 -->
+    <div class="duel-card">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-wc">⚽ 世界杯</div>
+        <div class="duel-title">2026世界杯决赛 — 巴西能夺冠吗？</div>
+        <div class="duel-badge dbadge-open">🟢 进行中</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🦁</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">LionMaster <span class="duel-banker-tag">庄家</span></div>
+            <div class="duel-banker-meta">公开赌局 · 进行中</div>
+          </div>
+          <div class="duel-banker-stake">5,000🪙<small>庄家押注</small></div>
+        </div>
+        <div style="padding:8px 0 0">
+          <div style="background:rgba(60,142,255,.06);border:1px solid rgba(60,142,255,.12);border-radius:10px;padding:10px 14px">
+            <div style="font-size:11px;font-weight:700;color:var(--blue);margin-bottom:2px">你的挑战信息</div>
+            <div style="font-size:12px;color:rgba(240,237,232,.7)">押注 1,000🪙 · 冻结 950🪙 · 入场费 50🪙 · 你站反方：巴西拿不到冠军</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-capacity">
+        <div class="duel-cap-header">
+          <div class="duel-cap-label">挑战者容量</div>
+          <div class="duel-cap-nums">3,200 / 5,000 🪙</div>
+        </div>
+        <div class="duel-cap-bar"><div class="duel-cap-fill" style="width:64%"></div></div>
+        <div class="duel-cap-detail">
+          <span>已加入 4 人（含你）</span>
+          <span>剩余容量 1,800🪙</span>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn" onclick="toggleDuelCmt('mc-d1-cmt')">💬 <span>12</span></div>
+        <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>48</span></div>
+        <div class="duel-foot-time">⏱ 结算 2026-07-19</div>
+      </div>
+    </div>
+    <div class="duel-cmt-thread" id="mc-d1-cmt">
+      <div class="bct-inner">
+        <div class="badd-cmt">
+          <div class="badd-cmt-ava">🦊</div>
+          <input class="badd-cmt-inp" placeholder="发表评论…" onkeydown="submitCmt(event)" />
+          <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 我参与的挑战 — 已结算（输了）-->
+    <div class="duel-card" style="opacity:.75">
+      <div class="duel-status-bar">
+        <div class="duel-cat bcat-tech">💻 科技</div>
+        <div class="duel-title">Vision Pro 2 在春季发布？</div>
+        <div class="duel-badge dbadge-settled">✅ 已结算</div>
+      </div>
+      <div class="duel-banker-area">
+        <div class="duel-banker-row">
+          <div class="duel-banker-ava">🦈</div>
+          <div class="duel-banker-info">
+            <div class="duel-banker-name">SharkTrader <span class="duel-banker-tag">庄家</span> <span class="duel-result-tag result-win">🏆 庄家赢</span></div>
+            <div class="duel-banker-meta">你输了 · 本局损失 500🪙</div>
+          </div>
+          <div class="duel-banker-stake">2,000🪙<small>庄家押注</small></div>
+        </div>
+        <div style="padding:8px 0 0">
+          <div style="background:rgba(255,60,60,.06);border:1px solid rgba(255,60,60,.12);border-radius:10px;padding:10px 14px">
+            <div style="font-size:11px;font-weight:700;color:var(--red);margin-bottom:2px">你的结算</div>
+            <div style="font-size:12px;color:rgba(240,237,232,.7)">押注 500🪙 → 冻结额 475🪙 全部归庄家 · 入场费 25🪙 已在加入时支付</div>
+          </div>
+        </div>
+      </div>
+      <div class="duel-foot">
+        <div class="duel-foot-btn">💬 <span>8</span></div>
+        <div class="duel-foot-btn">🤍 <span>17</span></div>
+        <div class="duel-foot-time" style="color:var(--red)">❌ 2026-03-02 · 你输了 -500🪙</div>
+      </div>
+    </div>
+
+  </div><!-- /panel-my-challenger -->
+
+</div><!-- /bp-wrap -->
+
+<!-- ═══ 挑战弹窗 ═══ -->
+<div class="duel-overlay" id="joinOverlay" onclick="if(event.target===this)closeJoinModal()">
+  <div class="duel-modal">
+    <span class="dm-close" onclick="closeJoinModal()">✕</span>
+    <div class="dm-title" id="jm-title">挑战庄家</div>
+    <div class="dm-sub">自动站到庄家对立面，押注龟币挑战</div>
+    <div class="dm-info-grid">
+      <div class="dm-info-item">
+        <div class="dm-info-label">庄家押注</div>
+        <div class="dm-info-value gold" id="jm-banker-stake">5,000🪙</div>
+      </div>
+      <div class="dm-info-item">
+        <div class="dm-info-label">剩余容量</div>
+        <div class="dm-info-value" id="jm-remaining">1,800🪙</div>
+      </div>
+    </div>
+    <div class="dm-label">你的押注金额 <span style="color:var(--muted);font-weight:400">(50~5,000)</span></div>
+    <input class="dm-stake-input" id="jm-stake" type="number" value="500" min="50" max="5000" />
+    <div class="dm-amts">
+      <div class="dm-amt" onclick="pickJoinAmt(this,50)">50</div>
+      <div class="dm-amt" onclick="pickJoinAmt(this,100)">100</div>
+      <div class="dm-amt" onclick="pickJoinAmt(this,200)">200</div>
+      <div class="dm-amt on" onclick="pickJoinAmt(this,500)">500</div>
+      <div class="dm-amt" onclick="pickJoinAmt(this,1000)">1,000</div>
+      <div class="dm-amt" onclick="pickJoinAmt(this,2000)">2,000</div>
+    </div>
+    <div class="dm-fee-note" id="jm-fee-note">
+      公开赌局入场费：<strong>25🪙</strong>（押注额的5%，直接支付给庄家）<br>
+      实际冻结：<strong>475🪙</strong>
+    </div>
+    <button class="dm-cta" id="jm-cta" onclick="confirmJoin()">⚔️ 确认挑战 · 总扣 500🪙</button>
+  </div>
+</div>
+
+<!-- ═══ 庄家宣布结果弹窗 ═══ -->
+<div class="duel-overlay" id="declareOverlay" onclick="if(event.target===this)closeDeclareModal()">
+  <div class="duel-modal">
+    <span class="dm-close" onclick="closeDeclareModal()">✕</span>
+    <div class="dm-title">宣布结果</div>
+    <div class="dm-sub">结算时间已到，请宣布赌局结果。挑战者将有24小时确认窗口。</div>
+    <div class="dm-declare-opts">
+      <div class="dm-declare-opt" id="dec-win" onclick="pickDeclare('win')">
+        <div class="dm-declare-ico">🏆</div>
+        <div class="dm-declare-lbl">庄家赢</div>
+        <div class="dm-declare-sub">你的立场正确</div>
+      </div>
+      <div class="dm-declare-opt" id="dec-lose" onclick="pickDeclare('lose')">
+        <div class="dm-declare-ico">😞</div>
+        <div class="dm-declare-lbl">庄家输</div>
+        <div class="dm-declare-sub">挑战者立场正确</div>
+      </div>
+    </div>
+    <button class="dm-cta-green" id="dec-cta" onclick="confirmDeclare()">📢 确认宣布结果</button>
+  </div>
+</div>
+
+<!-- ═══ 挑战者确认弹窗 ═══ -->
+<div class="duel-overlay" id="confirmOverlay" onclick="if(event.target===this)closeConfirmModal()">
+  <div class="duel-modal">
+    <span class="dm-close" onclick="closeConfirmModal()">✕</span>
+    <div class="dm-title">确认赌局结果</div>
+    <div class="dm-sub">庄家已宣布结果，请确认是否同意</div>
+    <div class="dm-result-box">
+      <div class="dm-result-text">庄家宣布：🏆 庄家赢</div>
+      <div class="dm-result-sub">如果庄家虚报结果，你可以提出异议，管理员将介入仲裁</div>
+    </div>
+    <div class="dm-btn-row">
+      <button class="dm-btn-approve" onclick="approveResult()">✅ 同意结果</button>
+      <button class="dm-btn-dispute" onclick="closeConfirmModal();openDisputeSheet()">⚠️ 提出异议</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ 异议底部弹窗 ═══ -->
+<div class="bottom-sheet-overlay" id="bsOverlay" onclick="closeDisputeSheet()"></div>
+<div class="bottom-sheet" id="disputeSheet">
+  <div class="bs-handle"></div>
+  <div class="bs-title">⚠️ 提交异议 · 人工审核</div>
+  <div class="bs-sub">如果你认为庄家虚报结果或议题存在问题，可提交异议。管理员将在 24 小时内审核并做出仲裁。</div>
+
+  <div class="bs-field">
+    <div class="bs-field-label">异议类型</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap">
+      <div class="dc-vis-btn on" onclick="pickDisputeType(this,'fake')" id="dt-fake">🚫 庄家虚报结果</div>
+      <div class="dc-vis-btn" onclick="pickDisputeType(this,'vague')" id="dt-vague">❓ 议题模糊不清</div>
+      <div class="dc-vis-btn" onclick="pickDisputeType(this,'other')" id="dt-other">📝 其他问题</div>
+    </div>
+  </div>
+
+  <div class="bs-field">
+    <div class="bs-field-label">详细描述</div>
+    <textarea class="bs-textarea" id="bsDesc" placeholder="请详细说明你的异议理由，越具体越好…&#10;&#10;例：庄家议题为「上证3月底站上3500」，实际3月31日收盘指数为3487.62，低于3500，庄家应判输。"></textarea>
+  </div>
+
+  <div class="bs-field">
+    <div class="bs-field-label">证据链接（可选，如新闻报道、官方数据等）</div>
+    <input class="bs-url-input" id="bsUrl" placeholder="https://..." />
+  </div>
+
+  <div class="bs-field">
+    <div class="bs-field-label">图片证据（可选，截图等）</div>
+    <div class="bs-upload">
+      <label class="bs-upload-btn" id="bsUploadBtn">
+        +
+        <input type="file" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event)" />
+      </label>
+    </div>
+    <div style="font-size:10px;color:var(--muted);margin-top:4px">支持 JPG/PNG，最多 3 张</div>
+  </div>
+
+  <div class="bs-warn">
+    <b>注意：</b>虚假异议将被扣冻结额 <b>10% 罚金</b>（销毁）。请确保你的异议有充分依据。管理员仲裁结果为最终裁决，不可再申诉。
+  </div>
+
+  <button class="bs-submit" onclick="submitDisputeSheet()">📤 提交异议</button>
+  <button class="bs-cancel" onclick="closeDisputeSheet()">取消</button>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="tst"><span id="tico"></span><span id="tmsg"></span></div>
+
+<script>
+/* ═══ Toast ═══ */
+let toastTimer;
+function toast(ico, msg) {
+  const t = document.getElementById('tst');
+  document.getElementById('tico').textContent = ico;
+  document.getElementById('tmsg').textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+/* ═══ 做庄表单 ═══ */
+let composeStake = 1000;
+let composeVis = 'public';
+
+function openComposeForm() {
+  document.getElementById('composeForm').classList.add('open');
+  document.getElementById('cf-title').focus();
+}
+function closeComposeForm() {
+  document.getElementById('composeForm').classList.remove('open');
+}
+function pickStake(el, val) {
+  composeStake = val;
+  document.querySelectorAll('.dc-stake-opt').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelector('.dc-submit').textContent = '🎲 确认开局 · 冻结 ' + val.toLocaleString() + '🪙';
+}
+function pickVis(el, vis) {
+  composeVis = vis;
+  document.querySelectorAll('.dc-vis-btn').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('feeHint').textContent = vis === 'public'
+    ? '公开赌局：挑战者将支付押注额 5% 入场费给庄家'
+    : '私人赌局：无入场费，需通过邀请码加入';
+}
+function submitDuel() {
+  const title = document.getElementById('cf-title').value.trim();
+  const bankerOp = document.getElementById('cf-banker-op').value.trim();
+  const challOp = document.getElementById('cf-challenger-op').value.trim();
+  const settle = document.getElementById('cf-settle').value;
+  if (!title) { toast('⚠️', '请输入议题'); return; }
+  if (!bankerOp) { toast('⚠️', '请填写庄家立场'); return; }
+  if (!challOp) { toast('⚠️', '请填写挑战者立场'); return; }
+  if (!settle) { toast('⚠️', '请设定结算时间'); return; }
+
+  const id = 'ud-' + Date.now();
+  const visTag = composeVis === 'private'
+    ? '<div class="duel-badge dbadge-private">🔒 私人</div>' : '';
+  const feeNote = composeVis === 'public'
+    ? '入场费 5%' : '无入场费';
+  const inviteHtml = composeVis === 'private'
+    ? '<div style="text-align:center;margin-top:10px"><span class="duel-invite-code" onclick="copyInviteCode(\''+id.slice(-6)+'\')">邀请码: '+id.slice(-6)+' 📋</span></div>' : '';
+
+  const html = `
+  <div class="duel-card" id="${id}" style="border-color:rgba(0,214,143,.15)">
+    <div class="duel-status-bar">
+      <div class="duel-cat bcat-hot">🔥 新赌局</div>
+      <div class="duel-title">${title.replace(/</g,'&lt;')}</div>
+      ${visTag}
+      <div class="duel-badge dbadge-open">🟢 进行中</div>
+    </div>
+    <div class="duel-banker-area">
+      <div class="duel-banker-row">
+        <div class="duel-banker-ava" style="border-color:rgba(0,214,143,.3);background:rgba(0,214,143,.08)">🦊</div>
+        <div class="duel-banker-info">
+          <div class="duel-banker-name">你 <span class="duel-banker-tag" style="background:rgba(0,214,143,.12);color:var(--green);border-color:rgba(0,214,143,.2)">庄家</span></div>
+          <div class="duel-banker-meta">刚刚创建</div>
+        </div>
+        <div class="duel-banker-stake">${composeStake.toLocaleString()}🪙<small>庄家押注</small></div>
+      </div>
+      <div class="duel-opinion-box">
+        <div class="duel-opinion-label">🔴 庄家立场（你）</div>
+        <div class="duel-opinion-text">${bankerOp.replace(/</g,'&lt;')}</div>
+      </div>
+      <div class="duel-vs-label">—— VS ——</div>
+      <div class="duel-challenger-opinion">
+        <div class="duel-challenger-label">🔵 挑战者立场</div>
+        <div class="duel-opinion-text">${challOp.replace(/</g,'&lt;')}</div>
+      </div>
+      ${inviteHtml}
+    </div>
+    <div class="duel-capacity">
+      <div class="duel-cap-header">
+        <div class="duel-cap-label">挑战者容量</div>
+        <div class="duel-cap-nums">0 / ${composeStake.toLocaleString()} 🪙</div>
+      </div>
+      <div class="duel-cap-bar"><div class="duel-cap-fill" style="width:0%"></div></div>
+      <div class="duel-cap-detail">
+        <span>等待挑战者加入</span>
+        <span>${feeNote}</span>
+      </div>
+    </div>
+    <div class="duel-challengers">
+      <div class="duel-ch-title">挑战者</div>
+      <div class="duel-ch-empty">暂无挑战者，等待接战…</div>
+    </div>
+    <div class="duel-foot">
+      <div class="duel-foot-btn" onclick="toggleDuelCmt('${id}-cmt')">💬 <span>0</span></div>
+      <div class="duel-foot-btn" onclick="toggleLike(this)">🤍 <span>0</span></div>
+      <div class="duel-foot-btn" onclick="cancelDuel('${id}')" style="color:var(--muted)">🗑️ 取消赌局</div>
+      <div class="duel-foot-time">⏱ 结算 ${settle}</div>
+    </div>
+  </div>
+  <div class="duel-cmt-thread" id="${id}-cmt">
+    <div class="bct-inner">
+      <div class="badd-cmt">
+        <div class="badd-cmt-ava">🦊</div>
+        <input class="badd-cmt-inp" placeholder="发表首条评论…" onkeydown="submitCmt(event)" />
+        <button class="badd-cmt-send" onclick="toast('💬','评论发送成功！')">↑</button>
+      </div>
+    </div>
+  </div>`;
+
+  document.getElementById('user-duels').insertAdjacentHTML('afterbegin', html);
+  closeComposeForm();
+  document.getElementById('cf-title').value = '';
+  document.getElementById('cf-banker-op').value = '';
+  document.getElementById('cf-challenger-op').value = '';
+  document.getElementById('cf-settle').value = '';
+  toast('🎲', '赌局创建成功！已冻结 ' + composeStake.toLocaleString() + '🪙');
+  document.getElementById(id).scrollIntoView({ behavior:'smooth', block:'start' });
+}
+
+/* ═══ 取消赌局 ═══ */
+function cancelDuel(id) {
+  const card = document.getElementById(id);
+  const cmt = document.getElementById(id + '-cmt');
+  if (card) card.remove();
+  if (cmt) cmt.remove();
+  toast('🗑️', '赌局已取消，押注已退还');
+}
+
+/* ═══ 邀请码 ═══ */
+function copyInviteCode(code) {
+  navigator.clipboard.writeText(code).then(() => toast('📋', '邀请码已复制: ' + code));
+}
+function joinByInvite() {
+  const code = document.getElementById('inviteInput').value.trim();
+  if (!code) { toast('⚠️', '请输入邀请码'); return; }
+  toast('🔒', '正在查找赌局 ' + code + '…');
+}
+
+/* ═══ 广场规则折叠 ═══ */
+function toggleRules() {
+  document.getElementById('rulesBody').classList.toggle('open');
+  document.getElementById('rulesChev').classList.toggle('open');
+}
+
+/* ═══ 排序 Tab ═══ */
+function battleSetSort(el) {
+  document.querySelectorAll('.bst').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  toast('📊', '已切换: ' + el.textContent.trim());
+}
+
+/* ═══ 我的赌局 Tab 切换 ═══ */
+function switchDuelTab(el, tab) {
+  document.querySelectorAll('.my-duel-tab').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + tab).classList.add('active');
+}
+
+/* ═══ 评论 ═══ */
+function toggleDuelCmt(id) {
+  document.getElementById(id).classList.toggle('open');
+}
+function submitCmt(e) {
+  if (e.key !== 'Enter') return;
+  const inp = e.target;
+  const txt = inp.value.trim();
+  if (!txt) { toast('⚠️', '请输入评论'); return; }
+  inp.value = '';
+  toast('💬', '评论发布成功！');
+}
+
+/* ═══ 点赞 ═══ */
+function toggleLike(el) {
+  const isLiked = el.classList.toggle('liked');
+  const n = parseInt(el.textContent.replace(/\D/g, '')) || 0;
+  const ico = isLiked ? '❤️' : '🤍';
+  el.innerHTML = ico + ' <span>' + (isLiked ? n + 1 : n - 1) + '</span>';
+}
+
+/* ═══ 挑战弹窗 ═══ */
+let joinVis = 'public';
+function openJoinModal(title, bankerStake, frozen, vis) {
+  document.getElementById('jm-title').textContent = title || '挑战庄家';
+  document.getElementById('jm-banker-stake').textContent = bankerStake.toLocaleString() + '🪙';
+  const remaining = bankerStake - frozen;
+  document.getElementById('jm-remaining').textContent = remaining.toLocaleString() + '🪙';
+  document.getElementById('jm-stake').value = 500;
+  document.getElementById('jm-stake').max = Math.min(5000, remaining);
+  joinVis = vis;
+  updateJoinFee(500);
+  document.querySelectorAll('.dm-amt').forEach((a,i) => a.classList.toggle('on', i===3));
+  document.getElementById('joinOverlay').classList.add('show');
+}
+function closeJoinModal() {
+  document.getElementById('joinOverlay').classList.remove('show');
+}
+function pickJoinAmt(el, amt) {
+  document.querySelectorAll('.dm-amt').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('jm-stake').value = amt;
+  updateJoinFee(amt);
+}
+function updateJoinFee(amt) {
+  const note = document.getElementById('jm-fee-note');
+  if (joinVis === 'public') {
+    const fee = Math.floor(amt * 0.05);
+    const frozen = amt - fee;
+    note.innerHTML = '公开赌局入场费：<strong>' + fee + '🪙</strong>（押注额的5%，直接支付给庄家）<br>实际冻结：<strong>' + frozen + '🪙</strong>';
+  } else {
+    note.innerHTML = '私人赌局：<strong>无入场费</strong>，全额冻结 <strong>' + amt + '🪙</strong>';
+  }
+  document.getElementById('jm-cta').textContent = '⚔️ 确认挑战 · 总扣 ' + amt + '🪙';
+}
+document.getElementById('jm-stake').addEventListener('input', function() {
+  updateJoinFee(parseInt(this.value) || 0);
+});
+function confirmJoin() {
+  const amt = parseInt(document.getElementById('jm-stake').value);
+  if (!amt || amt < 50) { toast('⚠️', '最低押注 50🪙'); return; }
+  closeJoinModal();
+  toast('⚔️', '挑战成功！已冻结 ' + amt + '🪙');
+}
+
+/* ═══ 庄家宣布结果 ═══ */
+let declareChoice = null;
+function openDeclareModal() {
+  declareChoice = null;
+  document.getElementById('dec-win').className = 'dm-declare-opt';
+  document.getElementById('dec-lose').className = 'dm-declare-opt';
+  document.getElementById('declareOverlay').classList.add('show');
+}
+function closeDeclareModal() {
+  document.getElementById('declareOverlay').classList.remove('show');
+}
+function pickDeclare(choice) {
+  declareChoice = choice;
+  document.getElementById('dec-win').className = 'dm-declare-opt' + (choice==='win' ? ' sel-win' : '');
+  document.getElementById('dec-lose').className = 'dm-declare-opt' + (choice==='lose' ? ' sel-lose' : '');
+}
+function confirmDeclare() {
+  if (!declareChoice) { toast('⚠️', '请选择结果'); return; }
+  closeDeclareModal();
+  const txt = declareChoice === 'win' ? '庄家赢' : '庄家输';
+  toast('📢', '已宣布结果: ' + txt + '，挑战者24h内确认');
+}
+
+/* ═══ 挑战者确认/异议 ═══ */
+function openConfirmModal() {
+  document.getElementById('confirmOverlay').classList.add('show');
+}
+function closeConfirmModal() {
+  document.getElementById('confirmOverlay').classList.remove('show');
+}
+function approveResult() {
+  closeConfirmModal();
+  toast('✅', '已确认结果，等待其他挑战者确认后结算');
+}
+
+/* ═══ 异议底部弹窗 ═══ */
+let disputeType = 'fake';
+let disputeImages = [];
+
+function openDisputeSheet() {
+  document.getElementById('bsOverlay').classList.add('show');
+  setTimeout(() => document.getElementById('disputeSheet').classList.add('show'), 10);
+  document.getElementById('bsDesc').value = '';
+  document.getElementById('bsUrl').value = '';
+  disputeImages = [];
+  renderUploadPreviews();
+}
+function closeDisputeSheet() {
+  document.getElementById('disputeSheet').classList.remove('show');
+  setTimeout(() => document.getElementById('bsOverlay').classList.remove('show'), 350);
+}
+function pickDisputeType(el, type) {
+  disputeType = type;
+  document.querySelectorAll('#dt-fake,#dt-vague,#dt-other').forEach(x => x.classList.remove('on'));
+  el.classList.add('on');
+}
+function handleImageUpload(e) {
+  const files = Array.from(e.target.files);
+  files.forEach(f => {
+    if (disputeImages.length >= 3) return;
+    const reader = new FileReader();
+    reader.onload = ev => {
+      disputeImages.push(ev.target.result);
+      renderUploadPreviews();
+    };
+    reader.readAsDataURL(f);
+  });
+  e.target.value = '';
+}
+function removeImage(idx) {
+  disputeImages.splice(idx, 1);
+  renderUploadPreviews();
+}
+function renderUploadPreviews() {
+  const container = document.querySelector('.bs-upload');
+  container.innerHTML = '';
+  disputeImages.forEach((src, i) => {
+    container.innerHTML += '<div class="bs-upload-preview"><img src="'+src+'" /><div class="bs-remove" onclick="removeImage('+i+')">✕</div></div>';
+  });
+  if (disputeImages.length < 3) {
+    container.innerHTML += '<label class="bs-upload-btn">+<input type="file" accept="image/*" multiple style="display:none" onchange="handleImageUpload(event)" /></label>';
+  }
+}
+function submitDisputeSheet() {
+  const desc = document.getElementById('bsDesc').value.trim();
+  if (!desc) { toast('⚠️', '请填写异议描述'); return; }
+  closeDisputeSheet();
+  toast('📤', '异议已提交，管理员将在24h内审核');
+}
+
+/* ═══ 手动封盘 ═══ */
+function openSealModal() {
+  if (confirm('确认手动封盘？封盘后不再接受新挑战者。')) {
+    toast('🔒', '已封盘！赌局等待结算时间到来');
+  }
+}
+
+/* ═══ 容量条动画 ═══ */
+setTimeout(() => {
+  document.querySelectorAll('.duel-cap-fill').forEach(b => {
+    const w = b.style.width;
+    b.style.width = '0';
+    setTimeout(() => { b.style.transition = 'width 1s cubic-bezier(.4,0,.2,1)'; b.style.width = w; }, 120);
+  });
+}, 300);
+</script>
+
+</body>
+</html>

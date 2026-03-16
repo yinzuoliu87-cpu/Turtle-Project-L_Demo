@@ -1,0 +1,165 @@
+{ "frames": {
+   "财神龟v1 0.aseprite": {
+    "frame": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 1.aseprite": {
+    "frame": { "x": 500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 2.aseprite": {
+    "frame": { "x": 1000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 3.aseprite": {
+    "frame": { "x": 1500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 4.aseprite": {
+    "frame": { "x": 2000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 5.aseprite": {
+    "frame": { "x": 2500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 6.aseprite": {
+    "frame": { "x": 3000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 7.aseprite": {
+    "frame": { "x": 3500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 8.aseprite": {
+    "frame": { "x": 4000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 9.aseprite": {
+    "frame": { "x": 4500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 10.aseprite": {
+    "frame": { "x": 5000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 11.aseprite": {
+    "frame": { "x": 5500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 12.aseprite": {
+    "frame": { "x": 6000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 13.aseprite": {
+    "frame": { "x": 6500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 14.aseprite": {
+    "frame": { "x": 7000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 15.aseprite": {
+    "frame": { "x": 7500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 16.aseprite": {
+    "frame": { "x": 8000, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   },
+   "财神龟v1 17.aseprite": {
+    "frame": { "x": 8500, "y": 0, "w": 500, "h": 500 },
+    "rotated": false,
+    "trimmed": false,
+    "spriteSourceSize": { "x": 0, "y": 0, "w": 500, "h": 500 },
+    "sourceSize": { "w": 500, "h": 500 },
+    "duration": 100
+   }
+ },
+ "meta": {
+  "app": "https://www.aseprite.org/",
+  "version": "1.3.17-x64",
+  "image": "财神龟v1.png",
+  "format": "RGBA8888",
+  "size": { "w": 9000, "h": 500 },
+  "scale": "1",
+  "frameTags": [
+  ],
+  "layers": [
+   { "name": "head", "opacity": 255, "blendMode": "normal" },
+   { "name": "shell", "opacity": 255, "blendMode": "normal" },
+   { "name": "lobd", "opacity": 255, "blendMode": "normal" },
+   { "name": "extra", "opacity": 255, "blendMode": "normal" }
+  ],
+  "slices": [
+  ]
+ }
+}

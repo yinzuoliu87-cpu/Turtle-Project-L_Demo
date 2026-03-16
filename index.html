@@ -1,0 +1,971 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龟投 — 热点预测</title>
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<!-- NAV -->
+<nav>
+  <a class="brand" href="#">
+    <div class="brand-ico">🐢</div>龟投
+  </a>
+  <div style="flex:1"></div>
+
+  <button class="mobile-menu-btn" onclick="toggleMobileSidebar()" aria-label="菜单">
+    <span></span><span></span><span></span>
+  </button>
+  <div class="nav-r">
+    <div class="theme-toggle" id="themeToggle" onclick="toggleTheme()" title="切换亮/暗主题">
+      <div class="theme-toggle-track">
+        <div class="theme-toggle-thumb"></div>
+        <span class="theme-ico-sun">☀️</span>
+        <span class="theme-ico-moon">🌙</span>
+      </div>
+    </div>
+    <div class="guide-trigger" onclick="openGuideModal()" title="新手指引">❓</div>
+    <div class="coin-chip">🪙 2,480</div>
+    <div class="ava-dd" id="avaDD">
+      <div class="ava" onclick="toggleAvaMenu()">🦊</div>
+      <div class="ava-menu" id="avaMenu">
+        <div class="ava-menu-item" onclick="toast('👤','个人中心开发中')">👤 个人中心</div>
+        <div class="ava-menu-item danger" onclick="toast('👋','已退出登录')">🚪 退出登录</div>
+      </div>
+    </div>
+  </div>
+</nav>
+
+<div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="toggleMobileSidebar()"></div>
+<aside class="left" id="leftSidebar">
+  <a class="pet-sidebar" href="pet.html">
+    <div class="pet-sidebar-orb">🐢</div>
+    <div class="pet-sidebar-name">小龟龟 · Lv.12</div>
+    <div class="pet-sidebar-lvl">🔥 5连胜 · 预测师</div>
+    <div class="pet-sidebar-xp"><div class="pet-sidebar-xp-in"></div></div>
+    <div class="pet-sidebar-hint">点击进入宠物中心 →</div>
+  </a>
+  <div class="left-sec">
+    <div class="left-sec-hd">专题</div>
+    <div class="nt on" onclick="switchTab(this,'all')">🏠 全部</div>
+    <div class="nt" onclick="switchTab(this,'wc')">⚽ 世界杯</div>
+    <div class="nt" onclick="switchTab(this,'hot')">🔥 热点</div>
+    <div class="nt" onclick="switchTab(this,'tech')">💻 科技</div>
+    <div class="nt" onclick="switchTab(this,'ai')">🤖 AI</div>
+    <div class="nt" onclick="switchTab(this,'ent')">🎬 娱乐</div>
+    <div class="nt" onclick="switchTab(this,'forum')">💬 论坛</div>
+    <a class="nt" href="battle.html" style="color:#ff6b6b;text-decoration:none;">⚔️ 开战广场</a>
+    <a class="nt nt-game" href="games/turtle-jump/index.html" style="text-decoration:none;">🐢 龟龟跳海</a>
+  </div>
+  <div class="left-divider"></div>
+  <div class="left-sec">
+    <div class="left-sec-toggle" onclick="toggleLeftSec('lb-panel','lb-chev')">
+      🏆 排行榜<span class="left-chev" id="lb-chev">▸</span>
+    </div>
+    <div class="left-panel" id="lb-panel" style="display:none">
+      <div class="lb-tabs">
+        <div class="lb-tab on" onclick="switchLbTab(this,'global')">🌍 全球</div>
+        <div class="lb-tab" onclick="switchLbTab(this,'friends')">👥 好友</div>
+      </div>
+      <div class="lb-list" id="lb-global">
+        <div class="lb-row"><div class="lb-r r1">1</div><div class="lb-av" style="background:#fef9c3">🦁</div><div style="flex:1"><div class="lb-n">LionMaster</div><div class="lb-s"><span class="str">🔥 8连</span></div></div><div class="lb-c">18,420</div></div>
+        <div class="lb-row"><div class="lb-r r2">2</div><div class="lb-av" style="background:#f0fdf4">🐉</div><div style="flex:1"><div class="lb-n">DragonSeer</div><div class="lb-s"><span class="str">🔥 5连</span></div></div><div class="lb-c">12,850</div></div>
+        <div class="lb-row"><div class="lb-r r3">3</div><div class="lb-av" style="background:#eff6ff">🦅</div><div style="flex:1"><div class="lb-n">EagleEye</div><div class="lb-s">胜率 71%</div></div><div class="lb-c">9,310</div></div>
+        <div class="lb-row"><div class="lb-r">4</div><div class="lb-av" style="background:#fef3f2">🐺</div><div style="flex:1"><div class="lb-n">CryptoWolf</div><div class="lb-s">胜率 66%</div></div><div class="lb-c">7,620</div></div>
+        <div class="lb-row"><div class="lb-r">5</div><div class="lb-av" style="background:#f5f3ff">🦈</div><div style="flex:1"><div class="lb-n">SharkTrader</div><div class="lb-s"><span class="str">🔥 3连</span></div></div><div class="lb-c">6,190</div></div>
+        <div class="lb-row lb-me"><div class="lb-r" style="color:var(--g)">12</div><div class="lb-av" style="background:#f0fdfa">🦊</div><div style="flex:1"><div class="lb-n">你 <span class="me-t">ME</span></div><div class="lb-s"><span class="str">🔥 5连</span> · 68%</div></div><div class="lb-c">2,480</div></div>
+      </div>
+      <div class="lb-list" id="lb-friends" style="display:none">
+        <div class="lb-row"><div class="lb-r r1">1</div><div class="lb-av" style="background:#fef9c3">🐼</div><div style="flex:1"><div class="lb-n">PandaPredict</div><div class="lb-s"><span class="str">🔥 4连</span></div></div><div class="lb-c">5,340</div></div>
+        <div class="lb-row"><div class="lb-r r2">2</div><div class="lb-av" style="background:#fdf2f8">🦋</div><div style="flex:1"><div class="lb-n">ButterflyBet</div><div class="lb-s">胜率 62%</div></div><div class="lb-c">3,870</div></div>
+        <div class="lb-row lb-me"><div class="lb-r r3">3</div><div class="lb-av" style="background:#f0fdfa">🦊</div><div style="flex:1"><div class="lb-n">你 <span class="me-t">ME</span></div><div class="lb-s"><span class="str">🔥 5连</span> · 68%</div></div><div class="lb-c">2,480</div></div>
+        <div class="lb-row"><div class="lb-r">4</div><div class="lb-av" style="background:#f0fdf4">🐸</div><div style="flex:1"><div class="lb-n">FrogKing</div><div class="lb-s">胜率 55%</div></div><div class="lb-c">1,240</div></div>
+      </div>
+    </div>
+  </div>
+  <div class="left-sec">
+    <div class="left-sec-toggle" onclick="toggleLeftSec('tr-panel','tr-chev')">
+      📊 热搜榜<span class="left-chev" id="tr-chev">▸</span>
+    </div>
+    <div class="left-panel" id="tr-panel" style="display:none">
+      <div class="tr-row"><div class="tr-n">1</div><div class="tr-info"><div class="tr-name">顶流解散疑云</div><div class="tr-v">12,847票</div></div><div class="tr-c c-hot">+2.1k/h</div></div>
+      <div class="tr-row"><div class="tr-n">2</div><div class="tr-info"><div class="tr-name">2026世界杯冠军</div><div class="tr-v">24,757票</div></div><div class="tr-c c-up">+890/h</div></div>
+      <div class="tr-row"><div class="tr-n">3</div><div class="tr-info"><div class="tr-name">周杰伦新专辑</div><div class="tr-v">18,921票</div></div><div class="tr-c c-up">+650/h</div></div>
+      <div class="tr-row"><div class="tr-n">4</div><div class="tr-info"><div class="tr-name">Claude 4 登顶</div><div class="tr-v">11,420票</div></div><div class="tr-c c-up">+480/h</div></div>
+      <div class="tr-row"><div class="tr-n">5</div><div class="tr-info"><div class="tr-name">A股下周涨跌</div><div class="tr-v">3,961票</div></div><div class="tr-c c-up">+340/h</div></div>
+    </div>
+  </div>
+</aside>
+
+<div class="page">
+  <!-- MAIN -->
+  <div id="main-content">
+
+    <!-- ════ PAGE: all ════ -->
+    <div class="tab-page" id="page-all">
+    <div class="hero" onclick="openModal('传闻某顶流组合宣布解散，你相信这次是真的吗？')">
+      <div class="hero-img img-ent" style="position:absolute;inset:0;"></div>
+      <div class="hero-overlay"></div>
+      <div class="hero-content">
+        <div class="hero-badge"><div class="live-dot"></div> 🔥 今日最热话题</div>
+        <div class="hero-q">传闻某顶流组合宣布解散<br>你相信这次是真的吗？</div>
+        <div class="hero-bars">
+          <div class="hbar" onclick="heroVote(event,'y',68)">
+            <div class="hbar-bg-fill" style="background:var(--g);width:68%"></div>
+            <div class="hbar-glass"></div>
+            <div class="hbar-inner"><span style="font-size:16px">✅</span><span class="hbar-lbl">相信，这次是真的</span><span class="hbar-pct" style="color:var(--g)">68%</span></div>
+          </div>
+          <div class="hbar" onclick="heroVote(event,'n',32)">
+            <div class="hbar-bg-fill" style="background:var(--r);width:32%"></div>
+            <div class="hbar-glass"></div>
+            <div class="hbar-inner"><span style="font-size:16px">❌</span><span class="hbar-lbl">不信，炒作而已</span><span class="hbar-pct" style="color:var(--r)">32%</span></div>
+          </div>
+        </div>
+        <div class="hero-foot">
+          <div class="hchip">👥 <span id="hv">12,847</span> 人已投票</div>
+          <div class="hchip">赔率 1.47× / 3.12×</div>
+          <div class="htime">⏱ 23h 后结算</div>
+        </div>
+        <div class="hbtns">
+          <div class="hbtn hbtn-y" onclick="event.stopPropagation();openModal('传闻某顶流组合宣布解散，你相信这次是真的吗？')">🪙 押 是</div>
+          <div class="hbtn hbtn-n" onclick="event.stopPropagation();openModal('传闻某顶流组合宣布解散，你相信这次是真的吗？')">🪙 押 否</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ⚽ WORLD CUP - also shown in page-wc -->
+    <div class="section" id="section-wc">
+      <div class="sec-head">
+        <span class="sec-title">⚽ 世界杯专题</span>
+        <span class="sec-count">12 个话题</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+          <span class="sec-time" onclick="secTime(this)">本月</span>
+        </div>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="wc-banner">
+        <div class="wc-title">🏆 2026 FIFA 世界杯</div>
+        <div class="wc-sub">美国 · 加拿大 · 墨西哥 联合举办 · 32 支球队</div>
+        <div class="wc-teams">
+          <div class="wc-team top"><div class="wt-flag">🇧🇷</div><div class="wt-name">巴西</div><div class="wt-odds">3.8×</div><div class="wt-votes">34%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇫🇷</div><div class="wt-name">法国</div><div class="wt-odds">4.5×</div><div class="wt-votes">28%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇦🇷</div><div class="wt-name">阿根廷</div><div class="wt-odds">5.2×</div><div class="wt-votes">22%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇩🇪</div><div class="wt-name">德国</div><div class="wt-odds">8.0×</div><div class="wt-votes">8%</div></div>
+          <div class="wc-team"><div class="wt-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="wt-name">英格兰</div><div class="wt-odds">9.5×</div><div class="wt-votes">5%</div></div>
+          <div class="wc-team"><div class="wt-flag">🌍</div><div class="wt-name">其他</div><div class="wt-odds">16×</div><div class="wt-votes">3%</div></div>
+        </div>
+        <div class="wc-time-row">
+          <span class="wct">🗓 话题创建：2025年12月01日</span>
+          <span class="wct">📊 累计 48,291 人参与</span>
+          <span class="wct">⏱ 距开幕还有 4 个月</span>
+          <span class="wct">🔥 本周新增 3,820 票</span>
+        </div>
+      </div>
+      <div class="card-grid">
+        <!-- WC card 1 -->
+        <div class="pc c-wc" onclick="openModal('C罗是否会作为葡萄牙队长出战世界杯？')">
+          <div class="pc-img img-sports" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">C罗将以葡萄牙队长身份出战2026世界杯？</div>
+            <div class="vb-wrap" id="wc1">
+              <div class="vb" onclick="miniVote(event,'wc1','y',71)"><div class="vb-fill vb-fill-g" style="width:71%"></div><div class="vb-row"><span class="vb-lbl">会，C罗不退役</span><span class="vb-pct pct-g">71%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc1','n',29)"><div class="vb-fill vb-fill-r" style="width:29%"></div><div class="vb-row"><span class="vb-lbl">不会，届时退役</span><span class="vb-pct pct-r">29%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-wc1">9,341</span> 票 · 1.41× / 3.45×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta">
+              <div class="ctm-item"><div class="ctm-dot ctm-new"></div>创建于 2周前</div>
+              <div class="ctm-item"><div class="ctm-dot ctm-active"></div>本周热度 ↑28%</div>
+            </div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('C罗是否会作为葡萄牙队长出战世界杯？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('C罗是否会作为葡萄牙队长出战世界杯？')">押 否</div></div>
+          </div>
+        </div>
+        <!-- WC card 2 -->
+        <div class="pc c-wc" onclick="openModal('梅西会参加2026世界杯吗？')">
+          <div class="pc-img img-wc" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">梅西最终亮相2026世界杯的概率？</div>
+            <div class="vb-wrap" id="wc2">
+              <div class="vb" onclick="miniVote(event,'wc2','y',58)"><div class="vb-fill vb-fill-g" style="width:58%"></div><div class="vb-row"><span class="vb-lbl">会参加</span><span class="vb-pct pct-g">58%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc2','n',42)"><div class="vb-fill vb-fill-r" style="width:42%"></div><div class="vb-row"><span class="vb-lbl">不参加了</span><span class="vb-pct pct-r">42%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-wc2">14,280</span> 票 · 1.72× / 2.38×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta">
+              <div class="ctm-item"><div class="ctm-dot ctm-new"></div>创建于 3天前</div>
+              <div class="ctm-item"><div class="ctm-dot ctm-active"></div>今日新增 +1,240</div>
+            </div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('梅西会参加2026世界杯吗？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('梅西会参加2026世界杯吗？')">押 否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🔥 全部事件网格 -->
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">🔥 全部事件</span>
+        <span class="sec-count">热门预测</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">今日</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+        </div>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid">
+        <!-- row 1 -->
+        <div class="pc c-r" onclick="openModal('马斯克在2026年内访问中国？')">
+          <div class="pc-img img-news" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--r)">时事</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">马斯克2026年内会访问中国吗？</div>
+            <div class="vb-wrap" id="all-musk">
+              <div class="vb" onclick="miniVote(event,'all-musk','y',38)"><div class="vb-fill vb-fill-g" style="width:38%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">38%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-musk','n',62)"><div class="vb-fill vb-fill-r" style="width:62%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">62%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-musk">5,088</span> 票<span class="pc-time">10月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('马斯克在2026年内访问中国？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('马斯克在2026年内访问中国？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-ai" onclick="openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">
+          <div class="pc-img img-ai" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">AI</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">Claude 4 超越 GPT 成为最强 AI？</div>
+            <div class="vb-wrap" id="all-claude">
+              <div class="vb" onclick="miniVote(event,'all-claude','y',63)"><div class="vb-fill vb-fill-g" style="width:63%"></div><div class="vb-row"><span class="vb-lbl">能超越</span><span class="vb-pct pct-g">63%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-claude','n',37)"><div class="vb-fill vb-fill-r" style="width:37%"></div><div class="vb-row"><span class="vb-lbl">GPT 领先</span><span class="vb-pct pct-r">37%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-claude">11,420</span> 票<span class="pc-time">12月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">押 能</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-p" onclick="openModal('某男星年内宣布结婚？')">
+          <div class="pc-img img-ent" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#ec4899">娱乐</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">某顶流男星年内宣布结婚？</div>
+            <div class="vb-wrap" id="all-marry">
+              <div class="vb" onclick="miniVote(event,'all-marry','y',55)"><div class="vb-fill vb-fill-g" style="width:55%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">55%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-marry','n',45)"><div class="vb-fill vb-fill-r" style="width:45%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">45%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-marry">6,103</span> 票<span class="pc-time">12月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('某男星年内宣布结婚？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('某男星年内宣布结婚？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-o" onclick="openModal('A股大盘，下周涨还是跌？')">
+          <div class="pc-img img-finance" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--o)">财经</span><span class="pc-badge badge-end">快结束</span></div>
+            <div class="pc-q">A股大盘，下周涨还是跌？</div>
+            <div class="vb-wrap" id="all-stock">
+              <div class="vb" onclick="miniVote(event,'all-stock','y',45)"><div class="vb-fill vb-fill-g" style="width:45%"></div><div class="vb-row"><span class="vb-lbl">涨！</span><span class="vb-pct pct-g">45%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-stock','n',55)"><div class="vb-fill vb-fill-r" style="width:55%"></div><div class="vb-row"><span class="vb-lbl">跌</span><span class="vb-pct pct-r">55%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-stock">3,961</span> 票<span class="pc-time">5天后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('A股大盘，下周涨还是跌？')">押 涨</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('A股大盘，下周涨还是跌？')">押 跌</div></div>
+          </div>
+        </div>
+        <!-- row 2 -->
+        <div class="pc c-b" onclick="openModal('苹果WWDC2026发布AR眼镜？')">
+          <div class="pc-img img-tech" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">科技</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">苹果 WWDC 2026 发布AR眼镜？</div>
+            <div class="vb-wrap" id="all-apple">
+              <div class="vb" onclick="miniVote(event,'all-apple','y',72)"><div class="vb-fill vb-fill-g" style="width:72%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">72%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-apple','n',28)"><div class="vb-fill vb-fill-r" style="width:28%"></div><div class="vb-row"><span class="vb-lbl">跳票</span><span class="vb-pct pct-r">28%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-apple">4,320</span> 票<span class="pc-time">3月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('苹果WWDC2026发布AR眼镜？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('苹果WWDC2026发布AR眼镜？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-y" onclick="openModal('周杰伦新专辑2026年内发布？')">
+          <div class="pc-img img-ent" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--o)">娱乐</span></div>
+            <div class="pc-q">周杰伦新专辑 2026 年内发布？</div>
+            <div class="vb-wrap" id="all-jay">
+              <div class="vb" onclick="miniVote(event,'all-jay','y',79)"><div class="vb-fill vb-fill-g" style="width:79%"></div><div class="vb-row"><span class="vb-lbl">会发</span><span class="vb-pct pct-g">79%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-jay','n',21)"><div class="vb-fill vb-fill-r" style="width:21%"></div><div class="vb-row"><span class="vb-lbl">等明年</span><span class="vb-pct pct-r">21%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-jay">18,921</span> 票<span class="pc-time">12月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('周杰伦新专辑2026年内发布？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('周杰伦新专辑2026年内发布？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-p" onclick="openModal('GPT-5今年内正式发布吗？')">
+          <div class="pc-img img-tech" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#7c3aed">科技</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">GPT-5 今年内发布？</div>
+            <div class="vb-wrap" id="all-gpt">
+              <div class="vb" onclick="miniVote(event,'all-gpt','y',57)"><div class="vb-fill vb-fill-g" style="width:57%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">57%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-gpt','n',43)"><div class="vb-fill vb-fill-r" style="width:43%"></div><div class="vb-row"><span class="vb-lbl">否</span><span class="vb-pct pct-r">43%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-gpt">7,213</span> 票<span class="pc-time">11月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('GPT-5今年内正式发布吗？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('GPT-5今年内正式发布吗？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-ai" onclick="openModal('AGI（通用人工智能）将在2030年前实现？')">
+          <div class="pc-img img-ai" style="height:120px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">AI</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">AGI 通用人工智能 2030 年前实现？</div>
+            <div class="vb-wrap" id="all-agi">
+              <div class="vb" onclick="miniVote(event,'all-agi','y',41)"><div class="vb-fill vb-fill-g" style="width:41%"></div><div class="vb-row"><span class="vb-lbl">会实现</span><span class="vb-pct pct-g">41%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'all-agi','n',59)"><div class="vb-fill vb-fill-r" style="width:59%"></div><div class="vb-row"><span class="vb-lbl">还太早</span><span class="vb-pct pct-r">59%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-all-agi">8,670</span> 票<span class="pc-time">4年后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('AGI（通用人工智能）将在2030年前实现？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('AGI（通用人工智能）将在2030年前实现？')">押 否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    </div><!-- /page-all -->
+
+    <!-- ════ PAGE: wc ════ -->
+    <div class="tab-page" id="page-wc" style="display:none">
+    <div class="page-hero page-hero-wc">
+      <div class="ph-blob" style="width:240px;height:240px;top:-80px;right:-60px;background:#1d4ed8;"></div>
+      <div class="ph-blob" style="width:180px;height:180px;bottom:-60px;left:10%;background:#ffd93d;opacity:.4;"></div>
+      <div class="ph-blob" style="width:140px;height:140px;top:20px;left:40%;background:#06d6a0;opacity:.25;"></div>
+      <div class="ph-content">
+        <div class="ph-label">世界杯专题</div>
+        <div class="ph-title">⚽ 2026 FIFA 世界杯</div>
+        <div class="ph-sub">美国 · 加拿大 · 墨西哥 联合举办 · 32 支球队 · 今夏点燃全球</div>
+        <div class="ph-stats">
+          <div class="ph-stat">📊 12 个话题</div>
+          <div class="ph-stat">👥 累计 48,291 人参与</div>
+          <div class="ph-stat">⏱ 距开幕 4 个月</div>
+          <div class="ph-stat">🔥 本周 +3,820 票</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">🏆 冠军赔率</span>
+        <span class="sec-count">6 支热门球队</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+          <span class="sec-time" onclick="secTime(this)">本月</span>
+        </div>
+      </div>
+      <div class="wc-banner">
+        <div class="wc-title">🏆 2026 FIFA 世界杯</div>
+        <div class="wc-sub">押冠军、押球星、押比分——世界杯专属话题全在这里</div>
+        <div class="wc-teams">
+          <div class="wc-team top"><div class="wt-flag">🇧🇷</div><div class="wt-name">巴西</div><div class="wt-odds">3.8×</div><div class="wt-votes">34%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇫🇷</div><div class="wt-name">法国</div><div class="wt-odds">4.5×</div><div class="wt-votes">28%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇦🇷</div><div class="wt-name">阿根廷</div><div class="wt-odds">5.2×</div><div class="wt-votes">22%</div></div>
+          <div class="wc-team"><div class="wt-flag">🇩🇪</div><div class="wt-name">德国</div><div class="wt-odds">8.0×</div><div class="wt-votes">8%</div></div>
+          <div class="wc-team"><div class="wt-flag">🏴󠁧󠁢󠁥󠁮󠁧󠁿</div><div class="wt-name">英格兰</div><div class="wt-odds">9.5×</div><div class="wt-votes">5%</div></div>
+          <div class="wc-team"><div class="wt-flag">🌍</div><div class="wt-name">其他</div><div class="wt-odds">16×</div><div class="wt-votes">3%</div></div>
+        </div>
+        <div class="wc-time-row">
+          <span class="wct">🗓 话题创建：2025年12月01日</span>
+          <span class="wct">📊 累计 48,291 人参与</span>
+          <span class="wct">⏱ 距开幕还有 4 个月</span>
+          <span class="wct">🔥 本周新增 3,820 票</span>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">⚽ 球星话题</span>
+        <span class="sec-count">4 个话题</span>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid">
+        <div class="pc c-wc" onclick="openModal('C罗是否会作为葡萄牙队长出战世界杯？')">
+          <div class="pc-img img-sports" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">C罗将以葡萄牙队长身份出战2026世界杯？</div>
+            <div class="vb-wrap" id="wc1b">
+              <div class="vb" onclick="miniVote(event,'wc1b','y',71)"><div class="vb-fill vb-fill-g" style="width:71%"></div><div class="vb-row"><span class="vb-lbl">会，C罗不退役</span><span class="vb-pct pct-g">71%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc1b','n',29)"><div class="vb-fill vb-fill-r" style="width:29%"></div><div class="vb-row"><span class="vb-lbl">不会，届时退役</span><span class="vb-pct pct-r">29%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">9,341</span> 票 · 1.41× / 3.45×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>创建于 2周前</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>本周热度 ↑28%</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('C罗是否会作为葡萄牙队长出战世界杯？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('C罗是否会作为葡萄牙队长出战世界杯？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-wc" onclick="openModal('梅西会参加2026世界杯吗？')">
+          <div class="pc-img img-wc" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">梅西最终亮相2026世界杯的概率？</div>
+            <div class="vb-wrap" id="wc2b">
+              <div class="vb" onclick="miniVote(event,'wc2b','y',58)"><div class="vb-fill vb-fill-g" style="width:58%"></div><div class="vb-row"><span class="vb-lbl">会参加</span><span class="vb-pct pct-g">58%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc2b','n',42)"><div class="vb-fill vb-fill-r" style="width:42%"></div><div class="vb-row"><span class="vb-lbl">不参加了</span><span class="vb-pct pct-r">42%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">14,280</span> 票 · 1.72× / 2.38×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>创建于 3天前</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>今日新增 +1,240</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('梅西会参加2026世界杯吗？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('梅西会参加2026世界杯吗？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-wc" onclick="openModal('姆巴佩能在2026世界杯打进5球以上？')">
+          <div class="pc-img img-sports" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span></div>
+            <div class="pc-q">姆巴佩能在2026世界杯攻进5球以上？</div>
+            <div class="vb-wrap" id="wc3b">
+              <div class="vb" onclick="miniVote(event,'wc3b','y',64)"><div class="vb-fill vb-fill-g" style="width:64%"></div><div class="vb-row"><span class="vb-lbl">能，他是最佳射手</span><span class="vb-pct pct-g">64%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc3b','n',36)"><div class="vb-fill vb-fill-r" style="width:36%"></div><div class="vb-row"><span class="vb-lbl">不能，防守严密</span><span class="vb-pct pct-r">36%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">6,820</span> 票 · 1.56× / 2.78×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>1周前创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>本月热门球星话题</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('姆巴佩能在2026世界杯打进5球以上？')">押 能</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('姆巴佩能在2026世界杯打进5球以上？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-wc" onclick="openModal('中国队首次参加世界杯正赛？')">
+          <div class="pc-img" style="height:130px;background:url('https://images.unsplash.com/photo-1518091043644-c1d4457512c6?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#1d4ed8">世界杯</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">中国队能否通过预选赛打进2026世界杯？</div>
+            <div class="vb-wrap" id="wc4b">
+              <div class="vb" onclick="miniVote(event,'wc4b','y',47)"><div class="vb-fill vb-fill-g" style="width:47%"></div><div class="vb-row"><span class="vb-lbl">能出线！</span><span class="vb-pct pct-g">47%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'wc4b','n',53)"><div class="vb-fill vb-fill-r" style="width:53%"></div><div class="vb-row"><span class="vb-lbl">还是出不去</span><span class="vb-pct pct-r">53%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">21,033</span> 票 · 2.13× / 1.88×<span class="pc-time">5月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-active"></div>全平台最热话题之一</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('中国队首次参加世界杯正赛？')">押 能</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('中国队首次参加世界杯正赛？')">押 否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    </div><!-- /page-wc -->
+
+    <div class="tab-page" id="page-hot" style="display:none">
+
+    <!-- Pipeline Banner -->
+    <div class="hot-pipeline">
+      <div class="hp-step"><div class="hp-ico">📡</div><div class="hp-label">新闻源爬取</div></div>
+      <div class="hp-arrow">→</div>
+      <div class="hp-step"><div class="hp-ico">🤖</div><div class="hp-label">AI 提炼题目</div></div>
+      <div class="hp-arrow">→</div>
+      <div class="hp-step"><div class="hp-ico">👨‍⚖️</div><div class="hp-label">人工审核</div></div>
+      <div class="hp-arrow">→</div>
+      <div class="hp-step hp-step-active"><div class="hp-ico">🔥</div><div class="hp-label">注入热点卡片</div></div>
+    </div>
+
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">🔥 实时热点</span>
+        <span class="sec-count">由 AI + 人工 实时生成</span>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid">
+
+        <!-- HOT 1 — 来源: 微博热搜 -->
+        <div class="pc c-r" onclick="openModal('马斯克在2026年内访问中国？')">
+          <div class="pc-body">
+            <div class="hot-source"><span class="hs-from">📡 微博热搜 #2</span><span class="hs-ai">🤖 AI 生成</span><span class="hs-time">12min ago</span></div>
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--r)">时事</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">马斯克2026年内会访问中国吗？</div>
+            <div class="hot-reason">💡 AI摘要：路透社报道马斯克团队已与中方接触，市场关注后续动向</div>
+            <div class="vb-wrap" id="p-musk">
+              <div class="vb" onclick="miniVote(event,'p-musk','y',38)"><div class="vb-fill vb-fill-g" style="width:38%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">38%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-musk','n',62)"><div class="vb-fill vb-fill-r" style="width:62%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">62%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-musk">5,088</span> 票<span class="pc-time">10月后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('马斯克在2026年内访问中国？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('马斯克在2026年内访问中国？')">押 否</div></div>
+          </div>
+        </div>
+
+        <!-- HOT 2 — 来源: 今日头条 -->
+        <div class="pc c-o" onclick="openModal('A股大盘，下周涨还是跌？')">
+          <div class="pc-body">
+            <div class="hot-source"><span class="hs-from">📡 今日头条</span><span class="hs-ai">🤖 AI 生成</span><span class="hs-time">28min ago</span></div>
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--o)">财经</span><span class="pc-badge badge-end">快结束</span></div>
+            <div class="pc-q">A股大盘，下周涨还是跌？</div>
+            <div class="hot-reason">💡 AI摘要：央行释放降准信号叠加北向资金连续3日净流入，但美联储态度仍偏鹰</div>
+            <div class="vb-wrap" id="p-stock">
+              <div class="vb" onclick="miniVote(event,'p-stock','y',45)"><div class="vb-fill vb-fill-g" style="width:45%"></div><div class="vb-row"><span class="vb-lbl">涨！牛市</span><span class="vb-pct pct-g">45%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-stock','n',55)"><div class="vb-fill vb-fill-r" style="width:55%"></div><div class="vb-row"><span class="vb-lbl">跌，回调</span><span class="vb-pct pct-r">55%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-stock">3,961</span> 票 · 2.22× / 1.81×<span class="pc-time">5天后结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();toast('📈','押「涨」成功！')">押 涨</div><div class="pb-btn pb-n" onclick="event.stopPropagation();toast('📉','押「跌」成功！')">押 跌</div></div>
+          </div>
+        </div>
+
+        <!-- HOT 3 — 来源: 知乎热榜 -->
+        <div class="pc c-p" onclick="openModal('顶流男团7月前官宣解散？')">
+          <div class="pc-body">
+            <div class="hot-source"><span class="hs-from">📡 知乎热榜 #5</span><span class="hs-review">👨‍⚖️ 人工审核</span><span class="hs-time">1h ago</span></div>
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--p)">娱乐</span><span class="pc-badge badge-hot">爆</span></div>
+            <div class="pc-q">顶流男团7月前官宣解散？</div>
+            <div class="hot-reason">💡 AI摘要：多家娱乐媒体爆料合约到期+成员solo计划，粉丝社区炸锅</div>
+            <div class="vb-wrap">
+              <div class="vb" onclick="miniVote(event,'p-boyband','y',72)"><div class="vb-fill vb-fill-g" style="width:72%"></div><div class="vb-row"><span class="vb-lbl">会解散</span><span class="vb-pct pct-g">72%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-boyband','n',28)"><div class="vb-fill vb-fill-r" style="width:28%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">28%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">12,847</span> 票<span class="pc-time">7月前结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('顶流男团7月前官宣解散？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('顶流男团7月前官宣解散？')">押 否</div></div>
+          </div>
+        </div>
+
+        <!-- HOT 4 — 来源: 36kr -->
+        <div class="pc c-b" onclick="openModal('OpenAI 6月前发布 GPT-5？')">
+          <div class="pc-body">
+            <div class="hot-source"><span class="hs-from">📡 36kr</span><span class="hs-ai">🤖 AI 生成</span><span class="hs-time">45min ago</span></div>
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--b)">科技</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">OpenAI 6月前发布 GPT-5？</div>
+            <div class="hot-reason">💡 AI摘要：The Information 称 OpenAI 内部已开始 GPT-5 内测，预计Q2发布</div>
+            <div class="vb-wrap">
+              <div class="vb" onclick="miniVote(event,'p-gpt5','y',56)"><div class="vb-fill vb-fill-g" style="width:56%"></div><div class="vb-row"><span class="vb-lbl">会发布</span><span class="vb-pct pct-g">56%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-gpt5','n',44)"><div class="vb-fill vb-fill-r" style="width:44%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">44%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc">4,210</span> 票<span class="pc-time">6月前结算</span></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('OpenAI 6月前发布 GPT-5？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('OpenAI 6月前发布 GPT-5？')">押 否</div></div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+
+    </div><!-- /page-hot -->
+    <div class="tab-page" id="page-tech" style="display:none">
+    <div class="page-hero page-hero-tech">
+      <div class="ph-blob" style="width:220px;height:220px;top:-70px;right:-60px;background:#7c3aed;"></div>
+      <div class="ph-blob" style="width:160px;height:160px;bottom:-40px;left:30%;background:#4cc9f0;"></div>
+      <div class="ph-content">
+        <div class="ph-label">科技板块</div>
+        <div class="ph-title">💻 前沿科技预测</div>
+        <div class="ph-sub">从 AI 大模型到硬件发布，押注科技圈的每一个关键节点</div>
+        <div class="ph-stats">
+          <div class="ph-stat">📊 11 个话题</div>
+          <div class="ph-stat">🏆 本周最热：苹果AR眼镜</div>
+          <div class="ph-stat">💡 平均赔率 2.1×</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">💻 科技板块</span>
+        <span class="sec-count">11 个话题</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+          <span class="sec-time" onclick="secTime(this)">本月</span>
+        </div>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid three">
+        <div class="pc c-p" onclick="openModal('GPT-5今年内正式发布吗？')">
+          <div class="pc-img img-tech" style="height:110px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#7c3aed">科技</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">GPT-5 今年内发布？</div>
+            <div class="vb-wrap" id="p-gpt">
+              <div class="vb" onclick="miniVote(event,'p-gpt','y',57)"><div class="vb-fill vb-fill-g" style="width:57%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">57%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-gpt','n',43)"><div class="vb-fill vb-fill-r" style="width:43%"></div><div class="vb-row"><span class="vb-lbl">否</span><span class="vb-pct pct-r">43%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-gpt">7,213</span> 票<span class="pc-time">11月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>3天前创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>本周 +1.2k</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('GPT-5今年内正式发布吗？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('GPT-5今年内正式发布吗？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-b" onclick="openModal('苹果WWDC2026发布AR眼镜？')">
+          <div class="pc-img img-tech" style="height:110px;background:url('https://images.unsplash.com/photo-1621931073553-8e7e68b0f060?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">科技</span></div>
+            <div class="pc-q">苹果 WWDC 2026 发布AR眼镜？</div>
+            <div class="vb-wrap" id="p-apple">
+              <div class="vb" onclick="miniVote(event,'p-apple','y',72)"><div class="vb-fill vb-fill-g" style="width:72%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">72%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-apple','n',28)"><div class="vb-fill vb-fill-r" style="width:28%"></div><div class="vb-row"><span class="vb-lbl">跳票</span><span class="vb-pct pct-r">28%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-apple">4,320</span> 票<span class="pc-time">3月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>今日新上</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>正在飙升 🚀</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('苹果WWDC2026发布AR眼镜？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('苹果WWDC2026发布AR眼镜？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-g" onclick="openModal('特斯拉FSD今年在中国获批？')">
+          <div class="pc-img" style="height:110px;background:url('https://images.unsplash.com/photo-1617788138017-80ad40651399?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--g)">科技</span><span class="pc-badge badge-end">快结束</span></div>
+            <div class="pc-q">特斯拉FSD今年在中国获批？</div>
+            <div class="vb-wrap" id="p-tesla">
+              <div class="vb" onclick="miniVote(event,'p-tesla','y',44)"><div class="vb-fill vb-fill-g" style="width:44%"></div><div class="vb-row"><span class="vb-lbl">获批</span><span class="vb-pct pct-g">44%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-tesla','n',56)"><div class="vb-fill vb-fill-r" style="width:56%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">56%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-tesla">2,845</span> 票<span class="pc-time">8月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-end"></div>⚡ 快截止</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>1月前创建</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('特斯拉FSD今年在中国获批？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('特斯拉FSD今年在中国获批？')">否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🤖 AI -->
+    </div><!-- /page-tech -->
+    <div class="tab-page" id="page-ai" style="display:none">
+    <div class="page-hero page-hero-ai">
+      <div class="ph-blob" style="width:200px;height:200px;top:-50px;right:-30px;background:#0ea5e9;"></div>
+      <div class="ph-blob" style="width:180px;height:180px;bottom:-60px;left:10%;background:#6366f1;"></div>
+      <div class="ph-content">
+        <div class="ph-label">AI 专题</div>
+        <div class="ph-title">🤖 人工智能预测</div>
+        <div class="ph-sub">GPT、Claude、AGI……预测 AI 时代最大的变局</div>
+        <div class="ph-stats">
+          <div class="ph-stat">📊 9 个话题</div>
+          <div class="ph-stat">🔥 热度飙升中</div>
+          <div class="ph-stat">🎯 平均赔率 2.4×</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">🤖 AI 专题</span>
+        <span class="sec-count">9 个话题</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+          <span class="sec-time" onclick="secTime(this)">三个月</span>
+        </div>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid">
+        <div class="pc c-ai" onclick="openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">
+          <div class="pc-img img-ai" style="height:130px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">AI</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">Claude 4 能超越 GPT 成为最强 AI 模型？</div>
+            <div class="vb-wrap" id="p-claude">
+              <div class="vb" onclick="miniVote(event,'p-claude','y',63)"><div class="vb-fill vb-fill-g" style="width:63%"></div><div class="vb-row"><span class="vb-lbl">能超越</span><span class="vb-pct pct-g">63%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-claude','n',37)"><div class="vb-fill vb-fill-r" style="width:37%"></div><div class="vb-row"><span class="vb-lbl">GPT 领先</span><span class="vb-pct pct-r">37%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-claude">11,420</span> 票 · 1.59× / 2.70×<span class="pc-time">12月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>5天前创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>本月最热AI话题</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">押 能</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('Claude 4 将在2026年超越GPT-4o成为最强模型？')">押 否</div></div>
+          </div>
+        </div>
+        <div class="pc c-ai" onclick="openModal('AGI（通用人工智能）将在2030年前实现？')">
+          <div class="pc-img" style="height:130px;background:url('https://images.unsplash.com/photo-1620712943543-bcc4688e7485?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--teal)">AI</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">AGI 通用人工智能将在 2030 年前实现？</div>
+            <div class="vb-wrap" id="p-agi">
+              <div class="vb" onclick="miniVote(event,'p-agi','y',41)"><div class="vb-fill vb-fill-g" style="width:41%"></div><div class="vb-row"><span class="vb-lbl">会实现</span><span class="vb-pct pct-g">41%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-agi','n',59)"><div class="vb-fill vb-fill-r" style="width:59%"></div><div class="vb-row"><span class="vb-lbl">还太早</span><span class="vb-pct pct-r">59%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-agi">8,670</span> 票 · 2.44× / 1.69×<span class="pc-time">4年后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>1个月前创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>长期话题</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('AGI（通用人工智能）将在2030年前实现？')">押 会</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('AGI（通用人工智能）将在2030年前实现？')">押 否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 🎬 ENT -->
+    </div><!-- /page-ai -->
+    <div class="tab-page" id="page-ent" style="display:none">
+    <div class="page-hero page-hero-ent">
+      <div class="ph-blob" style="width:220px;height:220px;top:-60px;right:-50px;background:#be185d;"></div>
+      <div class="ph-blob" style="width:160px;height:160px;bottom:-50px;left:15%;background:#c77dff;"></div>
+      <div class="ph-content">
+        <div class="ph-label">娱乐板块</div>
+        <div class="ph-title">🎬 娱乐圈热门预测</div>
+        <div class="ph-sub">明星动态、影视票房、演唱会……娱乐圈的一切都能押</div>
+        <div class="ph-stats">
+          <div class="ph-stat">📊 15 个话题</div>
+          <div class="ph-stat">🔥 今日最热：顶流解散</div>
+          <div class="ph-stat">🎵 周杰伦专辑 79% 看好</div>
+        </div>
+      </div>
+    </div>
+    <div class="section">
+      <div class="sec-head">
+        <span class="sec-title">🎬 娱乐板块</span>
+        <span class="sec-count">15 个话题</span>
+        <div style="display:flex;gap:4px;margin-left:8px;">
+          <span class="sec-time active" onclick="secTime(this)">全部</span>
+          <span class="sec-time" onclick="secTime(this)">本周</span>
+          <span class="sec-time" onclick="secTime(this)">本月</span>
+        </div>
+        <span class="sec-more">查看全部 →</span>
+      </div>
+      <div class="card-grid three">
+        <div class="pc c-p" onclick="openModal('某男星年内宣布结婚？')">
+          <div class="pc-img img-ent" style="height:110px;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:#ec4899">娱乐</span><span class="pc-badge badge-hot">HOT</span></div>
+            <div class="pc-q">某顶流男星年内宣布结婚？</div>
+            <div class="vb-wrap" id="p-marry">
+              <div class="vb" onclick="miniVote(event,'p-marry','y',55)"><div class="vb-fill vb-fill-g" style="width:55%"></div><div class="vb-row"><span class="vb-lbl">会</span><span class="vb-pct pct-g">55%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-marry','n',45)"><div class="vb-fill vb-fill-r" style="width:45%"></div><div class="vb-row"><span class="vb-lbl">不会</span><span class="vb-pct pct-r">45%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-marry">6,103</span> 票<span class="pc-time">12月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>昨天创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>24h +2,100票</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('某男星年内宣布结婚？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('某男星年内宣布结婚？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-y" onclick="openModal('周杰伦新专辑2026年内发布？')">
+          <div class="pc-img" style="height:110px;background:url('https://images.unsplash.com/photo-1493225457124-a3eb161ffa5f?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--o)">娱乐</span></div>
+            <div class="pc-q">周杰伦新专辑 2026 年内发布？</div>
+            <div class="vb-wrap" id="p-jay">
+              <div class="vb" onclick="miniVote(event,'p-jay','y',79)"><div class="vb-fill vb-fill-g" style="width:79%"></div><div class="vb-row"><span class="vb-lbl">会发</span><span class="vb-pct pct-g">79%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-jay','n',21)"><div class="vb-fill vb-fill-r" style="width:21%"></div><div class="vb-row"><span class="vb-lbl">等明年</span><span class="vb-pct pct-r">21%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-jay">18,921</span> 票<span class="pc-time">12月后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>2个月前创建</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>经典长期话题</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('周杰伦新专辑2026年内发布？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('周杰伦新专辑2026年内发布？')">否</div></div>
+          </div>
+        </div>
+        <div class="pc c-r" onclick="openModal('漫威《复仇者联盟5》票房超过《复仇者联盟4》？')">
+          <div class="pc-img" style="height:110px;background:url('https://images.unsplash.com/photo-1536440136628-849c177e76a1?w=600&q=80') center/cover no-repeat;position:relative;"></div>
+          <div class="pc-body">
+            <div class="pc-tag-row"><span class="pc-cat" style="color:var(--r)">娱乐</span><span class="pc-badge badge-new">NEW</span></div>
+            <div class="pc-q">漫威《复联5》票房超过《复联4》？</div>
+            <div class="vb-wrap" id="p-avengers">
+              <div class="vb" onclick="miniVote(event,'p-avengers','y',33)"><div class="vb-fill vb-fill-g" style="width:33%"></div><div class="vb-row"><span class="vb-lbl">能超</span><span class="vb-pct pct-g">33%</span></div></div>
+              <div class="vb" onclick="miniVote(event,'p-avengers','n',67)"><div class="vb-fill vb-fill-r" style="width:67%"></div><div class="vb-row"><span class="vb-lbl">超不了</span><span class="vb-pct pct-r">67%</span></div></div>
+            </div>
+            <div class="pc-foot"><span class="pc-vc" id="v-avengers">3,218</span> 票<span class="pc-time">待上映后结算</span></div>
+            <div class="card-time-meta"><div class="ctm-item"><div class="ctm-dot ctm-new"></div>今日新上线</div><div class="ctm-item"><div class="ctm-dot ctm-active"></div>高赔率话题</div></div>
+            <div class="pc-bet"><div class="pb-btn pb-y" onclick="event.stopPropagation();openModal('漫威《复仇者联盟5》票房超过《复仇者联盟4》？')">押</div><div class="pb-btn pb-n" onclick="event.stopPropagation();openModal('漫威《复仇者联盟5》票房超过《复仇者联盟4》？')">否</div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 💬 FORUM -->
+    </div><!-- /page-ent -->
+    <div class="tab-page" id="page-forum" style="display:none">
+    <div class="page-hero page-hero-forum">
+      <div class="ph-blob" style="width:200px;height:200px;top:-60px;right:-40px;background:#059669;"></div>
+      <div class="ph-blob" style="width:160px;height:160px;bottom:-50px;left:20%;background:#06d6a0;"></div>
+      <div class="ph-content">
+        <div class="ph-label">论坛广场</div>
+        <div class="ph-title">💬 龟友们都在聊什么</div>
+        <div class="ph-sub">发帖、讨论、分享你的预测观点，与 247 位龟友实时互动</div>
+        <div class="ph-stats">
+          <div class="ph-stat">👥 247 人在线</div>
+          <div class="ph-stat">📝 今日 36 条新帖</div>
+          <div class="ph-stat">💬 热议：世界杯冠军</div>
+        </div>
+      </div>
+    </div>
+    <div class="section forum-section" id="forum-section">
+      <div class="sec-head">
+        <span class="sec-title">💬 论坛广场</span>
+        <div class="live-dot" style="margin-left:4px"></div>
+        <span class="sec-count" style="margin-left:4px">247人在线</span>
+      </div>
+
+      <!-- COMPOSE -->
+      <div class="compose-box">
+        <div class="compose-row">
+          <div class="compose-ava">🦊</div>
+          <textarea class="compose-input" id="compose-txt" placeholder="分享你的预测观点、新鲜话题…" rows="2"></textarea>
+        </div>
+        <div class="compose-actions">
+          <div class="ca-btn" onclick="toast('📷','图片上传功能开发中！')">📷 图片</div>
+          <div class="ca-btn" onclick="toast('🗳️','添加投票功能开发中！')">🗳️ 投票</div>
+          <div class="ca-btn" onclick="toast('🔗','链接预览功能开发中！')">🔗 链接</div>
+          <button class="ca-post" onclick="submitPost()">发布</button>
+        </div>
+      </div>
+
+      <!-- POST 1 -->
+      <div class="post">
+        <div class="post-body">
+          <div class="post-header">
+            <div class="post-ava" style="background:rgba(255,217,61,.2)">🦁</div>
+            <div class="post-meta">
+              <div class="post-name">LionMaster <span class="post-badge badge-pred">🏆 预测师</span></div>
+              <div class="post-sub">2小时前 · 🔥 5连胜 · 18,420 🪙</div>
+            </div>
+            <div class="post-more">···</div>
+          </div>
+          <div class="post-text">世界杯冠军我继续看好 🇧🇷 巴西！梅西状态下滑，C罗年龄摆在那里，法国虽强但心态问题…这届巴西队阵容比2022年均衡太多，只要不翻车 <span class="ht">#2026世界杯</span> 我压 500 🪙！<br><br><span class="mention">@DragonSeer</span> 你之前说法国，我们来对赌？</div>
+          <div class="post-poll">
+            <div class="pp-q">📊 本届世界杯你最看好？</div>
+            <div class="pp-bars">
+              <div class="pp-bar" onclick="toast('🇧🇷','投票成功！')"><div class="pp-fill" style="background:#16a34a;width:42%"></div><div class="pp-row"><span class="pp-lbl">🇧🇷 巴西</span><span class="pp-pct" style="color:#16a34a">42%</span></div></div>
+              <div class="pp-bar" onclick="toast('🇫🇷','投票成功！')"><div class="pp-fill" style="background:#1d4ed8;width:31%"></div><div class="pp-row"><span class="pp-lbl">🇫🇷 法国</span><span class="pp-pct" style="color:#1d4ed8">31%</span></div></div>
+              <div class="pp-bar" onclick="toast('🇦🇷','投票成功！')"><div class="pp-fill" style="background:#7c3aed;width:27%"></div><div class="pp-row"><span class="pp-lbl">🇦🇷 阿根廷</span><span class="pp-pct" style="color:#7c3aed">27%</span></div></div>
+            </div>
+          </div>
+          <div class="post-actions">
+            <div class="pa" onclick="toggleLike(this)"><span class="pa-ico">🤍</span> 128</div>
+            <div class="pa"><span class="pa-ico">💬</span> 24</div>
+            <div class="pa"><span class="pa-ico">🔁</span> 13</div>
+            <div class="pa pa-share"><span class="pa-ico">↗️</span></div>
+          </div>
+        </div>
+        <div class="post-comments">
+          <div class="comment">
+            <div class="cmt-ava" style="background:rgba(199,125,255,.2)">🐉</div>
+            <div class="cmt-body">
+              <div class="cmt-name">DragonSeer</div>
+              <div class="cmt-text">法国队中场控制力无人能敌！姆巴佩如果在最佳状态，巴西根本挡不住。来，对赌就对赌，各 200 🪙？</div>
+              <div class="cmt-actions"><span class="cmt-like" onclick="toast('❤️','点赞成功！')">❤️ 31</span><span class="cmt-like" style="margin-left:8px;cursor:pointer" onclick="toast('💬','回复功能开发中！')">回复</span></div>
+            </div>
+          </div>
+          <div class="comment">
+            <div class="cmt-ava" style="background:rgba(76,201,240,.2)">🦅</div>
+            <div class="cmt-body">
+              <div class="cmt-name">EagleEye</div>
+              <div class="cmt-text">你们都别争了，本届冠军必定爆冷 😂 我押德国 <span style="font-size:11px">8.0×</span></div>
+              <div class="cmt-actions"><span class="cmt-like" onclick="toast('❤️','点赞成功！')">❤️ 18</span></div>
+            </div>
+          </div>
+          <div class="add-comment">
+            <div class="add-cmt-ava">🦊</div>
+            <input class="add-cmt-input" placeholder="发表评论…" onkeydown="if(event.key==='Enter'){toast('💬','评论发布成功！');this.value='';}" />
+          </div>
+        </div>
+      </div>
+
+      <!-- POST 2 -->
+      <div class="post">
+        <div class="post-body">
+          <div class="post-header">
+            <div class="post-ava" style="background:rgba(76,201,240,.2)">🐺</div>
+            <div class="post-meta">
+              <div class="post-name">CryptoWolf <span class="post-badge badge-hot2">🔥 热门</span></div>
+              <div class="post-sub">5小时前 · 胜率 63% · 6,720 🪙</div>
+            </div>
+            <div class="post-more">···</div>
+          </div>
+          <div class="post-text">刚刚看了最新 AI 排行榜，Claude 4 评测分数已经在某些指标上超过 GPT-4o 了！<br>但最终能否全面领先还是要看 GPT-5 什么时候出。<span class="ht">#AI大战</span> <span class="ht">#科技预测</span><br><br>我押 Claude 4 年底成为最强，谁来一起？</div>
+          <div class="pc-img img-ai" style="height:180px;border-radius:12px;margin-bottom:12px;position:relative;display:flex;align-items:center;justify-content:center;"><div style="font-size:60px;opacity:.3">🤖</div></div>
+          <div class="post-actions">
+            <div class="pa" onclick="toggleLike(this)"><span class="pa-ico">🤍</span> 84</div>
+            <div class="pa"><span class="pa-ico">💬</span> 17</div>
+            <div class="pa"><span class="pa-ico">🔁</span> 9</div>
+            <div class="pa pa-share"><span class="pa-ico">↗️</span></div>
+          </div>
+        </div>
+        <div class="post-comments">
+          <div class="comment">
+            <div class="cmt-ava" style="background:rgba(6,214,160,.2)">🦊</div>
+            <div class="cmt-body">
+              <div class="cmt-name">你</div>
+              <div class="cmt-text">同意！Claude 在代码和推理上进步很大，GPT-5 如果今年出不来，Claude 4 大概率登顶 💪</div>
+              <div class="cmt-actions"><span class="cmt-like" onclick="toast('❤️','点赞成功！')">❤️ 12</span></div>
+            </div>
+          </div>
+          <div class="add-comment">
+            <div class="add-cmt-ava">🦊</div>
+            <input class="add-cmt-input" placeholder="发表评论…" onkeydown="if(event.key==='Enter'){toast('💬','评论发布成功！');this.value='';}" />
+          </div>
+        </div>
+      </div>
+
+      <!-- POST 3 -->
+      <div class="post" id="dynamic-post-area">
+        <div class="post-body">
+          <div class="post-header">
+            <div class="post-ava" style="background:rgba(255,107,107,.2)">🐼</div>
+            <div class="post-meta">
+              <div class="post-name">PandaPredict</div>
+              <div class="post-sub">8小时前 · 胜率 55% · 3,240 🪙</div>
+            </div>
+            <div class="post-more">···</div>
+          </div>
+          <div class="post-text">周杰伦真的要出新专辑了吗？！网上已经传了好几年，这次有人说录音棚有目击照片 📸<br>我已经押了 200 🪙 在「会发」，胜率 79% 来的，感觉稳了。<span class="ht">#周杰伦</span> <span class="ht">#娱乐预测</span></div>
+          <div class="post-actions">
+            <div class="pa" onclick="toggleLike(this)"><span class="pa-ico">🤍</span> 241</div>
+            <div class="pa"><span class="pa-ico">💬</span> 58</div>
+            <div class="pa"><span class="pa-ico">🔁</span> 34</div>
+            <div class="pa pa-share"><span class="pa-ico">↗️</span></div>
+          </div>
+        </div>
+        <div class="post-comments">
+          <div class="comment">
+            <div class="cmt-ava" style="background:rgba(255,159,67,.2)">🦔</div>
+            <div class="cmt-body">
+              <div class="cmt-name">HedgehogFan</div>
+              <div class="cmt-text">我也押了！79% 胜率这么高还有 1.27 倍赔率，不押白不押 🎵</div>
+              <div class="cmt-actions"><span class="cmt-like" onclick="toast('❤️','点赞成功！')">❤️ 47</span></div>
+            </div>
+          </div>
+          <div class="add-comment">
+            <div class="add-cmt-ava">🦊</div>
+            <input class="add-cmt-input" placeholder="发表评论…" onkeydown="if(event.key==='Enter'){toast('💬','评论发布成功！');this.value='';}" />
+          </div>
+        </div>
+      </div>
+
+    </div>
+
+    </div><!-- /page-forum -->
+
+    <!-- ════ PAGE: battle — 已迁移至 battle.html ════ -->
+    <div class="tab-page" id="page-battle" style="display:none">
+      <div style="text-align:center;padding:60px 20px;">
+        <div style="font-size:48px;margin-bottom:12px">⚔️</div>
+        <div style="font-size:18px;font-weight:700;margin-bottom:8px">开战广场已升级</div>
+        <div style="font-size:13px;color:var(--muted);margin-bottom:20px">全新庄家赌局系统，独立页面体验更好</div>
+        <a href="battle.html" style="display:inline-block;padding:10px 24px;background:#ff6b6b;color:#fff;border-radius:10px;font-weight:700;text-decoration:none;font-size:14px">进入开战广场 →</a>
+      </div>
+
+
+    </div><!-- /page-battle -->
+
+  </div><!-- /main -->
+
+</div>
+
+<!-- MODAL -->
+<div class="overlay" id="ovl" style="display:none" onclick="if(event.target===this)closeModal()">
+  <div class="modal">
+    <span class="m-close" onclick="closeModal()">✕</span>
+    <div class="m-q" id="mq"></div>
+    <div class="m-sub">选择立场 · 押注龟币 · 猜对赢奖励</div>
+    <div class="m-label">你的判断</div>
+    <div class="m-choices">
+      <div class="m-ch" id="cy" onclick="selC('y')">✅ 是</div>
+      <div class="m-ch" id="cn" onclick="selC('n')">❌ 否</div>
+    </div>
+    <div class="m-label">押注金额 <span style="color:var(--dim);font-weight:500">（余额：2,480 🪙）</span></div>
+    <div class="m-amts">
+      <div class="m-ab" onclick="selA(this,50)">50</div>
+      <div class="m-ab on" onclick="selA(this,100)">100</div>
+      <div class="m-ab" onclick="selA(this,200)">200</div>
+      <div class="m-ab" onclick="selA(this,500)">500</div>
+    </div>
+    <button class="m-cta" id="mcta" onclick="confirmVote()">🪙 确认押注 100 龟币</button>
+  </div>
+</div>
+
+<!-- GUIDE MODAL -->
+<div class="guide-overlay" id="guideOverlay" onclick="if(event.target===this)closeGuideModal()">
+  <div class="guide-modal">
+    <div class="guide-dots" id="guideDots"></div>
+    <div class="guide-emoji" id="guideEmoji">🐢</div>
+    <div class="guide-title" id="guideTitle"></div>
+    <div class="guide-desc" id="guideDesc"></div>
+    <div class="guide-btns">
+      <div class="guide-btn-skip" onclick="closeGuideModal()">跳过</div>
+      <div class="guide-btn-next" id="guideNextBtn" onclick="nextGuide()">下一步</div>
+    </div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="tst"><span id="tico">🎉</span><span id="tmsg"></span></div>
+
+<script>
+function toggleMobileSidebar(){
+  var sb=document.getElementById('leftSidebar');
+  var ov=document.getElementById('mobileSidebarOverlay');
+  var open=sb.classList.toggle('mobile-open');
+  if(open){ov.classList.add('show');ov.style.display='block';}
+  else{ov.classList.remove('show');setTimeout(function(){ov.style.display='none';},250);}
+}
+</script>
+<script src="script.js"></script>
+</body>
+</html>

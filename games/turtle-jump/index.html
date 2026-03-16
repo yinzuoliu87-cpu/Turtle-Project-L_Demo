@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>龟龟出海 — 龟投小游戏</title>
+<link rel="stylesheet" href="style.css?v=2">
+</head>
+<body>
+
+<div class="nav">
+  <a class="nav-back" href="../../index.html">← 返回龟投</a>
+  <div class="nav-title">🐢 龟龟出海</div>
+  <div class="nav-coins">🪙 <span id="coins">2,480</span></div>
+</div>
+
+<div class="game-wrap">
+  <canvas id="gc"></canvas>
+
+  <!-- Pause Button -->
+  <button class="pause-btn" id="pauseBtn" onclick="togglePause()">⏸ 暂停</button>
+  <!-- Sound Toggle -->
+  <button class="sound-btn" id="soundBtn" onclick="toggleSound()" ontouchstart="event.stopPropagation()">🔊</button>
+
+  <!-- Pause Overlay -->
+  <div class="pause-overlay" id="pauseOverlay">
+    <div class="pause-title">⏸ 已暂停</div>
+    <div class="pause-info" id="pauseInfo"></div>
+    <div class="pause-btns">
+      <button class="pause-resume" onclick="togglePause()">▶ 继续</button>
+      <button class="pause-quit" onclick="quitGame()">🚪 退出</button>
+    </div>
+  </div>
+
+  <!-- HUD -->
+  <div class="hud" id="hud" style="display:none">
+    <div class="hud-item"><div class="hud-label">进度</div><div class="hud-val score" id="score">0%</div></div>
+<div class="hud-item"><div class="hud-label">区域</div><div class="hud-val speed" id="speed">浅海</div></div>
+    <div class="hud-item"><div class="hud-label">用时</div><div class="hud-val" id="elapsed" style="color:#e8e6f0">0s</div></div>
+    <div class="hud-item" id="livesHud" style="display:none"><div class="hud-label">生命</div><div class="hud-val" id="livesVal" style="color:#ff6b6b">❤️</div></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="lb-panel" id="lbPanel">
+    <div class="lb-title">🏆 排行榜</div>
+    <div id="lbRows"></div>
+  </div>
+
+  <!-- Start -->
+  <div class="game-overlay" id="startOverlay">
+    <div class="go-icon" id="startIcon">🐢</div>
+    <div class="go-title">龟龟出海</div>
+    <div class="go-sub">小龟龟要从海底跳回海面！<br>瞄准角度 · 按下跳跃 · 跳入气泡安全区<br>50层气泡 = 成功出海！</div>
+    <div class="skin-section">
+      <div class="skin-section-title">选择龟龟</div>
+      <div class="skin-bar" id="skinBar"></div>
+    </div>
+    <div class="active-skin" id="activeSkinInfo"></div>
+    <div class="best-score" id="bestScoreStart"></div>
+    <div class="go-btn" onclick="startGame()">开始出海!</div>
+    <div class="go-hint" id="controlHint">空格 / 点击 = 跳跃 · 角度指示器自动摆动</div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="game-overlay hidden" id="overOverlay">
+    <div class="go-icon">💀</div>
+    <div class="go-title" id="overTitle">掉下去了!</div>
+    <div class="go-stats">
+      <div class="go-stat"><div class="go-stat-val" id="finalScore">0%</div><div class="go-stat-label">进度</div></div>
+      <div class="go-stat"><div class="go-stat-val" id="finalTime">0s</div><div class="go-stat-label">用时</div></div>
+    </div>
+    <div class="best-score" id="bestScoreOver"></div>
+    <div class="near-miss-taunt" id="nearMissTaunt"></div>
+    <div id="milestoneProgress" style="width:100%;max-width:300px;margin:2px 0;"></div>
+    <div class="beat-pct" id="beatPct"></div>
+    <div class="go-reward" id="overReward">🪙 +0 龟币</div>
+    <div class="go-btn" onclick="retryGame()">再来一次!</div>
+    <div class="go-btn-secondary" onclick="backToSelect()">换龟龟</div>
+  </div>
+</div>
+
+<div class="g-toast" id="gToast"></div>
+
+<script src="audio.js"></script>
+<script src="leaderboard.js"></script>
+<script src="game.js"></script>
+</body>
+</html>

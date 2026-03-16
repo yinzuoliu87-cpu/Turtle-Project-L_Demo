@@ -1,0 +1,1323 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龟投 — 宠物中心</title>
+<!-- Google Fonts removed for China compatibility -->
+<style>
+:root{
+  --bg:#0d0c0b;--surface:#151413;--surface2:#1c1b19;--surface3:#242320;
+  --border:rgba(255,255,255,.07);--border2:rgba(255,255,255,.14);
+  --ink:#f0ede8;--ink2:#c8c4bc;--muted:#6b6760;--dim:#3d3a35;
+  --g:#06d6a0;--b:#4cc9f0;--y:#ffd93d;--r:#ff6b6b;--p:#c77dff;--o:#ff9f43;
+  --teal:#0ea5e9;
+  --sss:#ff4444;--ss:#ff8c00;--s:#ffd700;--a-rare:#c77dff;--b-rare:#4cc9f0;--c-rare:#8a879a;
+  --sh:0 2px 8px rgba(0,0,0,.3);--sh2:0 6px 24px rgba(0,0,0,.4);--sh3:0 12px 40px rgba(0,0,0,.5);
+}
+/* sprite animation */
+.sprite-wrap{display:inline-block;overflow:hidden;}
+.sprite-inner{background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges;}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+html{scroll-behavior:smooth;}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC','Nunito',sans-serif;min-height:100vh;display:flex;flex-direction:column;}
+body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
+  background:radial-gradient(ellipse at 50% 20%,rgba(6,214,160,.06) 0%,transparent 50%),
+  radial-gradient(ellipse at 80% 80%,rgba(76,201,240,.04) 0%,transparent 40%);}
+
+/* ── NAV ── */
+.nav{position:sticky;top:0;z-index:300;height:48px;background:rgba(13,12,11,.95);backdrop-filter:blur(16px);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0 18px;gap:12px;}
+.nav-back{display:flex;align-items:center;gap:6px;color:var(--muted);text-decoration:none;font-size:13px;font-weight:600;transition:.15s;padding:4px 10px;border-radius:8px;}
+.nav-back:hover{color:var(--ink);background:var(--surface2);}
+.nav-title{font-family:'Fredoka';font-size:17px;font-weight:700;color:var(--g);display:flex;align-items:center;gap:6px;}
+.nav-spacer{flex:1;}
+.nav-coins{display:flex;align-items:center;gap:5px;background:rgba(255,217,61,.12);border:1px solid rgba(255,217,61,.2);border-radius:18px;padding:4px 12px;font-family:'Fredoka';font-size:13px;font-weight:700;color:var(--y);}
+.nav-stamina{display:flex;align-items:center;gap:5px;background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.2);border-radius:18px;padding:4px 12px;font-family:'Fredoka';font-size:13px;font-weight:700;color:var(--g);}
+.nav-fire{display:flex;align-items:center;gap:3px;font-family:'Fredoka';font-size:13px;font-weight:700;color:var(--o);}
+
+/* ── STAGE ── */
+.stage{padding:24px 20px 16px;text-align:center;position:relative;}
+.stage-scene{width:260px;height:180px;margin:0 auto 10px;border-radius:18px;position:relative;overflow:hidden;border:2px solid var(--border);background:var(--surface);}
+.scene-bg{position:absolute;inset:0;background-size:cover;background-position:center;transition:opacity .5s;}
+.scene-bg.grassland{background:linear-gradient(180deg,#1a3a1a 0%,#0d1f0d 100%);}
+.scene-bg.coral{background:linear-gradient(180deg,#0a2a4a 0%,#061428 100%);}
+.scene-bg.starry{background:linear-gradient(180deg,#1a1040 0%,#0a0820 100%);}
+.scene-bg.lava_cave{background:linear-gradient(180deg,#3a1a0a 0%,#1a0a00 100%);}
+.pet-main{position:absolute;bottom:20%;left:50%;transform:translateX(-50%);font-size:64px;z-index:2;animation:pet-float 3s ease-in-out infinite;filter:drop-shadow(0 8px 16px rgba(0,0,0,.4));}
+@keyframes pet-float{0%,100%{transform:translateX(-50%) translateY(0)}50%{transform:translateX(-50%) translateY(-8px)}}
+.avatar-frame{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:100px;height:100px;border-radius:50%;border:3px solid transparent;z-index:4;pointer-events:none;transition:border-color .3s;}
+.avatar-frame.glow{animation:frame-glow 2s ease-in-out infinite;}
+@keyframes frame-glow{0%,100%{box-shadow:0 0 8px 2px var(--frame-color,transparent)}50%{box-shadow:0 0 18px 6px var(--frame-color,transparent)}}
+.pet-shadow{position:absolute;bottom:12%;left:50%;transform:translateX(-50%);width:60px;height:12px;background:radial-gradient(ellipse,rgba(0,0,0,.4),transparent);border-radius:50%;z-index:1;}
+.stage-info{margin-top:4px;}
+.pet-name-display{font-family:'Fredoka';font-size:18px;color:var(--g);font-weight:700;}
+.pet-rarity-display{font-size:12px;font-weight:700;margin-top:2px;}
+.stamina-bar-wrap{width:180px;margin:8px auto 2px;position:relative;}
+.stamina-bar{width:100%;height:6px;background:var(--surface3);border-radius:3px;overflow:hidden;}
+.stamina-fill{height:100%;background:linear-gradient(90deg,var(--g),var(--b));border-radius:3px;transition:width .6s ease;}
+.stamina-text{font-size:10px;color:var(--muted);margin-top:2px;}
+.pet-badges{display:flex;gap:5px;justify-content:center;margin-top:6px;flex-wrap:wrap;}
+.badge{font-size:10px;padding:2px 8px;border-radius:16px;font-weight:700;border:1px solid;}
+.badge-g{background:rgba(6,214,160,.1);color:var(--g);border-color:rgba(6,214,160,.25);}
+.badge-o{background:rgba(255,159,67,.1);color:var(--o);border-color:rgba(255,159,67,.25);}
+.badge-m{background:rgba(255,255,255,.04);color:var(--muted);border-color:rgba(255,255,255,.08);}
+
+/* ── TABS ── */
+.tabs{display:flex;border-top:1px solid var(--border);border-bottom:1px solid var(--border);background:var(--surface);position:sticky;top:48px;z-index:200;}
+.tab-btn{flex:1;padding:10px 0;text-align:center;font-size:13px;font-weight:700;cursor:pointer;color:var(--muted);transition:.15s;border-bottom:2px solid transparent;position:relative;}
+.tab-btn:hover{color:var(--ink);background:var(--surface2);}
+.tab-btn.on{color:var(--g);border-bottom-color:var(--g);}
+
+/* ── TAB CONTENT ── */
+.tab-content{flex:1;overflow-y:auto;padding:16px 20px 32px;}
+.tab-panel{display:none;animation:fadeUp .25s ease;}
+.tab-panel.active{display:block;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── ABILITY TAB ── */
+.ability-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.ability-header{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.ability-pet-ico{font-size:36px;}
+.ability-pet-name{font-family:'Fredoka';font-size:16px;font-weight:700;}
+.ability-pet-rarity{font-size:11px;font-weight:700;}
+.ability-section{margin-bottom:10px;}
+.ability-section-title{font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:6px;}
+.ability-item{display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:6px;font-size:13px;line-height:1.4;}
+.ability-item .ico{font-size:18px;flex-shrink:0;}
+.ability-item .desc{color:var(--ink2);}
+.ability-item .desc strong{color:var(--y);font-weight:700;}
+.stamina-section{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
+.stamina-big{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
+.stamina-big-num{font-family:'Fredoka';font-size:32px;font-weight:700;color:var(--g);}
+.stamina-big-label{font-size:12px;color:var(--muted);}
+.stamina-big-bar{flex:1;height:10px;background:var(--surface3);border-radius:5px;overflow:hidden;}
+.stamina-big-fill{height:100%;background:linear-gradient(90deg,var(--g),var(--b));border-radius:5px;transition:width .6s;}
+.food-btn{display:inline-flex;align-items:center;gap:6px;padding:8px 16px;border-radius:12px;background:rgba(6,214,160,.1);border:1.5px solid rgba(6,214,160,.25);color:var(--g);font-size:13px;font-weight:700;cursor:pointer;transition:.15s;}
+.food-btn:hover{background:rgba(6,214,160,.18);transform:translateY(-1px);}
+
+/* ── GACHA ── */
+.egg-nest{text-align:center;padding:20px 14px;margin-bottom:16px;}
+.egg-wrap{position:relative;display:inline-block;cursor:pointer;transition:.15s;}
+.egg-wrap:hover{transform:scale(1.05);}
+.egg-icon{font-size:100px;display:block;animation:egg-wobble 2s ease-in-out infinite;}
+@keyframes egg-wobble{0%,100%{transform:rotate(0)}15%{transform:rotate(6deg)}30%{transform:rotate(-6deg)}45%{transform:rotate(4deg)}60%{transform:rotate(-2deg)}75%{transform:rotate(0)}}
+.egg-hint{font-size:12px;color:var(--muted);margin-top:8px;}
+.egg-cost-info{font-size:13px;color:var(--ink2);margin-top:6px;}
+.egg-cost-info strong{color:var(--y);}
+.egg-btns{display:flex;gap:10px;margin-bottom:20px;}
+.egg-btn{flex:1;padding:14px;border-radius:14px;border:2px solid;text-align:center;cursor:pointer;transition:.15s;position:relative;overflow:hidden;}
+.egg-btn:hover{transform:translateY(-2px);}
+.egg-btn-single{background:rgba(6,214,160,.08);border-color:rgba(6,214,160,.25);color:var(--g);}
+.egg-btn-label{font-family:'Fredoka';font-size:15px;font-weight:700;}
+.egg-btn-cost{font-size:12px;color:var(--muted);margin-top:2px;}
+.egg-result{display:none;text-align:center;padding:24px;background:var(--surface);border:1px solid var(--border);border-radius:14px;margin-bottom:16px;position:relative;overflow:hidden;}
+.egg-result.show{display:block;}
+.egg-crack{animation:egg-crack .6s ease forwards;}
+@keyframes egg-crack{0%{transform:scale(1)}30%{transform:scale(1.15) rotate(5deg)}50%{transform:scale(1.2) rotate(-3deg)}70%{opacity:1;transform:scale(1.3)}100%{opacity:0;transform:scale(1.5) rotate(10deg)}}
+.egg-hatch{animation:egg-hatch .5s ease .6s both;}
+@keyframes egg-hatch{0%{opacity:0;transform:scale(0) translateY(20px)}60%{transform:scale(1.2) translateY(-5px)}100%{opacity:1;transform:scale(1) translateY(0)}}
+.egg-result-pet{font-size:80px;margin-bottom:8px;display:inline-block;}
+.egg-result-name{font-family:'Fredoka';font-size:18px;font-weight:700;}
+.egg-result-rarity{font-size:13px;font-weight:700;margin-top:4px;}
+.egg-result-dup{display:inline-block;background:rgba(255,217,61,.12);color:var(--y);font-size:11px;font-weight:700;padding:2px 10px;border-radius:8px;margin-top:6px;}
+.egg-result-new{display:inline-block;background:linear-gradient(135deg,var(--g),var(--b));color:#fff;font-size:11px;font-weight:700;padding:2px 10px;border-radius:8px;margin-top:6px;}
+.egg-result.sss-glow::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,68,68,.15),transparent 60%);animation:golden-burst 1.5s ease infinite;}
+.egg-result.ss-glow::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,140,0,.12),transparent 60%);animation:golden-burst 1.5s ease infinite;}
+.egg-result.s-glow::before{content:'';position:absolute;inset:0;background:radial-gradient(circle,rgba(255,215,0,.12),transparent 60%);animation:golden-burst 1.5s ease infinite;}
+@keyframes golden-burst{0%,100%{opacity:.5;transform:scale(1)}50%{opacity:1;transform:scale(1.05)}}
+.egg-history{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;}
+.egg-history-title{font-size:12px;font-weight:700;color:var(--muted);letter-spacing:.5px;text-transform:uppercase;margin-bottom:8px;}
+.gh-row{display:flex;align-items:center;gap:8px;padding:5px 0;font-size:12px;color:var(--ink2);}
+.gh-time{color:var(--muted);width:72px;flex-shrink:0;}
+.gh-pet{font-weight:600;}
+.egg-prob-table{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:16px;}
+.prob-row{display:flex;justify-content:space-between;padding:4px 0;font-size:12px;border-bottom:1px solid var(--border);}
+.prob-row:last-child{border-bottom:none;}
+.prob-row .rarity-label{font-weight:700;}
+.prob-row .prob-val{color:var(--muted);}
+
+/* ── PET CHAT / AI ── */
+.chat-messages{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:14px;margin-bottom:10px;max-height:320px;overflow-y:auto;display:flex;flex-direction:column;gap:10px;}
+.chat-messages::-webkit-scrollbar{width:3px;}
+.chat-messages::-webkit-scrollbar-thumb{background:var(--dim);border-radius:2px;}
+.cmsg{display:flex;gap:8px;align-items:flex-end;}
+.cmsg.user{flex-direction:row-reverse;}
+.cmsg-ava{width:28px;height:28px;border-radius:50%;display:grid;place-items:center;font-size:14px;flex-shrink:0;border:1.5px solid var(--border);}
+.cmsg-bubble{max-width:80%;padding:10px 13px;border-radius:14px;font-size:13px;line-height:1.55;}
+.cmsg.bot .cmsg-bubble{background:var(--surface2);border:1px solid var(--border);border-bottom-left-radius:4px;color:var(--ink2);}
+.cmsg.user .cmsg-bubble{background:var(--g);color:#0d0c0b;border-bottom-right-radius:4px;font-weight:600;}
+.chat-time{font-size:10px;color:var(--dim);text-align:center;margin:2px 0;}
+.chat-quick{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;}
+.cq-btn{padding:6px 12px;border-radius:18px;font-size:12px;font-weight:700;cursor:pointer;border:1.5px solid var(--border);color:var(--muted);transition:.15s;white-space:nowrap;}
+.cq-btn:hover{border-color:rgba(6,214,160,.4);color:var(--g);background:rgba(6,214,160,.05);}
+.chat-input-row{display:flex;gap:8px;}
+.chat-input{flex:1;border:1.5px solid var(--border);border-radius:20px;padding:9px 14px;font-size:13px;font-family:'Noto Sans SC',sans-serif;outline:none;background:var(--surface);color:var(--ink);transition:border-color .15s;}
+.chat-input:focus{border-color:rgba(6,214,160,.4);}
+.chat-input::placeholder{color:var(--muted);}
+.chat-send{width:36px;height:36px;border-radius:50%;background:var(--g);border:none;display:grid;place-items:center;cursor:pointer;font-size:16px;transition:.12s;flex-shrink:0;box-shadow:0 2px 0 rgba(6,214,160,.3);}
+.chat-send:hover{background:#05c491;transform:scale(1.05);}
+.chat-stamina-cost{font-size:11px;color:var(--muted);text-align:center;margin-top:6px;}
+.typing-indicator{display:flex;align-items:center;gap:4px;padding:8px 12px;background:var(--surface2);border:1px solid var(--border);border-radius:14px;border-bottom-left-radius:4px;width:fit-content;}
+.typing-dot{width:5px;height:5px;border-radius:50%;background:var(--muted);animation:tbounce 1.2s ease-in-out infinite;}
+.typing-dot:nth-child(2){animation-delay:.2s;}
+.typing-dot:nth-child(3){animation-delay:.4s;}
+@keyframes tbounce{0%,60%,100%{transform:translateY(0);opacity:.5}30%{transform:translateY(-5px);opacity:1}}
+
+/* ── PET/CAPE/SCENE GRIDS ── */
+.grid-section-title{font-family:'Fredoka';font-size:15px;font-weight:700;margin-bottom:12px;display:flex;align-items:center;gap:6px;}
+.grid-section-title .count{font-size:12px;color:var(--muted);font-weight:500;}
+.rarity-filter{display:flex;gap:4px;flex-wrap:wrap;margin-bottom:12px;}
+.rf-btn{padding:4px 10px;border-radius:12px;font-size:11px;font-weight:700;cursor:pointer;border:1px solid var(--border);color:var(--muted);transition:.15s;}
+.rf-btn:hover{border-color:var(--border2);color:var(--ink2);}
+.rf-btn.active{border-color:rgba(6,214,160,.4);color:var(--g);background:rgba(6,214,160,.06);}
+.item-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.item-card{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:14px;text-align:center;cursor:pointer;transition:.15s;position:relative;overflow:hidden;}
+.item-card:hover{border-color:var(--border2);transform:translateY(-2px);}
+.item-card.equipped{border-color:rgba(6,214,160,.4);background:rgba(6,214,160,.04);}
+.item-card.locked{opacity:.5;cursor:default;}
+.item-card.locked:hover{transform:none;border-color:var(--border);}
+.item-ico{font-size:40px;margin-bottom:6px;display:inline-block;}
+.item-name{font-size:12px;font-weight:700;margin-bottom:3px;}
+.item-rarity{font-size:10px;font-weight:700;margin-bottom:6px;}
+.rarity-c{color:var(--c-rare);}
+.rarity-b{color:var(--b-rare);}
+.rarity-a{color:var(--a-rare);}
+.rarity-s{color:var(--s);}
+.rarity-ss{color:var(--ss);}
+.rarity-sss{color:var(--sss);}
+.item-action{font-size:11px;font-weight:700;padding:4px 12px;border-radius:8px;display:inline-block;}
+.item-action.equipped-tag{background:rgba(6,214,160,.12);color:var(--g);border:1px solid rgba(6,214,160,.25);}
+.item-action.equip-btn{background:var(--surface2);color:var(--ink);border:1px solid var(--border);cursor:pointer;transition:.12s;}
+.item-action.equip-btn:hover{background:var(--surface3);border-color:var(--border2);}
+.item-action.lock-tag{color:var(--muted);}
+.item-action.claim-btn{background:rgba(6,214,160,.12);color:var(--g);border:1px solid rgba(6,214,160,.3);cursor:pointer;animation:claim-pulse 1.5s ease infinite;}
+@keyframes claim-pulse{0%,100%{box-shadow:0 0 0 0 rgba(6,214,160,.3)}50%{box-shadow:0 0 8px 2px rgba(6,214,160,.2)}}
+.cape-unlock-info{margin-top:4px;font-size:10px;color:var(--muted);line-height:1.4;}
+.cape-progress{width:100%;height:4px;background:rgba(255,255,255,.06);border-radius:2px;margin-top:4px;overflow:hidden;}
+.cape-progress-fill{height:100%;border-radius:2px;background:linear-gradient(90deg,var(--g),var(--b));transition:width .3s;}
+.cape-progress-text{font-size:9px;color:var(--muted);font-family:'Fredoka';margin-top:2px;}
+.item-special{font-size:10px;color:var(--ink2);margin-top:4px;line-height:1.3;}
+.season-tag{font-size:9px;color:var(--o);font-weight:700;margin-top:2px;}
+.divider{height:1px;background:var(--border);margin:16px 0;}
+
+/* ── MEMORY TAB ── */
+.memory-empty{text-align:center;padding:40px 20px;color:var(--muted);}
+.memory-empty .ico{font-size:48px;margin-bottom:12px;}
+.memory-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:12px;margin-bottom:8px;}
+.memory-item .time{font-size:10px;color:var(--muted);margin-bottom:4px;}
+.memory-item .role{font-size:11px;font-weight:700;color:var(--g);margin-bottom:2px;}
+.memory-item .text{font-size:13px;color:var(--ink2);line-height:1.5;}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:20px;right:20px;z-index:600;background:var(--surface2);color:var(--ink);border:1px solid var(--border);border-radius:14px;padding:11px 18px;display:flex;align-items:center;gap:8px;box-shadow:var(--sh3);transform:translateY(70px);opacity:0;transition:.4s cubic-bezier(.34,1.4,.64,1);font-size:13px;font-weight:600;max-width:300px;}
+.toast.show{transform:translateY(0);opacity:1;}
+
+/* ── GUIDE OVERLAY ── */
+.guide-overlay{position:fixed;inset:0;z-index:500;background:rgba(0,0,0,.75);backdrop-filter:blur(6px);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .35s;pointer-events:none;}
+.guide-overlay.show{opacity:1;pointer-events:auto;}
+.guide-card{background:var(--surface);border:1.5px solid var(--border2);border-radius:20px;padding:28px 24px 22px;max-width:380px;width:90%;text-align:center;position:relative;box-shadow:var(--sh3);animation:guideIn .4s ease both;}
+@keyframes guideIn{from{opacity:0;transform:translateY(24px) scale(.95)}to{opacity:1;transform:translateY(0) scale(1)}}
+.guide-step-indicator{display:flex;gap:6px;justify-content:center;margin-bottom:16px;}
+.guide-dot{width:8px;height:8px;border-radius:50%;background:var(--dim);transition:.2s;}
+.guide-dot.active{background:var(--g);transform:scale(1.25);}
+.guide-dot.done{background:rgba(6,214,160,.4);}
+.guide-emoji{font-size:56px;margin-bottom:12px;display:block;animation:pet-float 3s ease-in-out infinite;}
+.guide-title{font-family:'Fredoka';font-size:20px;font-weight:700;color:var(--g);margin-bottom:6px;}
+.guide-desc{font-size:13px;color:var(--ink2);line-height:1.7;margin-bottom:18px;}
+.guide-desc strong{color:var(--y);font-weight:700;}
+.guide-desc .hl{color:var(--g);font-weight:700;}
+.guide-desc .hl-b{color:var(--b);font-weight:700;}
+.guide-btns{display:flex;gap:10px;justify-content:center;}
+.guide-btn{padding:10px 28px;border-radius:12px;font-size:14px;font-weight:700;cursor:pointer;transition:.15s;border:none;}
+.guide-btn:hover{transform:translateY(-1px);}
+.guide-btn-primary{background:linear-gradient(135deg,var(--g),var(--b));color:#0d0c0b;box-shadow:0 4px 16px rgba(6,214,160,.25);}
+.guide-btn-skip{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.guide-btn-skip:hover{color:var(--ink);border-color:var(--border2);}
+.guide-tip{margin-top:12px;font-size:11px;color:var(--dim);}
+
+/* responsive */
+@media(max-width:600px){
+  /* Nav */
+  .nav{height:44px;padding:0 10px;gap:8px;}
+  .nav-back{font-size:12px;padding:3px 8px;}
+  .nav-title{font-size:15px;}
+  .nav-coins{font-size:12px;padding:3px 10px;}
+  .nav-stamina{font-size:12px;padding:3px 10px;}
+  .nav-fire{font-size:12px;}
+
+  /* Stage */
+  .stage{padding:16px 12px 10px;}
+  .stage-scene{width:200px;height:140px;border-radius:14px;}
+  .pet-main{font-size:48px;}
+  .pet-name-display{font-size:16px;}
+  .stamina-bar-wrap{width:150px;}
+
+  /* Tabs */
+  .tabs{top:44px;}
+  .tab-btn{padding:8px 0;font-size:12px;}
+
+  /* Tab content */
+  .tab-content{padding:12px 10px 24px;}
+
+  /* Grid */
+  .item-grid{grid-template-columns:repeat(2,1fr);gap:8px;}
+  .item-card{padding:10px;border-radius:12px;}
+  .item-ico{font-size:32px;margin-bottom:4px;}
+  .item-name{font-size:11px;}
+  .item-rarity{font-size:9px;}
+  .item-action{font-size:10px;padding:3px 10px;}
+
+  /* Ability */
+  .ability-card{padding:12px;border-radius:12px;}
+  .ability-item{padding:6px 8px;font-size:12px;border-radius:8px;}
+  .ability-pet-ico{font-size:28px;}
+  .ability-pet-name{font-size:14px;}
+  .stamina-section{padding:12px;border-radius:12px;}
+  .stamina-big-num{font-size:26px;}
+
+  /* Gacha */
+  .egg-icon{font-size:72px;}
+  .egg-btns{gap:8px;}
+  .egg-btn{padding:12px;border-radius:12px;}
+  .egg-btn-label{font-size:14px;}
+  .egg-result-pet{font-size:60px;}
+  .egg-result-name{font-size:16px;}
+  .egg-prob-table{padding:10px;border-radius:12px;}
+  .egg-history{padding:10px;border-radius:12px;}
+
+  /* Chat */
+  .chat-messages{padding:10px;border-radius:12px;max-height:260px;}
+  .cmsg-bubble{font-size:12px;padding:8px 10px;}
+  .chat-input{padding:7px 12px;font-size:12px;}
+  .chat-send{width:32px;height:32px;font-size:14px;}
+  .chat-quick{gap:4px;}
+  .cq-btn{padding:4px 10px;font-size:11px;}
+
+  /* Guide */
+  .guide-card{padding:20px 16px;max-width:340px;}
+  .guide-emoji{font-size:44px;}
+  .guide-title{font-size:18px;}
+  .guide-desc{font-size:12px;}
+  .guide-btn{padding:8px 20px;font-size:13px;}
+
+  /* Toast */
+  .toast{right:10px;left:10px;bottom:12px;max-width:none;font-size:12px;}
+
+  /* Rarity filter */
+  .rarity-filter{gap:3px;}
+  .rf-btn{padding:3px 8px;font-size:10px;}
+
+  /* Grid section */
+  .grid-section-title{font-size:13px;}
+}
+</style>
+</head>
+<body>
+
+<!-- NAV -->
+<div class="nav">
+  <a class="nav-back" href="index.html">← 返回主站</a>
+  <div class="nav-title">🐢 宠物中心</div>
+  <div class="nav-spacer"></div>
+  <div class="nav-fire" id="navFire">🔥 <span id="fireDisplay">0</span></div>
+  <div class="nav-stamina" id="navStamina">⚡ <span id="staminaDisplay">100</span></div>
+  <div class="nav-coins" id="navCoins">🪙 <span id="coinDisplay">0</span></div>
+</div>
+
+<!-- STAGE -->
+<div class="stage">
+  <div class="stage-scene">
+    <div class="scene-bg grassland" id="sceneBg"></div>
+    <div class="pet-shadow"></div>
+    <div class="pet-main" id="petMainEmoji"></div>
+    <div class="avatar-frame" id="avatarFrame"></div>
+  </div>
+  <div class="stage-info">
+    <div class="pet-name-display" id="petNameDisplay">小龟</div>
+    <div class="pet-rarity-display" id="petRarityDisplay"></div>
+    <div class="stamina-bar-wrap">
+      <div class="stamina-bar"><div class="stamina-fill" id="staminaFill" style="width:100%"></div></div>
+      <div class="stamina-text">体力 <span id="staminaText">100</span> / 100</div>
+    </div>
+    <div class="pet-badges" id="petBadges"></div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs">
+  <div class="tab-btn on" onclick="switchPetTab(this,0)">⚡ 能力</div>
+  <div class="tab-btn" onclick="switchPetTab(this,1)">🐢 龟种</div>
+  <div class="tab-btn" onclick="switchPetTab(this,2)">🧥 装扮</div>
+  <div class="tab-btn" onclick="switchPetTab(this,3)">💭 记忆</div>
+</div>
+
+<!-- TAB CONTENT -->
+<div class="tab-content">
+
+  <!-- ═══ TAB 0: ABILITY ═══ -->
+  <div class="tab-panel active" id="panel-0">
+    <div class="stamina-section">
+      <div class="ability-section-title">⚡ 体力</div>
+      <div class="stamina-big">
+        <div class="stamina-big-num" id="staminaBigNum">100</div>
+        <div style="flex:1">
+          <div class="stamina-big-bar"><div class="stamina-big-fill" id="staminaBigFill" style="width:100%"></div></div>
+          <div class="stamina-big-label">每小时回复 5 点 · 上限 100</div>
+        </div>
+      </div>
+      <div class="food-btn" onclick="buyFood()">🍎 使用龟粮 +25体力 <span style="color:var(--y)">（<span id="foodCostDisplay">20</span>🪙）</span></div>
+    </div>
+    <div id="abilityContent"></div>
+
+    <!-- EGG SECTION (moved into ability tab) -->
+    <div class="divider"></div>
+    <div class="grid-section-title">🥚 开蛋</div>
+    <div class="egg-nest">
+      <div class="egg-wrap" onclick="hatchEgg()">
+        <span class="egg-icon" id="eggIcon">🥚</span>
+      </div>
+      <div class="egg-hint">点击蛋或下方按钮孵化</div>
+      <div class="egg-cost-info" id="eggCostInfo">每次消耗 <strong id="eggCostDisplay">500</strong> 🪙</div>
+    </div>
+    <div class="egg-btns">
+      <div class="egg-btn egg-btn-single" onclick="hatchEgg()" style="max-width:220px;margin:0 auto;">
+        <div class="egg-btn-label">开蛋 ×1</div>
+        <div class="egg-btn-cost" id="eggBtnCost">🪙 500 龟币</div>
+      </div>
+    </div>
+    <div class="egg-result" id="eggResult">
+      <div class="egg-result-pet" id="eggResultPet">🐢</div>
+      <div class="egg-result-name" id="eggResultName"></div>
+      <div class="egg-result-rarity" id="eggResultRarity"></div>
+      <div class="egg-result-new" id="eggResultNew" style="display:none">NEW!</div>
+      <div class="egg-result-dup" id="eggResultDup" style="display:none">已拥有 · 返还 30%</div>
+    </div>
+    <div class="egg-prob-table">
+      <div class="ability-section-title">概率分布</div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--sss)">SSS</span><span class="prob-val">1%</span></div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--ss)">SS</span><span class="prob-val">4%</span></div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--s)">S</span><span class="prob-val">10%</span></div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--a-rare)">A</span><span class="prob-val">15%</span></div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--b-rare)">B</span><span class="prob-val">30%</span></div>
+      <div class="prob-row"><span class="rarity-label" style="color:var(--c-rare)">C</span><span class="prob-val">40%</span></div>
+    </div>
+    <div class="egg-history" id="eggHistory">
+      <div class="egg-history-title">开蛋记录</div>
+    </div>
+  </div>
+
+  <!-- ═══ TAB 1: PET SWITCH ═══ -->
+  <div class="tab-panel" id="panel-1">
+    <div class="grid-section-title">🐢 龟种图鉴 <span class="count" id="petCount">(已拥有 1/28)</span></div>
+    <div class="rarity-filter" id="rarityFilter"></div>
+    <div class="item-grid" id="petGrid"></div>
+  </div>
+
+  <!-- ═══ TAB 2: CAPE & SCENE ═══ -->
+  <div class="tab-panel" id="panel-2">
+    <div class="grid-section-title">🖼 头像框</div>
+    <div class="item-grid" id="frameGrid"></div>
+    <div class="divider"></div>
+    <div class="grid-section-title">🖼️ 场景背景</div>
+    <div class="item-grid" id="sceneGrid"></div>
+  </div>
+
+  <!-- ═══ TAB 3: MEMORY ═══ -->
+  <div class="tab-panel" id="panel-3">
+    <div class="grid-section-title">💭 对话记忆</div>
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-time">刚刚</div>
+      <div class="cmsg bot">
+        <div class="cmsg-ava" style="background:rgba(6,214,160,.1)">🐢</div>
+        <div class="cmsg-bubble">嘿主人！我是你的小龟 🐢<br>想聊点什么？我可以帮你分析赛事、推荐话题～<br><br><span style="color:var(--muted);font-size:11px">每次对话消耗 5 体力</span></div>
+      </div>
+    </div>
+    <div class="chat-quick">
+      <div class="cq-btn" onclick="chatQuick(this)">💡今日推荐</div>
+      <div class="cq-btn" onclick="chatQuick(this)">📊看战绩</div>
+      <div class="cq-btn" onclick="chatQuick(this)">🎯热门</div>
+      <div class="cq-btn" onclick="chatQuick(this)">⚽世界杯分析</div>
+    </div>
+    <div class="chat-input-row">
+      <input class="chat-input" id="chatInput" placeholder="和小龟聊天…" onkeydown="if(event.key==='Enter')sendChat()" />
+      <button class="chat-send" onclick="sendChat()">↑</button>
+    </div>
+    <div class="chat-stamina-cost">每次对话消耗 <span id="chatCostDisplay">5</span> 体力 · 当前 <span id="chatStaminaLeft">100</span></div>
+  </div>
+
+</div>
+
+<!-- GUIDE OVERLAY -->
+<div class="guide-overlay" id="guideOverlay">
+  <div class="guide-card">
+    <div class="guide-step-indicator" id="guideDots"></div>
+    <div class="guide-emoji" id="guideEmoji">🐢</div>
+    <div class="guide-title" id="guideTitle">欢迎来到宠物中心！</div>
+    <div class="guide-desc" id="guideDesc"></div>
+    <div class="guide-btns">
+      <div class="guide-btn guide-btn-skip" onclick="closeGuide()">跳过</div>
+      <div class="guide-btn guide-btn-primary" id="guideNextBtn" onclick="nextGuideStep()">开始了解</div>
+    </div>
+    <div class="guide-tip" id="guideTip"></div>
+  </div>
+</div>
+
+<!-- TOAST -->
+<div class="toast" id="tst"><span id="tico">🎉</span><span id="tmsg"></span></div>
+
+<script>
+// ═══════════════════════════════
+// DATA: 28 TURTLES (v3.3)
+// ═══════════════════════════════
+const pets = [
+  // C级 (3)
+  { id:'basic',     name:'小龟',     emoji:'🐢',     img:'assets/pets/基础小龟v1.png', rarity:'C', ability:'none',   special:'新用户默认形象，注册时赠送 1000 龟币',             owned:true, equipped:true, sprite:{frames:8, frameW:64, frameH:64, duration:800} },
+  { id:'stone',     name:'石头龟',   emoji:'🪨🐢',   img:'assets/pets/石头龟v1.png', rarity:'C', ability:'none',   special:'每日登录额外奖励 +25 龟币',                       owned:false, equipped:false, sprite:{frames:10, frameW:500, frameH:500, duration:1000} },
+  { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',   img:'assets/pets/竹叶龟v1.png', rarity:'C', ability:'none',   special:'每日登录额外奖励 +25 龟币',                       owned:false, equipped:false, sprite:{frames:10, frameW:500, frameH:400, duration:1000} },
+  // B级 (8)
+  { id:'angel',     name:'天使龟',   emoji:'😇🐢',   img:'assets/pets/天使龟v1.png', rarity:'B', ability:'none',   special:'每日登录额外奖励 +40 龟币',                       owned:false, equipped:false, sprite:{frames:8, frameW:248, frameH:200, duration:800} },
+  { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',   img:'assets/pets/寒冰龟.png',  rarity:'B', ability:'none',   special:'每日登录额外奖励 +40 龟币',                       owned:false, equipped:false },
+  { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',   img:'assets/pets/忍者龟.png',  rarity:'B', ability:'none',   special:'每日登录额外 +15 龟币；抽奖消耗 -5%',             owned:false, equipped:false },
+  { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',   img:'assets/pets/双头龟.png',  rarity:'B', ability:'none',   special:'龟势对决贡献值 +15%',                             owned:false, equipped:false },
+  { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',   img:'assets/pets/幽灵龟v1.png', rarity:'B', ability:'none',   special:'投票下注手续费减免 5%（每日上限 300 龟币）',       owned:false, equipped:false, sprite:{frames:17, frameW:500, frameH:500, duration:1700} },
+  { id:'diamond',   name:'钻石龟',   emoji:'💎🐢',   img:'assets/pets/钻石龟.png',  rarity:'B', ability:'none',   special:'赛季排名百分比额外 +2%',                          owned:false, equipped:false },
+  { id:'fortune',   name:'财神龟',   emoji:'🧧🐢',   img:'assets/pets/财神龟v1.png', rarity:'B', ability:'none',   special:'每日首次投票下注后额外获得 50 龟币',               owned:false, equipped:false, sprite:{frames:18, frameW:500, frameH:500, duration:1800} },
+  { id:'dice',      name:'骰子龟',   emoji:'🎲🐢',   img:'assets/pets/骰子龟v1.png', rarity:'B', ability:'none',   special:'每日登录自动触发「幸运骰」，随机获得 0-90 龟币',   owned:false, equipped:false },
+  // A级 (8)
+  { id:'rainbow',   name:'彩虹龟',   emoji:'🌈🐢',   img:'assets/pets/彩虹龟.png',  rarity:'A', ability:'none',   special:'每日登录额外奖励 +60 龟币',                       owned:false, equipped:false },
+  { id:'gambler',   name:'赌神龟',   emoji:'🃏🐢',   img:'assets/pets/赌神龟v1.png', rarity:'A', ability:'none',   special:'每与一位好友完成对赌 +50 龟币（每友每日一次，上限 400）', owned:false, equipped:false, sprite:{frames:8, frameW:500, frameH:500, duration:800} },
+  { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',   img:'assets/pets/猎人龟v1.png', rarity:'A', ability:'none',   special:'胜率 < 35% 事件获胜，奖励额外 +15%',              owned:false, equipped:false, sprite:{frames:15, frameW:500, frameH:500, duration:1500} },
+  { id:'pirate',    name:'海盗龟',   emoji:'🏴‍☠️🐢', img:'assets/pets/海盗龟.png',  rarity:'A', ability:'none',   special:'好友对赌获胜，额外窃取输家 10%',                   owned:false, equipped:false },
+  { id:'candy',     name:'糖果龟',   emoji:'🍬🐢',   img:'assets/pets/糖果龟v1.png', rarity:'A', ability:'none',   special:'购买龟粮 -20%，即 16 龟币/个',                    owned:false, equipped:false, sprite:{frames:10, frameW:500, frameH:500, duration:1000} },
+  { id:'bubble',    name:'泡泡龟',   emoji:'🫧🐢',   img:'assets/pets/气泡龟v1.png', rarity:'A', ability:'none',   special:'抽奖消耗 -10%',                                   owned:false, equipped:false, sprite:{frames:8, frameW:500, frameH:500, duration:800} },
+  { id:'line',      name:'线条龟',   emoji:'✏️🐢',   img:'assets/pets/线条龟v1.png', rarity:'A', ability:'none',   special:'龟势对决贡献值 +25%',                             owned:false, equipped:false, sprite:{frames:14, frameW:500, frameH:500, duration:1400} },
+  { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',   img:'assets/pets/闪电龟.png',  rarity:'A', ability:'none',   special:'欠账上限 -300 龟币，每日补贴 25%',                 owned:false, equipped:false },
+  // S级 (6)
+  { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',   img:'assets/pets/凤凰龟.png',  rarity:'S', ability:'shield', special:'每日登录额外奖励 +100 龟币',                      owned:false, equipped:false },
+  { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',   img:'assets/pets/熔岩龟.png',  rarity:'S', ability:'shield', special:'火花奖励翻倍（上限 400 龟币/天）',                 owned:false, equipped:false },
+  { id:'cyber',     name:'赛博龟',   emoji:'🤖🐢',   img:'assets/pets/赛博龟.png',  rarity:'S', ability:'shield', special:'好友对赌获胜，额外窃取输家 15%',                   owned:false, equipped:false },
+  { id:'crystal',   name:'水晶龟',   emoji:'🔮🐢',   img:'assets/pets/水晶龟v1.png', rarity:'S', ability:'shield', special:'抽奖消耗 -18%',                                   owned:false, equipped:false, sprite:{frames:11, frameW:500, frameH:500, duration:1100} },
+  { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',   img:'assets/pets/宝箱龟v1.png', rarity:'S', ability:'shield', special:'小游戏奖励 +25%；龟势对决奖励 +10%',               owned:false, equipped:false, sprite:{frames:11, frameW:300, frameH:200, duration:1100} },
+  { id:'space',     name:'星际龟',   emoji:'🚀🐢',   img:'assets/pets/星际龟v1.png', rarity:'S', ability:'shield', special:'余额 > 0 时每日生息 3%（上限 1000/天）；龟势对决贡献 +15%', owned:false, equipped:false, sprite:{frames:12, frameW:500, frameH:500, duration:1200} },
+  // SS级 (2)
+  { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',   img:'assets/pets/缩头乌龟v1.png',rarity:'SS', ability:'shrink', special:'龟势对决失败仍获胜方奖励的 50%',                  owned:false, equipped:false, sprite:{frames:14, frameW:500, frameH:500, duration:1400} },
+  { id:'headless',  name:'无头龟',   emoji:'💀🐢',   img:'assets/pets/无头龟v1.png', rarity:'SS', ability:'shrink', special:'AI 对话体力消耗 -1（即 4/次）；每日登录 +50 龟币', owned:false, equipped:false, sprite:{frames:17, frameW:500, frameH:500, duration:1700} },
+  // SSS级 (1)
+  { id:'shell',     name:'龟壳',     emoji:'🐚',     img:'assets/pets/龟壳v1.png',  rarity:'SSS', ability:'shrink', special:'欠账上限 -1000；每日补贴 22%；余额 > 0 时每日生息 5%（上限 1000/天）', owned:false, equipped:false, sprite:{frames:20, frameW:500, frameH:500, duration:2000} },
+];
+
+// ═══════════════════════════════
+// DATA: CAPES (11)
+// ═══════════════════════════════
+const frames = [
+  { id:'basic_frame',   name:'基础框',   emoji:'🟢', borderColor:'#06d6a0', owned:true,  equipped:true,  unlock:'default',              unlockDesc:'默认拥有',                            season:false },
+  { id:'none',          name:'无头像框', emoji:'❌', borderColor:null,      owned:true,  equipped:false, unlock:'default',              unlockDesc:'默认拥有',                            season:false },
+  { id:'lava_frame',    name:'熔岩框',   emoji:'🔥', borderColor:'#ff4500', owned:false, equipped:false, unlock:'voteStreak5',          unlockDesc:'投票连胜 5 局（每局≥100龟币）',         season:false },
+  { id:'dark_frame',    name:'暗黑框',   emoji:'🌑', borderColor:'#6b6880', owned:false, equipped:false, unlock:'gameBest15000',        unlockDesc:'小游戏最高分 ≥ 15,000',               season:false },
+  { id:'moon_frame',    name:'月牙框',   emoji:'🌙', borderColor:'#ffd93d', owned:false, equipped:false, unlock:'collectPets12',        unlockDesc:'收集 12 只龟',                        season:false },
+  { id:'sakura_frame',  name:'樱花框',   emoji:'🌸', borderColor:'#ff9ff3', owned:false, equipped:false, unlock:'gameBest20000',        unlockDesc:'小游戏最高分 ≥ 20,000',               season:false },
+  { id:'upset_frame',   name:'爆冷框',   emoji:'💥', borderColor:'#ff6b6b', owned:false, equipped:false, unlock:'upsetStreak4',         unlockDesc:'连续猜对 4 次胜率<25%事件（每局≥100龟币）', season:false },
+  { id:'galaxy_frame',  name:'星河框',   emoji:'⭐', borderColor:'#ffd93d', owned:false, equipped:false, unlock:'season',               unlockDesc:'赛季结算前 3% 专属',                  season:true },
+  { id:'phantom_frame', name:'幽冥框',   emoji:'👻', borderColor:'#8b5cf6', owned:false, equipped:false, unlock:'season',               unlockDesc:'赛季结算 3%~10% 专属',                season:true },
+  { id:'aurora_frame',  name:'极光框',   emoji:'🌌', borderColor:'#06d6a0', owned:false, equipped:false, unlock:'season',               unlockDesc:'赛季结算 10%~25% 专属',               season:true },
+  { id:'koi_frame',     name:'锦鲤框',   emoji:'🐟', borderColor:'#ff9f43', owned:false, equipped:false, unlock:'season',               unlockDesc:'赛季结算 25%~40% 专属',               season:true },
+];
+
+// ═══════════════════════════════
+// DATA: SCENES (4)
+// ═══════════════════════════════
+const scenes = [
+  { id:'grassland',  name:'草地',     emoji:'🌿', className:'grassland',  owned:true,  active:true,  unlock:'default',        unlockDesc:'默认拥有' },
+  { id:'coral',      name:'海底珊瑚', emoji:'🌊', className:'coral',      owned:true,  active:false, unlock:'default',        unlockDesc:'默认拥有' },
+  { id:'starry',     name:'星空',     emoji:'🌌', className:'starry',     owned:false, active:false, unlock:'totalVotes25',   unlockDesc:'累计投票 25 次' },
+  { id:'lava_cave',  name:'熔岩洞穴', emoji:'🌋', className:'lava_cave',  owned:false, active:false, unlock:'collectPets8',   unlockDesc:'收集 8 只龟' },
+];
+
+// ═══════════════════════════════
+// STATE
+// ═══════════════════════════════
+let coins = 99999;
+let stamina = 100;
+let staminaLastRegen = Date.now();
+let loginStreak = 0;
+let lastLoginDate = null;
+let lastEquipDate = null;
+let chatHistory = [];
+let currentPetIdx = 0;
+let currentFrameIdx = 0;
+let currentSceneIdx = 0;
+let petFilter = 'all';
+
+// ═══════════════════════════════
+// RARITY CONFIG
+// ═══════════════════════════════
+const rarityColors = { SSS:'var(--sss)', SS:'var(--ss)', S:'var(--s)', A:'var(--a-rare)', B:'var(--b-rare)', C:'var(--c-rare)' };
+const rarityCSS    = { SSS:'rarity-sss', SS:'rarity-ss', S:'rarity-s', A:'rarity-a', B:'rarity-b', C:'rarity-c' };
+const rarityProbs  = { C:40, B:30, A:15, S:10, SS:4, SSS:1 };
+const rarityOrder  = ['SSS','SS','S','A','B','C'];
+
+// Egg cost based on equipped turtle
+function getEggCost() {
+  const eq = pets[currentPetIdx];
+  if (eq && eq.id === 'ninja')    return 475;  // -5%
+  if (eq && eq.id === 'bubble')   return 450;  // -10%
+  if (eq && eq.id === 'crystal')  return 410;  // -18%
+  return 500;
+}
+
+// Food cost based on equipped turtle
+function getFoodCost() {
+  const eq = pets[currentPetIdx];
+  if (eq && eq.id === 'candy') return 16; // -20%
+  return 20;
+}
+
+// Chat stamina cost based on equipped turtle
+function getChatCost() {
+  const eq = pets[currentPetIdx];
+  if (eq && eq.id === 'headless') return 4;
+  return 5;
+}
+
+// Sprite / static image helper — returns HTML string
+var _spriteKF = {}; // cache injected keyframes
+function petImgHTML(pet, size) {
+  if (pet.sprite && pet.img) {
+    var s = pet.sprite, sc = size / s.frameH;
+    var fw = Math.round(s.frameW * sc);
+    var tw = Math.round(s.frameW * s.frames * sc);
+    var kfName = 'sprKF_' + pet.id + '_' + size;
+    if (!_spriteKF[kfName]) {
+      var st = document.createElement('style');
+      st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+      document.head.appendChild(st);
+      _spriteKF[kfName] = true;
+    }
+    return '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
+      + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
+      + 'background-image:url(\'' + pet.img + '\');background-size:' + tw + 'px ' + size + 'px;'
+      + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ') infinite;"></div></div>';
+  }
+  if (pet.img) {
+    return '<img src="' + pet.img + '" alt="' + pet.name + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
+  }
+  return '<span style="font-size:' + Math.round(size * 0.75) + 'px;line-height:1;">' + pet.emoji + '</span>';
+}
+
+// ═══════════════════════════════
+// SAVE / LOAD STATE
+// ═══════════════════════════════
+function savePetState() {
+  const state = {
+    pets: pets.map(p => ({ id: p.id, owned: p.owned, equipped: p.equipped })),
+    frames: frames.map(f => ({ id: f.id, owned: f.owned, equipped: f.equipped })),
+    scenes: scenes.map(s => ({ id: s.id, owned: s.owned, active: s.active })),
+    coins: coins,
+    stamina: stamina,
+    staminaLastRegen: staminaLastRegen,
+    loginStreak: loginStreak,
+    lastLoginDate: lastLoginDate,
+    lastEquipDate: lastEquipDate,
+    chatHistory: chatHistory.slice(-50) // keep last 50
+  };
+  localStorage.setItem('petState', JSON.stringify(state));
+}
+
+(function loadPetState() {
+  const saved = localStorage.getItem('petState');
+  if (!saved) return;
+  try {
+    const s = JSON.parse(saved);
+    if (s.pets) s.pets.forEach(sp => {
+      const p = pets.find(x => x.id === sp.id);
+      if (p) { p.owned = sp.owned; p.equipped = sp.equipped; }
+    });
+    if (s.frames) s.frames.forEach(sf => {
+      const f = frames.find(x => x.id === sf.id);
+      if (f) { f.owned = sf.owned; f.equipped = sf.equipped; }
+    });
+    if (s.scenes) s.scenes.forEach(ss => {
+      const sc = scenes.find(x => x.id === ss.id);
+      if (sc) { sc.owned = ss.owned; sc.active = ss.active; }
+    });
+    // if (s.coins !== undefined) coins = s.coins; // disabled for testing
+    if (s.stamina !== undefined) stamina = s.stamina;
+    if (s.staminaLastRegen) staminaLastRegen = s.staminaLastRegen;
+    if (s.loginStreak !== undefined) loginStreak = s.loginStreak;
+    if (s.lastLoginDate) lastLoginDate = s.lastLoginDate;
+    if (s.lastEquipDate) lastEquipDate = s.lastEquipDate;
+    if (s.chatHistory) chatHistory = s.chatHistory;
+    currentPetIdx = pets.findIndex(p => p.equipped);
+    currentFrameIdx = frames.findIndex(f => f.equipped);
+    if (currentPetIdx < 0) { currentPetIdx = 0; pets[0].equipped = true; }
+    if (currentFrameIdx < 0) { currentFrameIdx = 0; frames[0].equipped = true; }
+  } catch(e) {}
+})();
+
+// Stamina regen calculation (5 per hour)
+function regenStamina() {
+  const now = Date.now();
+  const elapsed = now - staminaLastRegen;
+  const regen = Math.floor(elapsed / (3600000)) * 5; // 5 per hour
+  if (regen > 0 && stamina < 100) {
+    stamina = Math.min(100, stamina + regen);
+    staminaLastRegen = now;
+    savePetState();
+  }
+  updateStaminaDisplay();
+}
+
+// Daily login check (fire/spark system)
+function checkDailyLogin() {
+  const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  if (lastLoginDate === today) return; // already logged in today
+  // Check if yesterday was last login (streak continues)
+  const yesterday = new Date(Date.now() - 86400000).toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  if (lastLoginDate === yesterday) {
+    loginStreak++;
+  } else {
+    loginStreak = 1;
+  }
+  lastLoginDate = today;
+  // Daily login reward: 100 base + 5 * loginStreak
+  const baseReward = 100;
+  const sparkBonus = 5 * loginStreak;
+  const totalReward = baseReward + sparkBonus;
+  coins += totalReward;
+  toast('🔥', '每日登录 +' + totalReward + ' 龟币（含火花加成 +' + sparkBonus + '）');
+  savePetState();
+}
+
+// ═══════════════════════════════
+// ACHIEVEMENT SYSTEM
+// ═══════════════════════════════
+function getAchievements() {
+  const voteStreak = parseInt(localStorage.getItem('turtleVoteStreak') || '0');
+  const upsetStreak = parseInt(localStorage.getItem('turtleUpsetStreak') || '0');
+  const gameBest = parseInt(localStorage.getItem('turtleGameBest') || '0');
+  const totalVotes = parseInt(localStorage.getItem('turtleTotalVotes') || '0');
+  const ownedPetCount = pets.filter(p => p.owned).length;
+  return { voteStreak, upsetStreak, gameBest, totalVotes, ownedPetCount };
+}
+
+function checkUnlockCondition(item) {
+  if (item.season) return false; // season items can't be achievement-unlocked
+  const a = getAchievements();
+  switch (item.unlock) {
+    case 'default':         return true;
+    case 'voteStreak5':     return a.voteStreak >= 5;
+    case 'gameBest15000':   return a.gameBest >= 15000;
+    case 'gameBest20000':   return a.gameBest >= 20000;
+    case 'collectPets12':   return a.ownedPetCount >= 12;
+    case 'collectPets8':    return a.ownedPetCount >= 8;
+    case 'totalVotes25':    return a.totalVotes >= 25;
+    case 'upsetStreak4':    return a.upsetStreak >= 4;
+    default: return false;
+  }
+}
+
+function getUnlockProgress(item) {
+  const a = getAchievements();
+  switch (item.unlock) {
+    case 'default':         return { cur: 1, max: 1 };
+    case 'voteStreak5':     return { cur: Math.min(a.voteStreak, 5), max: 5 };
+    case 'gameBest15000':   return { cur: Math.min(a.gameBest, 15000), max: 15000 };
+    case 'gameBest20000':   return { cur: Math.min(a.gameBest, 20000), max: 20000 };
+    case 'collectPets12':   return { cur: Math.min(a.ownedPetCount, 12), max: 12 };
+    case 'collectPets8':    return { cur: Math.min(a.ownedPetCount, 8), max: 8 };
+    case 'totalVotes25':    return { cur: Math.min(a.totalVotes, 25), max: 25 };
+    case 'upsetStreak4':    return { cur: Math.min(a.upsetStreak, 4), max: 4 };
+    case 'season':          return { cur: 0, max: 1 };
+    default: return { cur: 0, max: 1 };
+  }
+}
+
+function checkAllUnlocks() {
+  let changed = false;
+  frames.forEach(f => {
+    if (!f.owned && !f.season && checkUnlockCondition(f)) {
+      f.owned = true; changed = true;
+      toast('🖼', '解锁头像框：' + f.name + '！');
+    }
+  });
+  scenes.forEach(s => {
+    if (!s.owned && checkUnlockCondition(s)) {
+      s.owned = true; changed = true;
+      toast('🖼️', '解锁场景：' + s.name + '！');
+    }
+  });
+  if (changed) { renderFrameGrid(); renderSceneGrid(); savePetState(); }
+}
+
+// ═══════════════════════════════
+// TAB SWITCHING
+// ═══════════════════════════════
+function switchPetTab(el, idx) {
+  document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('on'));
+  el.classList.add('on');
+  document.querySelectorAll('.tab-panel').forEach(p => p.classList.remove('active'));
+  document.getElementById('panel-' + idx).classList.add('active');
+}
+
+// ═══════════════════════════════
+// EGG HATCH (v3.3: 500 coins, duplicates allowed, 30% refund)
+// ═══════════════════════════════
+function updateEggCostDisplay() {
+  const cost = getEggCost();
+  document.getElementById('eggCostDisplay').textContent = cost;
+  document.getElementById('eggBtnCost').textContent = '🪙 ' + cost + ' 龟币';
+}
+
+function hatchEgg() {
+  const cost = getEggCost();
+  if (coins < cost) { toast('⚠️', '龟币不足！需要 ' + cost + ' 🪙'); return; }
+  coins -= cost;
+  updateCoins();
+
+  // Roll rarity first by probability
+  const roll = Math.random() * 100;
+  let cumulative = 0;
+  let selectedRarity = 'C';
+  for (const r of rarityOrder) {
+    cumulative += rarityProbs[r];
+    if (roll < cumulative) { selectedRarity = r; break; }
+  }
+
+  // Pick random turtle of that rarity
+  const pool = pets.filter(p => p.rarity === selectedRarity);
+  const pet = pool[Math.floor(Math.random() * pool.length)];
+
+  const isDuplicate = pet.owned;
+  let refund = 0;
+  if (isDuplicate) {
+    refund = Math.floor(cost * 0.3);
+    coins += refund;
+    updateCoins();
+  } else {
+    pet.owned = true;
+  }
+
+  // Egg crack animation
+  const eggIcon = document.getElementById('eggIcon');
+  eggIcon.className = 'egg-icon egg-crack';
+  setTimeout(() => { eggIcon.className = 'egg-icon'; }, 1200);
+
+  // Show result
+  const resultEl = document.getElementById('eggResult');
+  let glowClass = '';
+  if (selectedRarity === 'SSS') glowClass = ' sss-glow';
+  else if (selectedRarity === 'SS') glowClass = ' ss-glow';
+  else if (selectedRarity === 'S') glowClass = ' s-glow';
+  resultEl.className = 'egg-result show' + glowClass;
+
+  const petEl = document.getElementById('eggResultPet');
+  petEl.className = 'egg-result-pet egg-hatch';
+  petEl.innerHTML = petImgHTML(pet, 72);
+  document.getElementById('eggResultName').textContent = pet.name;
+  const rr = document.getElementById('eggResultRarity');
+  rr.textContent = selectedRarity;
+  rr.style.color = rarityColors[selectedRarity];
+
+  const newTag = document.getElementById('eggResultNew');
+  const dupTag = document.getElementById('eggResultDup');
+  if (isDuplicate) {
+    newTag.style.display = 'none';
+    dupTag.style.display = '';
+    dupTag.textContent = '已拥有 · 返还 ' + refund + ' 🪙';
+    toast('🥚', '开出 ' + pet.name + '（已有），返还 ' + refund + ' 🪙');
+  } else {
+    newTag.style.display = '';
+    dupTag.style.display = 'none';
+    toast('🥚', '开出新龟种：' + pet.name + '！');
+  }
+
+  // History
+  const history = document.getElementById('eggHistory');
+  const now = new Date();
+  const timeStr = now.getHours().toString().padStart(2,'0') + ':' + now.getMinutes().toString().padStart(2,'0');
+  const row = document.createElement('div');
+  row.className = 'gh-row';
+  row.innerHTML = '<span class="gh-time">' + timeStr + '</span><span class="gh-pet" style="color:' + rarityColors[selectedRarity] + '">[' + selectedRarity + '] ' + pet.name + (isDuplicate ? ' (重复)' : ' ✨') + '</span>';
+  history.querySelector('.egg-history-title').after(row);
+
+  renderPetGrid();
+  savePetState();
+  checkAllUnlocks();
+}
+
+// ═══════════════════════════════
+// STAMINA & FOOD
+// ═══════════════════════════════
+function buyFood() {
+  const cost = getFoodCost();
+  if (coins < cost) { toast('⚠️', '龟币不足！需要 ' + cost + ' 🪙'); return; }
+  if (stamina >= 100) { toast('⚡', '体力已满！'); return; }
+  coins -= cost;
+  stamina = Math.min(100, stamina + 25);
+  updateCoins();
+  updateStaminaDisplay();
+  toast('🍎', '使用龟粮 +25 体力');
+  savePetState();
+}
+
+function updateStaminaDisplay() {
+  const pct = Math.round(stamina / 100 * 100);
+  document.getElementById('staminaDisplay').textContent = stamina;
+  document.getElementById('staminaText').textContent = stamina;
+  document.getElementById('staminaFill').style.width = pct + '%';
+  document.getElementById('staminaBigNum').textContent = stamina;
+  document.getElementById('staminaBigFill').style.width = pct + '%';
+  document.getElementById('chatStaminaLeft').textContent = stamina;
+  document.getElementById('chatCostDisplay').textContent = getChatCost();
+  document.getElementById('foodCostDisplay').textContent = getFoodCost();
+}
+
+// ═══════════════════════════════
+// PET CHAT (consumes stamina)
+// ═══════════════════════════════
+const chatReplies = {
+  '💡今日推荐': '🎯 根据当前资金流向推荐：<br><br>① <strong>苹果AR眼镜</strong> — 近1h净流入 +580🪙<br>② <strong>周杰伦新专辑</strong> — 79%支持，低风险<br><br><span style="color:var(--r)">⚠ A股话题赔率分散，谨慎！</span>',
+  '📊看战绩': '📊 你今日参与了 <strong>4 个话题</strong>，猜对 <strong style="color:var(--g)">3 个</strong>！<br>今日胜率 <span style="color:var(--g)">75%</span>，比本周均值 68% 还高 💪',
+  '🎯热门': '🔥 当前最热话题：<br><br>1️⃣ <strong>世界杯冠军</strong> — 48,291人参与<br>2️⃣ <strong>顶流解散疑云</strong> — 12,847人<br>3️⃣ <strong>周杰伦新专辑</strong> — 18,921人',
+  '⚽世界杯分析': '⚽ 世界杯冠军当前数据：<br><br>🇧🇷 巴西 34% | 3.8×<br>🇫🇷 法国 28% | 4.5×<br>🇦🇷 阿根廷 22% | 5.2×<br><br>资金流向<strong>巴西</strong>最多，但押法国 CP 值更高 🎲',
+};
+const fallbacks = [
+  '🐢 今天天气不错～要不要去看看有什么新话题？',
+  '💡 听说科技类话题最近很火，要不要试试？',
+  '📈 最活跃话题：<strong>世界杯冠军</strong>，每小时+890票',
+  '🎯 低赔率的话题风险小，高赔率赢得多～看你选择！',
+  '⚡ 记得每天来聊天，可以保持我的体力哦～',
+];
+let fbIdx = 0;
+
+function consumeStamina() {
+  const cost = getChatCost();
+  if (stamina < cost) {
+    toast('⚡', '体力不足！需要 ' + cost + ' 点体力');
+    return false;
+  }
+  stamina -= cost;
+  updateStaminaDisplay();
+  savePetState();
+  return true;
+}
+
+function chatQuick(el) {
+  if (!consumeStamina()) return;
+  const q = el.textContent;
+  addUserChatMsg(q);
+  el.style.opacity = '.4';
+  setTimeout(() => el.style.opacity = '1', 1500);
+  showChatTyping(() => {
+    addBotChatMsg(chatReplies[q] || fallbacks[fbIdx++ % fallbacks.length]);
+  });
+}
+
+function sendChat() {
+  const input = document.getElementById('chatInput');
+  const txt = input.value.trim();
+  if (!txt) return;
+  if (!consumeStamina()) return;
+  input.value = '';
+  addUserChatMsg(txt);
+  showChatTyping(() => {
+    let matched = null;
+    for (const k of Object.keys(chatReplies)) {
+      if (txt.includes(k.replace(/[^\u4e00-\u9fa5a-zA-Z]/g, ''))) { matched = k; break; }
+    }
+    addBotChatMsg(matched ? chatReplies[matched] : fallbacks[fbIdx++ % fallbacks.length]);
+  });
+}
+
+function addUserChatMsg(txt) {
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += '<div class="cmsg user"><div class="cmsg-ava" style="background:rgba(199,125,255,.15)">🦊</div><div class="cmsg-bubble">' + escapeHtml(txt) + '</div></div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  chatHistory.push({ role: 'user', text: txt, time: Date.now() });
+}
+
+function addBotChatMsg(html) {
+  const msgs = document.getElementById('chatMessages');
+  const t = msgs.querySelector('.typing-row');
+  if (t) t.remove();
+  msgs.innerHTML += '<div class="cmsg bot"><div class="cmsg-ava" style="background:rgba(6,214,160,.1)">🐢</div><div class="cmsg-bubble">' + html + '</div></div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  chatHistory.push({ role: 'assistant', text: html, time: Date.now() });
+  savePetState();
+}
+
+function showChatTyping(cb) {
+  const msgs = document.getElementById('chatMessages');
+  msgs.innerHTML += '<div class="cmsg bot typing-row"><div class="cmsg-ava" style="background:rgba(6,214,160,.1)">🐢</div><div class="typing-indicator"><div class="typing-dot"></div><div class="typing-dot"></div><div class="typing-dot"></div></div></div>';
+  msgs.scrollTop = msgs.scrollHeight;
+  setTimeout(cb, 1000 + Math.random() * 600);
+}
+
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = str;
+  return div.innerHTML;
+}
+
+// ═══════════════════════════════
+// ABILITY TAB
+// ═══════════════════════════════
+function renderAbilityTab() {
+  const pet = pets[currentPetIdx];
+  const el = document.getElementById('abilityContent');
+  const gameAbilityText = pet.ability === 'shield' ? '🛡️ 护盾 ×1（每局免疫一次碰撞）'
+    : pet.ability === 'shrink' ? '🔬 体积缩小 30%'
+    : '🐢 下海捕捞（无额外加成）';
+
+  el.innerHTML = '<div class="ability-card">'
+    + '<div class="ability-header">'
+    + '<div class="ability-pet-ico">' + petImgHTML(pet, 40) + '</div>'
+    + '<div><div class="ability-pet-name">' + pet.name + '</div><div class="ability-pet-rarity ' + rarityCSS[pet.rarity] + '">' + pet.rarity + '</div></div>'
+    + '</div>'
+    + '<div class="ability-section">'
+    + '<div class="ability-section-title">🎮 小游戏能力</div>'
+    + '<div class="ability-item"><span class="ico">🎮</span><span class="desc">' + gameAbilityText + '</span></div>'
+    + '</div>'
+    + '<div class="ability-section">'
+    + '<div class="ability-section-title">✨ 特殊能力</div>'
+    + '<div class="ability-item"><span class="ico">✨</span><span class="desc">' + pet.special + '</span></div>'
+    + '</div>'
+    + '</div>';
+}
+
+// ═══════════════════════════════
+// PET GRID (with rarity filter)
+// ═══════════════════════════════
+function renderRarityFilter() {
+  const el = document.getElementById('rarityFilter');
+  const filters = ['all', ...rarityOrder];
+  el.innerHTML = filters.map(f =>
+    '<div class="rf-btn' + (petFilter === f ? ' active' : '') + '" onclick="setPetFilter(\'' + f + '\')">' + (f === 'all' ? '全部' : f) + '</div>'
+  ).join('');
+}
+
+function setPetFilter(f) {
+  petFilter = f;
+  renderRarityFilter();
+  renderPetGrid();
+}
+
+function renderPetGrid() {
+  const grid = document.getElementById('petGrid');
+  grid.innerHTML = '';
+  const filtered = petFilter === 'all' ? pets : pets.filter(p => p.rarity === petFilter);
+  const ownedCount = pets.filter(p => p.owned).length;
+  document.getElementById('petCount').textContent = '(已拥有 ' + ownedCount + '/' + pets.length + ')';
+
+  filtered.forEach((p) => {
+    const idx = pets.indexOf(p);
+    const card = document.createElement('div');
+    card.className = 'item-card' + (p.equipped ? ' equipped' : '') + (!p.owned ? ' locked' : '');
+    let actionHTML;
+    if (p.equipped) actionHTML = '<div class="item-action equipped-tag">✅ 使用中</div>';
+    else if (p.owned) actionHTML = '<div class="item-action equip-btn" onclick="event.stopPropagation();equipPet(' + idx + ')">装备</div>';
+    else actionHTML = '<div class="item-action lock-tag">🔒 未拥有</div>';
+    const icoHTML = '<div class="item-ico">' + petImgHTML(p, 48) + '</div>';
+    card.innerHTML = icoHTML
+      + '<div class="item-name">' + p.name + '</div>'
+      + '<div class="item-rarity ' + rarityCSS[p.rarity] + '">' + p.rarity + '</div>'
+      + '<div class="item-special">' + p.special + '</div>'
+      + actionHTML;
+    grid.appendChild(card);
+  });
+}
+
+function equipPet(idx) {
+  // Check daily limit (disabled for testing)
+  // const today = new Date().toLocaleDateString('zh-CN', { timeZone: 'Asia/Shanghai' });
+  // if (lastEquipDate === today && !pets[idx].equipped) {
+  //   toast('⚠️', '今日已切换过龟种，明天再来吧！');
+  //   return;
+  // }
+  // Check debt lock
+  if (coins < 0) {
+    toast('⚠️', '欠款未还清，无法切换龟种！');
+    return;
+  }
+  pets.forEach(p => p.equipped = false);
+  pets[idx].equipped = true;
+  currentPetIdx = idx;
+  // lastEquipDate = today; // disabled for testing
+  updateStage();
+  renderPetGrid();
+  renderAbilityTab();
+  updateEggCostDisplay();
+  updateStaminaDisplay();
+  toast('🐢', '已装备 ' + pets[idx].name + '！');
+  savePetState();
+}
+
+// ═══════════════════════════════
+// FRAME GRID (头像框)
+// ═══════════════════════════════
+function renderFrameGrid() {
+  const grid = document.getElementById('frameGrid');
+  grid.innerHTML = '';
+  frames.forEach((f, i) => {
+    const card = document.createElement('div');
+    const canClaim = !f.owned && !f.season && checkUnlockCondition(f);
+    card.className = 'item-card' + (f.equipped ? ' equipped' : '') + (!f.owned && !canClaim ? ' locked' : '');
+
+    const previewStyle = f.borderColor
+      ? 'width:44px;height:44px;border-radius:50%;border:3px solid ' + f.borderColor + ';box-shadow:0 0 8px ' + f.borderColor + '40;display:grid;place-items:center;font-size:20px;'
+      : 'width:44px;height:44px;display:grid;place-items:center;font-size:28px;';
+    const icoHTML = '<div class="item-ico"><div style="' + previewStyle + '">' + f.emoji + '</div></div>';
+
+    let actionHTML;
+    if (f.equipped) {
+      actionHTML = '<div class="item-action equipped-tag">✅ 装备中</div>';
+    } else if (f.owned) {
+      actionHTML = '<div class="item-action equip-btn" onclick="event.stopPropagation();equipFrame(' + i + ')">装备</div>';
+    } else if (canClaim) {
+      actionHTML = '<div class="item-action claim-btn" onclick="event.stopPropagation();claimFrame(' + i + ')">领取</div>';
+    } else if (f.season) {
+      actionHTML = '<div class="cape-unlock-info">🔒 ' + f.unlockDesc + '</div><div class="season-tag">赛季限定</div>';
+    } else {
+      const prog = getUnlockProgress(f);
+      const pct = prog.max > 0 ? Math.floor(prog.cur / prog.max * 100) : 0;
+      actionHTML = '<div class="cape-unlock-info">🔒 ' + f.unlockDesc + '</div>'
+        + '<div class="cape-progress"><div class="cape-progress-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="cape-progress-text">' + prog.cur + ' / ' + prog.max + '</div>';
+    }
+
+    card.innerHTML = icoHTML + '<div class="item-name">' + f.name + '</div>' + actionHTML;
+    grid.appendChild(card);
+  });
+}
+
+function equipFrame(idx) {
+  frames.forEach(f => f.equipped = false);
+  frames[idx].equipped = true;
+  currentFrameIdx = idx;
+  updateStage();
+  renderFrameGrid();
+  toast('🖼', '已装备 ' + frames[idx].name + '！');
+  savePetState();
+}
+
+function claimFrame(idx) {
+  const f = frames[idx];
+  if (!checkUnlockCondition(f)) { toast('⚠️', '还未达成条件：' + f.unlockDesc); return; }
+  f.owned = true;
+  renderFrameGrid();
+  toast('🎉', '解锁头像框：' + f.name + '！');
+  savePetState();
+}
+
+// ═══════════════════════════════
+// SCENE GRID
+// ═══════════════════════════════
+function renderSceneGrid() {
+  const grid = document.getElementById('sceneGrid');
+  grid.innerHTML = '';
+  scenes.forEach((s, i) => {
+    const card = document.createElement('div');
+    const canClaim = !s.owned && checkUnlockCondition(s);
+    card.className = 'item-card' + (s.active ? ' equipped' : '') + (!s.owned && !canClaim ? ' locked' : '');
+
+    let actionHTML;
+    if (s.active) {
+      actionHTML = '<div class="item-action equipped-tag">✅ 使用中</div>';
+    } else if (s.owned) {
+      actionHTML = '<div class="item-action equip-btn" onclick="event.stopPropagation();switchScene(' + i + ')">切换</div>';
+    } else if (canClaim) {
+      actionHTML = '<div class="item-action claim-btn" onclick="event.stopPropagation();claimScene(' + i + ')">领取</div>';
+    } else {
+      const prog = getUnlockProgress(s);
+      const pct = prog.max > 0 ? Math.floor(prog.cur / prog.max * 100) : 0;
+      actionHTML = '<div class="cape-unlock-info">🔒 ' + s.unlockDesc + '</div>'
+        + '<div class="cape-progress"><div class="cape-progress-fill" style="width:' + pct + '%"></div></div>'
+        + '<div class="cape-progress-text">' + prog.cur + ' / ' + prog.max + '</div>';
+    }
+
+    card.innerHTML = '<div class="item-ico">' + s.emoji + '</div><div class="item-name">' + s.name + '</div>' + actionHTML;
+    grid.appendChild(card);
+  });
+}
+
+function switchScene(idx) {
+  scenes.forEach(s => s.active = false);
+  scenes[idx].active = true;
+  currentSceneIdx = idx;
+  document.getElementById('sceneBg').className = 'scene-bg ' + scenes[idx].className;
+  renderSceneGrid();
+  toast('🖼️', '已切换到 ' + scenes[idx].name + '！');
+  savePetState();
+}
+
+function claimScene(idx) {
+  const s = scenes[idx];
+  if (!checkUnlockCondition(s)) { toast('⚠️', '还未达成条件：' + s.unlockDesc); return; }
+  s.owned = true;
+  renderSceneGrid();
+  toast('🎉', '解锁场景：' + s.name + '！');
+  savePetState();
+}
+
+// ═══════════════════════════════
+// STAGE UPDATE
+// ═══════════════════════════════
+function updateStage() {
+  const pet = pets[currentPetIdx];
+  const frame = frames[currentFrameIdx];
+  const stageEl = document.getElementById('petMainEmoji');
+  stageEl.innerHTML = petImgHTML(pet, 80);
+  document.getElementById('petNameDisplay').textContent = pet.name;
+  const rarityEl = document.getElementById('petRarityDisplay');
+  rarityEl.textContent = pet.rarity;
+  rarityEl.style.color = rarityColors[pet.rarity];
+
+  const frameEl = document.getElementById('avatarFrame');
+  if (frame.id === 'none' || !frame.borderColor) {
+    frameEl.style.display = 'none';
+    frameEl.className = 'avatar-frame';
+  } else {
+    frameEl.style.display = '';
+    frameEl.style.borderColor = frame.borderColor;
+    frameEl.style.setProperty('--frame-color', frame.borderColor);
+    frameEl.className = 'avatar-frame glow';
+  }
+
+  // Update badges
+  const badges = document.getElementById('petBadges');
+  const badgeHTML = [];
+  if (loginStreak >= 3) badgeHTML.push('<span class="badge badge-o">🔥 ' + loginStreak + '天火花</span>');
+  if (pet.ability === 'shield') badgeHTML.push('<span class="badge badge-g">🛡️ 护盾</span>');
+  if (pet.ability === 'shrink') badgeHTML.push('<span class="badge badge-g">🔬 缩小</span>');
+  badges.innerHTML = badgeHTML.join('');
+
+  // Update scene
+  const activeScene = scenes.find(s => s.active);
+  if (activeScene) {
+    document.getElementById('sceneBg').className = 'scene-bg ' + activeScene.className;
+  }
+}
+
+// ═══════════════════════════════
+// UTILS
+// ═══════════════════════════════
+function updateCoins() {
+  document.getElementById('coinDisplay').textContent = coins.toLocaleString('zh');
+}
+
+let tt;
+function toast(ico, msg) {
+  const el = document.getElementById('tst');
+  document.getElementById('tico').textContent = ico;
+  document.getElementById('tmsg').textContent = msg;
+  el.classList.add('show');
+  clearTimeout(tt);
+  tt = setTimeout(() => el.classList.remove('show'), 2600);
+}
+
+// ═══════════════════════════════
+// BEGINNER GUIDE
+// ═══════════════════════════════
+const guideSteps = [
+  {
+    emoji: '🐢',
+    title: '欢迎来到宠物中心！',
+    desc: '这是你的龟龟家园，在这里你可以收集 <strong>28 只龟种</strong>、解锁头像框和场景，还能和龟龟聊天！',
+    tip: '第 1 / 6 步'
+  },
+  {
+    emoji: '🥚',
+    title: '开蛋获取龟种',
+    desc: '消耗 <strong>500 龟币</strong> 开蛋，有机会获得从 <span class="hl-b">C</span> 到 <span style="color:var(--sss);font-weight:700">SSS</span> 共 6 档稀有度的龟种。<br>开出已拥有的龟种会 <strong>返还 30%</strong> 费用。',
+    tip: '特定龟种装备后可享受开蛋折扣'
+  },
+  {
+    emoji: '⚡',
+    title: '体力系统',
+    desc: '体力上限 <span class="hl">100</span>，每小时自动回复 5 点。<br>和龟龟对话每次消耗 <strong>5 体力</strong>。<br>用 <span class="hl">龟粮</span>（20 龟币）可快速回复 25 体力。',
+    tip: '无头龟装备时对话仅消耗 4 体力'
+  },
+  {
+    emoji: '🔥',
+    title: '火花与每日登录',
+    desc: '每天登录可获得 <strong>100 龟币</strong> + <span class="hl">5 × 连续天数</span> 的火花加成。<br>连续登录越久，每日奖励越多！<br>中断登录则火花归零重新计算。',
+    tip: '熔岩龟装备时火花奖励翻倍'
+  },
+  {
+    emoji: '🖼',
+    title: '头像框与成就',
+    desc: '通过 <span class="hl">投票连胜</span>、<span class="hl-b">小游戏高分</span>、<span class="hl">收集龟种</span> 等成就解锁头像框。<br>还有 4 款 <span style="color:var(--o);font-weight:700">赛季限定</span> 头像框等你争取！<br>场景也可通过成就免费解锁。',
+    tip: '头像框和场景切换不受每日次数限制'
+  },
+  {
+    emoji: '🎮',
+    title: '小游戏联动',
+    desc: '<span class="hl-b">S 级</span> 龟种拥有 <span class="hl">护盾×1</span>（免疫一次碰撞）<br><span style="color:var(--ss);font-weight:700">SS/SSS 级</span> 龟种拥有 <span class="hl">体积缩小 30%</span><br>每只龟种还有独特的 <strong>经济特殊能力</strong>！',
+    tip: '在「能力」Tab 查看当前龟种详细能力'
+  }
+];
+
+let guideStep = 0;
+
+function renderGuideStep() {
+  const s = guideSteps[guideStep];
+  document.getElementById('guideEmoji').textContent = s.emoji;
+  document.getElementById('guideTitle').textContent = s.title;
+  document.getElementById('guideDesc').innerHTML = s.desc;
+  document.getElementById('guideTip').textContent = s.tip;
+  document.getElementById('guideNextBtn').textContent = guideStep === guideSteps.length - 1 ? '开始探索！' : '下一步';
+
+  const dots = document.getElementById('guideDots');
+  dots.innerHTML = guideSteps.map((_, i) => {
+    const cls = i < guideStep ? 'done' : i === guideStep ? 'active' : '';
+    return '<div class="guide-dot ' + cls + '"></div>';
+  }).join('');
+}
+
+function nextGuideStep() {
+  guideStep++;
+  if (guideStep >= guideSteps.length) {
+    closeGuide();
+    return;
+  }
+  renderGuideStep();
+}
+
+function closeGuide() {
+  document.getElementById('guideOverlay').classList.remove('show');
+  localStorage.setItem('petGuideCompleted', 'true');
+}
+
+function showGuide() {
+  guideStep = 0;
+  renderGuideStep();
+  document.getElementById('guideOverlay').classList.add('show');
+}
+
+// ═══════════════════════════════
+// INIT
+// ═══════════════════════════════
+regenStamina();
+checkDailyLogin();
+updateCoins();
+updateStaminaDisplay();
+updateEggCostDisplay();
+document.getElementById('fireDisplay').textContent = loginStreak;
+checkAllUnlocks();
+renderAbilityTab();
+renderRarityFilter();
+renderPetGrid();
+renderFrameGrid();
+renderSceneGrid();
+updateStage();
+
+// Stamina regen timer (check every minute)
+setInterval(regenStamina, 60000);
+
+// Show guide for first-time visitors
+if (!localStorage.getItem('petGuideCompleted')) {
+  setTimeout(showGuide, 600);
+}
+</script>
+</body>
+</html>

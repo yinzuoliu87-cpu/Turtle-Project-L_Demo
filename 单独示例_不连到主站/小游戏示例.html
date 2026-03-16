@@ -1,0 +1,633 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>龟龟跳海 — 龟投小游戏（独立示例）</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Fredoka:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;700&display=swap');
+
+:root{
+  --bg:#06111a;--surface:#0c1a28;--surface2:#122436;
+  --g:#06d6a0;--b:#4cc9f0;--y:#ffd93d;--r:#ff6b6b;--p:#c77dff;
+  --ink:#e8e6f0;--muted:#5b7a8a;
+}
+*,*::before,*::after{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--ink);font-family:'Noto Sans SC','Fredoka',sans-serif;min-height:100vh;overflow:hidden;user-select:none;}
+
+/* NAV */
+.nav{display:flex;align-items:center;gap:12px;padding:10px 20px;background:rgba(12,26,40,.95);border-bottom:1px solid rgba(255,255,255,.06);position:relative;z-index:10;}
+.nav-back{text-decoration:none;color:var(--muted);font-size:14px;font-weight:600;display:flex;align-items:center;gap:4px;transition:.15s;}
+.nav-back:hover{color:var(--ink);}
+.nav-title{font-family:'Fredoka';font-size:18px;font-weight:700;color:var(--b);flex:1;}
+.nav-coins{font-family:'Fredoka';font-size:14px;font-weight:700;color:var(--y);background:rgba(255,217,61,.1);padding:4px 12px;border-radius:16px;border:1px solid rgba(255,217,61,.15);}
+
+/* GAME */
+.game-wrap{position:relative;width:100%;height:calc(100vh - 45px);overflow:hidden;}
+canvas{display:block;width:100%;height:100%;}
+
+/* OVERLAYS */
+.game-overlay{position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(6,17,26,.88);backdrop-filter:blur(12px);z-index:10;gap:14px;transition:opacity .3s;}
+.game-overlay.hidden{opacity:0;pointer-events:none;}
+.go-icon{font-size:64px;animation:bob 2s ease-in-out infinite;}
+@keyframes bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-8px)}}
+.go-title{font-family:'Fredoka';font-size:32px;font-weight:700;color:var(--b);}
+.go-sub{font-size:14px;color:var(--muted);text-align:center;line-height:1.7;max-width:340px;}
+.go-btn{padding:12px 40px;border-radius:14px;border:none;background:linear-gradient(135deg,var(--g),var(--b));color:var(--bg);font-family:'Fredoka';font-size:18px;font-weight:700;cursor:pointer;transition:.15s;box-shadow:0 4px 20px rgba(6,214,160,.3);}
+.go-btn:hover{transform:translateY(-2px);box-shadow:0 6px 28px rgba(6,214,160,.4);}
+.go-hint{font-size:11px;color:var(--muted);}
+
+/* SCORE HUD */
+.hud{position:absolute;top:10px;left:50%;transform:translateX(-50%);display:flex;gap:20px;background:rgba(12,26,40,.8);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:8px 24px;z-index:5;}
+.hud-item{text-align:center;}
+.hud-label{font-size:9px;color:var(--muted);letter-spacing:.8px;text-transform:uppercase;}
+.hud-val{font-family:'Fredoka';font-size:20px;font-weight:700;}
+.hud-val.score{color:var(--g);}
+.hud-val.depth{color:var(--b);}
+.hud-val.speed{color:var(--y);}
+
+/* LEADERBOARD */
+.lb-panel{position:absolute;top:10px;right:16px;background:rgba(12,26,40,.85);backdrop-filter:blur(8px);border:1px solid rgba(255,255,255,.06);border-radius:14px;padding:10px 14px;z-index:5;min-width:160px;}
+.lb-title{font-family:'Fredoka';font-size:12px;color:var(--y);margin-bottom:6px;text-align:center;}
+.lb-row{display:flex;align-items:center;gap:6px;padding:3px 0;font-size:11px;}
+.lb-rank{width:16px;font-family:'Fredoka';font-weight:700;color:var(--muted);text-align:center;}
+.lb-rank.r1{color:var(--y);}
+.lb-rank.r2{color:#9ca3af;}
+.lb-rank.r3{color:#cd7c3e;}
+.lb-name{flex:1;font-weight:600;color:var(--ink);}
+.lb-name.me{color:var(--g);}
+.lb-sc{font-family:'Fredoka';font-weight:700;color:var(--b);}
+
+/* GAME OVER extras */
+.go-stats{display:flex;gap:16px;margin:4px 0;}
+.go-stat{text-align:center;background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:10px;padding:8px 16px;}
+.go-stat-val{font-family:'Fredoka';font-size:20px;font-weight:700;color:var(--b);}
+.go-stat-label{font-size:10px;color:var(--muted);}
+.go-reward{font-size:13px;color:var(--y);background:rgba(255,217,61,.1);padding:6px 16px;border-radius:10px;border:1px solid rgba(255,217,61,.15);}
+
+/* SKIN SELECTOR */
+.skin-bar{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;max-width:380px;}
+.skin-slot{display:flex;flex-direction:column;align-items:center;gap:2px;padding:6px 10px;border-radius:10px;border:2px solid rgba(255,255,255,.08);background:rgba(255,255,255,.03);cursor:pointer;transition:.15s;min-width:56px;}
+.skin-slot:hover{border-color:rgba(76,201,240,.3);background:rgba(76,201,240,.05);}
+.skin-slot.on{border-color:var(--g);background:rgba(6,214,160,.08);}
+.skin-slot.locked{opacity:.35;cursor:not-allowed;}
+.skin-emoji{font-size:22px;}
+.skin-name{font-size:9px;color:var(--muted);font-weight:600;white-space:nowrap;}
+.skin-ability{font-size:8px;color:var(--b);font-weight:700;}
+.skin-section{text-align:center;margin-bottom:4px;}
+.skin-section-title{font-size:10px;color:var(--muted);letter-spacing:1px;text-transform:uppercase;margin-bottom:6px;}
+.active-skin{display:flex;align-items:center;gap:8px;justify-content:center;font-size:12px;color:var(--muted);margin-top:2px;}
+.active-skin .ability-tag{color:var(--g);font-weight:700;background:rgba(6,214,160,.1);padding:2px 8px;border-radius:6px;font-size:10px;}
+.active-skin .frame-tag{color:var(--p);font-weight:700;background:rgba(199,125,255,.1);padding:2px 8px;border-radius:6px;font-size:10px;}
+
+/* HUD shield indicator */
+.hud-shield{color:var(--b);font-size:14px;}
+
+/* TOAST */
+.g-toast{position:fixed;top:52px;left:50%;transform:translateX(-50%) translateY(-60px);background:var(--surface2);color:var(--ink);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:8px 18px;font-size:13px;font-weight:700;z-index:20;opacity:0;transition:.3s cubic-bezier(.34,1.4,.64,1);pointer-events:none;}
+.g-toast.show{transform:translateX(-50%) translateY(0);opacity:1;}
+</style>
+</head>
+<body>
+
+<div class="nav">
+  <a class="nav-back" href="#" onclick="return false;">← 返回龟投</a>
+  <div class="nav-title">🐢 龟龟跳海</div>
+  <div class="nav-coins">🪙 <span id="coins">2,480</span></div>
+</div>
+
+<div class="game-wrap">
+  <canvas id="gc"></canvas>
+
+  <!-- HUD -->
+  <div class="hud" id="hud" style="display:none">
+    <div class="hud-item"><div class="hud-label">得分</div><div class="hud-val score" id="score">0</div></div>
+    <div class="hud-item"><div class="hud-label">深度</div><div class="hud-val depth" id="depth">0m</div></div>
+    <div class="hud-item"><div class="hud-label">速度</div><div class="hud-val speed" id="speed">1.0x</div></div>
+    <div class="hud-item" id="shieldHud" style="display:none"><div class="hud-label">护盾</div><div class="hud-val hud-shield" id="shieldVal">🛡️</div></div>
+  </div>
+
+  <!-- Leaderboard -->
+  <div class="lb-panel" id="lbPanel">
+    <div class="lb-title">🏆 排行榜</div>
+    <div id="lbRows"></div>
+  </div>
+
+  <!-- Start -->
+  <div class="game-overlay" id="startOverlay">
+    <div class="go-icon" id="startIcon">🐢</div>
+    <div class="go-title">龟龟跳海</div>
+    <div class="go-sub">小龟龟正在跳入深海！<br>左右躲避障碍物，越深分越高<br>速度会越来越快，你能坚持多久？</div>
+    <div class="skin-section">
+      <div class="skin-section-title">选择宠物</div>
+      <div class="skin-bar" id="skinBar"></div>
+    </div>
+    <div class="active-skin" id="activeSkinInfo"></div>
+    <div class="go-btn" onclick="startGame()">开始跳海!</div>
+    <div class="go-hint">← → 或 A/D 移动 · 触屏左右滑动</div>
+  </div>
+
+  <!-- Game Over -->
+  <div class="game-overlay hidden" id="overOverlay">
+    <div class="go-icon">💀</div>
+    <div class="go-title" id="overTitle">撞上了!</div>
+    <div class="go-stats">
+      <div class="go-stat"><div class="go-stat-val" id="finalScore">0</div><div class="go-stat-label">得分</div></div>
+      <div class="go-stat"><div class="go-stat-val" id="finalDepth">0m</div><div class="go-stat-label">深度</div></div>
+      <div class="go-stat"><div class="go-stat-val" id="finalSpeed">1x</div><div class="go-stat-label">最大速度</div></div>
+    </div>
+    <div class="go-reward" id="overReward">🪙 +0 龟币</div>
+    <div class="go-btn" onclick="startGame()">再来一次!</div>
+  </div>
+</div>
+
+<div class="g-toast" id="gToast"></div>
+
+<script>
+const canvas = document.getElementById('gc');
+const ctx = canvas.getContext('2d');
+
+// Responsive canvas
+function resize() {
+  canvas.width = canvas.parentElement.clientWidth;
+  canvas.height = canvas.parentElement.clientHeight;
+}
+resize();
+window.addEventListener('resize', resize);
+
+// === LEADERBOARD ===
+let leaderboard = JSON.parse(localStorage.getItem('turtleJumpLB') || '[]');
+// Seed initial data if empty
+if (leaderboard.length === 0) {
+  leaderboard = [
+    { name: 'LionMaster 🦁', score: 3280 },
+    { name: 'DragonSeer 🐉', score: 2750 },
+    { name: 'EagleEye 🦅', score: 2140 },
+    { name: 'PandaPredict 🐼', score: 1620 },
+    { name: 'CryptoWolf 🐺', score: 980 }
+  ];
+}
+function renderLB() {
+  const el = document.getElementById('lbRows');
+  el.innerHTML = leaderboard.slice(0, 6).map((e, i) => {
+    const rc = i === 0 ? 'r1' : i === 1 ? 'r2' : i === 2 ? 'r3' : '';
+    const isMe = e.name.startsWith('你');
+    return `<div class="lb-row"><div class="lb-rank ${rc}">${i+1}</div><div class="lb-name ${isMe?'me':''}">${e.name}</div><div class="lb-sc">${e.score.toLocaleString()}</div></div>`;
+  }).join('');
+}
+renderLB();
+
+// === PRELOAD IMAGES ===
+const petImages = {};
+function preloadPetImages() {
+  ALL_PETS.forEach(p => {
+    if (p.img) {
+      const im = new Image();
+      im.src = p.img;
+      petImages[p.id] = im;
+    }
+  });
+}
+
+// === PET & SKIN SYSTEM ===
+const ALL_PETS = [
+  // C级
+  { id:'basic',     name:'小龟',       emoji:'🐢',     img:'基础小龟.png', rarity:'C',   ability:'none',   abilityName:'无',           glowColor:'#06d6a0' },
+  { id:'stone',     name:'石头龟',     emoji:'🪨🐢',   img:'石头龟.png',  rarity:'C',   ability:'none',   abilityName:'无',           glowColor:'#78716c' },
+  { id:'bamboo',    name:'竹叶龟',     emoji:'🎋🐢',   img:'竹叶龟.png',  rarity:'C',   ability:'none',   abilityName:'无',           glowColor:'#06d6a0' },
+  // B级
+  { id:'angel',     name:'天使龟',     emoji:'😇🐢',   img:'天使龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#06d6a0' },
+  { id:'ice',       name:'寒冰龟',     emoji:'❄️🐢',   img:'寒冰龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#4cc9f0' },
+  { id:'ninja',     name:'忍者龟',     emoji:'🥷🐢',   img:'忍者龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#6b6880' },
+  { id:'two_head',  name:'双头龟',     emoji:'🐢🐢',   img:'双头龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#06d6a0' },
+  { id:'ghost',     name:'幽灵龟',     emoji:'👻🐢',   img:'幽灵龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#8b5cf6' },
+  { id:'diamond',   name:'钻石龟',     emoji:'💎🐢',   img:'钻石龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#4cc9f0' },
+  { id:'fortune',   name:'财神龟',     emoji:'🧧🐢',   img:'财神龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#ff6b6b' },
+  { id:'dice',      name:'骰子龟',     emoji:'🎲🐢',   img:'骰子龟.png',  rarity:'B',   ability:'none',   abilityName:'无',           glowColor:'#ffd93d' },
+  // A级
+  { id:'rainbow',   name:'彩虹龟',     emoji:'🌈🐢',   img:'彩虹龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#ff9f43' },
+  { id:'gambler',   name:'赌神龟',     emoji:'🃏🐢',   img:'赌神龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#c77dff' },
+  { id:'hunter',    name:'猎人龟',     emoji:'🏹🐢',   img:'猎人龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#06d6a0' },
+  { id:'pirate',    name:'海盗龟',     emoji:'🏴‍☠️🐢', img:'海盗龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#6b6880' },
+  { id:'candy',     name:'糖果龟',     emoji:'🍬🐢',   img:'糖果龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#ff9f43' },
+  { id:'bubble',    name:'泡泡龟',     emoji:'🫧🐢',   img:'气泡龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#4cc9f0' },
+  { id:'line',      name:'线条龟',     emoji:'✏️🐢',   img:'线条龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#78716c' },
+  { id:'lightning', name:'闪电龟',     emoji:'⚡🐢',   img:'闪电龟.png',  rarity:'A',   ability:'none',   abilityName:'无',           glowColor:'#ffd93d' },
+  // S级
+  { id:'phoenix',   name:'凤凰龟',     emoji:'🔥🐢',   img:'凤凰龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#ff6b6b' },
+  { id:'lava',      name:'熔岩龟',     emoji:'🌋🐢',   img:'熔岩龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#ff6b6b' },
+  { id:'cyber',     name:'赛博龟',     emoji:'🤖🐢',   img:'赛博龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#ffd93d' },
+  { id:'crystal',   name:'水晶龟',     emoji:'🔮🐢',   img:'水晶龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#c77dff' },
+  { id:'chest',     name:'宝箱龟',     emoji:'📦🐢',   img:'宝箱龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#ffd93d' },
+  { id:'space',     name:'星际龟',     emoji:'🚀🐢',   img:'星际龟.png',  rarity:'S',   ability:'shield', abilityName:'🛡️ 护盾×1', glowColor:'#c77dff' },
+  // SS级
+  { id:'hiding',    name:'缩头乌龟',   emoji:'🫣🐢',   img:'缩头乌龟.png',rarity:'SS',  ability:'shrink', abilityName:'🔬 缩小30%', glowColor:'#78716c' },
+  { id:'headless',  name:'无头龟',     emoji:'💀🐢',   img:'无头龟.png',  rarity:'SS',  ability:'shrink', abilityName:'🔬 缩小30%', glowColor:'#8b5cf6' },
+  // SSS级
+  { id:'shell',     name:'龟壳',       emoji:'🐚',     img:'龟壳.png',    rarity:'SSS', ability:'shrink', abilityName:'🔬 缩小30%', glowColor:'#ff4444' },
+];
+const ALL_FRAMES = [
+  { id:'basic_frame',   name:'基础框',   emoji:'🟢', borderColor:'#06d6a0', trailColor:'#06d6a0' },
+  { id:'none',          name:'无头像框', emoji:'❌', borderColor:null,      trailColor:null },
+  { id:'lava_frame',    name:'熔岩框',   emoji:'🔥', borderColor:'#ff4500', trailColor:'#ff4500' },
+  { id:'dark_frame',    name:'暗黑框',   emoji:'🌑', borderColor:'#6b6880', trailColor:'#6b6880' },
+  { id:'moon_frame',    name:'月牙框',   emoji:'🌙', borderColor:'#ffd93d', trailColor:'#ffd93d' },
+  { id:'sakura_frame',  name:'樱花框',   emoji:'🌸', borderColor:'#ff9ff3', trailColor:'#ff9ff3' },
+  { id:'upset_frame',   name:'爆冷框',   emoji:'💥', borderColor:'#ff6b6b', trailColor:'#ff6b6b' },
+  { id:'galaxy_frame',  name:'星河框',   emoji:'⭐', borderColor:'#ffd93d', trailColor:'#ffd93d' },
+  { id:'phantom_frame', name:'幽冥框',   emoji:'👻', borderColor:'#8b5cf6', trailColor:'#8b5cf6' },
+  { id:'aurora_frame',  name:'极光框',   emoji:'🌌', borderColor:'#06d6a0', trailColor:'#06d6a0' },
+  { id:'koi_frame',     name:'锦鲤框',   emoji:'🐟', borderColor:'#ff9f43', trailColor:'#ff9f43' },
+];
+
+let activePet = ALL_PETS[0];
+let activeFrame = null;
+let ownedPetIds = ['basic'];
+let ownedFrameIds = ['basic_frame','none'];
+
+// Load from petState (synced with pet.html)
+preloadPetImages();
+(function loadSkins() {
+  const saved = localStorage.getItem('petState');
+  if (!saved) { renderSkinBar(); return; }
+  try {
+    const s = JSON.parse(saved);
+    if (s.pets) {
+      ownedPetIds = s.pets.filter(p => p.owned).map(p => p.id);
+      const eq = s.pets.find(p => p.equipped);
+      if (eq) { const found = ALL_PETS.find(p => p.id === eq.id); if (found) activePet = found; }
+    }
+    if (s.frames) {
+      ownedFrameIds = s.frames.filter(c => c.owned).map(c => c.id);
+      const eqc = s.frames.find(c => c.equipped);
+      if (eqc) { const found = ALL_FRAMES.find(c => c.id === eqc.id); if (found) activeFrame = found; }
+    }
+  } catch(e) {}
+  renderSkinBar();
+})();
+
+function renderSkinBar() {
+  const bar = document.getElementById('skinBar');
+  bar.innerHTML = ALL_PETS.map(p => {
+    const owned = ownedPetIds.includes(p.id);
+    const active = activePet.id === p.id;
+    const icoHTML = p.img
+      ? `<div class="skin-emoji"><img src="${p.img}" alt="${p.name}" style="width:28px;height:28px;object-fit:contain;"></div>`
+      : `<div class="skin-emoji">${p.emoji}</div>`;
+    return `<div class="skin-slot ${active?'on':''} ${!owned?'locked':''}" onclick="${owned ? 'selectPet(\''+p.id+'\')' : ''}">
+      ${icoHTML}
+      <div class="skin-name">${p.name}</div>
+      <div class="skin-ability">${p.ability !== 'none' ? p.abilityName : ''}</div>
+    </div>`;
+  }).join('');
+  const startIcon = document.getElementById('startIcon');
+  if (activePet.img) {
+    startIcon.innerHTML = '<img src="' + activePet.img + '" style="width:56px;height:56px;object-fit:contain;">';
+  } else {
+    startIcon.textContent = activePet.emoji;
+  }
+  updateActiveSkinInfo();
+}
+
+function selectPet(id) {
+  const p = ALL_PETS.find(x => x.id === id);
+  if (!p || !ownedPetIds.includes(id)) return;
+  activePet = p;
+  renderSkinBar();
+}
+
+function updateActiveSkinInfo() {
+  const info = document.getElementById('activeSkinInfo');
+  let html = activePet.name;
+  if (activePet.ability !== 'none') html += ' <span class="ability-tag">' + activePet.abilityName + '</span>';
+  if (activeFrame) html += ' <span class="frame-tag">' + activeFrame.emoji + ' ' + activeFrame.name + '</span>';
+  info.innerHTML = html;
+}
+
+// === GAME STATE ===
+let state = 'idle';
+let turtle, obstacles, bubbles, depth, scoreVal, speedMul, maxSpeed, frameCount;
+let shieldCount, trailParticles;
+
+const OBSTACLE_TYPES = [
+  { emoji: '🪸', w: 50, h: 40 },
+  { emoji: '🦈', w: 55, h: 35 },
+  { emoji: '🪼', w: 40, h: 45 },
+  { emoji: '⚓', w: 40, h: 50 },
+  { emoji: '🧊', w: 55, h: 40 },
+  { emoji: '🐙', w: 50, h: 45 },
+  { emoji: '💣', w: 35, h: 35 },
+  { emoji: '🌊', w: 60, h: 30 },
+];
+
+function startGame() {
+  document.getElementById('startOverlay').classList.add('hidden');
+  document.getElementById('overOverlay').classList.add('hidden');
+  document.getElementById('hud').style.display = 'flex';
+
+  const W = canvas.width;
+  // Apply pet abilities: none / shield / shrink
+  let hitSize = activePet.ability === 'shrink' ? Math.round(36 * 0.7) : 36;
+  shieldCount = activePet.ability === 'shield' ? 1 : 0;
+
+  const shieldHud = document.getElementById('shieldHud');
+  if (shieldCount > 0) {
+    shieldHud.style.display = '';
+    document.getElementById('shieldVal').textContent = '🛡️'.repeat(shieldCount);
+  } else {
+    shieldHud.style.display = 'none';
+  }
+
+  turtle = { x: W / 2, y: 120, w: hitSize, h: hitSize, vx: 0 };
+  obstacles = [];
+  bubbles = [];
+  trailParticles = [];
+  depth = 0;
+  scoreVal = 0;
+  speedMul = 1;
+  maxSpeed = 1;
+  frameCount = 0;
+
+  state = 'playing';
+  requestAnimationFrame(loop);
+}
+
+// === INPUT ===
+let keys = {};
+let touchStartX = null;
+document.addEventListener('keydown', e => keys[e.key] = true);
+document.addEventListener('keyup', e => keys[e.key] = false);
+canvas.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; }, { passive: true });
+canvas.addEventListener('touchmove', e => {
+  if (touchStartX === null || state !== 'playing') return;
+  const dx = e.touches[0].clientX - touchStartX;
+  turtle.vx = dx * 0.15;
+  touchStartX = e.touches[0].clientX;
+}, { passive: true });
+canvas.addEventListener('touchend', () => { touchStartX = null; if (turtle) turtle.vx = 0; });
+
+// === LOOP ===
+function loop() {
+  if (state !== 'playing') return;
+  const W = canvas.width, H = canvas.height;
+  frameCount++;
+
+  // Speed increases over time
+  speedMul = 1 + depth / 2000;
+  if (speedMul > maxSpeed) maxSpeed = speedMul;
+  let baseSpeed = 1 + speedMul * 0.6;
+
+  // Input
+  const moveSpeed = 2.5 + speedMul * 0.25;
+  if (keys['ArrowLeft'] || keys['a'] || keys['A']) turtle.vx += (-moveSpeed - turtle.vx) * 0.15;
+  else if (keys['ArrowRight'] || keys['d'] || keys['D']) turtle.vx += (moveSpeed - turtle.vx) * 0.15;
+  else if (touchStartX === null) turtle.vx *= 0.9;
+
+  turtle.x += turtle.vx;
+  turtle.x = Math.max(turtle.w / 2, Math.min(W - turtle.w / 2, turtle.x));
+
+  // Depth & Score
+  depth += baseSpeed * 0.15;
+  scoreVal = Math.floor(depth * 2);
+
+  // Spawn obstacles
+  const spawnRate = Math.max(35, 70 - Math.floor(speedMul * 5));
+  if (frameCount % spawnRate === 0) {
+    const type = OBSTACLE_TYPES[Math.floor(Math.random() * OBSTACLE_TYPES.length)];
+    const cols = Math.max(1, Math.floor(speedMul / 3));
+    for (let c = 0; c < 1 + Math.floor(Math.random() * cols); c++) {
+      obstacles.push({
+        x: 30 + Math.random() * (W - 60),
+        y: H + 20 + c * 80,
+        w: type.w, h: type.h,
+        emoji: type.emoji,
+        speed: baseSpeed * (0.8 + Math.random() * 0.4)
+      });
+    }
+  }
+
+  // Spawn bubbles (decoration)
+  if (frameCount % 8 === 0) {
+    bubbles.push({
+      x: Math.random() * W,
+      y: H + 10,
+      r: 1 + Math.random() * 3,
+      speed: 1 + Math.random() * 2,
+      alpha: 0.15 + Math.random() * 0.2
+    });
+  }
+
+  // Move obstacles UP
+  for (let i = obstacles.length - 1; i >= 0; i--) {
+    obstacles[i].y -= obstacles[i].speed;
+    if (obstacles[i].y < -60) obstacles.splice(i, 1);
+  }
+
+  // Move bubbles
+  for (let i = bubbles.length - 1; i >= 0; i--) {
+    bubbles[i].y -= bubbles[i].speed;
+    bubbles[i].x += Math.sin(bubbles[i].y * 0.02) * 0.3;
+    if (bubbles[i].y < -10) bubbles.splice(i, 1);
+  }
+
+  // Cape trail particles
+  if (activeFrame && activeFrame.trailColor && frameCount % 3 === 0) {
+    const tc = activeFrame.trailColor;
+    const color = tc === 'rainbow' ? `hsl(${frameCount * 3 % 360},80%,65%)` : tc;
+    trailParticles.push({
+      x: turtle.x + (Math.random() - 0.5) * 10,
+      y: turtle.y + 16,
+      r: 2 + Math.random() * 2,
+      life: 1,
+      color: color,
+      dy: 0.5 + Math.random()
+    });
+  }
+  for (let i = trailParticles.length - 1; i >= 0; i--) {
+    const p = trailParticles[i];
+    p.y += p.dy;
+    p.x += (Math.random() - 0.5) * 0.5;
+    p.life -= 0.025;
+    if (p.life <= 0) trailParticles.splice(i, 1);
+  }
+
+  // Collision
+  const tx = turtle.x, ty = turtle.y;
+  const hitR = turtle.w * 0.4;
+  for (let oi = obstacles.length - 1; oi >= 0; oi--) {
+    const o = obstacles[oi];
+    const cx = Math.max(o.x - o.w/2, Math.min(tx, o.x + o.w/2));
+    const cy = Math.max(o.y - o.h/2, Math.min(ty, o.y + o.h/2));
+    const dist = Math.sqrt((tx - cx)**2 + (ty - cy)**2);
+    if (dist < hitR) {
+      if (shieldCount > 0) {
+        shieldCount--;
+        obstacles.splice(oi, 1);
+        document.getElementById('shieldVal').textContent = shieldCount > 0 ? '🛡️'.repeat(shieldCount) : '—';
+        gToast('🛡️ 护盾抵消！剩余 ' + shieldCount);
+        break;
+      }
+      gameOver();
+      return;
+    }
+  }
+
+  // Milestones
+  if (Math.floor(depth) % 100 === 0 && Math.floor(depth) > 0 && frameCount % 60 < 2) {
+    gToast('🌊 ' + Math.floor(depth) + 'm! 速度 ' + speedMul.toFixed(1) + 'x');
+  }
+
+  // HUD
+  document.getElementById('score').textContent = scoreVal;
+  document.getElementById('depth').textContent = Math.floor(depth) + 'm';
+  document.getElementById('speed').textContent = speedMul.toFixed(1) + 'x';
+
+  draw();
+  requestAnimationFrame(loop);
+}
+
+function draw() {
+  const W = canvas.width, H = canvas.height;
+  // Ocean gradient
+  const grad = ctx.createLinearGradient(0, 0, 0, H);
+  const depthRatio = Math.min(depth / 500, 1);
+  grad.addColorStop(0, `rgba(${6 - depthRatio*6}, ${30 - depthRatio*20}, ${60 - depthRatio*40}, 1)`);
+  grad.addColorStop(1, `rgba(${3}, ${12 - depthRatio*8}, ${30 - depthRatio*18}, 1)`);
+  ctx.fillStyle = grad;
+  ctx.fillRect(0, 0, W, H);
+
+  // Light rays
+  ctx.save();
+  ctx.globalAlpha = 0.03 - depthRatio * 0.02;
+  for (let i = 0; i < 5; i++) {
+    const rx = W * 0.15 + i * W * 0.18;
+    ctx.fillStyle = '#4cc9f0';
+    ctx.beginPath();
+    ctx.moveTo(rx - 15, 0);
+    ctx.lineTo(rx + 15, 0);
+    ctx.lineTo(rx + 40 + Math.sin(frameCount * 0.01 + i) * 20, H);
+    ctx.lineTo(rx - 40 + Math.sin(frameCount * 0.01 + i) * 20, H);
+    ctx.fill();
+  }
+  ctx.restore();
+
+  // Bubbles
+  bubbles.forEach(b => {
+    ctx.globalAlpha = b.alpha;
+    ctx.fillStyle = '#4cc9f0';
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Obstacles
+  obstacles.forEach(o => {
+    ctx.font = `${Math.max(o.w, o.h) * 0.7}px serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    // Shadow/glow
+    ctx.shadowColor = 'rgba(255,60,60,.3)';
+    ctx.shadowBlur = 12;
+    ctx.fillText(o.emoji, o.x, o.y);
+    ctx.shadowBlur = 0;
+  });
+
+  // Cape trail
+  trailParticles.forEach(p => {
+    ctx.globalAlpha = p.life * 0.6;
+    ctx.fillStyle = p.color;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r * p.life, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  ctx.globalAlpha = 1;
+
+  // Shield aura
+  if (shieldCount > 0) {
+    ctx.save();
+    ctx.translate(turtle.x, turtle.y);
+    ctx.strokeStyle = 'rgba(76,201,240,' + (0.2 + Math.sin(frameCount * 0.1) * 0.1) + ')';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, turtle.w * 0.7 + Math.sin(frameCount * 0.08) * 3, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // Turtle
+  ctx.save();
+  ctx.translate(turtle.x, turtle.y);
+  const wobble = Math.sin(frameCount * 0.15) * 3;
+  ctx.rotate(turtle.vx * 0.02);
+  ctx.shadowColor = activePet.glowColor;
+  ctx.shadowBlur = 16;
+  const petImg = petImages[activePet.id];
+  const drawSize = activePet.ability === 'shrink' ? 28 : 40;
+  const halfDraw = drawSize / 2;
+  if (petImg && petImg.complete && petImg.naturalWidth > 0) {
+    ctx.drawImage(petImg, -halfDraw, -halfDraw + wobble, drawSize, drawSize);
+  } else {
+    ctx.font = (activePet.ability === 'shrink' ? '22' : '32') + 'px serif';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText(activePet.emoji, 0, wobble);
+  }
+  ctx.shadowBlur = 0;
+  // Avatar frame glow effect
+  if (activeFrame && activeFrame.borderColor) {
+    ctx.globalAlpha = 0.35 + Math.sin(frameCount * 0.08) * 0.15;
+    ctx.strokeStyle = activeFrame.borderColor;
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(0, 0, drawSize * 0.6, 0, Math.PI * 2);
+    ctx.stroke();
+    ctx.globalAlpha = 1;
+  }
+  ctx.restore();
+
+  // Depth markers
+  if (Math.floor(depth) % 50 < 2) {
+    ctx.fillStyle = 'rgba(76,201,240,.15)';
+    ctx.font = '11px Fredoka';
+    ctx.textAlign = 'right';
+    ctx.fillText(Math.floor(depth) + 'm', W - 12, H - 12);
+  }
+}
+
+function gameOver() {
+  state = 'over';
+  const reward = Math.floor(scoreVal / 15);
+  document.getElementById('finalScore').textContent = scoreVal.toLocaleString();
+  document.getElementById('finalDepth').textContent = Math.floor(depth) + 'm';
+  document.getElementById('finalSpeed').textContent = maxSpeed.toFixed(1) + 'x';
+  document.getElementById('overReward').textContent = '🪙 +' + reward + ' 龟币已入账';
+  document.getElementById('overOverlay').classList.remove('hidden');
+  document.getElementById('hud').style.display = 'none';
+
+  // Save best score for frame unlock system
+  const prevBest = parseInt(localStorage.getItem('turtleGameBest') || '0');
+  if (scoreVal > prevBest) {
+    localStorage.setItem('turtleGameBest', scoreVal.toString());
+  }
+
+  // Update leaderboard
+  leaderboard.push({ name: '你 🦊', score: scoreVal });
+  leaderboard.sort((a, b) => b.score - a.score);
+  leaderboard = leaderboard.slice(0, 10);
+  localStorage.setItem('turtleJumpLB', JSON.stringify(leaderboard));
+  renderLB();
+}
+
+// Toast
+let gToastTimer;
+function gToast(msg) {
+  const el = document.getElementById('gToast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(gToastTimer);
+  gToastTimer = setTimeout(() => el.classList.remove('show'), 2000);
+}
+</script>
+</body>
+</html>
