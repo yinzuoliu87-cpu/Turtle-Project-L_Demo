@@ -5,15 +5,22 @@ const canvas = document.getElementById('gc');
 const ctx = canvas.getContext('2d', { alpha: false });
 
 // =====================================================
+// BACKGROUND LAYER IMAGES
+// =====================================================
+const bgSurface = new Image(); bgSurface.src = '海面bg.png';
+const bgDeep    = new Image(); bgDeep.src    = '海底bg.png';
+let bgImagesReady = 0;
+[bgSurface, bgDeep].forEach(img => {
+  img.onload = () => { bgImagesReady++; };
+});
+
+// =====================================================
 // CONSTANTS
 // =====================================================
 const INITIAL_BUBBLES = 50;
 const BUBBLE_RADIUS = 40;
 const BUBBLE_GAP = 175;
 const SEA_SURFACE_Y = INITIAL_BUBBLES * BUBBLE_GAP; // fixed goal height
-// Sink: 0.2% of total distance per second (~100s from 100% back to 80%)
-const SINK_PER_SEC = SEA_SURFACE_Y * 0.002;
-const SINK_PER_FRAME = SINK_PER_SEC / 60;
 const GRAVITY = 0.17;
 const JUMP_FORCE = 9.8;
 const ANGLE_MIN = -1.22;       // ≈ ±70°
@@ -48,7 +55,6 @@ let lives = 0;         // extra lives remaining
 let invincible = 0;    // invincibility frames after revive
 let nextBubbleId = 0;  // increments as we spawn bubbles
 let bubblesReached = 0; // total bubbles landed on
-let sinking = false;   // true once progress hits 80%
 let toastFlags = {};   // phase announcement flags
 
 // --- NEW MECHANICS STATE ---
@@ -227,7 +233,7 @@ function makeBubble(worldY, id) {
     moving = true;
     moveSpd = 0.8 + (pct - 38) / 17 * 1.0;
     moveRange = W * 0.12 + Math.random() * W * 0.06;
-    hasRock = Math.random() < 0.45;
+    hasRock = false;
   } else if (pct <= 62) {
     // BREATHER again — wider, calmer
     x = W * 0.2 + Math.random() * W * 0.6;
@@ -241,16 +247,16 @@ function makeBubble(worldY, id) {
     moving = true;
     moveSpd = 1.0 + (pct - 62) / 18 * 0.8;
     moveRange = W * 0.12 + Math.random() * W * 0.08;
-    hasRock = Math.random() < 0.5;
-  } else if (pct <= 90) {
+    hasRock = false;
+  } else if (pct <= 85) {
     // Sinking + all obstacles
     x = W * 0.22 + Math.random() * W * 0.56;
     moving = true;
     moveSpd = 1.2 + Math.random() * 0.6;
     moveRange = W * 0.12;
-    hasRock = Math.random() < 0.35;
+    hasRock = false;
   } else {
-    // 90%+: small bubbles with plank barriers (unchanged)
+    // 85%+: small bubbles with plank barriers
     radius = BUBBLE_RADIUS * 0.5;
     x = W * 0.25 + Math.random() * W * 0.5;
     moving = true;
@@ -280,7 +286,7 @@ function makeBubble(worldY, id) {
 function generateBubbles() {
   bubbles = [];
   nextBubbleId = 0;
-  for (let i = 0; i < INITIAL_BUBBLES; i++) {
+  for (let i = 0; i < INITIAL_BUBBLES - 1; i++) {
     const worldY = (i + 1) * BUBBLE_GAP;
     bubbles.push(makeBubble(worldY, nextBubbleId++));
   }
@@ -361,7 +367,6 @@ function gToast(msg) {
 
 function updateHud() {
   document.getElementById('score').textContent = Math.floor(progress) + '%';
-  document.getElementById('speed').textContent = getPhaseLabel();
   const elapsed = Math.floor((Date.now() - gameStartTime) / 1000);
   const min = Math.floor(elapsed / 60);
   const sec = elapsed % 60;
@@ -421,7 +426,6 @@ function startGame() {
   deathY = -120;
   lives = activePet.lives;
   invincible = 0;
-  sinking = false;
   toastFlags = {};
   bubblesReached = 0;
   lastLandedBubble = -1;
@@ -455,6 +459,14 @@ function handleJump() {
   if (gameState !== 'aiming' || isPaused) return;
   ensureAudio();
   sfxJump();
+  // Reset crack timer on the bubble we're leaving
+  if (currentBubble >= 0 && currentBubble < bubbles.length) {
+    const cb = bubbles[currentBubble];
+    if (cb.cracking) {
+      cb.crackStarted = false;
+      cb.crackTimer = 0;
+    }
+  }
   turtle.vx = Math.sin(angle) * JUMP_FORCE;
   turtle.vy = Math.cos(angle) * JUMP_FORCE;
   flyTrail = [];
@@ -463,7 +475,32 @@ function handleJump() {
 
 document.addEventListener('keydown', e => {
   if (e.code === 'Space' || e.code === 'ArrowUp') { e.preventDefault(); handleJump(); }
+  // Debug: press T to toggle auto-advance (jump to next bubble every second)
+  if (e.code === 'KeyT') { toggleAutoDebug(); }
 });
+
+// =====================================================
+// DEBUG AUTO-ADVANCE (press T to toggle)
+// =====================================================
+let debugAutoInterval = null;
+function toggleAutoDebug() {
+  if (debugAutoInterval) {
+    clearInterval(debugAutoInterval);
+    debugAutoInterval = null;
+    console.log('[DEBUG] Auto-advance OFF');
+    return;
+  }
+  console.log('[DEBUG] Auto-advance ON — turtle jumps every 1s');
+  debugAutoInterval = setInterval(() => {
+    if (gameState === 'start') { handleJump(); return; }
+    if (gameState !== 'aiming' && gameState !== 'flying') return;
+    const nextIdx = currentBubble + 1;
+    if (nextIdx < bubbles.length) {
+      landOnBubble(nextIdx);
+      gameState = 'aiming';
+    }
+  }, 1000);
+}
 canvas.addEventListener('click', () => handleJump());
 canvas.addEventListener('touchstart', e => {
   if (e.target.closest('.pause-btn,.sound-btn')) return;
@@ -528,53 +565,6 @@ function gameTick() {
     }
   }
 
-  // Earlier urgency: graduated sinking starting at 50%
-  if (!sinking && progress >= 50) {
-    sinking = true;
-    gToast('⚠️ 海水开始下沉...');
-  }
-  if (sinking && gameState !== 'dead') {
-    const curProg = turtle.y / SEA_SURFACE_Y * 100;
-    // Graduated sink speed based on progress
-    let sinkMultiplier = 0;
-    if (curProg >= 90) sinkMultiplier = 1.5;       // 90%+: even faster
-    else if (curProg >= 80) sinkMultiplier = 1.0;   // 80-90%: full speed
-    else if (curProg >= 70) sinkMultiplier = 0.67;   // 70-80%: 2/3 speed
-    else if (curProg >= 50) sinkMultiplier = 0.33;   // 50-70%: 1/3 speed
-
-    if (sinkMultiplier > 0) {
-      const sinkAmount = SINK_PER_FRAME * sinkMultiplier;
-      for (let i = 0; i < bubbles.length; i++) {
-        bubbles[i].worldY -= sinkAmount;
-      }
-      // Jellies sink too
-      for (let i = 0; i < jellies.length; i++) {
-        jellies[i].worldY -= sinkAmount;
-      }
-      // Current zones sink too
-      for (let i = 0; i < currentZones.length; i++) {
-        currentZones[i].startY -= sinkAmount;
-        currentZones[i].endY -= sinkAmount;
-      }
-      if (gameState === 'flying') {
-        turtle.y -= sinkAmount;
-      }
-    }
-
-    // Spawn new bubbles above highest when needed
-    const highestBubble = bubbles[bubbles.length - 1];
-    if (highestBubble && highestBubble.worldY < SEA_SURFACE_Y + BUBBLE_GAP * 3) {
-      const newY = highestBubble.worldY + BUBBLE_GAP;
-      bubbles.push(makeBubble(newY, nextBubbleId++));
-    }
-
-    // Prune bubbles far below camera
-    while (bubbles.length > 0 && bubbles[0].worldY < cameraY - H) {
-      if (currentBubble <= 0) break;
-      bubbles.shift();
-      currentBubble--;
-    }
-  }
 
   // Update progress based on turtle height
   progress = calcProgress();
@@ -603,7 +593,7 @@ function gameTick() {
         cb.crackTimer--;
         if (cb.crackTimer <= 0) {
           // Bubble breaks! Fall to previous bubble
-          cb.cracking = false; // don't trigger again
+          cb.crackStarted = false; // reset so it can crack again on next landing
           spawnParticles(w2sx(cb.x), w2sy(cb.worldY), 15, 200);
           triggerShake(5, 10);
           gToast('气泡碎了！');
@@ -612,7 +602,6 @@ function gameTick() {
             currentBubble = currentBubble - 1;
             turtle.x = prev.x; turtle.y = prev.worldY;
             turtle.vx = 0; turtle.vy = 0;
-            angle = 0; angleDir = 1;
           } else {
             // No previous bubble — game over
             gameOver(); return;
@@ -668,7 +657,6 @@ function gameTick() {
           turtle.x = W / 2; turtle.y = 0;
         }
         turtle.vx = 0; turtle.vy = 0;
-        angle = 0; angleDir = 1;
         gameState = 'aiming';
         break;
       }
@@ -868,16 +856,11 @@ function landOnBubble(idx) {
     b.crackTimer = 420; // 7 seconds at 60fps
   }
 
-  // Phase announcements (only trigger once)
-  if (!toastFlags.t5  && progress >= 5)  { toastFlags.t5 = true;  gToast('🌊 水流开始变化...'); }
-  if (!toastFlags.t25 && progress >= 25) { toastFlags.t25 = true; gToast('🌀 气泡开始移动！'); }
-  if (!toastFlags.t50 && progress >= 50) { toastFlags.t50 = true; gToast('🪨 出现岩石！利用墙壁反弹绕过'); }
-  if (!toastFlags.t90 && progress >= 90) { toastFlags.t90 = true; gToast('⚠️ 气泡缩小了！木板封路！'); }
+  // Phase announcements (removed)
 
   // Win: turtle reached sea surface
   if (turtle.y >= SEA_SURFACE_Y) { gameState = 'win'; gameWin(); return; }
 
-  angle = 0; angleDir = 1;
   gameState = 'aiming';
 }
 
@@ -895,12 +878,16 @@ function gameOver() {
     if (currentBubble >= 0) {
       const b = bubbles[currentBubble];
       turtle.x = b.x; turtle.y = b.worldY;
+      // Restart crack timer if it's a cracking bubble
+      if (b.cracking && !b.crackStarted) {
+        b.crackStarted = true;
+        b.crackTimer = 420;
+      }
     } else {
       turtle.x = W / 2; turtle.y = 0;
     }
     turtle.vx = 0; turtle.vy = 0;
     invincible = 90; // 1.5s invincibility
-    angle = 0; angleDir = 1;
     gameState = 'aiming';
     updateHud();
     return;
@@ -1033,342 +1020,147 @@ function render() {
   const pMid  = cameraY * 0.25;
   const pNear = cameraY * 0.5;
 
-  // Gradient sky: smooth color transition across 4 zones
-  let bgR, bgG, bgB;
-  if (t < 0.25) {
-    const s = t / 0.25;
-    bgR = 4 + s * 4;   bgG = 8 + s * 18;  bgB = 20 + s * 25;
-  } else if (t < 0.5) {
-    const s = (t - 0.25) / 0.25;
-    bgR = 8 + s * 6;   bgG = 26 + s * 40;  bgB = 45 + s * 50;
-  } else if (t < 0.8) {
-    const s = (t - 0.5) / 0.3;
-    bgR = 14 + s * 20;  bgG = 66 + s * 60;  bgB = 95 + s * 70;
-  } else {
-    const s = (t - 0.8) / 0.2;
-    bgR = 34 + s * 30;  bgG = 126 + s * 50; bgB = 165 + s * 50;
-  }
-  ctx.fillStyle = 'rgb(' + Math.floor(bgR) + ',' + Math.floor(bgG) + ',' + Math.floor(bgB) + ')';
-  ctx.fillRect(0, 0, W, H);
+  // ============ DEPTH GRADIENT — vertical gradient across entire screen ============
+  // Maps the camera view to a smooth ocean depth gradient:
+  //   deep (t≈0): near-black navy  →  mid (t≈0.5): ocean blue  →  surface (t≈1): bright teal/cyan
+  // The gradient covers the screen top-to-bottom so the upper part is always lighter (closer to surface).
+  {
+    const grad = ctx.createLinearGradient(0, 0, 0, H);
+    // "t" = overall depth, but screen top is shallower than screen bottom
+    // tTop/tBot represent the depth at top/bottom of viewport
+    const viewSpan = 0.08; // how much depth one screen-height represents
+    const tTop = Math.min(1, t + viewSpan);
+    const tBot = Math.max(0, t - viewSpan);
 
-  // ============ FAR LAYER (slowest parallax — mountains/terrain silhouettes) ============
-
-  // Far rocky terrain — dark silhouette hills that scroll very slowly
-  ctx.globalAlpha = 0.08 + t * 0.04;
-  ctx.fillStyle = 'rgba(0,15,30,' + (0.3 + t * 0.15) + ')';
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  for (let x = 0; x <= W; x += 20) {
-    const baseH = H * 0.7;
-    const hill = Math.sin(x * 0.008 + pFar * 0.003) * 40
-               + Math.sin(x * 0.015 + pFar * 0.005 + 2) * 25
-               + Math.sin(x * 0.003 + pFar * 0.001) * 60;
-    ctx.lineTo(x, baseH + hill);
-  }
-  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-
-  // Second far ridge (slightly closer, different shape)
-  ctx.fillStyle = 'rgba(0,20,40,' + (0.2 + t * 0.12) + ')';
-  ctx.beginPath();
-  ctx.moveTo(0, H);
-  for (let x = 0; x <= W; x += 16) {
-    const baseH = H * 0.78;
-    const hill = Math.sin(x * 0.012 + pFar * 0.006 + 5) * 30
-               + Math.sin(x * 0.025 + pFar * 0.008) * 18
-               + Math.cos(x * 0.005 + pFar * 0.002 + 1) * 45;
-    ctx.lineTo(x, baseH + hill);
-  }
-  ctx.lineTo(W, H); ctx.closePath(); ctx.fill();
-  ctx.globalAlpha = 1;
-
-  // ============ MID LAYER (medium parallax) ============
-
-  // Deep zone (t<0.35): floating dust / volcanic vents
-  if (t < 0.35) {
-    const a = 0.07 * (1 - t / 0.35);
-    ctx.globalAlpha = a;
-    ctx.fillStyle = '#1a3a5a';
-    for (let i = 0; i < 10; i++) {
-      const px = (i * 173.7 + frameCount * 0.06) % (W + 60) - 30;
-      const py = (i * 211.3 - pMid * 0.15 + frameCount * 0.1) % (H + 60) - 30;
-      const r = 4 + (i % 4) * 3;
-      ctx.beginPath(); ctx.arc(px, py, r, 0, Math.PI * 2); ctx.fill();
+    // Color function: depth 0→1 maps dark navy → ocean blue → bright cyan
+    function depthColor(d) {
+      let r, g, b;
+      if (d < 0.15) {       // abyss: near-black
+        const s = d / 0.15;
+        r = 3 + s * 4;   g = 6 + s * 12;  b = 16 + s * 18;
+      } else if (d < 0.35) { // deep ocean: dark blue-green
+        const s = (d - 0.15) / 0.2;
+        r = 7 + s * 5;   g = 18 + s * 25;  b = 34 + s * 30;
+      } else if (d < 0.55) { // mid ocean: rich blue
+        const s = (d - 0.35) / 0.2;
+        r = 12 + s * 8;  g = 43 + s * 40;  b = 64 + s * 45;
+      } else if (d < 0.75) { // upper ocean: teal
+        const s = (d - 0.55) / 0.2;
+        r = 20 + s * 15; g = 83 + s * 50;  b = 109 + s * 40;
+      } else {               // near surface: bright cyan
+        const s = (d - 0.75) / 0.25;
+        r = 35 + s * 40;  g = 133 + s * 60; b = 149 + s * 55;
+      }
+      return 'rgb(' + Math.floor(r) + ',' + Math.floor(g) + ',' + Math.floor(b) + ')';
     }
-    // Vent glow
-    for (let i = 0; i < 3; i++) {
-      const vx = W * 0.2 + i * W * 0.3;
-      const vy = H * 0.9 - pMid * 0.05;
-      ctx.globalAlpha = a * 0.6;
-      ctx.fillStyle = '#2a1a0a';
-      ctx.beginPath(); ctx.arc(vx, vy % H, 15 + Math.sin(frameCount * 0.03 + i) * 5, 0, Math.PI * 2); ctx.fill();
-      ctx.fillStyle = '#4a2a0a';
-      ctx.globalAlpha = a * 0.3 * (0.5 + Math.sin(frameCount * 0.05 + i) * 0.5);
-      ctx.beginPath(); ctx.arc(vx, vy % H, 8, 0, Math.PI * 2); ctx.fill();
+
+    grad.addColorStop(0, depthColor(tTop));
+    grad.addColorStop(0.3, depthColor(t + viewSpan * 0.4));
+    grad.addColorStop(0.5, depthColor(t));
+    grad.addColorStop(0.7, depthColor(t - viewSpan * 0.4));
+    grad.addColorStop(1, depthColor(tBot));
+
+    ctx.fillStyle = grad;
+    ctx.fillRect(0, 0, W, H);
+
+    // Store mid-screen color for use by ground fade later
+    var _dc = depthColor(t);
+    var _m = _dc.match(/\d+/g);
+    var bgR = +_m[0], bgG = +_m[1], bgB = +_m[2];
+  }
+
+  // ============ CAUSTICS — underwater light ripples ============
+  // Visible from 5–85% depth, fades near floor and surface
+  if (t > 0.03 && t < 0.85) {
+    const causticAlpha = (t < 0.12 ? (t - 0.03) / 0.09 : 1) * (t > 0.7 ? (0.85 - t) / 0.15 : 1) * 0.07;
+    ctx.globalAlpha = causticAlpha;
+    ctx.strokeStyle = '#7fdbca';
+    ctx.lineWidth = 1.5;
+    const cTime = frameCount * 0.012;
+    const cScroll = pFar * 0.3;
+    for (let ci = 0; ci < 5; ci++) {
+      ctx.beginPath();
+      const baseY = (ci * H * 0.22 + cScroll) % (H + 60) - 30;
+      for (let cx = 0; cx <= W; cx += 6) {
+        const cy = baseY
+          + Math.sin(cx * 0.015 + cTime + ci * 1.7) * 18
+          + Math.sin(cx * 0.033 + cTime * 1.4 + ci * 0.9) * 10;
+        if (cx === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
+    }
+    for (let ci = 0; ci < 4; ci++) {
+      ctx.beginPath();
+      const baseY = (ci * H * 0.28 + 80 + cScroll * 0.8) % (H + 60) - 30;
+      for (let cx = 0; cx <= W; cx += 6) {
+        const cy = baseY
+          + Math.sin(cx * 0.02 - cTime * 0.9 + ci * 2.3) * 15
+          + Math.cos(cx * 0.04 + cTime * 1.1 + ci * 1.1) * 8;
+        if (cx === 0) ctx.moveTo(cx, cy); else ctx.lineTo(cx, cy);
+      }
+      ctx.stroke();
     }
     ctx.globalAlpha = 1;
   }
 
-  // Mid zone (0.15–0.65): seaweed, coral
-  if (t > 0.15 && t < 0.65) {
-    const fadeIn  = Math.min(1, (t - 0.15) / 0.1);
-    const fadeOut = Math.min(1, (0.65 - t) / 0.1);
-    const seaA = fadeIn * fadeOut;
+  // (distant silhouettes removed)
 
-    // Coral formations (far behind, slow parallax)
-    ctx.globalAlpha = seaA * 0.1;
-    for (let i = 0; i < 5; i++) {
-      const cx = (i * 97 + 20) % W;
-      const cy = H - 10 - (pMid * 0.08 + i * 15) % 60;
-      ctx.fillStyle = i % 2 === 0 ? '#8a3a4a' : '#6a4a2a';
-      ctx.beginPath();
-      ctx.arc(cx, cy, 10 + i * 3, Math.PI, 0);
-      ctx.fill();
-      ctx.beginPath();
-      ctx.arc(cx + 12, cy + 5, 7 + i * 2, Math.PI, 0);
-      ctx.fill();
-    }
+  // ============ BACKGROUND: 海面bg (surface sky) ============
+  // Fixed to sea surface position, only visible when turtle is near the top.
+  if (t > 0.75 && bgSurface.complete && bgSurface.naturalWidth) {
+    const surfAlpha = Math.min(0.85, (t - 0.75) / 0.2);
+    ctx.globalAlpha = surfAlpha;
+    const iw = bgSurface.naturalWidth;
+    const ih = bgSurface.naturalHeight;
+    const drawW = W;
+    const drawH = Math.ceil(ih * (W / iw));
+    // Image bottom edge = sea surface line
+    const surfScreenY = w2sy(SEA_SURFACE_Y);
+    ctx.drawImage(bgSurface, 0, surfScreenY - drawH, drawW, drawH);
+    ctx.globalAlpha = 1;
+  }
 
-    // Seaweed (closer, medium parallax)
-    ctx.globalAlpha = seaA * 0.14;
-    ctx.lineWidth = 3;
+  // ============ LIGHT RAYS (enhanced — variable width, flicker, depth-aware) ============
+  {
+    const rayBaseAlpha = 0.012 + t * 0.08;
     for (let i = 0; i < 8; i++) {
-      const bx = (i * 57 + 15) % W;
-      const by = H + 10 - (pMid * 0.12) % 40;
-      const sway = Math.sin(frameCount * 0.013 + i * 1.7) * 12;
-      const sway2 = Math.sin(frameCount * 0.02 + i * 2.3) * 8;
-      ctx.strokeStyle = i % 3 === 0 ? '#1a7a4a' : '#1a6a3a';
+      // Per-ray flicker
+      const flicker = 0.7 + 0.3 * Math.sin(frameCount * 0.02 + i * 3.7);
+      ctx.globalAlpha = rayBaseAlpha * flicker * (i < 6 ? 1 : 0.5);
+      ctx.fillStyle = t > 0.6 ? 'rgba(200,235,255,1)' : 'rgba(180,230,240,1)';
+      const rx = W * 0.06 + i * W * 0.13 + Math.sin(frameCount * 0.003 + i * 1.1 + pFar * 0.001) * 35;
+      const topW = 8 + i % 3 * 4 + Math.sin(frameCount * 0.008 + i) * 3;
+      const spread = 30 + t * 30 + Math.sin(frameCount * 0.006 + i * 0.7) * 18 + (i % 2) * 15;
       ctx.beginPath();
-      ctx.moveTo(bx, by);
-      ctx.bezierCurveTo(
-        bx + sway, by - 35,
-        bx + sway2, by - 65,
-        bx + sway * 0.7 + sway2 * 0.5, by - 85 - i * 6
-      );
-      ctx.stroke();
-      // Leaf blobs
-      ctx.fillStyle = ctx.strokeStyle;
-      ctx.globalAlpha = seaA * 0.08;
-      for (let j = 1; j <= 3; j++) {
-        const ly = by - j * 22 - i * 2;
-        const lx = bx + Math.sin(frameCount * 0.015 + i + j) * (8 + j * 2);
-        ctx.beginPath(); ctx.ellipse(lx, ly, 5, 3, sway * 0.05, 0, Math.PI * 2); ctx.fill();
-      }
-      ctx.globalAlpha = seaA * 0.14;
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // ============ LIGHT RAYS (get brighter near surface, parallax sway) ============
-  const rayAlpha = 0.015 + t * 0.07;
-  ctx.globalAlpha = rayAlpha;
-  ctx.fillStyle = '#fff';
-  for (let i = 0; i < 6; i++) {
-    const rx = W * 0.08 + i * W * 0.17 + Math.sin(frameCount * 0.003 + i * 1.1 + pFar * 0.001) * 30;
-    const spread = 35 + t * 25 + Math.sin(frameCount * 0.006 + i * 0.7) * 15;
-    ctx.beginPath();
-    ctx.moveTo(rx - 12, 0); ctx.lineTo(rx + 12, 0);
-    ctx.lineTo(rx + spread, H);
-    ctx.lineTo(rx - spread, H);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  // ============ NEAR LAYER (fast parallax — close objects) ============
-
-  // Jellyfish (0.3–0.7)
-  if (t > 0.3 && t < 0.75) {
-    const jA = Math.min(1, Math.min((t - 0.3) / 0.1, (0.75 - t) / 0.1)) * 0.12;
-    ctx.globalAlpha = jA;
-    for (let i = 0; i < 3; i++) {
-      const jx = (i * 163 + 50 + frameCount * (0.12 + i * 0.04)) % (W + 60) - 30;
-      const jy = (H * 0.25 + i * H * 0.2 - pNear * 0.06 + Math.sin(frameCount * 0.018 + i * 2) * 20);
-      const jyMod = ((jy % H) + H) % H;
-      const pulse = 1 + Math.sin(frameCount * 0.04 + i) * 0.15;
-      // Bell
-      ctx.fillStyle = i === 0 ? 'rgba(200,130,255,0.6)' : i === 1 ? 'rgba(130,200,255,0.5)' : 'rgba(255,180,200,0.5)';
-      ctx.beginPath();
-      ctx.ellipse(jx, jyMod, 10 * pulse, 8 * pulse, 0, Math.PI, 0);
+      ctx.moveTo(rx - topW, 0); ctx.lineTo(rx + topW, 0);
+      ctx.lineTo(rx + spread, H);
+      ctx.lineTo(rx - spread, H);
       ctx.fill();
-      // Tentacles
-      ctx.strokeStyle = ctx.fillStyle;
-      ctx.lineWidth = 1;
-      for (let ti = -1; ti <= 1; ti++) {
-        ctx.beginPath();
-        ctx.moveTo(jx + ti * 5, jyMod);
-        ctx.quadraticCurveTo(
-          jx + ti * 5 + Math.sin(frameCount * 0.03 + i + ti) * 6,
-          jyMod + 12,
-          jx + ti * 3 + Math.sin(frameCount * 0.025 + i + ti * 2) * 4,
-          jyMod + 22
-        );
-        ctx.stroke();
-      }
     }
     ctx.globalAlpha = 1;
   }
 
-  // Fish schools (0.55+)
-  if (t > 0.55) {
-    const fishA = Math.min(0.14, (t - 0.55) / 0.3 * 0.14);
-    ctx.globalAlpha = fishA;
-    for (let i = 0; i < 5; i++) {
-      const dir = i % 2 === 0 ? 1 : -1;
-      const spd = 0.25 + i * 0.08;
-      const fx = dir > 0
-        ? (i * 197 + frameCount * spd + pNear * 0.08) % (W + 100) - 50
-        : W + 50 - (i * 197 + frameCount * spd + pNear * 0.08) % (W + 100);
-      const fy = H * 0.2 + i * H * 0.14 + Math.sin(frameCount * 0.015 + i * 3) * 18;
-      const sz = 6 + i * 1.5;
-      ctx.fillStyle = i % 3 === 0 ? '#3aaaca' : i % 3 === 1 ? '#5ac0d0' : '#2a90b0';
-      // Body
-      ctx.beginPath();
-      ctx.ellipse(fx, fy, sz, sz * 0.5, 0, 0, Math.PI * 2);
-      ctx.fill();
-      // Tail
-      ctx.beginPath();
-      ctx.moveTo(fx - dir * sz, fy);
-      ctx.lineTo(fx - dir * (sz + 6), fy - 4);
-      ctx.lineTo(fx - dir * (sz + 6), fy + 4);
-      ctx.closePath(); ctx.fill();
-      // School (2 small followers)
-      for (let j = 1; j <= 2; j++) {
-        const offx = fx - dir * (12 + j * 9) + Math.sin(frameCount * 0.02 + i + j) * 3;
-        const offy = fy + (j % 2 === 0 ? -6 : 6) + Math.sin(frameCount * 0.025 + j) * 2;
-        ctx.beginPath();
-        ctx.ellipse(offx, offy, sz * 0.6, sz * 0.3, 0, 0, Math.PI * 2);
-        ctx.fill();
-      }
+  // ============ FLOATING MICRO-PARTICLES — dense plankton/dust ============
+  {
+    const microCount = 25 + Math.floor(t * 15);
+    ctx.globalAlpha = 0.15 + t * 0.1;
+    for (let i = 0; i < microCount; i++) {
+      const seed = i * 97.31;
+      const seed2 = i * 53.17;
+      // Slow independent drift
+      const mx = (seed + Math.sin(frameCount * 0.003 + i * 0.37) * 25 + frameCount * (0.02 + (i % 5) * 0.005)) % W;
+      const my = ((seed2 * 1.7 - pMid * 0.15 + Math.cos(frameCount * 0.004 + i * 0.6) * 20) % (H + 40) + H + 40) % (H + 40) - 20;
+      const mr = 0.6 + (i % 4) * 0.4;
+      const bright = 0.3 + 0.7 * Math.sin(frameCount * 0.015 + i * 1.9);
+      ctx.fillStyle = 'rgba(180,230,240,' + (0.2 + bright * 0.3) + ')';
+      ctx.beginPath(); ctx.arc(mx, my, mr, 0, Math.PI * 2); ctx.fill();
     }
     ctx.globalAlpha = 1;
   }
 
-  // ============ NEAR FOREGROUND — rocks, sea creatures for depth feel ============
-
-  // Foreground rocks (always, edges only — parallax fast)
-  ctx.globalAlpha = 0.13 + t * 0.06;
-  for (let i = 0; i < 6; i++) {
-    const side = i % 2;
-    const ry = ((i * 293.7 - pNear * 0.35) % (H + 120) + H + 120) % (H + 120) - 60;
-    const rx = side === 0 ? -8 + (i % 3) * 6 : W + 8 - (i % 3) * 6;
-    const rw = 18 + (i * 7) % 14;
-    const rh = 12 + (i * 11) % 10;
-    ctx.fillStyle = '#2a2018';
-    ctx.beginPath();
-    ctx.ellipse(rx, ry, rw, rh, 0, 0, Math.PI * 2);
-    ctx.fill();
-    // Highlight edge
-    ctx.fillStyle = 'rgba(80,65,45,0.3)';
-    ctx.beginPath();
-    ctx.ellipse(rx + (side === 0 ? 4 : -4), ry - 3, rw * 0.6, rh * 0.5, 0, 0, Math.PI * 2);
-    ctx.fill();
-  }
-  ctx.globalAlpha = 1;
-
-  // Sea urchins on rocks (deep, t<0.4)
-  if (t < 0.4) {
-    const uA = 0.15 * (1 - t / 0.4);
-    ctx.globalAlpha = uA;
-    for (let i = 0; i < 3; i++) {
-      const ux = (i * 141 + 30) % W;
-      const uy = ((i * 337 - pNear * 0.3) % (H + 60) + H + 60) % (H + 60);
-      ctx.fillStyle = '#1a0a2a';
-      ctx.beginPath(); ctx.arc(ux, uy, 7, 0, Math.PI * 2); ctx.fill();
-      // Spines
-      ctx.strokeStyle = '#3a1a4a'; ctx.lineWidth = 1;
-      for (let s = 0; s < 8; s++) {
-        const sa = s * Math.PI / 4 + Math.sin(frameCount * 0.01 + i) * 0.1;
-        ctx.beginPath();
-        ctx.moveTo(ux + Math.cos(sa) * 7, uy + Math.sin(sa) * 7);
-        ctx.lineTo(ux + Math.cos(sa) * 14, uy + Math.sin(sa) * 14);
-        ctx.stroke();
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Starfish (mid depth, 0.2–0.6)
-  if (t > 0.2 && t < 0.6) {
-    const sfA = Math.min(1, Math.min((t - 0.2) / 0.1, (0.6 - t) / 0.1)) * 0.14;
-    ctx.globalAlpha = sfA;
-    for (let i = 0; i < 2; i++) {
-      const stx = (i * 211 + 60) % W;
-      const sty = ((i * 379 - pNear * 0.25) % (H + 80) + H + 80) % (H + 80);
-      const rot = frameCount * 0.004 + i * 2;
-      ctx.fillStyle = i === 0 ? '#c45a3a' : '#d4854a';
-      ctx.save();
-      ctx.translate(stx, sty); ctx.rotate(rot);
-      ctx.beginPath();
-      for (let p = 0; p < 5; p++) {
-        const a1 = p * Math.PI * 2 / 5 - Math.PI / 2;
-        const a2 = a1 + Math.PI / 5;
-        ctx.lineTo(Math.cos(a1) * 10, Math.sin(a1) * 10);
-        ctx.lineTo(Math.cos(a2) * 4, Math.sin(a2) * 4);
-      }
-      ctx.closePath(); ctx.fill();
-      ctx.restore();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Crabs (shallow, 0.5–0.85)
-  if (t > 0.5 && t < 0.85) {
-    const cA = Math.min(1, Math.min((t - 0.5) / 0.1, (0.85 - t) / 0.1)) * 0.16;
-    ctx.globalAlpha = cA;
-    for (let i = 0; i < 2; i++) {
-      const cx = (i * 187 + 40 + Math.sin(frameCount * 0.008 + i * 3) * 20) % W;
-      const cy = ((i * 271 - pNear * 0.3) % (H + 60) + H + 60) % (H + 60);
-      ctx.fillStyle = '#b04020';
-      // Body
-      ctx.beginPath(); ctx.ellipse(cx, cy, 8, 5, 0, 0, Math.PI * 2); ctx.fill();
-      // Claws
-      const clawWave = Math.sin(frameCount * 0.04 + i) * 0.3;
-      ctx.fillStyle = '#c05030';
-      ctx.beginPath(); ctx.ellipse(cx - 11, cy - 2, 4, 3, clawWave, 0, Math.PI * 2); ctx.fill();
-      ctx.beginPath(); ctx.ellipse(cx + 11, cy - 2, 4, 3, -clawWave, 0, Math.PI * 2); ctx.fill();
-      // Eyes
-      ctx.fillStyle = '#111';
-      ctx.beginPath(); ctx.arc(cx - 3, cy - 4, 1.5, 0, Math.PI * 2); ctx.arc(cx + 3, cy - 4, 1.5, 0, Math.PI * 2); ctx.fill();
-      // Legs
-      ctx.strokeStyle = '#903020'; ctx.lineWidth = 1;
-      for (let l = -1; l <= 1; l += 2) {
-        for (let j = 0; j < 3; j++) {
-          const lx = cx + l * (5 + j * 2);
-          const ly = cy + 2 + j;
-          ctx.beginPath(); ctx.moveTo(lx, ly); ctx.lineTo(lx + l * 5, ly + 4); ctx.stroke();
-        }
-      }
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Seahorse (near surface, 0.7+)
-  if (t > 0.7) {
-    const shA = Math.min(0.15, (t - 0.7) / 0.2 * 0.15);
-    ctx.globalAlpha = shA;
-    for (let i = 0; i < 2; i++) {
-      const hx = (i * 227 + 80 + Math.sin(frameCount * 0.006 + i * 4) * 25) % W;
-      const hy = ((i * 311 - pNear * 0.25 + Math.sin(frameCount * 0.012 + i) * 15) % (H + 80) + H + 80) % (H + 80);
-      const bob = Math.sin(frameCount * 0.02 + i * 1.5) * 4;
-      ctx.fillStyle = i === 0 ? '#e0a040' : '#40c0a0';
-      // Head
-      ctx.beginPath(); ctx.arc(hx, hy + bob - 6, 5, 0, Math.PI * 2); ctx.fill();
-      // Body curve
-      ctx.lineWidth = 3; ctx.strokeStyle = ctx.fillStyle;
-      ctx.beginPath();
-      ctx.moveTo(hx, hy + bob);
-      ctx.quadraticCurveTo(hx + 4, hy + bob + 10, hx, hy + bob + 18);
-      ctx.quadraticCurveTo(hx - 3, hy + bob + 22, hx + 2, hy + bob + 26);
-      ctx.stroke();
-      // Eye
-      ctx.fillStyle = '#111';
-      ctx.beginPath(); ctx.arc(hx + 2, hy + bob - 7, 1.2, 0, Math.PI * 2); ctx.fill();
-    }
-    ctx.globalAlpha = 1;
-  }
-
-  // Rising bubbles (near layer, always visible, more near surface)
-  const bubCount = 8 + Math.floor(t * 8);
-  ctx.globalAlpha = 0.05 + t * 0.06;
+  // ============ RISING BUBBLES (existing, slightly enhanced) ============
+  const bubCount = 10 + Math.floor(t * 10);
+  ctx.globalAlpha = 0.06 + t * 0.07;
   ctx.fillStyle = t > 0.6 ? '#8ae0ff' : '#4aa0c0';
   for (let i = 0; i < bubCount; i++) {
     const seed = i * 137.508;
@@ -1376,8 +1168,8 @@ function render() {
     const by = ((seed * 2.3 - pNear * 0.2 - frameCount * (0.2 + i * 0.03)) % (H + 80) + H + 80) % (H + 80) - 40;
     const br = 2 + (i % 5) * 1.5;
     ctx.beginPath(); ctx.arc(bx, by, br, 0, Math.PI * 2); ctx.fill();
-    // Tiny highlight
-    ctx.fillStyle = 'rgba(255,255,255,' + (0.08 + t * 0.05) + ')';
+    // Specular highlight
+    ctx.fillStyle = 'rgba(255,255,255,' + (0.1 + t * 0.06) + ')';
     ctx.beginPath(); ctx.arc(bx - br * 0.3, by - br * 0.3, br * 0.35, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = t > 0.6 ? '#8ae0ff' : '#4aa0c0';
   }
@@ -1412,31 +1204,43 @@ function render() {
 
   // (ambient bubbles integrated into near-layer rising bubbles above)
 
-  // --- Walls ---
-  if (progress >= 48 || currentBubble >= 24) {
-    const a = Math.min(1, Math.max(0, (progress - 46) / 6)) * 0.55;
-    ctx.globalAlpha = a;
-    ctx.fillStyle = '#3a2a1a';
-    ctx.fillRect(0, 0, WALL_MARGIN, H);
-    ctx.fillRect(W - WALL_MARGIN, 0, WALL_MARGIN, H);
-    ctx.strokeStyle = 'rgba(60,45,30,0.5)';
-    ctx.lineWidth = 1;
-    for (let wy = 0; wy < H; wy += 18) {
-      ctx.beginPath();
-      ctx.moveTo(0, wy); ctx.lineTo(WALL_MARGIN, wy);
-      ctx.moveTo(W - WALL_MARGIN, wy); ctx.lineTo(W, wy);
-      ctx.stroke();
+  // ============ VIGNETTE — deep-sea dark corners ============
+  // Stronger in deep water, fades as turtle approaches surface
+  {
+    const vigStrength = Math.max(0, 0.45 - t * 0.4);
+    if (vigStrength > 0.01) {
+      const cx = W / 2, cy = H / 2;
+      const outerR = Math.max(W, H) * 0.75;
+      const innerR = Math.min(W, H) * 0.35;
+      const vigGrad = ctx.createRadialGradient(cx, cy, innerR, cx, cy, outerR);
+      vigGrad.addColorStop(0, 'rgba(0,0,0,0)');
+      vigGrad.addColorStop(0.6, 'rgba(0,5,15,' + (vigStrength * 0.3).toFixed(3) + ')');
+      vigGrad.addColorStop(1, 'rgba(0,5,15,' + vigStrength.toFixed(3) + ')');
+      ctx.fillStyle = vigGrad;
+      ctx.fillRect(0, 0, W, H);
     }
-    ctx.globalAlpha = 1;
   }
 
-  // --- Ground ---
+  // (walls visual removed — bounce logic still active)
+
+  // --- Ground (海底bg) — 60% screen height below ground line ---
   const gndSY = w2sy(0);
   if (gndSY < H + 30) {
-    ctx.fillStyle = '#1a120a';
-    ctx.fillRect(0, gndSY, W, H - gndSY + 100);
-    ctx.fillStyle = '#2a1a0e';
-    for (let i = 0; i < W; i += 14) ctx.fillRect(i, gndSY, 10, 3);
+    if (bgDeep.complete && bgDeep.naturalWidth) {
+      const gndW = W;
+      const gndH = H * 0.7; // 70% of screen height, all below ground line
+      ctx.drawImage(bgDeep, 0, gndSY, gndW, gndH);
+      // Gradient fade at top edge: blend into depth gradient above
+      const fadeH = 60;
+      const fadeGrad = ctx.createLinearGradient(0, gndSY, 0, gndSY + fadeH);
+      fadeGrad.addColorStop(0, 'rgb(' + Math.floor(bgR) + ',' + Math.floor(bgG) + ',' + Math.floor(bgB) + ')');
+      fadeGrad.addColorStop(1, 'rgba(0,0,0,0)');
+      ctx.fillStyle = fadeGrad;
+      ctx.fillRect(0, gndSY, W, fadeH);
+    } else {
+      ctx.fillStyle = '#1a120a';
+      ctx.fillRect(0, gndSY, W, H - gndSY + 100);
+    }
     if (currentBubble === -1 && gameState === 'aiming') {
       ctx.fillStyle = 'rgba(6,214,160,0.3)';
       ctx.fillRect(W / 2 - 30, gndSY - 4, 60, 4);
@@ -1533,12 +1337,12 @@ function render() {
     let bubbleColor;
     if (b.cracking && b.crackStarted) {
       const crackPct = 1 - b.crackTimer / 420;
-      const r = Math.floor(58 + crackPct * 180);
-      const g = Math.floor(154 - crackPct * 100);
-      const bC = Math.floor(191 - crackPct * 120);
+      const r = Math.floor(180 + crackPct * 75);
+      const g = Math.floor(60 - crackPct * 40);
+      const bC = Math.floor(60 - crackPct * 40);
       bubbleColor = 'rgba(' + r + ',' + g + ',' + bC + ',0.55)';
     } else if (b.cracking && !b.crackStarted) {
-      bubbleColor = 'rgba(120,160,180,0.5)'; // slightly different to hint
+      bubbleColor = 'rgba(180,60,60,0.5)';
     } else {
       bubbleColor = isReached ? 'rgba(6,214,160,0.35)'
         : isNext ? 'rgba(76,201,240,0.6)' : 'rgba(58,154,191,0.45)';
@@ -1662,7 +1466,6 @@ function render() {
   }
 
   // --- Current zone particles (horizontal streaks) ---
-  ctx.globalAlpha = 0.35;
   ctx.strokeStyle = '#6ad0f0';
   ctx.lineWidth = 1.5;
   for (let i = 0; i < currentParticles.length; i++) {
@@ -1674,18 +1477,6 @@ function render() {
     ctx.stroke();
   }
   ctx.globalAlpha = 1;
-
-  // --- Skip bonus toast ---
-  if (skipToast.timer > 0) {
-    const stAlpha = Math.min(1, skipToast.timer / 20);
-    const stY = skipToast.y - (70 - skipToast.timer) * 0.5;
-    ctx.globalAlpha = stAlpha * 0.9;
-    ctx.fillStyle = '#ffd93d';
-    ctx.font = 'bold 18px Fredoka';
-    ctx.textAlign = 'center';
-    ctx.fillText(skipToast.text, skipToast.x, stY);
-    ctx.globalAlpha = 1;
-  }
 
   // --- Flight trail ---
   if (gameState === 'flying' && flyTrail.length > 1) {

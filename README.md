@@ -1,2 +1,54 @@
-# Turtle-Project-L_Demo
-Turtle Project L_Demo, testing
+# 龟投 Turtle Prediction — Demo
+
+> 热点预测 + 社区对战 + 宠物养成平台的前端演示仓库
+
+## 项目简介
+
+龟投是一个以乌龟为主题的社区互动平台，核心玩法包括：
+
+- **热点预测**：用户围绕热点话题用「龟币」下注预测，自动结算收益
+- **开战广场**：阵营对抗，评论 + 点赞驱动龟势
+- **宠物中心**：龟种收集、养成、装扮，与投票和小游戏联动
+- **小游戏**：龟龟出海（Bubble Jump）等休闲游戏，可赚取龟币
+
+## 页面结构
+
+| 页面 | 文件 | 说明 |
+|------|------|------|
+| 主站首页 | `index.html` | 分类 Tab 浏览预测事件、热点榜、最新榜 |
+| 开战广场 | `battle.html` | 阵营对战列表 |
+| 对战详情 | `battle-event.html` | 单场对战深度交互（龟势对抗 + 实时评论） |
+| 宠物中心 | `pet.html` | 宠物抽奖、对话、形象切换、披风切换 |
+| 龟龟出海 | `games/turtle-jump/` | Canvas 小游戏，跳泡泡逃离深海 |
+
+## 美术资源
+
+- `assets/pets/` — 龟种立绘 PNG（28+ 种龟）
+- `assets/capes/` — 披风装饰 PNG
+- `assets/source/` — Aseprite 源文件 + JSON 动画数据
+
+## 技术栈
+
+- 纯前端：HTML + CSS + JavaScript（无框架）
+- 小游戏：Canvas 2D
+- 像素美术：Aseprite
+
+## 文档
+
+详细设计文档位于 `docs/` 目录：
+
+- 前端设计需求文档
+- 宠物中心需求文档
+- 后端接口文档
+- 开发路线图
+- 开战广场需求文档
+
+## 本地运行
+
+直接用浏览器打开 `index.html` 即可预览，或使用任意静态服务器：
+
+```bash
+# 例如使用 VS Code 的 Live Server 插件
+# 或者
+npx serve .
+```

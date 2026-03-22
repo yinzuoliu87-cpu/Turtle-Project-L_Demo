@@ -4,7 +4,24 @@
       "Bash(sed -n '911,1275p' index.html)",
       "Read(//tmp/**)",
       "Bash(mv *.aseprite *.json assets/source/)",
-      "Bash(mv *v1.png assets/source/)"
+      "Bash(mv *v1.png assets/source/)",
+      "Read(//c/Users/Louis/**)",
+      "Bash(npm ls:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(python -c \"from PIL import Image; img=Image.open\\(''c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-jump/Pixel scene.png''\\); print\\(img.size, img.mode\\)\")",
+      "Bash(python3 -c \"from PIL import Image; img=Image.open\\(''c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-jump/Pixel scene.png''\\); print\\(img.size, img.mode\\)\")",
+      "Bash(node -e \"const fs=require\\(''fs''\\); const buf=fs.readFileSync\\(''c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-jump/Pixel scene.png''\\); const w=buf.readUInt32BE\\(16\\); const h=buf.readUInt32BE\\(20\\); console.log\\(w+''x''+h\\);\")",
+      "Bash(node -e \":*)",
+      "Bash(node -e:*)",
+      "Bash(npx serve:*)",
+      "Bash(code tunnel:*)",
+      "Bash(where code.cmd)",
+      "Bash(where code:*)",
+      "Read(//c/Program Files/Microsoft VS Code/bin/**)",
+      "Bash(\"D:/Microsoft VS Code/bin/code.cmd\" tunnel --accept-server-license-terms)",
+      "Bash(\"D:/Microsoft VS Code/bin/code.cmd\" tunnel status)",
+      "Bash(node -c games/turtle-jump/game.js)"
     ]
   }
 }
