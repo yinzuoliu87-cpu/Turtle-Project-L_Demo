@@ -9,9 +9,10 @@
    Each rarity tier = +3% to HP/ATK/DEF/SPD over previous tier
    C=1.00  B=1.03  A=1.06  S=1.09  SS=1.12  SSS=1.15
    New stats: crit (暴击率 0~1)
-   res (抗性) auto from rarity: C=12% B=13% A=14% S=15% SS=16% SSS=17%  */
+   DEF reduction formula: reduction% = DEF/(DEF+40), diminishing returns
+   穿甲(armorPen): 计算减伤时无视目标X点防御                              */
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
-const RARITY_RES  = { C:12,   B:13,   A:14,   S:15,   SS:16,   SSS:17   };
+const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
 /* Buff/Debuff effects on skills:
    dot:     { dmg, turns }       — 持续伤害(每回合开始)
    atkDown: { pct, turns }       — 攻击削减(百分比)
@@ -74,11 +75,11 @@ const ALL_PETS = [
     ]},
   { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:290,  atk:42,  def:9,  spd:15, crit:0.20,
     img:'../../assets/pets/忍者龟.png',
-    passive:{ type:'lowHpCrit', pct:30, desc:'HP<30%时暴击率+30%' },
+    passive:{ type:'ninjaInstinct', critBonus:30, critDmgBonus:20, armorPen:5, desc:'+30%暴击+20%爆伤+5穿甲' },
     skills:[
-      { name:'手里剑',   type:'physical', hits:3, power:18,  pierce:5,   desc:'投掷3枚',          cd:0 },
-      { name:'影分身',   type:'shield',   hits:1, power:0,   shield:50,  desc:'分身挡伤50',       cd:2 },
-      { name:'暗杀术',   type:'physical', hits:1, power:90,  pierce:30,  desc:'致命一击，30穿透', cd:4 },
+      { name:'飞镖',     type:'ninjaShuriken', hits:1, power:0, pierce:0, desc:'1.5×ATK普通伤害，暴击转穿透', cd:0, atkScale:1.5 },
+      { name:'陷阱',     type:'ninjaTrap', hits:1, power:0, pierce:0, desc:'给友方上隐形夹子，被攻击时触发2×ATK伤害', cd:3, trapScale:2 },
+      { name:'炸弹',     type:'ninjaBomb', hits:1, power:0, pierce:0, desc:'全体敌方0.8×ATK伤害+25%破甲3回合', cd:4, atkScale:0.8, armorBreak:{pct:25,turns:3} },
     ]},
   { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:370,  atk:36,  def:16, spd:7, crit:0.06,
     img:'../../assets/pets/双头龟.png',
@@ -106,11 +107,11 @@ const ALL_PETS = [
     ]},
   { id:'fortune',   name:'财神龟',   emoji:'🧧🐢',    rarity:'B',   hp:330,  atk:38,  def:13, spd:10, crit:0.10,
     img:'../../assets/pets/财神龟v1.png', sprite:{frames:18,frameW:500,frameH:500,duration:1800},
-    passive:{ type:'turnScaleAtk', pct:3, desc:'每回合攻击+3%' },
+    passive:{ type:'fortuneGold', desc:'每回合获得1~6金币，单位阵亡+8金币' },
     skills:[
-      { name:'金币投掷', type:'physical', hits:2, power:24,  pierce:0,   desc:'扔2枚金币',        cd:0 },
-      { name:'招财进宝', type:'heal',     hits:1, power:0,   heal:60,    desc:'恢复60HP',         cd:3 },
-      { name:'黄金暴雨', type:'physical', hits:6, power:12,  pierce:5,   desc:'6段金币雨',        cd:4, atkDown:{pct:10,turns:2} },
+      { name:'打击',     type:'physical', hits:3, power:0, pierce:0, desc:'3段共1.2×ATK普通伤害', cd:0, atkScale:1.2 },
+      { name:'骰子',     type:'fortuneDice', hits:1, power:0, pierce:0, desc:'获得1~6金币+回复10%最大HP', cd:0, healPct:10 },
+      { name:'梭哈',     type:'fortuneAllIn', hits:1, power:0, pierce:0, desc:'一场限一次！消耗全部金币，每枚造成(0.2ATK穿透+0.2ATK普通)', cd:999, perCoinAtkPierce:0.2, perCoinAtkNormal:0.2, oneTimeUse:true },
     ]},
   { id:'dice',      name:'骰子龟',   emoji:'🎲🐢',    rarity:'B',   hp:320,  atk:40,  def:11, spd:11, crit:0.15,
     img:'../../assets/pets/骰子龟v1.png',
@@ -179,20 +180,20 @@ const ALL_PETS = [
     ]},
   { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:310,  atk:43,  def:8,  spd:17, crit:0.12,
     img:'../../assets/pets/闪电龟.png',
-    passive:{ type:'lowHpCrit', pct:25, desc:'HP<30%时暴击率+25%' },
+    passive:{ type:'lightningStorm', shockScale:1.0, stackMax:8, desc:'每回合电击随机敌人1×ATK穿透；造成伤害叠电击层，8层触发1×ATK穿透' },
     skills:[
-      { name:'电击',     type:'magic',    hits:1, power:50,  pierce:20,  desc:'雷电打击，减防25%',cd:0, defDown:{pct:25,turns:2} },
-      { name:'闪电连锁', type:'magic',    hits:4, power:22,  pierce:15,  desc:'4段连锁雷电',      cd:3, dot:{dmg:15,turns:2} },
-      { name:'雷暴领域', type:'magic',    hits:8, power:12,  pierce:10,  desc:'8段雷暴',          cd:5 },
+      { name:'闪电打击', type:'lightningStrike', hits:5, power:0, pierce:0, desc:'5次共1.3×ATK普通伤害，每次对次目标造成25%溅射', cd:0, atkScale:1.3, splashPct:25 },
+      { name:'威力增幅', type:'lightningBuff', hits:1, power:0, pierce:0, desc:'全体友方ATK+25%持续4回合', cd:4, atkUpPct:25, atkUpTurns:4 },
+      { name:'雷暴',     type:'lightningBarrage', hits:20, power:0, pierce:0, desc:'20次每次0.08×ATK随机分布敌军', cd:5, arrowScale:0.08 },
     ]},
   // S级
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:340,  atk:42,  def:14, spd:13, crit:0.12,
     img:'../../assets/pets/凤凰龟.png',
-    passive:{ type:'deathExplode', pct:40, desc:'死亡时对击杀者造成40%最大HP伤害' },
+    passive:{ type:'phoenixRebirth', revivePct:25, desc:'首次死亡时以25%HP复活' },
     skills:[
-      { name:'烈焰吐息', type:'magic',    hits:2, power:32,  pierce:15,  desc:'双段火焰，灼烧',   cd:0, dot:{dmg:20,turns:3} },
-      { name:'涅槃重生', type:'heal',     hits:1, power:0,   heal:120,   desc:'恢复120HP',        cd:5 },
-      { name:'凤凰烈焰', type:'magic',    hits:6, power:18,  pierce:20,  desc:'6段凤凰火，减防',  cd:4, defDown:{pct:25,turns:2} },
+      { name:'灼烧',   type:'phoenixBurn',   hits:1, power:0, pierce:0, desc:'1×ATK伤害+灼烧5回合(0.3ATK+5%最大HP/回合)', cd:0, atkScale:1.0, burnTurns:5, burnAtkScale:0.3, burnHpPct:5 },
+      { name:'熔岩盾', type:'phoenixShield', hits:1, power:0, pierce:0, desc:'获得1×ATK熔岩盾4回合，被攻击每段反击0.25×ATK', cd:4, shieldScale:1.0, duration:4, counterScale:0.25 },
+      { name:'烫伤',   type:'phoenixScald',  hits:1, power:0, pierce:0, desc:'0.7×ATK伤害，攻防各-15%3回合，破坏50%护盾', cd:3, atkScale:0.7, atkDown:{pct:15,turns:3}, defDown:{pct:15,turns:3}, shieldBreak:50 },
     ]},
   { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',    rarity:'S',   hp:380,  atk:38,  def:18, spd:7, crit:0.08,
     img:'../../assets/pets/熔岩龟.png',
@@ -453,7 +454,7 @@ function createFighter(petId, side) {
     baseAtk:atk, baseDef:def, baseSpd:spd,
     atk, def, spd,
     crit: b.crit || 0.08,
-    res:  RARITY_RES[b.rarity] || 12,
+    armorPen: 0,  // 穿甲值，计算减伤时无视目标X点防御
     passive: b.passive || null,
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
     alive:true,
@@ -461,7 +462,11 @@ function createFighter(petId, side) {
     bubbleStore: 0,      // 泡泡龟被动储存值
     bubbleShieldVal: 0,  // 泡泡盾当前值(与普通护盾分开)
     bubbleShieldTurns: 0,// 泡泡盾剩余回合
-    bubbleShieldOwner: null, // 谁施加的泡泡盾(用于计算爆炸伤害)
+    bubbleShieldOwner: null,
+    _shockStacks: 0,
+    _goldCoins: 0,
+    _dmgDealt: 0,            // 伤害统计：造成
+    _dmgTaken: 0,            // 伤害统计：承受
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
 }
@@ -483,7 +488,17 @@ function startBattle() {
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
   document.getElementById('battleLog').innerHTML = '';
+  try { sfxBattleStart(); } catch(e) {}
+  // Apply one-time passives (like ninjaInstinct)
+  allFighters.forEach(f => {
+    if (f.passive && f.passive.type === 'ninjaInstinct') {
+      f.crit += f.passive.critBonus / 100;
+      f._extraCritDmgPerm = (f.passive.critDmgBonus || 0) / 100;
+      f.armorPen += f.passive.armorPen || 0;
+    }
+  });
   renderFighters();
+  updateDmgStats();
   beginTurn();
 }
 
@@ -511,7 +526,7 @@ function renderFighterCard(f, elId) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙'
 };
 
 function updateFighterStats(f, elId) {
@@ -519,13 +534,13 @@ function updateFighterStats(f, elId) {
   const statsEl = card.querySelector('.fighter-stats');
   if (!statsEl) return;
   // Show current stats with debuff highlighting
-  const atkClass = f.atk < f.baseAtk ? 'stat-down' : '';
+  const atkClass = f.atk < f.baseAtk ? 'stat-down' : f.atk > f.baseAtk ? 'stat-up' : '';
   const defClass = f.def < f.baseDef ? 'stat-down' : f.def > f.baseDef ? 'stat-up' : '';
   const passiveIcon = f.passive ? `<span class="passive-icon" title="${f.passive.desc}">${PASSIVE_ICONS[f.passive.type]||'⭐'}</span>` : '';
   statsEl.innerHTML =
     `<span class="${atkClass}">⚔攻击${f.atk}</span>` +
-    `<span class="${defClass}">🛡防御${f.def}</span>` +
-    `<span>🔰抗性${f.res}%</span>` +
+    `<span class="${defClass}">🛡防御${f.def}(${Math.round(f.def/(f.def+DEF_CONSTANT)*100)}%减伤)</span>` +
+    (f.armorPen > 0 ? `<span class="stat-up">🗡穿甲${f.armorPen}</span>` : '') +
     passiveIcon;
 }
 
@@ -557,14 +572,16 @@ function buildPetImgHTML(pet, size) {
 
 function updateHpBar(f, elId) {
   const card = document.getElementById(elId);
-  const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+  // Scale bar to fit HP + all shields
+  const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
+  const barMax = Math.max(f.maxHp, totalEff); // expand bar if shields overflow
+  const hpPct = Math.max(0, f.hp / barMax * 100);
   const fill = card.querySelector('.hp-fill');
   fill.style.width = hpPct + '%';
-  fill.style.background = hpPct > 50 ? '#06d6a0' : hpPct > 25 ? '#ffd93d' : '#ff6b6b';
+  fill.style.background = (f.hp/f.maxHp) > 0.5 ? '#06d6a0' : (f.hp/f.maxHp) > 0.25 ? '#ffd93d' : '#ff6b6b';
 
-  // Shield = white bar layered on top of HP, starting at hpPct position
-  // Visual: [===green hp===][===white shield===][---empty---]
-  const shieldPct = Math.min(f.shield / f.maxHp * 100, 100 - hpPct);
+  // Shield = white bar after HP
+  const shieldPct = f.shield / barMax * 100;
   let shieldEl = card.querySelector('.shield-fill');
   if (!shieldEl) {
     shieldEl = document.createElement('div');
@@ -580,7 +597,7 @@ function updateHpBar(f, elId) {
   }
 
   // Bubble shield = cyan bar (separate from normal shield)
-  const bsPct = Math.min((f.bubbleShieldVal || 0) / f.maxHp * 100, 100 - hpPct - shieldPct);
+  const bsPct = (f.bubbleShieldVal || 0) / barMax * 100;
   let bsEl = card.querySelector('.bubble-shield-fill');
   if (!bsEl) {
     bsEl = document.createElement('div');
@@ -590,7 +607,7 @@ function updateHpBar(f, elId) {
   if (f.bubbleShieldVal > 0) {
     bsEl.style.display = 'block';
     bsEl.style.left = (hpPct + shieldPct) + '%';
-    bsEl.style.width = Math.max(0, bsPct) + '%';
+    bsEl.style.width = bsPct + '%';
   } else {
     bsEl.style.display = 'none';
   }
@@ -670,6 +687,7 @@ async function beginTurn() {
   // Recalculate stats after buff changes
   recalcStats();
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
+  try { sfxTurnStart(); } catch(e) {}
   nextBatch();
 }
 
@@ -680,9 +698,6 @@ let batchPhase = 0;
 let batchesThisRound = 0;
 
 async function nextBatch() {
-  if (battleOver) return;
-  // Hunter passive: check for low HP enemies to execute
-  await processHunterKill();
   if (battleOver) return;
   const lAlive = leftTeam.filter(f => f.alive);
   const rAlive = rightTeam.filter(f => f.alive);
@@ -695,11 +710,18 @@ async function nextBatch() {
     batchPhase = 1;
     batchesThisRound = 0;
   } else {
-    // After every 2 batches (both sides acted) → new round
+    // After every 2 batches (both sides acted) → round ended
     if (batchesThisRound >= 2) {
+      // End-of-round passives (lightning/fortune/hunter)
+      await processFortuneGold();
+      if (battleOver) return;
+      await processLightningStorm();
+      if (battleOver) return;
+      await processHunterKill();
+      if (battleOver) return;
       turnNum++;
       batchesThisRound = 0;
-      beginTurn(); // beginTurn calls nextBatch at the end
+      beginTurn();
       return;
     }
     if (batchPhase % 2 === 1) {
@@ -744,6 +766,31 @@ async function processBuffs() {
       checkDeaths(null);
       if (checkBattleEnd()) return;
       continue;
+    }
+    // Phoenix burn DoT (0.3×ATK + 5%maxHP per turn)
+    const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
+    for (const pb of pBurns) {
+      const burnDmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+      f.hp = Math.max(0, f.hp - burnDmg);
+      spawnFloatingNum(elId, `-${burnDmg}`, 'dot-dmg', 50, 0);
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>（剩余${pb.turns-1}回合）`);
+      hadTick = true;
+      if (f.hp <= 0) { f.alive = false; break; }
+    }
+    if (!f.alive) {
+      checkDeaths(null);
+      if (checkBattleEnd()) return;
+      continue;
+    }
+    // Lava shield tick
+    if (f._lavaShieldTurns > 0) {
+      f._lavaShieldTurns--;
+      if (f._lavaShieldTurns <= 0) {
+        f._lavaShieldVal = 0;
+        f._lavaShieldCounter = 0;
+        addLog(`${f.emoji}${f.name} 的熔岩盾消散了`);
+      }
     }
     // HOT heal (stackable — each hot ticks independently)
     const hots = f.buffs.filter(b => b.type === 'hot');
@@ -801,7 +848,7 @@ async function processBuffs() {
     f.buffs = f.buffs.filter(b => b.turns > 0);
     renderStatusIcons(f);
   }
-  if (hadTick) await sleep(400);
+  if (hadTick) await sleep(800);
 }
 
 function recalcStats() {
@@ -814,6 +861,7 @@ function recalcStats() {
       if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
       if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
       if (b.type === 'defUp')   f.def += b.value;
+      if (b.type === 'atkUp')   f.atk += b.value;
     }
   });
 }
@@ -826,14 +874,28 @@ function renderStatusIcons(f) {
   // Only debuff icons — passive is now shown in stats row
   box.innerHTML = f.buffs.map(b => {
     if (b.type === 'dot')     return `<span class="status-dot" title="持续伤害${b.value}/回合 剩${b.turns}回合">🔥${b.turns}</span>`;
+    if (b.type === 'phoenixBurnDot') return `<span class="status-dot" title="灼烧(${b.value}+${b.hpPct}%HP)/回合 剩${b.turns}回合">🔥${b.turns}</span>`;
     if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击-${b.value}% 剩${b.turns}回合">⬇攻${b.turns}</span>`;
     if (b.type === 'defDown') return `<span class="status-defdown" title="防御-${b.value}% 剩${b.turns}回合">⬇防${b.turns}</span>`;
     if (b.type === 'hot')     return `<span class="status-hot" title="回复${b.value}/回合 剩${b.turns}回合">💚${b.turns}</span>`;
     if (b.type === 'defUp')   return `<span class="status-defup" title="防御+${b.value} 剩${b.turns}回合">⬆防${b.turns}</span>`;
+    if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击+${b.value} 剩${b.turns}回合">⬆攻${b.turns}</span>`;
     if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合">🫧${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合">💨${b.turns}</span>`;
     return '';
   }).join('');
+  // Gold coins indicator
+  if (f._goldCoins > 0) {
+    box.innerHTML += `<span class="status-defup" title="金币${f._goldCoins}" style="color:#ffd93d;background:rgba(255,217,61,.15)">🪙${f._goldCoins}</span>`;
+  }
+  // Shock stacks indicator
+  if (f._shockStacks > 0) {
+    box.innerHTML += `<span class="status-dot" title="电击层${f._shockStacks}/8" style="color:#ffd700;background:rgba(255,215,0,.15)">⚡${f._shockStacks}</span>`;
+  }
+  // Lava shield indicator
+  if (f._lavaShieldTurns > 0) {
+    box.innerHTML += `<span class="status-dot" title="熔岩盾 剩${f._lavaShieldTurns}回合 被攻击每段反击">🌋${f._lavaShieldTurns}</span>`;
+  }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
 }
@@ -865,7 +927,7 @@ function showActionPanel(f) {
     panel.classList.add('show');
   } else if (gameMode === 'pve') {
     panel.classList.remove('show');
-    setTimeout(() => aiAction(f), 600);
+    setTimeout(() => aiAction(f), 1200);
   } else {
     panel.classList.remove('show');
     addLog('等待对手操作…','sys');
@@ -928,7 +990,9 @@ function renderActionButtons(f) {
     if (s.defUp)   tags.push('<span class="debuff-tag defup-tag">⬆防</span>');
     if (s.type === 'bubbleShield') tags.push('<span class="debuff-tag bubble-tag">🫧盾</span>');
     if (s.type === 'bubbleBind')  tags.push('<span class="debuff-tag bubble-tag">🫧缚</span>');
-    const hasDetail = s.pierce || s.dot || s.atkDown || s.defDown || s.aoe || s.hot || s.defUp || s.type==='bubbleShield' || s.type==='bubbleBind';
+    // Always show detail for custom skill types and any skill with special effects
+    const customTypes = ['bubbleShield','bubbleBind','hunterShot','hunterBarrage','hunterStealth','ninjaShuriken','ninjaTrap','ninjaBomb','phoenixBurn','phoenixShield','phoenixScald','lightningStrike','lightningBuff','lightningBarrage','fortuneDice','fortuneAllIn'];
+    const hasDetail = s.pierce || s.dot || s.atkDown || s.defDown || s.aoe || s.hot || s.defUp || s.defUpPct || s.atkScale || s.defScale || s.hpPct || s.armorBreak || s.shieldBreak || s.oneTimeUse || customTypes.includes(s.type);
     return `<div class="skill-btn-wrap">
       <button class="btn-skill ${ready?'':'disabled'}" ${ready?`onclick="pickSkill(${i})"`:''}>
         <span class="skill-icon">${icon}</span>
@@ -949,41 +1013,136 @@ function renderActionButtons(f) {
 
 function buildSkillDetail(s) {
   const lines = [];
-  const typeLabel = s.type==='physical'?'物理': s.type==='magic'?'魔法': s.type==='heal'?'治疗':'护盾';
-  lines.push(`<b>类型</b> ${typeLabel}`);
-  if (s.type !== 'heal' && s.type !== 'shield') {
-    lines.push(`<b>基础伤害</b> ${s.power}${s.hits>1?' ×'+s.hits+'段':''}`);
+
+  // ── Type label ──
+  const typeMap = {
+    physical:'⚔️ 物理', magic:'✨ 魔法', heal:'💚 治疗', shield:'🛡 护盾',
+    bubbleShield:'🫧 泡泡盾', bubbleBind:'🫧 泡泡束缚',
+    hunterShot:'🏹 猎人射击', hunterBarrage:'🏹 箭雨', hunterStealth:'🏹 隐蔽',
+    ninjaShuriken:'🥷 飞镖', ninjaTrap:'🥷 陷阱', ninjaBomb:'🥷 炸弹',
+    phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
+    lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
+    fortuneDice:'🪙 骰子', fortuneAllIn:'🪙 梭哈',
+  };
+  lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
+
+  // ── Damage formula ──
+  const dmgParts = [];
+  if (s.power > 0) dmgParts.push(`${s.power}`);
+  if (s.atkScale)  dmgParts.push(`${s.atkScale}×ATK`);
+  if (s.defScale)  dmgParts.push(`${s.defScale}×DEF`);
+  if (s.hpPct)     dmgParts.push(`${s.hpPct}%目标HP`);
+  if (dmgParts.length) {
+    const hitsStr = s.hits > 1 ? `，${s.hits}段均分` : '';
+    lines.push(`<b>伤害</b> ${dmgParts.join(' + ')}${hitsStr}`);
   }
-  if (s.atkScale) lines.push(`<b>攻击系数</b> ${s.atkScale}×攻击力`);
-  if (s.defScale) lines.push(`<b>防御系数</b> ${s.defScale}×防御力`);
-  if (s.hpPct)    lines.push(`<b>额外伤害</b> +目标最大HP的${s.hpPct}%`);
+  if (s.pierce > 0) lines.push(`<b>穿透</b> <span class="detail-pierce">${s.pierce}</span> (无视防御，打护盾)`);
+
+  // ── Target / Range ──
+  if (s.aoe)     lines.push(`<b>范围</b> 🎯 全体敌方`);
+  if (s.aoeAlly) lines.push(`<b>范围</b> 🎯 全体友方`);
+
+  // ── Cooldown ──
+  if (s.cd > 0 && s.cd < 100) lines.push(`<b>冷却</b> ${s.cd}回合`);
+  if (s.oneTimeUse) lines.push(`<b>⚠限制</b> <span class="detail-debuff">一场限一次</span>`);
+
+  // ── Heal / Shield ──
+  if (s.heal > 0)    lines.push(`<b>回复</b> ${s.heal} HP`);
+  if (s.healPct)     lines.push(`<b>回复</b> ${s.healPct}%最大HP`);
+  if (s.shield > 0)  lines.push(`<b>护盾</b> +${s.shield}`);
   if (s.shieldFlat || s.shieldHpPct) {
-    const parts = [];
-    if (s.shieldFlat) parts.push(s.shieldFlat);
-    if (s.shieldHpPct) parts.push(`${s.shieldHpPct}%最大HP`);
-    lines.push(`<b>护盾量</b> ${parts.join('+')}`);
+    const p = [];
+    if (s.shieldFlat)  p.push(`${s.shieldFlat}`);
+    if (s.shieldHpPct) p.push(`${s.shieldHpPct}%施法者HP`);
+    lines.push(`<b>护盾</b> ${p.join(' + ')}`);
   }
-  if (s.aoeAlly) lines.push(`<b>🎯范围</b> 对所有友军生效`);
-  if (s.defUpPct) lines.push(`<b>⬆防御增强</b> +${s.defUpPct.pct}%防御力，持续${s.defUpPct.turns}回合`);
-  if (s.pierce)  lines.push(`<b>穿透伤害</b> <span class="detail-pierce">${s.pierce}</span>（无视防御+抗性，打护盾）`);
-  if (s.heal)    lines.push(`<b>回复量</b> ${s.heal} HP`);
-  if (s.shield)  lines.push(`<b>护盾量</b> +${s.shield}`);
-  if (s.cd > 0)  lines.push(`<b>冷却</b> ${s.cd} 回合`);
-  if (s.random)  lines.push(`<b>随机</b> 伤害×0.5~1.5倍率`);
-  if (s.dot)     lines.push(`<b>🔥灼烧</b> 每回合 <span class="detail-dot">${s.dot.dmg}伤害</span>，持续 ${s.dot.turns} 回合`);
-  if (s.atkDown) lines.push(`<b>⬇攻击削减</b> <span class="detail-debuff">-${s.atkDown.pct}%</span> 攻击力，持续 ${s.atkDown.turns} 回合`);
-  if (s.defDown) lines.push(`<b>⬇防御削减</b> <span class="detail-debuff">-${s.defDown.pct}%</span> 防御力，持续 ${s.defDown.turns} 回合`);
-  if (s.aoe)     lines.push(`<b>🎯范围</b> 对所有敌人生效`);
-  if (s.hot)     lines.push(`<b>💚持续回复</b> 每回合 <span class="log-heal">${s.hot.hpPerTurn}HP</span>，持续 ${s.hot.turns} 回合（可叠加）`);
-  if (s.defUp)   lines.push(`<b>⬆防御增强</b> <span class="log-passive">+${s.defUp.val}防御</span>，持续 ${s.defUp.turns} 回合`);
+
+  // ── Debuffs ──
+  if (s.dot)     lines.push(`<b>🔥持续伤害</b> <span class="detail-dot">${s.dot.dmg}/回合</span> ${s.dot.turns}回合`);
+  if (s.atkDown) lines.push(`<b>⬇攻击削减</b> <span class="detail-debuff">-${s.atkDown.pct}%</span> ${s.atkDown.turns}回合`);
+  if (s.defDown) lines.push(`<b>⬇防御削减</b> <span class="detail-debuff">-${s.defDown.pct}%</span> ${s.defDown.turns}回合`);
+  if (s.armorBreak) lines.push(`<b>🔨破甲</b> <span class="detail-debuff">-${s.armorBreak.pct}%防御</span> ${s.armorBreak.turns}回合`);
+  if (s.shieldBreak) lines.push(`<b>💥破盾</b> 破坏目标 <span class="detail-debuff">${s.shieldBreak}%</span> 护盾值`);
+
+  // ── Buffs ──
+  if (s.hot)      lines.push(`<b>💚持续回复</b> <span class="log-heal">${s.hot.hpPerTurn}/回合</span> ${s.hot.turns}回合（可叠加）`);
+  if (s.defUp)    lines.push(`<b>⬆防御</b> <span class="log-passive">+${s.defUp.val}</span> ${s.defUp.turns}回合`);
+  if (s.defUpPct) lines.push(`<b>⬆防御</b> <span class="log-passive">+${s.defUpPct.pct}%</span> ${s.defUpPct.turns}回合`);
+  if (s.atkUpPct) lines.push(`<b>⬆攻击</b> <span class="log-passive">+${s.atkUpPct}%</span> 全体友方 ${s.atkUpTurns}回合`);
+
+  // ── Random ──
+  if (s.random) lines.push(`<b>🎲随机</b> 伤害×0.5~1.5倍率`);
+
+  // ── Special mechanics ──
+  // Bubble
   if (s.type === 'bubbleShield') {
-    lines.push(`<b>🫧泡泡盾</b> ${s.atkScale}×攻击力，持续${s.duration}回合`);
-    lines.push(`<b>💥自然破碎</b> 护盾到期未被打破时，对敌方全体造成${s.burstScale}×攻击力伤害`);
+    lines.push(`<b>🫧泡泡盾</b> ${s.atkScale}×ATK 持续${s.duration}回合`);
+    lines.push(`<b>💥自然破碎</b> 到期未打破→敌全体${s.burstScale}×ATK伤害`);
   }
   if (s.type === 'bubbleBind') {
-    lines.push(`<b>🫧泡泡束缚</b> 标记敌人${s.duration}回合`);
-    lines.push(`<b>效果</b> 友方攻击被标记目标获得 伤害×${s.bindPct}% 的永久护盾`);
+    lines.push(`<b>🫧束缚</b> 标记${s.duration}回合`);
+    lines.push(`<b>效果</b> 攻击被标记目标→获得伤害×${s.bindPct}%永久护盾`);
   }
+  // Hunter
+  if (s.type === 'hunterShot') {
+    lines.push(`<b>猎人本能</b> 目标HP<${s.execThresh}%时：<span class="log-crit">+${s.execCrit}%暴击 +${s.execCritDmg}%爆伤</span>`);
+  }
+  if (s.type === 'hunterBarrage') {
+    lines.push(`<b>分布</b> ${s.hits}根箭随机射向敌方`);
+    lines.push(`<b>每根</b> <span class="detail-pierce">${s.arrowScale}×ATK穿透</span>`);
+  }
+  if (s.type === 'hunterStealth') {
+    lines.push(`<b>伤害</b> ${s.dmgScale}×ATK普通伤害`);
+    lines.push(`<b>💨闪避</b> +${s.dodgePct}% ${s.dodgeTurns}回合`);
+    lines.push(`<b>🛡护盾</b> +${s.shieldScale}×ATK`);
+  }
+  // Ninja
+  if (s.type === 'ninjaShuriken') {
+    lines.push(`<b>🥷暴击转穿</b> 暴击时全部伤害转为穿透（无视防御）`);
+  }
+  if (s.type === 'ninjaTrap') {
+    lines.push(`<b>🪤夹子</b> 隐形布置在友方身上`);
+    lines.push(`<b>触发</b> 被攻击时弹出，造成${s.trapScale}×ATK普通伤害`);
+    lines.push(`<b>隐蔽</b> 对手看不到谁身上有夹子`);
+  }
+  if (s.type === 'ninjaBomb') {
+    lines.push(`<b>🔨破甲</b> <span class="detail-debuff">${s.armorBreak.pct}%防御削减</span> ${s.armorBreak.turns}回合`);
+  }
+  // Phoenix
+  if (s.type === 'phoenixBurn') {
+    lines.push(`<b>🔥灼烧</b> ${s.burnTurns}回合，每回合${s.burnAtkScale}×ATK + ${s.burnHpPct}%目标HP`);
+    lines.push(`<b>不叠加</b> 同一凤凰龟的灼烧只刷新持续时间`);
+  }
+  if (s.type === 'phoenixShield') {
+    lines.push(`<b>🌋熔岩盾</b> ${s.shieldScale}×ATK护盾 ${s.duration}回合`);
+    lines.push(`<b>🔥反击</b> 被攻击每段反击${s.counterScale}×ATK伤害`);
+  }
+  if (s.type === 'phoenixScald') {
+    lines.push(`<b>💥破盾</b> 先破坏${s.shieldBreak}%护盾，再造成伤害`);
+  }
+  // Lightning
+  if (s.type === 'lightningStrike') {
+    lines.push(`<b>⚡溅射</b> 每段对次目标造成${s.splashPct}%伤害`);
+    lines.push(`<b>⚡电击层</b> 每段叠1层（主+次目标各叠）`);
+  }
+  if (s.type === 'lightningBuff') {
+    lines.push(`<b>⬆全体增幅</b> 全体友方ATK+${s.atkUpPct}% ${s.atkUpTurns}回合`);
+  }
+  if (s.type === 'lightningBarrage') {
+    lines.push(`<b>⚡分布</b> ${s.hits}次随机命中敌方，每次${s.arrowScale}×ATK`);
+    lines.push(`<b>⚡电击层</b> 每次命中叠1层`);
+  }
+  // Fortune
+  if (s.type === 'fortuneDice') {
+    lines.push(`<b>🎲骰子</b> 获得1~6枚金币`);
+    lines.push(`<b>💚回复</b> ${s.healPct}%最大HP`);
+  }
+  if (s.type === 'fortuneAllIn') {
+    lines.push(`<b>🪙梭哈</b> 消耗全部金币，每枚1段伤害`);
+    lines.push(`<b>每段</b> ${s.perCoinAtkPierce}×ATK<span class="detail-pierce">穿透</span> + ${s.perCoinAtkNormal}×ATK普通`);
+    lines.push(`<b>⚠限制</b> <span class="detail-debuff">一场只能使用一次</span>`);
+  }
+
   return lines.map(l => `<div class="detail-line">${l}</div>`).join('');
 }
 
@@ -998,13 +1157,19 @@ function toggleSkillDetail(e, idx) {
 let pendingSkillIdx = null;
 
 function pickSkill(idx) {
+  try { sfxClick(); } catch(e) {}
   const f = turnQueue[currentIdx];
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield';
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap';
 
+  // Self-cast: no target selection
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield') {
+    executePlayerAction(f, skill, f);
+    return;
+  }
   // AOE / auto-target: no target selection needed
-  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage') {
+  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage') {
     executePlayerAction(f, skill, null);
     return;
   }
@@ -1050,6 +1215,10 @@ async function executeAction(action) {
 
   if (skill.cd > 0) skill.cdLeft = skill.cd;
 
+  // Snapshot HP for damage tracking
+  const hpBefore = {};
+  allFighters.forEach(x => hpBefore[allFighters.indexOf(x)] = x.hp);
+
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
@@ -1086,12 +1255,52 @@ async function executeAction(action) {
   } else if (skill.type === 'hunterStealth') {
     const target = allFighters[action.targetId];
     await doHunterStealth(f, target, skill);
+  } else if (skill.type === 'fortuneDice') {
+    await doFortuneDice(f, skill);
+  } else if (skill.type === 'fortuneAllIn') {
+    const target = allFighters[action.targetId];
+    await doFortuneAllIn(f, target, skill);
+  } else if (skill.type === 'lightningStrike') {
+    const target = allFighters[action.targetId];
+    await doLightningStrike(f, target, skill);
+  } else if (skill.type === 'lightningBuff') {
+    await doLightningBuff(f, skill);
+  } else if (skill.type === 'lightningBarrage') {
+    await doLightningBarrage(f, skill);
+  } else if (skill.type === 'phoenixBurn') {
+    const target = allFighters[action.targetId];
+    await doPhoenixBurn(f, target, skill);
+  } else if (skill.type === 'phoenixShield') {
+    await doPhoenixShield(f, skill);
+  } else if (skill.type === 'phoenixScald') {
+    const target = allFighters[action.targetId];
+    await doPhoenixScald(f, target, skill);
+  } else if (skill.type === 'ninjaShuriken') {
+    const target = allFighters[action.targetId];
+    await doNinjaShuriken(f, target, skill);
+  } else if (skill.type === 'ninjaTrap') {
+    const target = allFighters[action.targetId];
+    await doNinjaTrap(f, target, skill);
+  } else if (skill.type === 'ninjaBomb') {
+    await doNinjaBomb(f, skill);
   } else {
     const target = allFighters[action.targetId];
     await doDamage(f, target, skill);
   }
 
   atkEl.classList.remove('attack-anim');
+
+  // Track damage from HP delta (catches all sources including custom skills)
+  allFighters.forEach((x, idx) => {
+    const lost = Math.max(0, hpBefore[idx] - x.hp);
+    if (lost > 0 && !x._dmgTaken) x._dmgTaken = 0;
+    if (lost > 0) {
+      x._dmgTaken += lost;
+      f._dmgDealt = (f._dmgDealt||0) + lost;
+    }
+  });
+  updateDmgStats();
+
   checkDeaths(f);
   if (checkBattleEnd()) { animating=false; return; }
   animating = false;
@@ -1112,7 +1321,7 @@ async function doDamage(attacker, target, skill) {
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
     if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
       const yOff = i * 28;
-      spawnFloatingNum(tElId, '闪避!', 'dodge-num', i * 300, yOff);
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', i * 750, yOff);
       await sleep(280);
       continue;
     }
@@ -1131,41 +1340,27 @@ async function doDamage(attacker, target, skill) {
       effectiveCrit += attacker.passive.pct / 100;
     }
     const isCrit = Math.random() < effectiveCrit;
-    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0)) : 1;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
     if (isCrit) totalCrits++;
 
-    // Normal damage goes through DEF formula + resistance
+    // DEF reduction: DEF/(DEF+40), attacker's armorPen reduces effective DEF
+    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+    // Normal damage = basePower (minus pierce portion) × crit, reduced by DEF
     const normalBase = Math.max(0, basePower - (skill.pierce || 0));
-    let normalDmg = Math.max(0, Math.round(normalBase * (attacker.atk / (attacker.atk + target.def)) * critMult));
+    let normalDmg = Math.max(1, Math.round(normalBase * critMult * (1 - defReduction)));
     // Passive: bonusDmgAbove60
     if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
       normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
     }
-    // Resistance reduces normal damage
-    const normalPart = Math.max(0, Math.round(normalDmg * (1 - target.res / 100)));
-    // Pierce damage: raw value, ignores DEF and resistance, but hits shield
+    const normalPart = normalDmg;
+    // Pierce damage: ignores DEF entirely, but hits shield
     const piercePart = Math.round((skill.pierce || 0) * critMult);
     const totalHit = normalPart + piercePart;
 
-    // Damage absorption: bubbleShield first → normal shield → HP
-    let remaining = totalHit;
-    let bubbleAbs = 0, shieldAbs = 0, hpLoss = 0;
-    // 1) Bubble shield absorbs first (separate from normal shield)
-    if (target.bubbleShieldVal > 0 && remaining > 0) {
-      bubbleAbs = Math.min(target.bubbleShieldVal, remaining);
-      target.bubbleShieldVal -= bubbleAbs;
-      remaining -= bubbleAbs;
-    }
-    // 2) Normal shield absorbs next
-    if (target.shield > 0 && remaining > 0) {
-      shieldAbs = Math.min(target.shield, remaining);
-      target.shield -= shieldAbs;
-      remaining -= shieldAbs;
-    }
-    // 3) Remaining goes to HP
-    hpLoss = remaining;
-    target.hp = Math.max(0, target.hp - hpLoss);
-    if (target.hp <= 0) target.alive = false;
+    // Damage absorption: bubbleShield → shield → HP, with stat tracking
+    const { hpLoss, shieldAbs, bubbleAbs } = applyRawDmg(attacker, target, totalHit);
 
     totalDirect += normalPart;
     totalPierce += piercePart;
@@ -1173,37 +1368,50 @@ async function doDamage(attacker, target, skill) {
 
     // Floating numbers per hit — stagger vertically
     const yOff = i * 28;
-    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', i*300, yOff - 18);
-    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', i*300, yOff);
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', i*750, yOff - 18);
+    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', i*750, yOff);
     if (hpLoss > 0 && piercePart > 0) {
       // Show normal + pierce separately
       const normalHp = Math.min(normalPart, hpLoss);
       const pierceHp = hpLoss - normalHp;
-      if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', i*300+80, yOff);
-      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, 'pierce-dmg', i*300+160, yOff);
+      if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', i*750+120, yOff);
+      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, 'pierce-dmg', i*750+500, yOff);
     } else if (hpLoss > 0) {
-      spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', i*300+80, yOff);
+      spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', i*750+120, yOff);
     }
     if (piercePart > 0 && shieldAbs >= totalHit) {
       // All absorbed by shield but still show pierce tag
-      spawnFloatingNum(tElId, `穿${piercePart}`, 'pierce-dmg', i*300+160, yOff);
+      spawnFloatingNum(tElId, `穿${piercePart}`, 'pierce-dmg', i*750+500, yOff);
     }
 
     // Passive: shieldOnHit — target gains shield when hit (once per turn)
     if (target.alive && target.passive && target.passive.type === 'shieldOnHit' && !target.passiveUsedThisTurn) {
       target.shield += target.passive.amount;
       target.passiveUsedThisTurn = true;
-      spawnFloatingNum(tElId, `+${target.passive.amount}🛡`, 'passive-num', i*300+200, yOff);
+      spawnFloatingNum(tElId, `+${target.passive.amount}🛡`, 'passive-num', i*750+450, yOff);
     }
 
-    // Passive: stoneWall reflect — reflect (10% + 1%×def) of damage back
-    if (target.alive && target.passive && target.passive.type === 'stoneWall' && hpLoss > 0 && attacker.alive) {
+    // Lava shield counter: each hit reflects 0.25×ATK back
+    if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && attacker.alive) {
+      const counterDmg = Math.round(target.atk * target._lavaShieldCounter);
+      attacker.hp = Math.max(0, attacker.hp - counterDmg);
+      const aElId = getFighterElId(attacker);
+      spawnFloatingNum(aElId, `-${counterDmg}🌋`, 'counter-dmg', i*750+450, yOff);
+      updateHpBar(attacker, aElId);
+      if (attacker.hp <= 0) attacker.alive = false;
+    }
+
+    // Passive: stoneWall reflect — reflect (10% + 1%×def) of total damage, goes through attacker's shields
+    if (target.alive && target.passive && target.passive.type === 'stoneWall' && totalHit > 0 && attacker.alive) {
       const reflectPct = target.passive.reflectBase + target.passive.reflectPerDef * target.def;
-      const reflectDmg = Math.round(hpLoss * reflectPct / 100);
+      const reflectDmg = Math.round(totalHit * reflectPct / 100);
       if (reflectDmg > 0) {
-        attacker.hp = Math.max(0, attacker.hp - reflectDmg);
+        let rRem = reflectDmg;
+        if (attacker.bubbleShieldVal > 0) { const a = Math.min(attacker.bubbleShieldVal, rRem); attacker.bubbleShieldVal -= a; rRem -= a; }
+        if (attacker.shield > 0 && rRem > 0) { const a = Math.min(attacker.shield, rRem); attacker.shield -= a; rRem -= a; }
+        attacker.hp = Math.max(0, attacker.hp - rRem);
         const aElId = getFighterElId(attacker);
-        spawnFloatingNum(aElId, `-${reflectDmg}`, 'counter-dmg', i*300+280, yOff);
+        spawnFloatingNum(aElId, `-${reflectDmg}`, 'counter-dmg', i*750+400, yOff);
         updateHpBar(attacker, aElId);
         if (attacker.hp <= 0) attacker.alive = false;
       }
@@ -1213,7 +1421,7 @@ async function doDamage(attacker, target, skill) {
     if (target.alive && target.passive && target.passive.type === 'bubbleStore' && hpLoss > 0) {
       const stored = Math.round(hpLoss * target.passive.pct / 100);
       target.bubbleStore += stored;
-      spawnFloatingNum(tElId, `+${stored}🫧`, 'bubble-num', i*300+250, yOff);
+      spawnFloatingNum(tElId, `+${stored}🫧`, 'bubble-num', i*750+500, yOff);
     }
 
     // BubbleBind: attacker gains permanent shield = damage dealt × bindPct
@@ -1222,17 +1430,53 @@ async function doDamage(attacker, target, skill) {
       const gained = Math.round(hpLoss * bindBuff.value / 100);
       attacker.shield += gained;
       const aElId = getFighterElId(attacker);
-      spawnFloatingNum(aElId, `+${gained}🛡`, 'bubble-num', i*300+280, yOff);
+      spawnFloatingNum(aElId, `+${gained}🛡`, 'bubble-num', i*750+400, yOff);
       updateHpBar(attacker, aElId);
+    }
+
+    // Lightning shock stacks: attacker with lightningStorm adds 1 stack per hit
+    if (attacker.passive && attacker.passive.type === 'lightningStorm' && target.alive && (hpLoss > 0 || shieldAbs > 0 || bubbleAbs > 0)) {
+      target._shockStacks = (target._shockStacks || 0) + 1;
+      if (target._shockStacks >= attacker.passive.stackMax) {
+        // Trigger shock: 1×ATK pierce
+        const shockDmg = Math.round(attacker.atk * attacker.passive.shockScale);
+        let sRem = shockDmg;
+        if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, sRem); target.bubbleShieldVal -= a; sRem -= a; }
+        if (target.shield > 0 && sRem > 0) { const a = Math.min(target.shield, sRem); target.shield -= a; sRem -= a; }
+        target.hp = Math.max(0, target.hp - sRem);
+        if (target.hp <= 0) target.alive = false;
+        target._shockStacks = 0;
+        spawnFloatingNum(tElId, `⚡${shockDmg}`, 'pierce-dmg', i*750+500, yOff);
+        addLog(`${target.emoji}${target.name} 电击层满！<span class="log-pierce">⚡${shockDmg}穿透伤害</span>`);
+      }
     }
 
     // Shake
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
-    await sleep(280);
+    await sleep(650);
     tEl.classList.remove('hit-shake');
-    await sleep(40);
+    await sleep(150);
+  }
+
+  // Trap trigger: if target (defender) has a trap buff, it fires on attacker
+  const trapBuff = target.buffs.find(b => b.type === 'trap');
+  if (trapBuff && attacker.alive) {
+    const trapDmg = trapBuff.value;
+    const effectiveDef = Math.max(0, attacker.def);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const finalTrapDmg = Math.max(1, Math.round(trapDmg * (1 - defRed)));
+    attacker.hp = Math.max(0, attacker.hp - finalTrapDmg);
+    const aElId = getFighterElId(attacker);
+    spawnFloatingNum(aElId, `-${finalTrapDmg}`, 'counter-dmg', 0, 0);
+    spawnFloatingNum(aElId, '夹子!', 'crit-label', 0, -20);
+    updateHpBar(attacker, aElId);
+    try { sfxTrap(); } catch(e) {}
+    addLog(`${target.emoji}${target.name} 的隐形夹子触发！对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${finalTrapDmg}伤害</span>`);
+    if (attacker.hp <= 0) attacker.alive = false;
+    // Remove trap after trigger
+    target.buffs = target.buffs.filter(b => b !== trapBuff);
   }
 
   // Apply debuffs from skill (only if target still alive)
@@ -1332,7 +1576,7 @@ async function doHeal(caster, target, skill) {
     renderStatusIcons(target);
   }
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${logParts.join(' ')}`);
-  await sleep(500);
+  await sleep(1000);
 }
 
 async function doShield(caster, target, skill) {
@@ -1345,7 +1589,401 @@ async function doShield(caster, target, skill) {
   spawnFloatingNum(tElId, `+${amount}🛡`, 'shield-num', 0, 0);
   updateHpBar(target, tElId);
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${amount}护盾</span>`);
-  await sleep(500);
+  await sleep(1000);
+}
+
+// ── FORTUNE SKILLS ────────────────────────────────────────
+async function doFortuneDice(caster, skill) {
+  const roll = 1 + Math.floor(Math.random() * 6);
+  caster._goldCoins += roll;
+  const fElId = getFighterElId(caster);
+  spawnFloatingNum(fElId, `🎲${roll} +${roll}🪙`, 'passive-num', 0, 0);
+  // Heal 10% max HP
+  const healAmt = Math.round(caster.maxHp * skill.healPct / 100);
+  const before = caster.hp;
+  caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+  const actual = Math.round(caster.hp - before);
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 300, 0);
+  updateHpBar(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>骰子</b>：🎲${roll}！<span class="log-passive">+${roll}金币（共${caster._goldCoins}）</span> <span class="log-heal">+${actual}HP</span>`);
+  await sleep(1000);
+}
+
+async function doFortuneAllIn(attacker, target, skill) {
+  const coins = attacker._goldCoins;
+  if (coins <= 0) {
+    addLog(`${attacker.emoji}${attacker.name} <b>梭哈</b>：没有金币！`);
+    await sleep(700);
+    return;
+  }
+  attacker._goldCoins = 0;
+  const piercePer = Math.round(attacker.atk * skill.perCoinAtkPierce);
+  const normalPer = Math.round(attacker.atk * skill.perCoinAtkNormal);
+  const tElId = getFighterElId(target);
+  let totalPierce = 0, totalNormal = 0;
+
+  addLog(`${attacker.emoji}${attacker.name} <b>梭哈！</b> ${coins}枚金币全部投出！`);
+
+  for (let i = 0; i < coins; i++) {
+    if (!target.alive) break;
+    // Normal part through DEF
+    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
+    const totalHit = normalDmg + piercePer;
+    applyRawDmg(attacker, target, totalHit);
+    totalPierce += piercePer;
+    totalNormal += normalDmg;
+    // Stagger visuals
+    const yOff = (i % 6) * 18;
+    spawnFloatingNum(tElId, `-${totalHit}🪙`, i < 10 ? 'crit-dmg' : 'direct-dmg', i * 200, yOff);
+    if (i % 3 === 0) {
+      const tEl = document.getElementById(tElId);
+      tEl.classList.add('hit-shake');
+      updateHpBar(target, tElId);
+      await sleep(180);
+      tEl.classList.remove('hit-shake');
+    }
+  }
+  updateHpBar(target, tElId);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalNormal}普通</span> + <span class="log-pierce">${totalPierce}穿透</span>（${coins}枚金币）`);
+  // Mark as used (cd=999 already prevents reuse)
+  await sleep(1000);
+}
+
+// ── LIGHTNING SKILLS ───────────────────────────────────────
+async function doLightningStrike(attacker, mainTarget, skill) {
+  // 5 hits on main target, each hit splashes 25% to secondary target
+  const totalDmg = Math.round(attacker.atk * skill.atkScale);
+  const perHit = Math.round(totalDmg / skill.hits);
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const secondaryTarget = enemies.find(e => e !== mainTarget && e.alive);
+  const tElId = getFighterElId(mainTarget);
+  let totalMain = 0, totalSplash = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!mainTarget.alive) break;
+    // Main target: normal damage through DEF
+    const effectiveDef = Math.max(0, mainTarget.def - (attacker.armorPen || 0));
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(perHit * (1 - defRed)));
+    let rem = dmg;
+    if (mainTarget.bubbleShieldVal > 0) { const a = Math.min(mainTarget.bubbleShieldVal, rem); mainTarget.bubbleShieldVal -= a; rem -= a; }
+    if (mainTarget.shield > 0 && rem > 0) { const a = Math.min(mainTarget.shield, rem); mainTarget.shield -= a; rem -= a; }
+    mainTarget.hp = Math.max(0, mainTarget.hp - rem);
+    if (mainTarget.hp <= 0) mainTarget.alive = false;
+    totalMain += dmg;
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', i * 750, i * 20);
+    // Shock stack
+    if (attacker.passive && attacker.passive.type === 'lightningStorm') {
+      mainTarget._shockStacks = (mainTarget._shockStacks || 0) + 1;
+      if (mainTarget._shockStacks >= attacker.passive.stackMax) {
+        const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
+        let sR = sDmg;
+        if (mainTarget.bubbleShieldVal > 0) { const a = Math.min(mainTarget.bubbleShieldVal, sR); mainTarget.bubbleShieldVal -= a; sR -= a; }
+        if (mainTarget.shield > 0 && sR > 0) { const a = Math.min(mainTarget.shield, sR); mainTarget.shield -= a; sR -= a; }
+        mainTarget.hp = Math.max(0, mainTarget.hp - sR);
+        if (mainTarget.hp <= 0) mainTarget.alive = false;
+        mainTarget._shockStacks = 0;
+        spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', i * 750 + 100, i * 20);
+        addLog(`${mainTarget.emoji}${mainTarget.name} 电击层满！<span class="log-pierce">⚡${sDmg}穿透</span>`);
+      }
+    }
+    // Splash to secondary
+    if (secondaryTarget && secondaryTarget.alive) {
+      const splashDmg = Math.max(1, Math.round(dmg * skill.splashPct / 100));
+      let sRem = splashDmg;
+      if (secondaryTarget.bubbleShieldVal > 0) { const a = Math.min(secondaryTarget.bubbleShieldVal, sRem); secondaryTarget.bubbleShieldVal -= a; sRem -= a; }
+      if (secondaryTarget.shield > 0 && sRem > 0) { const a = Math.min(secondaryTarget.shield, sRem); secondaryTarget.shield -= a; sRem -= a; }
+      secondaryTarget.hp = Math.max(0, secondaryTarget.hp - sRem);
+      if (secondaryTarget.hp <= 0) secondaryTarget.alive = false;
+      totalSplash += splashDmg;
+      const sElId = getFighterElId(secondaryTarget);
+      spawnFloatingNum(sElId, `-${splashDmg}`, 'direct-dmg', i * 750 + 200, i * 20);
+      updateHpBar(secondaryTarget, sElId);
+      // Shock stack on secondary too
+      if (attacker.passive && attacker.passive.type === 'lightningStorm') {
+        secondaryTarget._shockStacks = (secondaryTarget._shockStacks || 0) + 1;
+        if (secondaryTarget._shockStacks >= attacker.passive.stackMax) {
+          const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
+          let sR2 = sDmg;
+          if (secondaryTarget.bubbleShieldVal > 0) { const a = Math.min(secondaryTarget.bubbleShieldVal, sR2); secondaryTarget.bubbleShieldVal -= a; sR2 -= a; }
+          if (secondaryTarget.shield > 0 && sR2 > 0) { const a = Math.min(secondaryTarget.shield, sR2); secondaryTarget.shield -= a; sR2 -= a; }
+          secondaryTarget.hp = Math.max(0, secondaryTarget.hp - sR2);
+          if (secondaryTarget.hp <= 0) secondaryTarget.alive = false;
+          secondaryTarget._shockStacks = 0;
+          spawnFloatingNum(sElId, `⚡${sDmg}`, 'pierce-dmg', i * 750 + 300, i * 20);
+          addLog(`${secondaryTarget.emoji}${secondaryTarget.name} 电击层满！<span class="log-pierce">⚡${sDmg}穿透</span>`);
+          updateHpBar(secondaryTarget, sElId);
+        }
+      }
+    }
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    updateHpBar(mainTarget, tElId);
+    await sleep(600);
+    tEl.classList.remove('hit-shake');
+    await sleep(100);
+  }
+  let logStr = `${attacker.emoji}${attacker.name} <b>闪电打击</b> → ${mainTarget.emoji}${mainTarget.name}：<span class="log-direct">${totalMain}伤害</span>`;
+  if (totalSplash > 0 && secondaryTarget) logStr += ` + ${secondaryTarget.emoji}溅射<span class="log-direct">${totalSplash}</span>`;
+  addLog(logStr);
+}
+
+async function doLightningBuff(caster, skill) {
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+  for (const ally of allies) {
+    const val = Math.round(ally.baseAtk * skill.atkUpPct / 100);
+    const existing = ally.buffs.find(b => b.type === 'atkUp');
+    if (existing) { existing.value = Math.max(existing.value, val); existing.turns = Math.max(existing.turns, skill.atkUpTurns); }
+    else ally.buffs.push({ type: 'atkUp', value: val, turns: skill.atkUpTurns });
+    const aElId = getFighterElId(ally);
+    spawnFloatingNum(aElId, `+${val}攻`, 'passive-num', 0, 0);
+    renderStatusIcons(ally);
+  }
+  recalcStats();
+  addLog(`${caster.emoji}${caster.name} <b>威力增幅</b>：全体友方 <span class="log-passive">攻击+${skill.atkUpPct}% ${skill.atkUpTurns}回合</span>`);
+  await sleep(1000);
+}
+
+async function doLightningBarrage(attacker, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  if (!enemies.length) return;
+  const perHitDmg = Math.round(attacker.atk * skill.arrowScale);
+
+  for (let i = 0; i < skill.hits; i++) {
+    const alive = enemies.filter(e => e.alive);
+    if (!alive.length) break;
+    const target = alive[Math.floor(Math.random() * alive.length)];
+    // Normal damage through DEF
+    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(perHitDmg * (1 - defRed)));
+    let rem = dmg;
+    if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= a; rem -= a; }
+    if (target.shield > 0 && rem > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
+    target.hp = Math.max(0, target.hp - rem);
+    if (target.hp <= 0) target.alive = false;
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', i * 200, (i % 5) * 15);
+    // Shock stack
+    if (attacker.passive && attacker.passive.type === 'lightningStorm') {
+      target._shockStacks = (target._shockStacks || 0) + 1;
+      if (target._shockStacks >= attacker.passive.stackMax) {
+        const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
+        let sR = sDmg;
+        if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, sR); target.bubbleShieldVal -= a; sR -= a; }
+        if (target.shield > 0 && sR > 0) { const a = Math.min(target.shield, sR); target.shield -= a; sR -= a; }
+        target.hp = Math.max(0, target.hp - sR);
+        if (target.hp <= 0) target.alive = false;
+        target._shockStacks = 0;
+        spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', i * 200 + 60, (i % 5) * 15);
+      }
+    }
+    updateHpBar(target, tElId);
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    await sleep(100);
+    tEl.classList.remove('hit-shake');
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>雷暴</b> ${skill.hits}次随机闪电，每次 <span class="log-direct">${perHitDmg}伤害</span>`);
+}
+
+// ── PHOENIX SKILLS ────────────────────────────────────────
+async function doPhoenixBurn(attacker, target, skill) {
+  // Deal 1×ATK normal damage
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  let rem = dmg;
+  const tElId = getFighterElId(target);
+  if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= a; rem -= a; }
+  if (target.shield > 0 && rem > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
+  target.hp = Math.max(0, target.hp - rem);
+  if (target.hp <= 0) target.alive = false;
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+
+  // Apply phoenix burn DoT — same caster's burn only refreshes duration, not stack
+  if (target.alive) {
+    const casterId = allFighters.indexOf(attacker);
+    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot' && b.casterId === casterId);
+    if (existing) {
+      existing.turns = skill.burnTurns; // refresh only
+      spawnFloatingNum(tElId, `🔥刷新${skill.burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧刷新至${skill.burnTurns}回合</span>`);
+    } else {
+      const dotDmg = Math.round(attacker.atk * skill.burnAtkScale);
+      target.buffs.push({ type:'phoenixBurnDot', value:dotDmg, hpPct:skill.burnHpPct, turns:skill.burnTurns, casterId });
+      spawnFloatingNum(tElId, `🔥灼烧${skill.burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧${skill.burnTurns}回合</span>`);
+    }
+    renderStatusIcons(target);
+  }
+  await sleep(80);
+}
+
+async function doPhoenixShield(caster, skill) {
+  const amount = Math.round(caster.atk * skill.shieldScale);
+  caster._lavaShieldVal = amount;
+  caster._lavaShieldTurns = skill.duration;
+  caster._lavaShieldCounter = skill.counterScale;
+  // Also add as normal shield for visual
+  caster.shield += amount;
+  const fElId = getFighterElId(caster);
+  spawnFloatingNum(fElId, `+${amount}🌋`, 'passive-num', 0, 0);
+  updateHpBar(caster, fElId);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} <b>熔岩盾</b>：+${amount}护盾 ${skill.duration}回合，被攻击每段反击${Math.round(skill.counterScale*100)}%ATK`);
+  await sleep(1000);
+}
+
+async function doPhoenixScald(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+
+  // Break 50% of target's shields first
+  if (skill.shieldBreak && (target.shield > 0 || target.bubbleShieldVal > 0)) {
+    const breakPct = skill.shieldBreak / 100;
+    if (target.bubbleShieldVal > 0) {
+      const broken = Math.round(target.bubbleShieldVal * breakPct);
+      target.bubbleShieldVal -= broken;
+      spawnFloatingNum(tElId, `-${broken}🫧`, 'shield-dmg', 0, -15);
+    }
+    if (target.shield > 0) {
+      const broken = Math.round(target.shield * breakPct);
+      target.shield -= broken;
+      spawnFloatingNum(tElId, `-${broken}🛡`, 'shield-dmg', 100, -15);
+    }
+    addLog(`${attacker.emoji}${attacker.name} 烫伤破盾！<span class="log-debuff">破坏${skill.shieldBreak}%护盾</span>`);
+    updateHpBar(target, tElId);
+    await sleep(300);
+  }
+
+  // Deal 0.7×ATK normal damage
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  let rem = dmg;
+  if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= a; rem -= a; }
+  if (target.shield > 0 && rem > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
+  target.hp = Math.max(0, target.hp - rem);
+  if (target.hp <= 0) target.alive = false;
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+
+  // Apply debuffs
+  if (target.alive) {
+    applySkillDebuffs(skill, target);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>烫伤</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+  await sleep(80);
+}
+
+// ── NINJA SKILLS ──────────────────────────────────────────
+async function doNinjaShuriken(attacker, target, skill) {
+  // 1.5×ATK damage, if crits → entire damage becomes pierce (ignores DEF)
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const isCrit = Math.random() < attacker.crit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+  const tElId = getFighterElId(target);
+
+  if (isCrit) {
+    // Crit: all damage becomes pierce (ignore DEF, hit shield)
+    const pierceDmg = Math.round(baseDmg * critMult);
+    let rem = pierceDmg;
+    let bubbleAbs = 0, shieldAbs = 0;
+    if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
+    if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
+    target.hp = Math.max(0, target.hp - rem);
+    if (target.hp <= 0) target.alive = false;
+
+    spawnFloatingNum(tElId, '暴击!转穿透', 'crit-label', 0, -18);
+    if (shieldAbs + bubbleAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs+bubbleAbs}`, 'shield-dmg', 0, 0);
+    spawnFloatingNum(tElId, `-${rem}`, 'pierce-dmg', 100, 0);
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}穿透伤害</span>`);
+  } else {
+    // Normal: go through DEF reduction
+    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    let rem = dmg;
+    let bubbleAbs = 0, shieldAbs = 0;
+    if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
+    if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
+    target.hp = Math.max(0, target.hp - rem);
+    if (target.hp <= 0) target.alive = false;
+
+    if (shieldAbs + bubbleAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs+bubbleAbs}`, 'shield-dmg', 0, 0);
+    if (rem > 0) spawnFloatingNum(tElId, `-${rem}`, 'direct-dmg', 100, 0);
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+  }
+
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+  // Trigger trap if target has one — handled in doDamage, but we skip doDamage here
+  // Check trap on attacker side (target was attacked, check if target has trap buff... no, trap is on allies)
+  // Trap triggers when the buffed ally is attacked, not here
+  await sleep(80);
+}
+
+async function doNinjaTrap(caster, target, skill) {
+  // Place hidden trap on ally — enemy can't see who has it
+  // Remove old trap from this caster
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam);
+  allies.forEach(a => { a.buffs = a.buffs.filter(b => !(b.type === 'trap' && b.casterId === allFighters.indexOf(caster))); });
+  // Add trap
+  target.buffs.push({ type:'trap', value: Math.round(caster.atk * skill.trapScale), turns:99, casterId: allFighters.indexOf(caster), hidden:true });
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, '夹子已布置', 'passive-num', 0, 0);
+  // Don't reveal which ally has it in the log (hidden from enemy)
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：在友方布置了隐形夹子`);
+  // Don't show trap in status icons (hidden)
+  await sleep(1000);
+}
+
+async function doNinjaBomb(attacker, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+
+  for (const e of enemies) {
+    const effectiveDef = Math.max(0, e.def - (attacker.armorPen || 0));
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    let rem = dmg;
+    if (e.bubbleShieldVal > 0) { const a = Math.min(e.bubbleShieldVal, rem); e.bubbleShieldVal -= a; rem -= a; }
+    if (e.shield > 0 && rem > 0) { const a = Math.min(e.shield, rem); e.shield -= a; rem -= a; }
+    e.hp = Math.max(0, e.hp - rem);
+    if (e.hp <= 0) e.alive = false;
+    const eId = getFighterElId(e);
+    spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
+    updateHpBar(e, eId);
+
+    // Apply armor break (defDown by %)
+    if (skill.armorBreak) {
+      const ab = skill.armorBreak;
+      const existing = e.buffs.find(b => b.type === 'defDown');
+      if (existing) { existing.value = Math.max(existing.value, ab.pct); existing.turns = Math.max(existing.turns, ab.turns); }
+      else e.buffs.push({ type:'defDown', value:ab.pct, turns:ab.turns });
+      spawnFloatingNum(eId, `破甲${ab.pct}%`, 'debuff-label', 200, 0);
+      renderStatusIcons(e);
+    }
+  }
+  recalcStats();
+  addLog(`${attacker.emoji}${attacker.name} <b>炸弹</b> → 全体敌方：<span class="log-direct">${baseDmg}伤害</span> + <span class="log-debuff">破甲${skill.armorBreak.pct}% ${skill.armorBreak.turns}回合</span>`);
+  await sleep(1000);
 }
 
 // ── HUNTER SKILLS ─────────────────────────────────────────
@@ -1373,24 +2011,14 @@ async function doHunterBarrage(attacker, skill) {
     const alive = enemies.filter(e => e.alive);
     if (!alive.length) break;
     const target = alive[Math.floor(Math.random() * alive.length)];
-    // Pierce damage — ignores DEF and resistance, but hits shields
-    let rem = arrowDmg;
-    if (target.bubbleShieldVal > 0) {
-      const ba = Math.min(target.bubbleShieldVal, rem);
-      target.bubbleShieldVal -= ba; rem -= ba;
-    }
-    if (target.shield > 0 && rem > 0) {
-      const sa = Math.min(target.shield, rem);
-      target.shield -= sa; rem -= sa;
-    }
-    target.hp = Math.max(0, target.hp - rem);
-    if (target.hp <= 0) target.alive = false;
+    // Pierce damage — ignores DEF, hits shields
+    applyRawDmg(attacker, target, arrowDmg);
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', i * 150, (i % 4) * 20);
+    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', i * 350, (i % 4) * 20);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
-    await sleep(130);
+    await sleep(320);
     tEl.classList.remove('hit-shake');
   }
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭随机射出，每根 <span class="log-pierce">${arrowDmg}穿透</span>`);
@@ -1428,7 +2056,7 @@ async function doBubbleShield(caster, target, skill) {
   updateHpBar(target, tElId);
   renderStatusIcons(target);
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡盾+${amount}（${skill.duration}回合）</span>`);
-  await sleep(500);
+  await sleep(1000);
 }
 
 async function doBubbleBind(caster, target, skill) {
@@ -1439,13 +2067,14 @@ async function doBubbleBind(caster, target, skill) {
   spawnFloatingNum(tElId, '🫧束缚', 'bubble-num', 0, 0);
   renderStatusIcons(target);
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡束缚${skill.duration}回合（攻击者获得${skill.bindPct}%伤害护盾）</span>`);
-  await sleep(500);
+  await sleep(1000);
 }
 
 // ── FLOATING NUMBERS — persistent 2.5s ────────────────────
 function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
   setTimeout(() => {
     const parent = document.getElementById(elId);
+    if (!parent) return;
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
     num.textContent = text;
@@ -1454,7 +2083,19 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     num.style.setProperty('--y-start', `-${20 + (yOffset||0)}px`);
     num.style.setProperty('--y-end', `-${60 + (yOffset||0)}px`);
     parent.appendChild(num);
-    setTimeout(() => num.remove(), 2500);
+    setTimeout(() => num.remove(), 4000);
+    // SFX based on type
+    const sfxMap = {
+      'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-label': sfxCrit,
+      'pierce-dmg': sfxPierce, 'shield-dmg': sfxShieldBreak,
+      'shield-num': sfxShield, 'heal-num': sfxHeal,
+      'dot-dmg': sfxFire, 'counter-dmg': sfxCounter,
+      'bubble-num': sfxShield, 'bubble-burst': sfxExplosion,
+      'passive-num': sfxBuff, 'debuff-label': sfxDebuff,
+      'dodge-num': sfxDodge, 'death-explode': sfxExplosion,
+    };
+    const fn = sfxMap[cls];
+    if (fn) try { fn(); } catch(e) {}
   }, delayMs);
 }
 
@@ -1500,11 +2141,26 @@ function aiAction(f) {
 function checkDeaths(attacker) {
   allFighters.forEach(f => {
     if (f.hp <= 0 && f.alive) {
+      // Phoenix rebirth: revive once
+      if (f.passive && f.passive.type === 'phoenixRebirth' && !f._rebirthUsed) {
+        f._rebirthUsed = true;
+        f.hp = Math.round(f.maxHp * f.passive.revivePct / 100);
+        f.alive = true;
+        const elId = getFighterElId(f);
+        spawnFloatingNum(elId, '涅槃重生!', 'crit-label', 0, -25);
+        spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
+        updateHpBar(f, elId);
+        addLog(`${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`);
+        try { sfxRebirth(); } catch(e) {}
+        return; // skip death processing
+      }
+
       f.alive = false; f.hp = 0;
       const elId = getFighterElId(f);
       document.getElementById(elId).classList.add('dead');
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 被击败！`,'death');
+      try { sfxDeath(); } catch(e) {}
 
       // Passive: deathExplode — deal % maxHP damage to killer
       if (f.passive && f.passive.type === 'deathExplode' && attacker && attacker.alive) {
@@ -1538,6 +2194,16 @@ function checkDeaths(attacker) {
         updateHpBar(attacker, aElId);
         addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">击杀回血${heal}HP</span>`);
       }
+
+      // Fortune gold: all alive fortune turtles gain 8 coins on any death
+      allFighters.forEach(fg => {
+        if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
+          fg._goldCoins += 8;
+          const fgElId = getFighterElId(fg);
+          spawnFloatingNum(fgElId, `+8🪙`, 'passive-num', 500, 0);
+          addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+8（共${fg._goldCoins}）</span>`);
+        }
+      });
     }
   });
 }
@@ -1547,7 +2213,7 @@ function checkBattleEnd() {
   if (!lA || !rA) {
     battleOver = true;
     document.getElementById('actionPanel').classList.remove('show');
-    setTimeout(() => showResult(lA), 800);
+    setTimeout(() => showResult(lA), 1200);
     return true;
   }
   return false;
@@ -1577,11 +2243,13 @@ function showResult(leftWon) {
     sub.textContent = `历经 ${turnNum} 回合`;
     rewards.innerHTML = `<div class="reward-line">🪙 +${coins} 龟币</div>`;
     addCoins(coins); saveRecord(true);
+    try { sfxVictory(); } catch(e) {}
   } else {
     icon.textContent = '💔';
     title.textContent = '失败…';
     sub.textContent = `坚持了 ${turnNum} 回合`;
     rewards.innerHTML = `<div class="reward-line">🪙 +5 龟币</div>`;
+    try { sfxDefeat(); } catch(e) {}
     addCoins(5); saveRecord(false);
   }
   showScreen('screenResult');
@@ -1654,6 +2322,92 @@ async function processHunterKill() {
   }
 }
 
+// ── FORTUNE GOLD PASSIVE (per batch end) ──────────────────
+async function processFortuneGold() {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'fortuneGold') continue;
+    const roll = 1 + Math.floor(Math.random() * 6);
+    f._goldCoins += roll;
+    const fElId = getFighterElId(f);
+    spawnFloatingNum(fElId, `+${roll}🪙`, 'passive-num', 0, 0);
+    addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">获得${roll}金币（共${f._goldCoins}）</span>`);
+    await sleep(300);
+  }
+}
+
+// ── LIGHTNING STORM PASSIVE (per batch end) ───────────────
+async function processLightningStorm() {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'lightningStorm') continue;
+    const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    if (!enemies.length) continue;
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const shockDmg = Math.round(f.atk * f.passive.shockScale);
+    // Pierce: hits shield then HP
+    let rem = shockDmg;
+    if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= a; rem -= a; }
+    if (target.shield > 0 && rem > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
+    target.hp = Math.max(0, target.hp - rem);
+    if (target.hp <= 0) target.alive = false;
+    const eElId = getFighterElId(target);
+    spawnFloatingNum(eElId, `⚡${shockDmg}`, 'pierce-dmg', 0, 0);
+    updateHpBar(target, eElId);
+    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce">⚡电击${target.emoji}${target.name} ${shockDmg}穿透</span>`);
+    // Also adds shock stack
+    target._shockStacks = (target._shockStacks || 0) + 1;
+    if (target._shockStacks >= f.passive.stackMax) {
+      const burstDmg = Math.round(f.atk * f.passive.shockScale);
+      let bRem = burstDmg;
+      if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, bRem); target.bubbleShieldVal -= a; bRem -= a; }
+      if (target.shield > 0 && bRem > 0) { const a = Math.min(target.shield, bRem); target.shield -= a; bRem -= a; }
+      target.hp = Math.max(0, target.hp - bRem);
+      if (target.hp <= 0) target.alive = false;
+      target._shockStacks = 0;
+      spawnFloatingNum(eElId, `⚡满层${burstDmg}`, 'crit-dmg', 200, 0);
+      updateHpBar(target, eElId);
+      addLog(`${target.emoji}${target.name} 电击层满！<span class="log-pierce">⚡${burstDmg}穿透</span>`);
+    }
+    checkDeaths(f);
+    if (checkBattleEnd()) return;
+    await sleep(400);
+  }
+}
+
+// ── DAMAGE STATS PANEL ────────────────────────────────────
+function updateDmgStats() {
+  const body = document.getElementById('dmgStatsBody');
+  if (!body || !allFighters.length || body.classList.contains('ds-hidden')) return;
+
+  const byDealt = [...allFighters].sort((a,b) => b._dmgDealt - a._dmgDealt);
+  const byTaken = [...allFighters].sort((a,b) => b._dmgTaken - a._dmgTaken);
+  const maxDealt = Math.max(1, ...byDealt.map(f => f._dmgDealt));
+  const maxTaken = Math.max(1, ...byTaken.map(f => f._dmgTaken));
+
+  function row(f, val, max, barClass) {
+    const pct = val / max * 100;
+    const side = f.side === 'left' ? 'ds-left' : 'ds-right';
+    const dead = f.alive ? '' : 'ds-dead';
+    return `<div class="ds-row ${side} ${dead}">
+      <div class="ds-name">${f.emoji} ${f.name}</div>
+      <div class="ds-bar-wrap"><span class="ds-label">${val}</span><div class="ds-bar ${barClass}" style="width:${pct}%"></div></div>
+    </div>`;
+  }
+
+  body.innerHTML =
+    `<div class="ds-section-title">⚔ 造成伤害</div>` +
+    byDealt.map(f => row(f, f._dmgDealt, maxDealt, 'ds-bar-dealt')).join('') +
+    `<div class="ds-section-title ds-section-gap">🛡 承受伤害</div>` +
+    byTaken.map(f => row(f, f._dmgTaken, maxTaken, 'ds-bar-taken')).join('');
+}
+
+function toggleDmgStats() {
+  const body = document.getElementById('dmgStatsBody');
+  const toggle = document.querySelector('.dmg-toggle');
+  const hidden = body.classList.toggle('ds-hidden');
+  toggle.textContent = hidden ? '▶' : '▼';
+  if (!hidden) updateDmgStats();
+}
+
 // ── HELP PANEL ────────────────────────────────────────────
 function toggleHelp() {
   const el = document.getElementById('helpPanel');
@@ -1668,6 +2422,16 @@ function addLog(html, cls='') {
   e.innerHTML = html;
   log.appendChild(e);
   log.scrollTop = log.scrollHeight;
+}
+// Helper: apply raw damage to target (through shields), track stats
+// Returns { hpLoss, shieldAbs, bubbleAbs }
+function applyRawDmg(_source, target, amount) {
+  let rem = amount, bubbleAbs = 0, shieldAbs = 0;
+  if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
+  if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
+  target.hp = Math.max(0, target.hp - rem);
+  if (target.hp <= 0) target.alive = false;
+  return { hpLoss: rem, shieldAbs, bubbleAbs };
 }
 function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
 function showToast(msg) {

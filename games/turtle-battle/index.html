@@ -13,6 +13,7 @@
   <a class="back-link" href="../../index.html">← 返回龟投</a>
   <h1 class="nav-title">龟龟对战</h1>
   <div class="nav-right">
+    <button class="btn-sound" id="soundBtn" onclick="toggleSound()">🔊</button>
     <span class="coin-display" id="coinDisplay">🪙 0</span>
   </div>
 </nav>
@@ -112,11 +113,11 @@
       </div>
       <div class="help-item">
         <span class="help-icon">🛡</span>
-        <div><b>防御 (DEF)</b><br>降低受到的所有伤害基础值，包括穿透伤害</div>
+        <div><b>防御 (DEF)</b><br>减伤% = DEF/(DEF+40)。递减效果，越高越难堆。穿透伤害无视防御</div>
       </div>
       <div class="help-item">
-        <span class="help-icon">🔰</span>
-        <div><b>抗性 (RES)</b><br>按百分比减少受到的非穿透伤害。穿透伤害无视抗性</div>
+        <span class="help-icon">🗡</span>
+        <div><b>穿甲</b><br>计算减伤时无视目标对应点数的防御。例如穿甲5=目标少算5点DEF</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#ff4444">■</span>
@@ -124,7 +125,7 @@
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#d06bff">■</span>
-        <div><b>穿透伤害</b><br>无视防御和抗性，但会被护盾吸收</div>
+        <div><b>穿透伤害</b><br>无视防御，但会被护盾吸收</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#fff">■</span>
@@ -148,7 +149,7 @@
       </div>
       <div class="help-item">
         <span class="help-icon">📊</span>
-        <div><b>伤害公式</b><br>威力 × ATK/(ATK+DEF) × 暴击 → 穿透部分不受抗性 → 全部先打护盾</div>
+        <div><b>伤害公式</b><br>普通伤害 = 威力 × 暴击 × (1-减伤%)。穿透 = 原值 × 暴击。全部先打护盾再扣血</div>
       </div>
     </div>
   </div>
@@ -203,6 +204,12 @@
     </div>
   </div>
 
+  <!-- DAMAGE STATS PANEL -->
+  <div class="dmg-stats-panel" id="dmgStatsPanel">
+    <div class="dmg-stats-header">伤害统计 <span class="dmg-toggle" onclick="toggleDmgStats()">▼</span></div>
+    <div class="dmg-stats-body" id="dmgStatsBody"></div>
+  </div>
+
   <!-- ACTION PANEL -->
   <div class="action-panel" id="actionPanel">
     <div class="action-header">
@@ -240,6 +247,7 @@
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
+<script src="audio.js"></script>
 <script src="battle.js"></script>
 </body>
 </html>

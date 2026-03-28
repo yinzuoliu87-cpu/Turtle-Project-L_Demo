@@ -63,7 +63,8 @@
       "Bash(powershell -Command \"Get-ItemProperty ''HKCU:\\\\Software\\\\Microsoft\\\\Windows\\\\CurrentVersion\\\\Internet Settings'' | Select-Object ProxyEnable,ProxyServer,ProxyOverride | Format-List\")",
       "Bash(powershell -Command \"Stop-Process -Id 27168 -Force\")",
       "Bash(node -c games/turtle-battle/battle.js)",
-      "Bash(node -c \"c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-battle/battle.js\")"
+      "Bash(node -c \"c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-battle/battle.js\")",
+      "Bash(node -c \"c:/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-battle/audio.js\")"
     ]
   }
 }
