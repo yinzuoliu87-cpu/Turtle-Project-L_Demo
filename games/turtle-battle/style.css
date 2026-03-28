@@ -1,0 +1,332 @@
+/* ═══════════════════════════════════════════════════
+   龟龟对战 — style.css
+   dark theme · shield white bar · damage color coding
+   ═══════════════════════════════════════════════════ */
+:root {
+  --bg:#0e1117; --bg2:#161b22; --bg3:#1c2333;
+  --fg:#e6edf3; --fg2:#8b949e;
+  --green:#06d6a0; --red:#ff6b6b; --yellow:#ffd93d;
+  --blue:#4cc9f0; --purple:#c77dff; --gold:#ffd93d;
+  --accent:#58a6ff;
+  --radius:12px;
+  --shadow:0 4px 24px rgba(0,0,0,.4);
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
+  background:var(--bg);color:var(--fg);
+  min-height:100vh;overflow-x:hidden;
+}
+
+/* ── NAV ── */
+.top-nav{display:flex;align-items:center;gap:12px;padding:10px 20px;background:var(--bg2);border-bottom:1px solid rgba(255,255,255,.06);position:sticky;top:0;z-index:100}
+.back-link{color:var(--accent);text-decoration:none;font-size:14px}
+.nav-title{flex:1;font-size:18px;font-weight:700}
+.coin-display{color:var(--gold);font-weight:600}
+
+/* ── SCREENS ── */
+.screen{display:none;padding:20px;max-width:800px;margin:0 auto}
+.screen.active{display:block}
+.screen-title{text-align:center;margin-bottom:20px;font-size:20px}
+
+/* ── MENU ── */
+.menu-hero{text-align:center;padding:40px 0 30px}
+.menu-logo{font-size:64px;margin-bottom:8px}
+.menu-sub{color:var(--fg2);margin-top:4px}
+.menu-buttons{display:flex;flex-direction:column;gap:12px;max-width:400px;margin:0 auto}
+
+.btn{border:none;border-radius:var(--radius);cursor:pointer;font-family:inherit;transition:.2s}
+.btn:hover{transform:translateY(-2px);filter:brightness(1.1)}
+.btn:active{transform:scale(.97)}
+.btn-lg{display:flex;align-items:center;gap:14px;padding:16px 20px;font-size:15px;text-align:left}
+.btn-icon{font-size:28px}
+.btn-text{display:flex;flex-direction:column}
+.btn-text strong{font-size:16px}
+.btn-text small{font-size:12px;opacity:.7;margin-top:2px}
+.btn-primary{background:linear-gradient(135deg,#238636,#2ea043);color:#fff}
+.btn-accent{background:linear-gradient(135deg,#1f6feb,#58a6ff);color:#fff}
+.btn-gold{background:linear-gradient(135deg,#d4a017,#ffd93d);color:#1a1a2e}
+.btn-secondary{background:var(--bg3);color:var(--fg2);padding:10px 20px;font-size:14px;margin-top:12px}
+.btn-sm{padding:6px 12px;font-size:12px;background:var(--bg3);color:var(--fg);border-radius:6px}
+.btn-target{background:var(--bg3);color:var(--fg);padding:10px 16px;border-radius:8px;font-size:14px;border:1px solid rgba(255,255,255,.1)}
+.btn-target:hover{border-color:var(--accent)}
+
+/* ── DIFFICULTY ── */
+.diff-cards{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:16px}
+.diff-card{background:var(--bg2);border:2px solid transparent;border-radius:var(--radius);padding:24px 20px;text-align:center;cursor:pointer;width:180px;transition:.2s}
+.diff-card:hover{border-color:var(--accent);transform:translateY(-3px)}
+.diff-icon{font-size:36px;margin-bottom:8px}
+.diff-card p{font-size:12px;color:var(--fg2);margin-top:6px}
+
+/* ── LOBBY ── */
+.lobby-box{background:var(--bg2);border-radius:var(--radius);padding:24px;max-width:420px;margin:0 auto}
+.lobby-section{margin-bottom:16px}
+.lobby-section h3{margin-bottom:10px;font-size:15px}
+.lobby-divider{text-align:center;color:var(--fg2);margin:16px 0;font-size:13px}
+.input-field{width:100%;padding:10px 14px;border-radius:8px;border:1px solid rgba(255,255,255,.12);background:var(--bg3);color:var(--fg);font-size:15px;margin-bottom:10px;outline:none}
+.input-field:focus{border-color:var(--accent)}
+.room-code-display{display:flex;align-items:center;gap:10px;margin-top:10px;padding:10px;background:var(--bg3);border-radius:8px}
+.room-code-display strong{font-size:20px;letter-spacing:3px;color:var(--gold)}
+.lobby-status{margin-top:14px;text-align:center;color:var(--accent);font-size:14px}
+
+/* ── SELECT ── */
+.select-layout{margin-bottom:16px}
+.team-slots{display:flex;gap:12px;justify-content:center;margin-bottom:20px}
+.team-slot{width:140px;height:80px}
+.slot-empty{width:100%;height:100%;display:flex;align-items:center;justify-content:center;border:2px dashed rgba(255,255,255,.15);border-radius:10px;color:var(--fg2);font-size:14px}
+.slot-filled{width:100%;height:100%;display:flex;align-items:center;justify-content:center;gap:8px;border:2px solid;border-radius:10px;background:var(--bg2);font-size:15px;font-weight:600}
+.slot-emoji{font-size:28px}
+.pet-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(110px,1fr));gap:10px;max-height:400px;overflow-y:auto;padding:4px}
+.pet-card{background:var(--bg2);border:2px solid transparent;border-radius:10px;padding:12px 8px;text-align:center;cursor:pointer;transition:.2s;position:relative}
+.pet-card:hover{border-color:var(--rc,var(--accent));transform:translateY(-2px)}
+.pet-card.selected{border-color:var(--rc,var(--accent));box-shadow:0 0 12px rgba(88,166,255,.3)}
+.pet-emoji{font-size:32px;margin-bottom:4px}
+.pet-name{font-size:13px;font-weight:600}
+.pet-avatar{display:flex;justify-content:center;align-items:center;min-height:56px;margin-bottom:4px}
+.pet-rarity{font-size:11px;font-weight:700}
+.pet-stats-mini{display:flex;gap:4px;justify-content:center;font-size:10px;color:var(--fg2);margin-top:4px}
+.select-actions{display:flex;gap:12px;justify-content:center}
+.slot-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+/* ── RECORD ── */
+.record-box{margin-top:32px;text-align:center}
+.record-box h3{color:var(--fg2);font-size:14px;margin-bottom:6px}
+.rec-w{color:var(--green);font-weight:700}
+.rec-l{color:var(--red);font-weight:700}
+
+/* ═══════════════════════════════════════
+   BATTLE SCREEN
+   ═══════════════════════════════════════ */
+#screenBattle{max-width:900px}
+.turn-banner-row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.turn-banner{flex:1;text-align:center;font-size:15px;font-weight:700;color:var(--accent);padding:6px;background:var(--bg2);border-radius:8px}
+.btn-help{width:32px;height:32px;border-radius:50%;border:2px solid rgba(255,255,255,.15);background:var(--bg2);color:var(--accent);font-size:16px;font-weight:900;cursor:pointer;transition:.2s;flex-shrink:0}
+.btn-help:hover{border-color:var(--accent);background:rgba(88,166,255,.1)}
+
+/* ── HELP PANEL ── */
+.help-panel{background:var(--bg2);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:16px;margin-bottom:12px;animation:fadeUp .2s ease}
+.help-title{font-size:15px;font-weight:700;margin-bottom:12px;display:flex;justify-content:space-between;align-items:center}
+.help-close{cursor:pointer;color:var(--fg2);font-size:18px;padding:2px 6px;border-radius:4px}
+.help-close:hover{color:var(--fg);background:rgba(255,255,255,.08)}
+.help-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(240px,1fr));gap:10px}
+.help-item{display:flex;gap:10px;padding:8px 10px;background:var(--bg3);border-radius:8px;font-size:12px;line-height:1.5}
+.help-icon{font-size:20px;flex-shrink:0;width:24px;text-align:center}
+.help-color{font-size:16px}
+.help-item b{color:var(--fg);display:inline}
+.help-item div{color:var(--fg2)}
+@keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* ── SIDE INDICATOR (whose turn) ── */
+.side-indicator{text-align:center;margin-bottom:10px;min-height:28px}
+.side-ind{display:inline-block;padding:4px 16px;border-radius:6px;font-size:13px;font-weight:700;animation:fadeUp .2s ease}
+.side-ind-left{color:var(--green);background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.25)}
+.side-ind-right{color:var(--red);background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25)}
+
+/* ── TEAM LABELS ── */
+.team-label{text-align:center;font-size:12px;font-weight:700;padding:3px 0;border-radius:6px;margin-bottom:4px}
+.team-label-left{color:var(--green);background:rgba(6,214,160,.08);border:1px solid rgba(6,214,160,.2)}
+.team-label-right{color:var(--red);background:rgba(255,107,107,.08);border:1px solid rgba(255,107,107,.2)}
+
+.battle-field{display:flex;align-items:flex-start;justify-content:center;gap:16px;margin-bottom:16px}
+.battle-side{display:flex;flex-direction:column;gap:12px;flex:1;max-width:320px}
+.vs-badge{align-self:center;font-size:28px;font-weight:900;color:var(--red);text-shadow:0 0 16px rgba(255,107,107,.5);margin-top:50px}
+
+/* ── FIGHTER CARD ── */
+.fighter-card{background:var(--bg2);border:2px solid rgba(255,255,255,.06);border-radius:var(--radius);padding:14px;text-align:center;position:relative;overflow:visible;transition:.3s}
+.fighter-card.active-turn{border-color:var(--accent);box-shadow:0 0 18px rgba(88,166,255,.25)}
+.fighter-card.dead{opacity:.35;filter:grayscale(.8);pointer-events:none}
+.fighter-emoji{font-size:40px;margin-bottom:4px;display:flex;justify-content:center;align-items:center;min-height:72px}
+.fighter-name{font-size:14px;font-weight:700;margin-bottom:4px}
+
+/* ── FIGHTER STATS ROW ── */
+.fighter-stats{display:flex;gap:6px;justify-content:center;font-size:10px;color:var(--fg2);margin-bottom:6px;flex-wrap:wrap;align-items:center}
+.fighter-stats span{padding:1px 4px;background:rgba(255,255,255,.04);border-radius:4px}
+.fighter-stats .stat-down{color:#ff6b6b;background:rgba(255,107,107,.12)}
+.fighter-stats .stat-up{color:#06d6a0;background:rgba(6,214,160,.15)}
+.passive-icon{cursor:help;font-size:14px;background:none !important}
+
+/* ── PET SPRITE / IMAGE (matches pet center) ── */
+.sprite-wrap{display:inline-block;overflow:hidden}
+.sprite-inner{background-repeat:no-repeat;image-rendering:pixelated;image-rendering:crisp-edges}
+
+/* ── HP BAR + SHIELD WHITE BAR ──
+   Parent clips both fills with border-radius, no gap between HP and shield */
+.hp-bar{position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;margin-bottom:4px}
+.hp-fill{position:absolute;left:0;top:0;height:100%;background:var(--green);transition:width .35s ease;z-index:1}
+.shield-fill{position:absolute;top:0;height:100%;background:rgba(255,255,255,.45);transition:width .35s ease,left .35s ease;pointer-events:none;z-index:2}
+.bubble-shield-fill{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(76,201,240,.4),rgba(76,201,240,.6),rgba(76,201,240,.4));background-size:200% 100%;animation:bubbleShimmer 2s ease-in-out infinite;transition:width .35s ease,left .35s ease;pointer-events:none;z-index:3}
+@keyframes bubbleShimmer{0%,100%{background-position:0 0}50%{background-position:100% 0}}
+.hp-text{font-size:11px;color:var(--fg2)}
+.shield-val{color:rgba(255,255,255,.9);font-weight:600}
+.bubble-val{color:#4cc9f0;font-weight:600}
+.bubble-val small{font-size:9px;opacity:.7;margin-left:2px}
+
+/* ── BUBBLE STORE BAR (泡泡龟 passive) ── */
+.bubble-store-bar{position:relative;width:100%;height:8px;background:rgba(76,201,240,.1);border-radius:4px;overflow:hidden;margin-bottom:3px;border:1px solid rgba(76,201,240,.2)}
+.bubble-store-fill{height:100%;background:linear-gradient(90deg,rgba(76,201,240,.3),rgba(76,201,240,.6));border-radius:3px;transition:width .4s ease}
+.bubble-store-label{position:absolute;right:4px;top:50%;transform:translateY(-50%);font-size:9px;color:#4cc9f0;font-weight:700;text-shadow:0 1px 3px rgba(0,0,0,.5)}
+/* ── STATUS ICONS (buffs/debuffs/passive on fighter card) ── */
+.status-icons{font-size:11px;margin-top:4px;display:flex;gap:4px;justify-content:center;flex-wrap:wrap}
+.status-dot{color:#ff6600;background:rgba(255,102,0,.15);padding:1px 5px;border-radius:6px}
+.status-atkdown{color:#ff4444;background:rgba(255,68,68,.12);padding:1px 5px;border-radius:6px}
+.status-defdown{color:#d06bff;background:rgba(208,107,255,.12);padding:1px 5px;border-radius:6px}
+.status-hot{color:#06d6a0;background:rgba(6,214,160,.12);padding:1px 5px;border-radius:6px}
+.status-defup{color:#7dffb3;background:rgba(125,255,179,.12);padding:1px 5px;border-radius:6px}
+.status-bubble{color:#4cc9f0;background:rgba(76,201,240,.12);padding:1px 5px;border-radius:6px}
+.status-dodge{color:#a0e8ff;background:rgba(160,232,255,.12);padding:1px 5px;border-radius:6px}
+
+/* ═══════════════════════════════════════
+   FLOATING DAMAGE / HEAL / SHIELD NUMBERS
+   persistent 2.5s, color-coded
+   ═══════════════════════════════════════ */
+.floating-num{
+  position:absolute;left:50%;
+  font-weight:900;font-size:18px;
+  pointer-events:none;z-index:50;
+  white-space:nowrap;
+  text-shadow:0 2px 8px rgba(0,0,0,.7);
+  animation:floatUp 2.5s ease-out forwards;
+}
+/* Direct damage — RED */
+.floating-num.direct-dmg{color:#ff4444;font-size:22px}
+/* Pierce damage — PURPLE (bypass shield) */
+.floating-num.pierce-dmg{color:#d06bff;font-size:20px}
+/* Shield absorbed — GREY/WHITE dim */
+.floating-num.shield-dmg{color:#aaa;font-size:16px}
+/* Heal — GREEN */
+.floating-num.heal-num{color:#06d6a0;font-size:24px}
+/* Shield gain — WHITE bright */
+.floating-num.shield-num{color:#fff;font-size:22px}
+/* Crit damage — ORANGE GOLD */
+.floating-num.crit-dmg{color:#ffa500;font-size:26px}
+.floating-num.crit-label{color:#ffd700;font-size:14px;font-weight:900}
+/* DoT damage — ORANGE */
+.floating-num.dot-dmg{color:#ff6600;font-size:18px}
+/* Counter damage — YELLOW */
+.floating-num.counter-dmg{color:#ffd93d;font-size:20px}
+/* Death explode — RED flash */
+.floating-num.death-explode{color:#ff2222;font-size:24px}
+/* Passive gain — TEAL */
+.floating-num.passive-num{color:#7dffb3;font-size:16px}
+/* Bubble — CYAN */
+.floating-num.bubble-num{color:#4cc9f0;font-size:18px}
+.floating-num.bubble-burst{color:#ff9f43;font-size:22px}
+.floating-num.dodge-num{color:#a0e8ff;font-size:16px;font-style:italic}
+/* Debuff label */
+.floating-num.debuff-label{color:#ff9f43;font-size:14px}
+
+@keyframes floatUp{
+  0%  {opacity:1; transform:translate(-50%,var(--y-start,-20px)) scale(1.3)}
+  15% {opacity:1; transform:translate(-50%,var(--y-start,-20px)) scale(1)}
+  60% {opacity:.9;transform:translate(-50%,var(--y-end,-55px)) scale(1)}
+  100%{opacity:0; transform:translate(-50%,var(--y-end,-75px)) scale(.7)}
+}
+
+/* ── HIT SHAKE ── */
+.fighter-card.hit-shake{animation:shake .25s ease}
+@keyframes shake{
+  0%,100%{transform:translateX(0)}
+  20%{transform:translateX(-6px)}
+  40%{transform:translateX(6px)}
+  60%{transform:translateX(-4px)}
+  80%{transform:translateX(4px)}
+}
+
+/* ── ATTACK PULSE ── */
+.fighter-card.attack-anim{animation:attackPulse .5s ease}
+@keyframes attackPulse{
+  0%{transform:scale(1)}
+  30%{transform:scale(1.08);filter:brightness(1.3)}
+  100%{transform:scale(1)}
+}
+
+/* ── ACTION PANEL ── */
+.action-panel{background:var(--bg2);border-radius:var(--radius);padding:14px;margin-bottom:14px;opacity:0;transform:translateY(10px);pointer-events:none;transition:.3s}
+.action-panel.show{opacity:1;transform:translateY(0);pointer-events:auto}
+.action-header{font-size:14px;margin-bottom:10px;color:var(--fg2)}
+.action-header .acting-name{font-weight:700}
+.action-buttons{display:flex;gap:8px;flex-wrap:wrap}
+
+.skill-btn-wrap{display:flex;flex-direction:column;align-items:stretch;position:relative}
+.btn-skill{display:flex;flex-direction:column;align-items:center;gap:2px;background:var(--bg3);border:1px solid rgba(255,255,255,.1);border-radius:10px;padding:10px 14px;cursor:pointer;color:var(--fg);font-family:inherit;transition:.2s;min-width:120px;position:relative}
+.btn-skill:hover{border-color:var(--accent);transform:translateY(-2px)}
+.btn-skill.disabled{opacity:.4;cursor:not-allowed;pointer-events:none}
+.skill-icon{font-size:20px}
+.skill-name{font-size:13px;font-weight:600}
+.skill-info{font-size:11px;color:var(--fg2)}
+.skill-pierce{font-size:11px;color:var(--purple);font-weight:700}
+.cd-tag{position:absolute;top:4px;right:6px;font-size:10px;color:var(--red);font-weight:700}
+.skill-tags{display:flex;gap:3px;justify-content:center;margin-top:2px}
+.debuff-tag{font-size:10px;padding:1px 5px;border-radius:4px;font-weight:700}
+.dot-tag{color:#ff6600;background:rgba(255,102,0,.15)}
+.atk-tag{color:#ff4444;background:rgba(255,68,68,.12)}
+.def-tag{color:#d06bff;background:rgba(208,107,255,.12)}
+.aoe-tag{color:#ffa500;background:rgba(255,165,0,.12)}
+.hot-tag{color:#06d6a0;background:rgba(6,214,160,.12)}
+.defup-tag{color:#7dffb3;background:rgba(125,255,179,.12)}
+.bubble-tag{color:#4cc9f0;background:rgba(76,201,240,.12)}
+
+/* ── DETAIL BUTTON + PANEL ── */
+.btn-detail{background:none;border:none;color:var(--accent);font-size:10px;cursor:pointer;padding:3px 0;font-family:inherit;opacity:.7;transition:.15s}
+.btn-detail:hover{opacity:1;text-decoration:underline}
+.skill-detail{background:var(--bg);border:1px solid rgba(255,255,255,.1);border-radius:8px;padding:8px 10px;margin-top:4px;font-size:12px;line-height:1.7;min-width:180px;z-index:10}
+.detail-line{border-bottom:1px solid rgba(255,255,255,.04);padding:2px 0}
+.detail-line:last-child{border-bottom:none}
+.detail-line b{color:var(--fg);margin-right:4px}
+.detail-pierce{color:var(--purple);font-weight:700}
+.detail-dot{color:#ff6600;font-weight:700}
+.detail-debuff{color:#ff9f43;font-weight:700}
+
+/* ── TARGET SELECT ── */
+.target-select{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.target-select p{font-size:13px;color:var(--fg2);margin-bottom:8px}
+.target-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
+
+/* ── BATTLE LOG ── */
+.battle-log{background:var(--bg2);border-radius:var(--radius);padding:12px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.8}
+.log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
+.log-entry.sys{color:var(--fg2);font-style:italic}
+.log-entry.round-sep{text-align:center;color:var(--accent);font-weight:700;border-bottom:1px solid rgba(88,166,255,.15);padding:6px 0;margin:4px 0;font-size:12px;letter-spacing:1px}
+.log-entry.death{color:var(--red)}
+.log-entry b{color:var(--accent)}
+.log-direct{color:#ff4444;font-weight:700}
+.log-pierce{color:#d06bff;font-weight:700}
+.log-heal{color:#06d6a0;font-weight:700}
+.log-shield{color:rgba(255,255,255,.9);font-weight:700}
+.log-shield-dmg{color:#999;font-weight:600}
+.log-crit{color:#ffa500;font-weight:700}
+.log-dot{color:#ff6600;font-weight:700}
+.log-debuff{color:#ff9f43;font-weight:700}
+.log-passive{color:#7dffb3;font-weight:700;font-style:italic}
+
+/* ── RESULT ── */
+.result-box{text-align:center;padding:40px 20px}
+.result-icon{font-size:72px;margin-bottom:12px}
+#resultTitle{font-size:28px;margin-bottom:8px}
+#resultSub{color:var(--fg2);margin-bottom:16px}
+.reward-line{font-size:18px;color:var(--gold);font-weight:700;margin-bottom:20px}
+.result-actions{display:flex;gap:12px;justify-content:center}
+.result-actions .btn{padding:12px 28px;font-size:15px}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:30px;left:50%;transform:translateX(-50%) translateY(80px);background:var(--bg3);color:var(--fg);padding:10px 24px;border-radius:20px;font-size:14px;box-shadow:var(--shadow);opacity:0;transition:.3s;z-index:200;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* ── SCROLLBAR ── */
+::-webkit-scrollbar{width:6px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:rgba(255,255,255,.12);border-radius:3px}
+
+/* ── RESPONSIVE ── */
+@media(max-width:640px){
+  .battle-field{flex-direction:column;align-items:center}
+  .vs-badge{margin:8px 0;font-size:22px}
+  .battle-side{flex-direction:row;gap:8px;max-width:100%}
+  .fighter-card{flex:1;padding:10px 8px}
+  .fighter-emoji{font-size:30px;min-height:56px}
+  .fighter-stats{font-size:9px;gap:3px}
+  .action-buttons{justify-content:center}
+  .btn-skill{min-width:90px;padding:8px 10px}
+  .pet-grid{grid-template-columns:repeat(auto-fill,minmax(90px,1fr))}
+  .diff-cards{flex-direction:column;align-items:center}
+}

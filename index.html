@@ -40,15 +40,26 @@
 
 <div class="mobile-sidebar-overlay" id="mobileSidebarOverlay" onclick="toggleMobileSidebar()"></div>
 <aside class="left" id="leftSidebar">
-  <a class="pet-sidebar" href="pet.html">
-    <div class="pet-sidebar-orb">🐢</div>
-    <div class="pet-sidebar-name">小龟龟 · Lv.12</div>
-    <div class="pet-sidebar-lvl">🔥 5连胜 · 预测师</div>
-    <div class="pet-sidebar-xp"><div class="pet-sidebar-xp-in"></div></div>
-    <div class="pet-sidebar-hint">点击进入宠物中心 →</div>
+  <!-- Pet Scene -->
+  <div class="sb-pet-info-bar">
+    <span class="sb-pet-coins" id="petCoins">🪙 0</span>
+    <span class="sb-pet-stamina" id="petStamina">⚡ 100</span>
+  </div>
+  <a class="sb-pet-scene" href="pet.html" id="petSidebar">
+    <div class="sb-pet-sky"></div>
+    <div class="sb-pet-cloud sb-cloud-1"></div>
+    <div class="sb-pet-cloud sb-cloud-2"></div>
+    <div class="sb-pet-center">
+      <div class="sb-pet-dialogue" id="petDialogue">今天天气真好~</div>
+      <div class="sb-pet-img" id="petSidebarImg">🐢</div>
+    </div>
+    <div class="sb-pet-shadow"></div>
+    <div class="sb-pet-enter">进入宠物空间 →</div>
   </a>
-  <div class="left-sec">
-    <div class="left-sec-hd">专题</div>
+
+  <!-- Nav Menu -->
+  <div class="sb-nav">
+    <div class="sb-nav-hd">功能导航</div>
     <div class="nt on" onclick="switchTab(this,'all')">🏠 全部</div>
     <div class="nt" onclick="switchTab(this,'wc')">⚽ 世界杯</div>
     <div class="nt" onclick="switchTab(this,'hot')">🔥 热点</div>
@@ -56,45 +67,32 @@
     <div class="nt" onclick="switchTab(this,'ai')">🤖 AI</div>
     <div class="nt" onclick="switchTab(this,'ent')">🎬 娱乐</div>
     <div class="nt" onclick="switchTab(this,'forum')">💬 论坛</div>
-    <a class="nt" href="battle.html" style="color:#ff6b6b;text-decoration:none;">⚔️ 开战广场</a>
-    <a class="nt nt-game" href="games/turtle-jump/index.html" style="text-decoration:none;">🐢 龟龟跳海</a>
+    <a class="nt" href="battle.html" style="text-decoration:none;">⚔️ 开战广场</a>
+    <a class="nt nt-game" href="games/turtle-jump/index.html" style="text-decoration:none;">🐢 龟龟出海</a>
+    <a class="nt nt-game" href="games/turtle-battle/index.html" style="text-decoration:none;">⚔️ 龟龟对战</a>
+    <a class="nt" href="pet.html" style="text-decoration:none;">🐾 宠物中心</a>
   </div>
-  <div class="left-divider"></div>
-  <div class="left-sec">
-    <div class="left-sec-toggle" onclick="toggleLeftSec('lb-panel','lb-chev')">
-      🏆 排行榜<span class="left-chev" id="lb-chev">▸</span>
-    </div>
-    <div class="left-panel" id="lb-panel" style="display:none">
-      <div class="lb-tabs">
-        <div class="lb-tab on" onclick="switchLbTab(this,'global')">🌍 全球</div>
-        <div class="lb-tab" onclick="switchLbTab(this,'friends')">👥 好友</div>
-      </div>
-      <div class="lb-list" id="lb-global">
-        <div class="lb-row"><div class="lb-r r1">1</div><div class="lb-av" style="background:#fef9c3">🦁</div><div style="flex:1"><div class="lb-n">LionMaster</div><div class="lb-s"><span class="str">🔥 8连</span></div></div><div class="lb-c">18,420</div></div>
-        <div class="lb-row"><div class="lb-r r2">2</div><div class="lb-av" style="background:#f0fdf4">🐉</div><div style="flex:1"><div class="lb-n">DragonSeer</div><div class="lb-s"><span class="str">🔥 5连</span></div></div><div class="lb-c">12,850</div></div>
-        <div class="lb-row"><div class="lb-r r3">3</div><div class="lb-av" style="background:#eff6ff">🦅</div><div style="flex:1"><div class="lb-n">EagleEye</div><div class="lb-s">胜率 71%</div></div><div class="lb-c">9,310</div></div>
-        <div class="lb-row"><div class="lb-r">4</div><div class="lb-av" style="background:#fef3f2">🐺</div><div style="flex:1"><div class="lb-n">CryptoWolf</div><div class="lb-s">胜率 66%</div></div><div class="lb-c">7,620</div></div>
-        <div class="lb-row"><div class="lb-r">5</div><div class="lb-av" style="background:#f5f3ff">🦈</div><div style="flex:1"><div class="lb-n">SharkTrader</div><div class="lb-s"><span class="str">🔥 3连</span></div></div><div class="lb-c">6,190</div></div>
-        <div class="lb-row lb-me"><div class="lb-r" style="color:var(--g)">12</div><div class="lb-av" style="background:#f0fdfa">🦊</div><div style="flex:1"><div class="lb-n">你 <span class="me-t">ME</span></div><div class="lb-s"><span class="str">🔥 5连</span> · 68%</div></div><div class="lb-c">2,480</div></div>
-      </div>
-      <div class="lb-list" id="lb-friends" style="display:none">
-        <div class="lb-row"><div class="lb-r r1">1</div><div class="lb-av" style="background:#fef9c3">🐼</div><div style="flex:1"><div class="lb-n">PandaPredict</div><div class="lb-s"><span class="str">🔥 4连</span></div></div><div class="lb-c">5,340</div></div>
-        <div class="lb-row"><div class="lb-r r2">2</div><div class="lb-av" style="background:#fdf2f8">🦋</div><div style="flex:1"><div class="lb-n">ButterflyBet</div><div class="lb-s">胜率 62%</div></div><div class="lb-c">3,870</div></div>
-        <div class="lb-row lb-me"><div class="lb-r r3">3</div><div class="lb-av" style="background:#f0fdfa">🦊</div><div style="flex:1"><div class="lb-n">你 <span class="me-t">ME</span></div><div class="lb-s"><span class="str">🔥 5连</span> · 68%</div></div><div class="lb-c">2,480</div></div>
-        <div class="lb-row"><div class="lb-r">4</div><div class="lb-av" style="background:#f0fdf4">🐸</div><div style="flex:1"><div class="lb-n">FrogKing</div><div class="lb-s">胜率 55%</div></div><div class="lb-c">1,240</div></div>
-      </div>
+
+  <!-- Hot Topics -->
+  <div class="sb-hot">
+    <div class="sb-hot-hd">🔥 热点追踪</div>
+    <div class="sb-hot-list">
+      <div class="sb-hot-row"><span class="sb-hot-rank hot">1</span><span class="sb-hot-title">顶流解散疑云</span><span class="sb-hot-heat">1.3w</span></div>
+      <div class="sb-hot-row"><span class="sb-hot-rank hot">2</span><span class="sb-hot-title">2026世界杯冠军</span><span class="sb-hot-heat">2.5w</span></div>
+      <div class="sb-hot-row"><span class="sb-hot-rank hot">3</span><span class="sb-hot-title">周杰伦新专辑</span><span class="sb-hot-heat">1.9w</span></div>
+      <div class="sb-hot-row"><span class="sb-hot-rank">4</span><span class="sb-hot-title">Claude 4 登顶</span><span class="sb-hot-heat">1.1w</span></div>
+      <div class="sb-hot-row"><span class="sb-hot-rank">5</span><span class="sb-hot-title">A股下周涨跌</span><span class="sb-hot-heat">4.0k</span></div>
     </div>
   </div>
-  <div class="left-sec">
-    <div class="left-sec-toggle" onclick="toggleLeftSec('tr-panel','tr-chev')">
-      📊 热搜榜<span class="left-chev" id="tr-chev">▸</span>
-    </div>
-    <div class="left-panel" id="tr-panel" style="display:none">
-      <div class="tr-row"><div class="tr-n">1</div><div class="tr-info"><div class="tr-name">顶流解散疑云</div><div class="tr-v">12,847票</div></div><div class="tr-c c-hot">+2.1k/h</div></div>
-      <div class="tr-row"><div class="tr-n">2</div><div class="tr-info"><div class="tr-name">2026世界杯冠军</div><div class="tr-v">24,757票</div></div><div class="tr-c c-up">+890/h</div></div>
-      <div class="tr-row"><div class="tr-n">3</div><div class="tr-info"><div class="tr-name">周杰伦新专辑</div><div class="tr-v">18,921票</div></div><div class="tr-c c-up">+650/h</div></div>
-      <div class="tr-row"><div class="tr-n">4</div><div class="tr-info"><div class="tr-name">Claude 4 登顶</div><div class="tr-v">11,420票</div></div><div class="tr-c c-up">+480/h</div></div>
-      <div class="tr-row"><div class="tr-n">5</div><div class="tr-info"><div class="tr-name">A股下周涨跌</div><div class="tr-v">3,961票</div></div><div class="tr-c c-up">+340/h</div></div>
+
+  <!-- Rank -->
+  <div class="sb-rank">
+    <div class="sb-rank-hd" onclick="toggleLeftSec('sb-rank-list','sb-rank-chev')">🏆 排行榜<span class="left-chev" id="sb-rank-chev">▸</span></div>
+    <div class="sb-rank-list" id="sb-rank-list" style="display:none">
+      <div class="lb-row"><div class="lb-r r1">1</div><div class="lb-av" style="background:#fef9c3">🦁</div><div style="flex:1"><div class="lb-n">LionMaster</div><div class="lb-s"><span class="str">🔥 8连</span></div></div><div class="lb-c">18,420</div></div>
+      <div class="lb-row"><div class="lb-r r2">2</div><div class="lb-av" style="background:#f0fdf4">🐉</div><div style="flex:1"><div class="lb-n">DragonSeer</div><div class="lb-s"><span class="str">🔥 5连</span></div></div><div class="lb-c">12,850</div></div>
+      <div class="lb-row"><div class="lb-r r3">3</div><div class="lb-av" style="background:#eff6ff">🦅</div><div style="flex:1"><div class="lb-n">EagleEye</div><div class="lb-s">胜率 71%</div></div><div class="lb-c">9,310</div></div>
+      <div class="lb-row lb-me"><div class="lb-r" style="color:var(--g)">12</div><div class="lb-av" style="background:#f0fdfa">🦊</div><div style="flex:1"><div class="lb-n">你 <span class="me-t">ME</span></div><div class="lb-s"><span class="str">🔥 5连</span> · 68%</div></div><div class="lb-c">2,480</div></div>
     </div>
   </div>
 </aside>

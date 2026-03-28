@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>龟龟对战 - 2V2 回合制</title>
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+<!-- ══════ TOP NAV ══════ -->
+<nav class="top-nav">
+  <a class="back-link" href="../../index.html">← 返回龟投</a>
+  <h1 class="nav-title">龟龟对战</h1>
+  <div class="nav-right">
+    <span class="coin-display" id="coinDisplay">🪙 0</span>
+  </div>
+</nav>
+
+<!-- ══════ SCREEN: MENU ══════ -->
+<section id="screenMenu" class="screen active">
+  <div class="menu-hero">
+    <div class="menu-logo">⚔️</div>
+    <h2>龟龟对战</h2>
+    <p class="menu-sub">2V2 回合制战斗</p>
+  </div>
+  <div class="menu-buttons">
+    <button class="btn btn-primary btn-lg" onclick="startMode('pve')">
+      <span class="btn-icon">🌿</span>
+      <span class="btn-text">
+        <strong>野生对局</strong>
+        <small>遭遇野生龟队</small>
+      </span>
+    </button>
+    <button class="btn btn-gold btn-lg" onclick="startMode('pvp-online')">
+      <span class="btn-icon">🌐</span>
+      <span class="btn-text">
+        <strong>线上对战</strong>
+        <small>房间匹配对战</small>
+      </span>
+    </button>
+  </div>
+  <!-- Battle Record -->
+  <div class="record-box" id="recordBox">
+    <h3>战绩记录</h3>
+    <div class="record-stats" id="recordStats">暂无战绩</div>
+  </div>
+</section>
+
+<!-- DIFFICULTY screen removed — wild encounter mode -->
+
+<!-- ══════ SCREEN: ONLINE LOBBY ══════ -->
+<section id="screenLobby" class="screen">
+  <h2 class="screen-title">线上对战大厅</h2>
+  <div class="lobby-box">
+    <div class="lobby-section">
+      <h3>创建房间</h3>
+      <button class="btn btn-primary" onclick="createRoom()">创建房间</button>
+      <div class="room-code-display" id="roomCodeDisplay" style="display:none">
+        <span>房间号：</span><strong id="roomCodeText"></strong>
+        <button class="btn btn-sm" onclick="copyRoomCode()">复制</button>
+      </div>
+    </div>
+    <div class="lobby-divider">OR</div>
+    <div class="lobby-section">
+      <h3>加入房间</h3>
+      <input type="text" id="joinRoomInput" class="input-field" placeholder="输入房间号" maxlength="6">
+      <button class="btn btn-accent" onclick="joinRoom()">加入</button>
+    </div>
+    <div class="lobby-status" id="lobbyStatus"></div>
+  </div>
+  <button class="btn btn-secondary" onclick="showScreen('screenMenu')">返回</button>
+</section>
+
+<!-- ══════ SCREEN: TEAM SELECT ══════ -->
+<section id="screenSelect" class="screen">
+  <h2 class="screen-title" id="selectTitle">选择你的队伍（选2只龟）</h2>
+  <div class="select-layout">
+    <!-- Team slots -->
+    <div class="team-slots">
+      <div class="team-slot" id="slot0">
+        <div class="slot-empty">空位 1</div>
+      </div>
+      <div class="team-slot" id="slot1">
+        <div class="slot-empty">空位 2</div>
+      </div>
+    </div>
+    <!-- Pet grid -->
+    <div class="pet-grid" id="petGrid"></div>
+  </div>
+  <div class="select-actions">
+    <button class="btn btn-secondary" onclick="goBackFromSelect()">返回</button>
+    <button class="btn btn-primary" id="btnConfirmTeam" onclick="confirmTeam()" disabled>确认出战</button>
+  </div>
+</section>
+
+<!-- ══════ SCREEN: BATTLE ══════ -->
+<section id="screenBattle" class="screen">
+  <!-- Turn indicator + help -->
+  <div class="turn-banner-row">
+    <div class="turn-banner" id="turnBanner">第 1 回合</div>
+    <button class="btn-help" onclick="toggleHelp()" title="术语说明">?</button>
+  </div>
+
+  <!-- Help panel -->
+  <div class="help-panel" id="helpPanel" style="display:none">
+    <div class="help-title">术语说明 <span class="help-close" onclick="toggleHelp()">✕</span></div>
+    <div class="help-grid">
+      <div class="help-item">
+        <span class="help-icon">⚔️</span>
+        <div><b>攻击 (ATK)</b><br>影响技能伤害。公式: 威力 × ATK/(ATK+DEF)</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">🛡</span>
+        <div><b>防御 (DEF)</b><br>降低受到的所有伤害基础值，包括穿透伤害</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">🔰</span>
+        <div><b>抗性 (RES)</b><br>按百分比减少受到的非穿透伤害。穿透伤害无视抗性</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon help-color" style="color:#ff4444">■</span>
+        <div><b>直接伤害</b><br>经过防御和抗性减免后的普通伤害</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon help-color" style="color:#d06bff">■</span>
+        <div><b>穿透伤害</b><br>无视防御和抗性，但会被护盾吸收</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon help-color" style="color:#fff">■</span>
+        <div><b>护盾</b><br>额外生命层。所有伤害先消耗护盾，护盾耗尽后才扣血</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">💥</span>
+        <div><b>暴击 (CRIT)</b><br>有概率触发，伤害 ×1.5。HP 低时部分龟暴击率提升</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">🔥</span>
+        <div><b>灼烧 (DoT)</b><br>持续伤害，每回合开始自动扣血，持续若干回合</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">⬇️</span>
+        <div><b>削减 (Debuff)</b><br>降低目标攻击/防御/速度的百分比，持续若干回合</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">⭐</span>
+        <div><b>被动技能</b><br>每只龟的固有能力，战斗中自动触发。鼠标悬停卡片上的图标查看</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">📊</span>
+        <div><b>伤害公式</b><br>威力 × ATK/(ATK+DEF) × 暴击 → 穿透部分不受抗性 → 全部先打护盾</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Side indicator -->
+  <div class="side-indicator" id="sideIndicator"></div>
+
+  <div class="battle-field">
+    <!-- LEFT TEAM (Player / P1) -->
+    <div class="battle-side side-left">
+      <div class="team-label team-label-left" id="teamLabelLeft">我方</div>
+      <div class="fighter-card" id="leftFighter0">
+        <div class="fighter-emoji"></div>
+        <div class="fighter-name"></div>
+        <div class="fighter-stats"></div>
+        <div class="hp-bar"><div class="hp-fill"></div></div>
+        <div class="hp-text"></div>
+        <div class="status-icons"></div>
+      </div>
+      <div class="fighter-card" id="leftFighter1">
+        <div class="fighter-emoji"></div>
+        <div class="fighter-name"></div>
+        <div class="fighter-stats"></div>
+        <div class="hp-bar"><div class="hp-fill"></div></div>
+        <div class="hp-text"></div>
+        <div class="status-icons"></div>
+      </div>
+    </div>
+
+    <!-- VS -->
+    <div class="vs-badge">VS</div>
+
+    <!-- RIGHT TEAM (Enemy / P2) -->
+    <div class="battle-side side-right">
+      <div class="team-label team-label-right" id="teamLabelRight">敌方</div>
+      <div class="fighter-card" id="rightFighter0">
+        <div class="fighter-emoji"></div>
+        <div class="fighter-name"></div>
+        <div class="fighter-stats"></div>
+        <div class="hp-bar"><div class="hp-fill"></div></div>
+        <div class="hp-text"></div>
+        <div class="status-icons"></div>
+      </div>
+      <div class="fighter-card" id="rightFighter1">
+        <div class="fighter-emoji"></div>
+        <div class="fighter-name"></div>
+        <div class="fighter-stats"></div>
+        <div class="hp-bar"><div class="hp-fill"></div></div>
+        <div class="hp-text"></div>
+        <div class="status-icons"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ACTION PANEL -->
+  <div class="action-panel" id="actionPanel">
+    <div class="action-header">
+      <span class="acting-name" id="actingName">小龟</span> 的回合
+    </div>
+    <div class="action-buttons" id="actionButtons"></div>
+    <!-- Target selection overlay -->
+    <div class="target-select" id="targetSelect" style="display:none">
+      <p>选择目标：</p>
+      <div class="target-buttons" id="targetButtons"></div>
+      <button class="btn btn-sm btn-secondary" onclick="cancelTarget()">取消</button>
+    </div>
+  </div>
+
+  <!-- BATTLE LOG -->
+  <div class="battle-log" id="battleLog">
+    <div class="log-entry">战斗开始！</div>
+  </div>
+</section>
+
+<!-- ══════ SCREEN: RESULT ══════ -->
+<section id="screenResult" class="screen">
+  <div class="result-box" id="resultBox">
+    <div class="result-icon" id="resultIcon">🏆</div>
+    <h2 id="resultTitle">胜利！</h2>
+    <p id="resultSub"></p>
+    <div class="result-rewards" id="resultRewards"></div>
+    <div class="result-actions">
+      <button class="btn btn-primary" onclick="rematch()">再来一局</button>
+      <button class="btn btn-secondary" onclick="showScreen('screenMenu')">返回大厅</button>
+    </div>
+  </div>
+</section>
+
+<!-- Toast -->
+<div class="toast" id="toast"></div>
+
+<script src="battle.js"></script>
+</body>
+</html>

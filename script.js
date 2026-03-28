@@ -136,6 +136,95 @@ document.addEventListener('click', e => {
   if (avaDD && !avaDD.contains(e.target)) document.getElementById('avaMenu').classList.remove('open');
 });
 
+// ── PET SIDEBAR — load equipped pet from petState ──
+const PET_RARITY_COLORS = { C:'#06d6a0', B:'#4cc9f0', A:'#3a9abf', S:'#c77dff', SS:'#ffd93d', SSS:'#ff6b6b' };
+const PET_DEFAULTS = [
+  { id:'basic', name:'小龟', emoji:'🐢', img:'assets/pets/基础小龟v1.png', rarity:'C', sprite:{frames:8,frameW:64,frameH:64,duration:800} },
+  { id:'stone', name:'石头龟', emoji:'🪨🐢', img:'assets/pets/石头龟v1.png', rarity:'C', sprite:{frames:10,frameW:500,frameH:500,duration:1000} },
+  { id:'bamboo', name:'竹叶龟', emoji:'🎋🐢', img:'assets/pets/竹叶龟v1.png', rarity:'C', sprite:{frames:10,frameW:500,frameH:400,duration:1000} },
+  { id:'angel', name:'天使龟', emoji:'😇🐢', img:'assets/pets/天使龟v1.png', rarity:'B', sprite:{frames:8,frameW:248,frameH:200,duration:800} },
+  { id:'ice', name:'寒冰龟', emoji:'❄️🐢', img:'assets/pets/寒冰龟.png', rarity:'B' },
+  { id:'ninja', name:'忍者龟', emoji:'🥷🐢', img:'assets/pets/忍者龟.png', rarity:'B' },
+  { id:'two_head', name:'双头龟', emoji:'🐢🐢', img:'assets/pets/双头龟.png', rarity:'B' },
+  { id:'ghost', name:'幽灵龟', emoji:'👻🐢', img:'assets/pets/幽灵龟v1.png', rarity:'B', sprite:{frames:17,frameW:500,frameH:500,duration:1700} },
+  { id:'diamond', name:'钻石龟', emoji:'💎🐢', img:'assets/pets/钻石龟.png', rarity:'B' },
+  { id:'fortune', name:'财神龟', emoji:'🧧🐢', img:'assets/pets/财神龟v1.png', rarity:'B', sprite:{frames:18,frameW:500,frameH:500,duration:1800} },
+  { id:'dice', name:'骰子龟', emoji:'🎲🐢', img:'assets/pets/骰子龟v1.png', rarity:'B' },
+  { id:'rainbow', name:'彩虹龟', emoji:'🌈🐢', img:'assets/pets/彩虹龟.png', rarity:'A' },
+  { id:'gambler', name:'赌神龟', emoji:'🃏🐢', img:'assets/pets/赌神龟v1.png', rarity:'A', sprite:{frames:8,frameW:500,frameH:500,duration:800} },
+  { id:'hunter', name:'猎人龟', emoji:'🏹🐢', img:'assets/pets/猎人龟v1.png', rarity:'A', sprite:{frames:15,frameW:500,frameH:500,duration:1500} },
+  { id:'pirate', name:'海盗龟', emoji:'🏴‍☠️🐢', img:'assets/pets/海盗龟.png', rarity:'A' },
+  { id:'candy', name:'糖果龟', emoji:'🍬🐢', img:'assets/pets/糖果龟v1.png', rarity:'A', sprite:{frames:10,frameW:500,frameH:500,duration:1000} },
+];
+const PET_DIALOGUES = [
+  '今天天气真好~', '想出去晒晒太阳', '龟币又涨了吗？',
+  '嘿嘿，我最近运气不错', '主人快来陪我玩~', '好想吃龟粮…',
+  '预测要准才行哦！', '今天也要加油鸭', '我闻到胜利的味道了'
+];
+let petDialogueIdx = 0;
+function loadPetSidebar() {
+  const imgEl = document.getElementById('petSidebarImg');
+  if (!imgEl) return;
+  let pet = PET_DEFAULTS[0];
+  let stamina = 100;
+  let coins = 0;
+  try {
+    const saved = JSON.parse(localStorage.getItem('petState') || '{}');
+    if (saved.pets) {
+      const equipped = saved.pets.find(p => p.equipped);
+      if (equipped) {
+        const match = PET_DEFAULTS.find(d => d.id === equipped.id);
+        if (match) pet = match;
+      }
+    }
+    if (saved.stamina !== undefined) stamina = saved.stamina;
+    if (saved.coins !== undefined) coins = saved.coins;
+  } catch(e) {}
+
+  // Sprite animation or static image
+  if (pet.sprite) {
+    const s = pet.sprite;
+    const displaySize = 72;
+    const totalW = s.frameW * s.frames;
+    const scale = displaySize / s.frameH;
+    const sheetW = Math.round(totalW * scale);
+    const sheetH = displaySize;
+    imgEl.innerHTML = '<div class="sb-sprite-wrap" style="width:' + displaySize + 'px;height:' + displaySize + 'px;overflow:hidden;">' +
+      '<div class="sb-sprite-inner" style="width:' + sheetW + 'px;height:' + sheetH + 'px;' +
+      'background:url(' + pet.img + ') 0 0/' + sheetW + 'px ' + sheetH + 'px no-repeat;' +
+      'animation:sbSprite ' + s.duration + 'ms steps(' + s.frames + ') infinite;"></div></div>';
+    // inject keyframe if not exists
+    if (!document.getElementById('sbSpriteStyle')) {
+      const style = document.createElement('style');
+      style.id = 'sbSpriteStyle';
+      style.textContent = '@keyframes sbSprite{to{transform:translateX(-100%)}}';
+      document.head.appendChild(style);
+    }
+  } else {
+    imgEl.innerHTML = '<img src="' + pet.img + '" alt="' + pet.name + '" onerror="this.parentNode.textContent=\'' + pet.emoji + '\'">';
+  }
+
+  // Coins
+  const coinsEl = document.getElementById('petCoins');
+  if (coinsEl) coinsEl.textContent = '🪙 ' + coins.toLocaleString();
+
+  // Stamina bar
+  const staminaEl = document.getElementById('petStamina');
+  if (staminaEl) {
+    const pct = Math.min(100, Math.max(0, stamina));
+    staminaEl.innerHTML = '⚡ ' + pct + '<div class="sb-stamina-bar"><div class="sb-stamina-fill" style="width:' + pct + '%"></div></div>';
+  }
+
+  // Cycle dialogues
+  const dlgEl = document.getElementById('petDialogue');
+  if (dlgEl) {
+    setInterval(() => {
+      petDialogueIdx = (petDialogueIdx + 1) % PET_DIALOGUES.length;
+      dlgEl.textContent = PET_DIALOGUES[petDialogueIdx];
+    }, 5000);
+  }
+}
+
 // init: show page-all on load
 window.addEventListener('DOMContentLoaded', () => {
   ALL_PAGES.forEach(p => {
@@ -144,6 +233,7 @@ window.addEventListener('DOMContentLoaded', () => {
   });
   const allPage = document.getElementById('page-all');
   if (allPage) allPage.style.display = 'block';
+  loadPetSidebar();
 });
 
 // section time tabs

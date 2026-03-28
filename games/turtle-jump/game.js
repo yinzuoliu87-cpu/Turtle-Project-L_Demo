@@ -130,10 +130,9 @@ function loadPetsFromMainSite() {
       if (sp.equipped) equippedId = sp.id;
     });
 
-    // Build game pet list: only owned pets
+    // Build game pet list: all pets (show all, mark owned)
     ALL_PETS.forEach(p => {
       const owned = ownedMap[p.id] !== undefined ? ownedMap[p.id] : (p.id === 'basic');
-      if (!owned) return;
       const r = p.rarity;
       const livesCount = RARITY_LIVES[r] || 10;
       const desc = livesCount + ' 次机会';
