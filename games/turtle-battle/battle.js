@@ -184,7 +184,7 @@ const ALL_PETS = [
     skills:[
       { name:'闪电打击', type:'lightningStrike', hits:5, power:0, pierce:0, desc:'5次共1.3×ATK普通伤害，每次对次目标造成25%溅射', cd:0, atkScale:1.3, splashPct:25 },
       { name:'威力增幅', type:'lightningBuff', hits:1, power:0, pierce:0, desc:'全体友方ATK+25%持续4回合', cd:4, atkUpPct:25, atkUpTurns:4 },
-      { name:'雷暴',     type:'lightningBarrage', hits:20, power:0, pierce:0, desc:'20次每次0.08×ATK随机分布敌军', cd:5, arrowScale:0.08 },
+      { name:'雷暴',     type:'lightningBarrage', hits:20, power:0, pierce:0, desc:'20次每次0.15×ATK随机分布敌军', cd:5, arrowScale:0.15 },
     ]},
   // S级
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:340,  atk:42,  def:14, spd:13, crit:0.12,
@@ -238,11 +238,18 @@ const ALL_PETS = [
   // SS级
   { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:380,  atk:35,  def:22, spd:5, crit:0.05,
     img:'../../assets/pets/缩头乌龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
-    passive:{ type:'turnScaleHp', pct:3, desc:'每回合最大生命+3%' },
+    passive:{ type:'summonAlly', hpPct:40, maxRarity:'A',
+              desc:'开局召唤一只A级以下龟(40%HP，属性/被动正常)，攻击后随从自动出招' },
     skills:[
-      { name:'突然袭击', type:'physical', hits:1, power:60,  pierce:20,  desc:'从壳中突袭',       cd:0 },
-      { name:'龟壳堡垒', type:'shield',   hits:1, power:0,   shield:150, desc:'获得150护盾',      cd:4 },
-      { name:'绝对防御', type:'shield',   hits:1, power:0,   shield:200, desc:'超级护盾200',      cd:6 },
+      { name:'防御', type:'hidingDefend', hits:1, power:0, pierce:0,
+        desc:'获得20%最大HP护盾4回合，到期回复剩余盾20%HP',
+        cd:3, shieldHpPct:20, shieldDuration:4, shieldHealPct:20 },
+      { name:'攻击', type:'physical', hits:1, power:0, pierce:0,
+        desc:'1×ATK伤害+自身防御+20%2回合',
+        cd:0, atkScale:1.0, selfDefUpPct:{pct:20,turns:2} },
+      { name:'指挥', type:'hidingCommand', hits:1, power:0, pierce:0,
+        desc:'命令随从立即放一个技能，回合结束随从再自动放一个（共2次）',
+        cd:2 },
     ]},
   { id:'headless',  name:'无头龟',   emoji:'💀🐢',    rarity:'SS',  hp:340,  atk:46,  def:10, spd:14, crit:0.18,
     img:'../../assets/pets/无头龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
@@ -469,6 +476,8 @@ function createFighter(petId, side) {
     _dmgTaken: 0,            // 伤害统计：总承受
     _pierceDmgDealt: 0,      // 穿透伤害造成
     _normalDmgDealt: 0,      // 普通伤害造成
+    _summon: null,            // 缩头乌龟随从
+    _summonElId: null,        // 随从卡片DOM id
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
 }
@@ -504,6 +513,55 @@ function startBattle() {
       f.shield += shieldAmt;
       f._twoHeadHalfTriggered = false;
     }
+    // Summon ally: create a random C/B/A turtle as summon
+    if (f.passive && f.passive.type === 'summonAlly') {
+      const teamIds = allFighters.map(t => t.id);
+      const maxR = f.passive.maxRarity || 'A';
+      const validRarities = [];
+      if (maxR === 'A') validRarities.push('C','B','A');
+      else if (maxR === 'B') validRarities.push('C','B');
+      else validRarities.push('C');
+      const candidates = ALL_PETS.filter(p => validRarities.includes(p.rarity) && !teamIds.includes(p.id));
+      if (candidates.length > 0) {
+        const pick = candidates[Math.floor(Math.random() * candidates.length)];
+        const m = RARITY_MULT[pick.rarity] || 1;
+        const sHp = Math.round(Math.round(pick.hp * m) * f.passive.hpPct / 100);
+        const summon = {
+          id:pick.id, name:pick.name, emoji:pick.emoji, rarity:pick.rarity, side:f.side,
+          img:pick.img, sprite:pick.sprite || null,
+          maxHp:sHp, hp:sHp, shield:0,
+          baseAtk:Math.round(pick.atk * m), baseDef:Math.round(pick.def * m), baseSpd:Math.round(pick.spd * m),
+          atk:Math.round(pick.atk * m), def:Math.round(pick.def * m), spd:Math.round(pick.spd * m),
+          crit: pick.crit || 0.08,
+          armorPen: 0,
+          passive: pick.passive || null,  // summon passive enabled
+          passiveUsedThisTurn: false,
+          alive: true,
+          buffs: [],
+          bubbleStore:0, bubbleShieldVal:0, bubbleShieldTurns:0, bubbleShieldOwner:null,
+          _shockStacks:0, _goldCoins:0,
+          _dmgDealt:0, _dmgTaken:0, _pierceDmgDealt:0, _normalDmgDealt:0,
+          _summon:null, _summonElId:null,
+          _isSummon: true,       // mark as summon (not independent fighter)
+          _owner: f,             // reference to owner
+          skills: pick.skills.map(s => ({ ...s, cdLeft:0 })),
+        };
+        f._summon = summon;
+        // Add summon to allFighters so passives/buffs process correctly
+        allFighters.push(summon);
+        // Apply one-time passives on summon
+        if (summon.passive && summon.passive.type === 'ninjaInstinct') {
+          summon.crit += summon.passive.critBonus / 100;
+          summon._extraCritDmgPerm = (summon.passive.critDmgBonus || 0) / 100;
+          summon.armorPen += summon.passive.armorPen || 0;
+        }
+        if (summon.passive && summon.passive.type === 'twoHeadVitality') {
+          summon.shield += Math.round(summon.maxHp * summon.passive.shieldPct / 100);
+          summon._twoHeadHalfTriggered = false;
+        }
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">召唤了 ${summon.emoji}${summon.name} 作为随从！(${sHp}HP)</span>`);
+      }
+    }
   });
   renderFighters();
   updateDmgStats();
@@ -513,10 +571,15 @@ function startBattle() {
 function renderFighters() {
   leftTeam.forEach((f,i)  => renderFighterCard(f,'leftFighter'+i));
   rightTeam.forEach((f,i) => renderFighterCard(f,'rightFighter'+i));
+  // Render summon mini-cards
+  allFighters.forEach(f => {
+    if (f._summon) renderSummonMiniCard(f);
+  });
 }
 
 function renderFighterCard(f, elId) {
   const card = document.getElementById(elId);
+  if (!card) return;
   const avatarEl = card.querySelector('.fighter-emoji');
   if (f.img) {
     avatarEl.innerHTML = buildPetImgHTML(f, 72);
@@ -531,14 +594,81 @@ function renderFighterCard(f, elId) {
   renderStatusIcons(f);
 }
 
+function renderSummonMiniCard(owner) {
+  const summon = owner._summon;
+  if (!summon) return;
+  const ownerElId = getFighterElId(owner);
+  const ownerCard = document.getElementById(ownerElId);
+  if (!ownerCard) return;
+
+  // Create a unique ID for the summon card
+  const summonElId = 'summon_' + ownerElId;
+  summon._summonElId = summonElId;
+
+  // Remove existing summon card if any
+  const existing = document.getElementById(summonElId);
+  if (existing) existing.remove();
+
+  const mini = document.createElement('div');
+  mini.id = summonElId;
+  mini.className = 'summon-mini' + (summon.alive ? '' : ' dead');
+  const avatarHTML = summon.img
+    ? `<img src="${summon.img}" class="summon-avatar" alt="${summon.name}">`
+    : `<span class="summon-emoji">${summon.emoji}</span>`;
+  mini.innerHTML = `
+    <div class="summon-header">
+      ${avatarHTML}
+      <span class="summon-name" style="color:${RARITY_COLORS[summon.rarity]}">${summon.name}</span>
+      <span class="summon-tag">随从</span>
+    </div>
+    <div class="summon-hp-bar">
+      <div class="summon-hp-fill"></div>
+      <div class="summon-shield-fill"></div>
+    </div>
+    <div class="summon-hp-text"></div>
+  `;
+  ownerCard.appendChild(mini);
+  updateSummonHpBar(summon);
+}
+
+function updateSummonHpBar(summon) {
+  if (!summon || !summon._summonElId) return;
+  const card = document.getElementById(summon._summonElId);
+  if (!card) return;
+  const fill = card.querySelector('.summon-hp-fill');
+  const shieldFill = card.querySelector('.summon-shield-fill');
+  const text = card.querySelector('.summon-hp-text');
+  if (!fill) return;
+
+  const totalEff = summon.hp + summon.shield;
+  const barMax = Math.max(summon.maxHp, totalEff);
+  const hpPct = summon.hp / barMax * 100;
+  fill.style.width = hpPct + '%';
+  fill.style.background = (summon.hp/summon.maxHp) > 0.5 ? '#06d6a0' : (summon.hp/summon.maxHp) > 0.25 ? '#ffd93d' : '#ff6b6b';
+
+  if (shieldFill) {
+    const sPct = summon.shield / barMax * 100;
+    shieldFill.style.left = hpPct + '%';
+    shieldFill.style.width = sPct + '%';
+  }
+
+  let hpStr = `HP ${Math.ceil(summon.hp)}/${summon.maxHp}`;
+  if (summon.shield > 0) hpStr += ` 🛡${Math.ceil(summon.shield)}`;
+  if (text) text.textContent = hpStr;
+
+  card.classList.toggle('dead', !summon.alive);
+}
+
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣'
 };
 
 function updateFighterStats(f, elId) {
+  if (f._isSummon) return; // summon uses mini-card, no stats row
   const card = document.getElementById(elId);
+  if (!card) return;
   const statsEl = card.querySelector('.fighter-stats');
   if (!statsEl) return;
   // Show current stats with debuff highlighting
@@ -579,6 +709,8 @@ function buildPetImgHTML(pet, size) {
 }
 
 function updateHpBar(f, elId) {
+  // Summon: use dedicated mini-card HP bar
+  if (f._isSummon) { updateSummonHpBar(f); return; }
   const card = document.getElementById(elId);
   // Scale bar to fit HP + all shields
   const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
@@ -649,7 +781,19 @@ function updateHpBar(f, elId) {
   }
 }
 
+// Get all alive enemies including summons (for AOE)
+function getAliveEnemiesWithSummons(side) {
+  const team = side === 'left' ? rightTeam : leftTeam;
+  const targets = team.filter(e => e.alive);
+  // Add enemy summons
+  team.forEach(e => {
+    if (e._summon && e._summon.alive) targets.push(e._summon);
+  });
+  return targets;
+}
+
 function getFighterElId(f) {
+  if (f._summonElId) return f._summonElId;
   if (f.side === 'left') return 'leftFighter' + leftTeam.indexOf(f);
   return 'rightFighter' + rightTeam.indexOf(f);
 }
@@ -658,7 +802,13 @@ function getFighterElId(f) {
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
   // Reduce cooldowns
-  allFighters.forEach(f => f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; }));
+  allFighters.forEach(f => {
+    f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
+    // Also tick summon CDs
+    if (f._summon && f._summon.alive) {
+      f._summon.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
+    }
+  });
   // Passive: per-turn scaling
   for (const f of allFighters) {
     if (!f.alive || !f.passive) continue;
@@ -849,6 +999,26 @@ async function processBuffs() {
         f.bubbleShieldOwner = null;
       }
     }
+    // HidingShield expiry: heal 20% of remaining shield before removing
+    const hidingShields = f.buffs.filter(b => b.type === 'hidingShield' && b.turns <= 1);
+    for (const hs of hidingShields) {
+      const remaining = Math.min(f.shield, hs.shieldVal);
+      if (remaining > 0) {
+        const heal = Math.round(remaining * hs.healPct / 100);
+        const before = f.hp;
+        f.hp = Math.min(f.maxHp, f.hp + heal);
+        f.shield = Math.max(0, f.shield - remaining); // remove expired shield
+        const actual = Math.round(f.hp - before);
+        if (actual > 0) {
+          spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+          addLog(`${f.emoji}${f.name} 缩头护盾到期：<span class="log-heal">剩余盾${remaining}→回复${actual}HP</span>`);
+          hadTick = true;
+        }
+        updateHpBar(f, elId);
+      } else {
+        addLog(`${f.emoji}${f.name} 缩头护盾到期（护盾已被消耗）`);
+      }
+    }
     // Tick down all buffs, remove expired
     f.buffs.forEach(b => b.turns--);
     f.buffs = f.buffs.filter(b => b.turns > 0);
@@ -877,6 +1047,7 @@ function renderStatusIcons(f) {
   const card = document.getElementById(elId);
   if (!card) return;
   const box = card.querySelector('.status-icons');
+  if (!box) return;
   // Only debuff icons — passive is now shown in stats row
   box.innerHTML = f.buffs.map(b => {
     if (b.type === 'dot')     return `<span class="status-dot" title="持续伤害${b.value}/回合 剩${b.turns}回合">🔥${b.turns}</span>`;
@@ -890,6 +1061,7 @@ function renderStatusIcons(f) {
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合">💨${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转穿透 剩${b.turns}回合">🗡${b.turns}</span>`;
+    if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
     return '';
   }).join('');
   // Gold coins indicator
@@ -924,7 +1096,8 @@ function showActionPanel(f) {
   document.getElementById('actingName').textContent = f.name;
   document.getElementById('actingName').style.color = RARITY_COLORS[f.rarity];
   document.querySelectorAll('.fighter-card').forEach(c => c.classList.remove('active-turn'));
-  document.getElementById(getFighterElId(f)).classList.add('active-turn');
+  const activeEl = document.getElementById(getFighterElId(f));
+  if (activeEl) activeEl.classList.add('active-turn');
 
   const isPlayer =
     (gameMode === 'pve' && f.side === 'left') ||
@@ -1038,6 +1211,7 @@ function buildSkillDetail(s) {
     phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
     lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
     fortuneDice:'🪙 骰子', fortuneAllIn:'🪙 梭哈',
+    hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
   };
   lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
 
@@ -1083,6 +1257,7 @@ function buildSkillDetail(s) {
   if (s.hot)      lines.push(`<b>💚持续回复</b> <span class="log-heal">${s.hot.hpPerTurn}/回合</span> ${s.hot.turns}回合（可叠加）`);
   if (s.defUp)    lines.push(`<b>⬆防御</b> <span class="log-passive">+${s.defUp.val}</span> ${s.defUp.turns}回合`);
   if (s.defUpPct) lines.push(`<b>⬆防御</b> <span class="log-passive">+${s.defUpPct.pct}%</span> ${s.defUpPct.turns}回合`);
+  if (s.selfDefUpPct) lines.push(`<b>⬆自身防御</b> <span class="log-passive">+${s.selfDefUpPct.pct}%</span> ${s.selfDefUpPct.turns}回合`);
   if (s.atkUpPct) lines.push(`<b>⬆攻击</b> <span class="log-passive">+${s.atkUpPct}%</span> 全体友方 ${s.atkUpTurns}回合`);
 
   // ── Random ──
@@ -1158,6 +1333,16 @@ function buildSkillDetail(s) {
     lines.push(`<b>⚠限制</b> <span class="detail-debuff">一场只能使用一次</span>`);
   }
 
+  // Hiding turtle
+  if (s.type === 'hidingDefend') {
+    lines.push(`<b>🛡护盾</b> ${s.shieldHpPct}%最大HP 持续${s.shieldDuration}回合`);
+    lines.push(`<b>💚到期回复</b> 剩余护盾值×${s.shieldHealPct}% 转为HP`);
+  }
+  if (s.type === 'hidingCommand') {
+    lines.push(`<b>🫣指挥</b> 命令随从立即释放一个随机可用技能`);
+    lines.push(`<b>⚠注意</b> 随从阵亡则无效`);
+  }
+
   return lines.map(l => `<div class="detail-line">${l}</div>`).join('');
 }
 
@@ -1179,7 +1364,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw') {
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand') {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -1234,8 +1419,8 @@ async function executeAction(action) {
   atkEl.classList.add('attack-anim');
 
   if (action.aoe) {
-    // AOE: hit all alive enemies
-    const enemies = (f.side==='left'?rightTeam:leftTeam).filter(e => e.alive);
+    // AOE: hit all alive enemies (including summons)
+    const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
       await doDamage(f, enemy, skill);
       if (battleOver) break;
@@ -1274,6 +1459,10 @@ async function executeAction(action) {
   } else if (skill.type === 'gamblerBet') {
     const target = allFighters[action.targetId];
     await doGamblerBet(f, target, skill);
+  } else if (skill.type === 'hidingDefend') {
+    await doHidingDefend(f, skill);
+  } else if (skill.type === 'hidingCommand') {
+    await doHidingCommand(f, skill);
   } else if (skill.type === 'twoHeadFear') {
     const target = allFighters[action.targetId];
     await doTwoHeadFear(f, target, skill);
@@ -1323,6 +1512,14 @@ async function executeAction(action) {
   // Hunter passive: check after every action
   await processHunterKill();
   if (checkBattleEnd()) { animating=false; return; }
+
+  // Summon auto-follow-up: after owner attacks (not hidingCommand), summon auto-attacks
+  if (f.passive && f.passive.type === 'summonAlly' && f._summon && f._summon.alive && skill.type !== 'hidingCommand') {
+    addLog(`${f._summon.emoji}${f._summon.name}(随从) 跟随出招！`);
+    await sleep(400);
+    await summonUseRandomSkill(f._summon, f);
+    if (checkBattleEnd()) { animating=false; return; }
+  }
 
   animating = false;
   currentIdx++;
@@ -1464,6 +1661,17 @@ async function doDamage(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b>${h} → ${target.emoji}${target.name}：${parts.join(' + ')}`);
 
   // Lifesteal is now handled in triggerOnHitEffects per hit
+
+  // Self buff: selfDefUpPct (used by 缩头乌龟 attack skill)
+  if (skill.selfDefUpPct && attacker.alive) {
+    const defGain = Math.round(attacker.baseDef * skill.selfDefUpPct.pct / 100);
+    attacker.buffs.push({ type:'defUp', value:defGain, turns:skill.selfDefUpPct.turns });
+    recalcStats();
+    const aElId = getFighterElId(attacker);
+    spawnFloatingNum(aElId, `+${defGain}防`, 'passive-num', 300, 0);
+    renderStatusIcons(attacker);
+    addLog(`${attacker.emoji}${attacker.name} 自身 <span class="log-passive">防御+${defGain}(${skill.selfDefUpPct.pct}%)</span> ${skill.selfDefUpPct.turns}回合`);
+  }
 }
 
 /* Apply debuffs: dot, atkDown, defDown */
@@ -1893,6 +2101,101 @@ async function doTwoHeadSteal(attacker, target, _skill) {
   atkEl.classList.remove('attack-anim');
   // Restore original skills
   attacker.skills = savedSkills;
+}
+
+// ── HIDING TURTLE SKILLS ──────────────────────────────────
+async function doHidingDefend(caster, skill) {
+  const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
+  caster.shield += shieldAmt;
+  // Track shield for expiry heal
+  caster.buffs.push({ type:'hidingShield', turns:skill.shieldDuration, shieldVal:shieldAmt, healPct:skill.shieldHealPct });
+  const elId = getFighterElId(caster);
+  spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  updateHpBar(caster, elId);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} <b>防御</b>：<span class="log-shield">+${shieldAmt}护盾</span>（${skill.shieldDuration}回合，到期回复剩余盾${skill.shieldHealPct}%HP）`);
+  await sleep(800);
+}
+
+async function doHidingCommand(owner, _skill) {
+  const summon = owner._summon;
+  if (!summon || !summon.alive) {
+    const elId = getFighterElId(owner);
+    spawnFloatingNum(elId, '随从已阵亡', 'passive-num', 0, 0);
+    addLog(`${owner.emoji}${owner.name} <b>指挥</b>：随从已阵亡，技能无效！`);
+    await sleep(800);
+    return;
+  }
+  addLog(`${owner.emoji}${owner.name} <b>指挥</b>：命令 ${summon.emoji}${summon.name} 出击！`);
+  await sleep(400);
+  await summonUseRandomSkill(summon, owner);
+}
+
+// Helper: make a summon use a random available skill
+async function summonUseRandomSkill(summon, owner) {
+  if (!summon || !summon.alive) return;
+  const ready = summon.skills.filter(s => s.cdLeft === 0);
+  if (!ready.length) {
+    addLog(`${summon.emoji}${summon.name}(随从) 没有可用技能！`);
+    await sleep(500);
+    return;
+  }
+  const skill = ready[Math.floor(Math.random() * ready.length)];
+  if (skill.cd > 0) skill.cdLeft = skill.cd;
+
+  const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const allies = (summon.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+  // Add owner to allies list for heal/shield targeting
+  if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
+
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap';
+  const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage';
+  const isSelf = skill.type === 'phoenixShield' || skill.type === 'fortuneDice' || skill.type === 'lightningBuff' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand';
+
+  let target;
+  if (isSelf) {
+    target = summon;
+  } else if (isAoe) {
+    target = null; // handled below
+  } else if (isAlly) {
+    target = allies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+  } else {
+    target = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+  }
+
+  if (!target && !isAoe) { await sleep(500); return; }
+
+  const sElId = getFighterElId(summon);
+  const sCard = document.getElementById(sElId);
+  if (sCard) sCard.classList.add('attack-anim');
+
+  addLog(`${summon.emoji}${summon.name}(随从) 使用 <b>${skill.name}</b>！`);
+
+  // Execute the skill effect
+  if (isAoe && !skill.aoeAlly) {
+    for (const enemy of enemies) {
+      await doDamage(summon, enemy, skill);
+      if (battleOver) break;
+    }
+  } else if (skill.type === 'heal') {
+    await doHeal(summon, target, skill);
+  } else if (skill.type === 'shield') {
+    await doShield(summon, target, skill);
+  } else if (skill.type === 'physical' || skill.type === 'magic') {
+    await doDamage(summon, target, skill);
+  } else {
+    // Fallback for complex types
+    if (target && enemies.includes(target)) {
+      await doDamage(summon, target, skill);
+    } else {
+      await doDamage(summon, enemies[0] || target, skill);
+    }
+  }
+
+  if (sCard) sCard.classList.remove('attack-anim');
+
+  // Check deaths after summon action
+  checkDeaths(summon);
 }
 
 // ── FORTUNE SKILLS ────────────────────────────────────────
@@ -2356,7 +2659,7 @@ function aiAction(f) {
 
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield') target = allies.sort((a,b)=>a.shield-b.shield)[0];
+  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand') target = f; // self-cast
   else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
 
   executeAction({ attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId:allFighters.indexOf(target) });
@@ -2382,7 +2685,8 @@ function checkDeaths(attacker) {
 
       f.alive = false; f.hp = 0;
       const elId = getFighterElId(f);
-      document.getElementById(elId).classList.add('dead');
+      const deadEl = document.getElementById(elId);
+      if (deadEl) deadEl.classList.add('dead');
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 被击败！`,'death');
       try { sfxDeath(); } catch(e) {}
@@ -2429,6 +2733,18 @@ function checkDeaths(attacker) {
           addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+8（共${fg._goldCoins}）</span>`);
         }
       });
+    }
+  });
+  // Check summon deaths (summons are not in allFighters)
+  allFighters.forEach(f => {
+    if (f._summon && f._summon.alive && f._summon.hp <= 0) {
+      f._summon.alive = false;
+      f._summon.hp = 0;
+      const sElId = getFighterElId(f._summon);
+      const sCard = document.getElementById(sElId);
+      if (sCard) sCard.classList.add('dead');
+      updateSummonHpBar(f._summon);
+      addLog(`${f._summon.emoji}${f._summon.name}(随从) 被击败！`,'death');
     }
   });
 }
@@ -2574,33 +2890,17 @@ async function processLightningStorm() {
     if (!enemies.length) continue;
     const target = enemies[Math.floor(Math.random() * enemies.length)];
     const shockDmg = Math.round(f.atk * f.passive.shockScale);
-    // Pierce: hits shield then HP
-    let rem = shockDmg;
-    if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= a; rem -= a; }
-    if (target.shield > 0 && rem > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
-    target.hp = Math.max(0, target.hp - rem);
-    if (target.hp <= 0) target.alive = false;
+    // Pierce damage through applyRawDmg
+    applyRawDmg(f, target, shockDmg, true);
     const eElId = getFighterElId(target);
     spawnFloatingNum(eElId, `⚡${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);
     addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce">⚡电击${target.emoji}${target.name} ${shockDmg}穿透</span>`);
-    // Also adds shock stack
-    target._shockStacks = (target._shockStacks || 0) + 1;
-    if (target._shockStacks >= f.passive.stackMax) {
-      const burstDmg = Math.round(f.atk * f.passive.shockScale);
-      let bRem = burstDmg;
-      if (target.bubbleShieldVal > 0) { const a = Math.min(target.bubbleShieldVal, bRem); target.bubbleShieldVal -= a; bRem -= a; }
-      if (target.shield > 0 && bRem > 0) { const a = Math.min(target.shield, bRem); target.shield -= a; bRem -= a; }
-      target.hp = Math.max(0, target.hp - bRem);
-      if (target.hp <= 0) target.alive = false;
-      target._shockStacks = 0;
-      spawnFloatingNum(eElId, `⚡满层${burstDmg}`, 'crit-dmg', 200, 0);
-      updateHpBar(target, eElId);
-      addLog(`${target.emoji}${target.name} 电击层满！<span class="log-pierce">⚡${burstDmg}穿透</span>`);
-    }
+    // Trigger on-hit effects (shock stack, trap, reflect, etc.)
+    await triggerOnHitEffects(f, target, shockDmg);
     checkDeaths(f);
     if (checkBattleEnd()) return;
-    await sleep(400);
+    await sleep(600);
   }
 }
 

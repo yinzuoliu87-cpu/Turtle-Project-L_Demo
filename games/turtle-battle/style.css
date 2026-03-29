@@ -242,6 +242,29 @@ body{
   100%{transform:scale(1)}
 }
 
+/* ── SUMMON MINI-CARD ── */
+.summon-mini{
+  margin-top:8px;padding:6px 8px;
+  background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);
+  border-radius:8px;text-align:left;position:relative;
+  transition:.3s;
+}
+.summon-mini.dead{opacity:.3;filter:grayscale(.8)}
+.summon-mini.attack-anim{animation:attackPulse .5s ease}
+.summon-header{display:flex;align-items:center;gap:6px;margin-bottom:4px}
+.summon-avatar{width:28px;height:28px;object-fit:contain;image-rendering:pixelated;border-radius:4px}
+.summon-emoji{font-size:18px}
+.summon-name{font-size:11px;font-weight:700}
+.summon-tag{font-size:9px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 4px;border-radius:4px;margin-left:auto}
+.summon-hp-bar{
+  height:6px;background:rgba(255,255,255,.08);border-radius:3px;
+  overflow:hidden;position:relative;margin-bottom:2px;
+}
+.summon-hp-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s;position:absolute;left:0;top:0}
+.summon-shield-fill{height:100%;background:rgba(255,255,255,.5);border-radius:3px;transition:width .3s,left .3s;position:absolute;top:0}
+.summon-hp-text{font-size:9px;color:var(--fg2);text-align:center}
+.summon-mini.hit-shake{animation:shake .25s ease}
+
 /* ── DAMAGE STATS PANEL ── */
 .dmg-stats-panel{background:var(--bg2);border-radius:var(--radius);padding:10px 14px;margin-bottom:12px;border:1px solid rgba(255,255,255,.06)}
 .dmg-stats-header{font-size:13px;font-weight:700;color:var(--fg2);display:flex;justify-content:space-between;align-items:center;cursor:pointer}
