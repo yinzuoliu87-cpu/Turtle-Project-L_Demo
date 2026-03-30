@@ -3023,7 +3023,15 @@ function checkDeaths(attacker) {
       f.alive = false; f.hp = 0;
       const elId = getFighterElId(f);
       const deadEl = document.getElementById(elId);
-      if (deadEl) deadEl.classList.add('dead');
+      if (deadEl) {
+        deadEl.classList.add('death-anim');
+        deadEl.addEventListener('animationend', () => deadEl.classList.add('dead'), { once:true });
+      }
+      // Screen flash
+      const flash = document.createElement('div');
+      flash.className = 'death-screen-flash';
+      document.body.appendChild(flash);
+      flash.addEventListener('animationend', () => flash.remove(), { once:true });
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 被击败！`,'death');
       try { sfxDeath(); } catch(e) {}
