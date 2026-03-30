@@ -59,11 +59,17 @@ const ALL_PETS = [
   // B级
   { id:'angel',     name:'天使龟',   emoji:'😇🐢',    rarity:'B',   hp:330,  atk:40,  def:13, spd:11, crit:0.08,
     img:'../../assets/pets/天使龟v1.png', sprite:{frames:8,frameW:248,frameH:200,duration:800},
-    passive:{ type:'healOnKill', pct:25, desc:'击杀时恢复25%最大HP' },
+    passive:{ type:'judgement', hpPct:9, desc:'每段攻击附带目标当前9%HP普通伤害' },
     skills:[
-      { name:'圣光弹',   type:'magic',    hits:1, power:45,  pierce:15,  desc:'魔法攻击，15穿透', cd:0 },
-      { name:'天使祝福', type:'heal',     hits:1, power:0,   heal:70,    desc:'恢复70HP',         cd:3 },
-      { name:'神圣制裁', type:'magic',    hits:2, power:35,  pierce:20,  desc:'2段神圣，减攻20%', cd:3, atkDown:{pct:20,turns:2} },
+      { name:'裁决', type:'physical', hits:4, power:0, pierce:0,
+        desc:'4次共1.2×ATK普通伤害，每段触发被动裁决', cd:0, atkScale:1.2 },
+      { name:'祝福', type:'angelBless', hits:1, power:0, pierce:0,
+        desc:'友方获得1.2×ATK护盾4回合 + 防御+0.9×ATK 4回合',
+        cd:4, shieldScale:1.2, shieldTurns:4, defBoostScale:0.9, defBoostTurns:4 },
+      { name:'平等', type:'angelEquality', hits:2, power:0, pierce:0,
+        desc:'0.6×ATK普通+0.6×ATK穿透，S级以上必暴击并回复总伤10%HP',
+        cd:5, normalScale:0.6, pierceScale:0.6,
+        antiHighRarity:['S','SS'], forceCrit:true, healPctOfDmg:10 },
     ]},
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:340,  atk:38,  def:14, spd:9, crit:0.08,
     img:'../../assets/pets/寒冰龟.png',
@@ -662,7 +668,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️'
 };
 
 function updateFighterStats(f, elId) {
@@ -1212,6 +1218,7 @@ function buildSkillDetail(s) {
     lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
     fortuneDice:'🪙 骰子', fortuneAllIn:'🪙 梭哈',
     hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
+    angelBless:'😇 祝福', angelEquality:'⚖️ 平等',
   };
   lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
 
@@ -1343,6 +1350,17 @@ function buildSkillDetail(s) {
     lines.push(`<b>⚠注意</b> 随从阵亡则无效`);
   }
 
+  // Angel turtle
+  if (s.type === 'angelBless') {
+    lines.push(`<b>🛡护盾</b> ${s.shieldScale}×ATK 持续${s.shieldTurns}回合`);
+    lines.push(`<b>⬆防御</b> +${s.defBoostScale}×ATK ${s.defBoostTurns}回合`);
+  }
+  if (s.type === 'angelEquality') {
+    lines.push(`<b>⚔️第一段</b> ${s.normalScale}×ATK 普通伤害`);
+    lines.push(`<b>💜第二段</b> <span class="detail-pierce">${s.pierceScale}×ATK 穿透伤害</span>`);
+    lines.push(`<b>⚖️克制</b> 对S/SS级目标：<span class="log-crit">必定暴击</span> + 回复总伤${s.healPctOfDmg}%HP`);
+  }
+
   return lines.map(l => `<div class="detail-line">${l}</div>`).join('');
 }
 
@@ -1361,7 +1379,7 @@ function pickSkill(idx) {
   const f = turnQueue[currentIdx];
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap';
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
   if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand') {
@@ -1463,6 +1481,12 @@ async function executeAction(action) {
     await doHidingDefend(f, skill);
   } else if (skill.type === 'hidingCommand') {
     await doHidingCommand(f, skill);
+  } else if (skill.type === 'angelBless') {
+    const target = allFighters[action.targetId];
+    await doAngelBless(f, target, skill);
+  } else if (skill.type === 'angelEquality') {
+    const target = allFighters[action.targetId];
+    await doAngelEquality(f, target, skill);
   } else if (skill.type === 'twoHeadFear') {
     const target = allFighters[action.targetId];
     await doTwoHeadFear(f, target, skill);
@@ -1620,6 +1644,21 @@ async function doDamage(attacker, target, skill) {
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
     await triggerOnHitEffects(attacker, target, totalHit);
+
+    // Passive: judgement — extra damage based on target's current HP
+    if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+      const judgePct = attacker.passive.hpPct / 100;
+      const judgeRaw = Math.round(target.hp * judgePct);
+      // Apply as normal damage (reduced by DEF)
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+      const judgeResult = applyRawDmg(attacker, target, judgeReduced, false);
+      totalDirect += judgeReduced;
+      // Track for angelEquality heal
+      if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
+      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, yOff);
+      updateHpBar(target, tElId);
+      await sleep(200);
+    }
 
     // Shake
     const tEl = document.getElementById(tElId);
@@ -2048,7 +2087,7 @@ async function doTwoHeadSteal(attacker, target, _skill) {
 
   // Execute the stolen skill as if attacker used it
   // Determine target for stolen skill
-  const isAlly = stolen.type === 'heal' || stolen.type === 'shield' || stolen.type === 'bubbleShield' || stolen.type === 'ninjaTrap';
+  const isAlly = stolen.type === 'heal' || stolen.type === 'shield' || stolen.type === 'bubbleShield' || stolen.type === 'ninjaTrap' || stolen.type === 'angelBless';
   const isAoe = stolen.aoe || stolen.aoeAlly || stolen.type === 'hunterBarrage' || stolen.type === 'ninjaBomb' || stolen.type === 'lightningBarrage';
   const isSelf = stolen.type === 'phoenixShield' || stolen.type === 'fortuneDice' || stolen.type === 'lightningBuff';
 
@@ -2148,7 +2187,7 @@ async function summonUseRandomSkill(summon, owner) {
   // Add owner to allies list for heal/shield targeting
   if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
 
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap';
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
   const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage';
   const isSelf = skill.type === 'phoenixShield' || skill.type === 'fortuneDice' || skill.type === 'lightningBuff' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand';
 
@@ -2181,6 +2220,11 @@ async function summonUseRandomSkill(summon, owner) {
     await doHeal(summon, target, skill);
   } else if (skill.type === 'shield') {
     await doShield(summon, target, skill);
+  } else if (skill.type === 'angelBless') {
+    await doAngelBless(summon, target, skill);
+  } else if (skill.type === 'angelEquality') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doAngelEquality(summon, eTarget, skill);
   } else if (skill.type === 'physical' || skill.type === 'magic') {
     await doDamage(summon, target, skill);
   } else {
@@ -2196,6 +2240,130 @@ async function summonUseRandomSkill(summon, owner) {
 
   // Check deaths after summon action
   checkDeaths(summon);
+}
+
+// ── ANGEL TURTLE SKILLS ───────────────────────────────────
+async function doAngelBless(caster, target, skill) {
+  const shieldAmt = Math.round(caster.atk * skill.shieldScale);
+  const defGain = Math.round(caster.atk * skill.defBoostScale);
+  target.shield += shieldAmt;
+  target.buffs.push({ type:'defUp', value:defGain, turns:skill.defBoostTurns });
+  recalcStats();
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(tElId, `+${defGain}防`, 'passive-num', 300, 0);
+  updateHpBar(target, tElId);
+  renderStatusIcons(target);
+  addLog(`${caster.emoji}${caster.name} <b>祝福</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span>(${skill.shieldTurns}回合) + <span class="log-passive">防御+${defGain}</span>(${skill.defBoostTurns}回合)`);
+  await sleep(1000);
+}
+
+async function doAngelEquality(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const isHighRarity = skill.antiHighRarity.includes(target.rarity);
+  let totalDmgDealt = 0;
+
+  // Track judgement passive damage for this skill
+  skill._judgeTotal = 0;
+
+  // Effective crit
+  let effectiveCrit = attacker.crit;
+  if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+    effectiveCrit += attacker.passive.pct / 100;
+  }
+  const forceCrit = isHighRarity && skill.forceCrit;
+  const isCrit = forceCrit || Math.random() < effectiveCrit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  // ── Hit 1: normal damage ──
+  const normalRaw = Math.round(attacker.atk * skill.normalScale);
+  let normalDmg = Math.max(1, Math.round(normalRaw * critMult * (1 - defReduction)));
+  // Passive bonusDmgAbove60
+  if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
+    normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
+  }
+  applyRawDmg(attacker, target, normalDmg, false);
+  totalDmgDealt += normalDmg;
+
+  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
+  updateHpBar(target, tElId);
+  await triggerOnHitEffects(attacker, target, normalDmg);
+
+  // Judgement passive on hit 1
+  if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+    const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+    const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+    applyRawDmg(attacker, target, judgeReduced, false);
+    totalDmgDealt += judgeReduced;
+    skill._judgeTotal += judgeReduced;
+    spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 0);
+    updateHpBar(target, tElId);
+  }
+
+  const tEl1 = document.getElementById(tElId);
+  if (tEl1) { tEl1.classList.add('hit-shake'); }
+  await sleep(700);
+  if (tEl1) { tEl1.classList.remove('hit-shake'); }
+  await sleep(200);
+
+  // ── Hit 2: pierce damage ──
+  if (target.alive) {
+    const pierceRaw = Math.round(attacker.atk * skill.pierceScale);
+    const pierceDmg = Math.max(1, Math.round(pierceRaw * critMult)); // pierce ignores DEF
+    applyRawDmg(attacker, target, pierceDmg, true);
+    totalDmgDealt += pierceDmg;
+
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 24);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 80, 24);
+    updateHpBar(target, tElId);
+    await triggerOnHitEffects(attacker, target, pierceDmg);
+
+    // Judgement passive on hit 2
+    if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+      const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false);
+      totalDmgDealt += judgeReduced;
+      skill._judgeTotal += judgeReduced;
+      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 24);
+      updateHpBar(target, tElId);
+    }
+
+    const tEl2 = document.getElementById(tElId);
+    if (tEl2) { tEl2.classList.add('hit-shake'); }
+    await sleep(700);
+    if (tEl2) { tEl2.classList.remove('hit-shake'); }
+    await sleep(200);
+  }
+
+  // Log
+  const parts = [];
+  parts.push(`<span class="log-direct">普通${Math.round(attacker.atk * skill.normalScale)}</span>`);
+  parts.push(`<span class="log-pierce">穿透${Math.round(attacker.atk * skill.pierceScale)}</span>`);
+  if (skill._judgeTotal > 0) parts.push(`<span class="log-passive">⚖裁决${skill._judgeTotal}</span>`);
+  if (isCrit) parts.push(`<span class="log-crit">暴击</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>平等</b> → ${target.emoji}${target.name}：${parts.join(' + ')}${isHighRarity ? ' <span class="log-crit">[克制S级以上]</span>' : ''}`);
+
+  // Anti-high-rarity heal
+  if (isHighRarity && attacker.alive) {
+    const healAmt = Math.round(totalDmgDealt * skill.healPctOfDmg / 100);
+    const before = attacker.hp;
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+    const actual = Math.round(attacker.hp - before);
+    if (actual > 0) {
+      const aElId = getFighterElId(attacker);
+      spawnFloatingNum(aElId, `+${actual}`, 'heal-num', 0, 0);
+      updateHpBar(attacker, aElId);
+      addLog(`${attacker.emoji}${attacker.name} 平等克制：<span class="log-heal">回复${actual}HP</span>（总伤${totalDmgDealt}×${skill.healPctOfDmg}%）`);
+    }
+  }
+
+  // Clean up temp tracking
+  delete skill._judgeTotal;
 }
 
 // ── FORTUNE SKILLS ────────────────────────────────────────
@@ -2660,6 +2828,7 @@ function aiAction(f) {
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand') target = f; // self-cast
+  else if (skill.type==='angelBless') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0]; // bless weakest ally
   else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
 
   executeAction({ attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId:allFighters.indexOf(target) });
