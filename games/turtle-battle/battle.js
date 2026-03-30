@@ -10,9 +10,13 @@
    C=1.00  B=1.03  A=1.06  S=1.09  SS=1.12  SSS=1.15
    New stats: crit (暴击率 0~1)
    DEF reduction formula: reduction% = DEF/(DEF+40), diminishing returns
-   穿甲(armorPen): 计算减伤时无视目标X点防御                              */
+   穿甲: 固定穿甲(armorPen)无视X点防御 + 百分比穿甲(armorPenPct)无视X%防御  */
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
 const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
+// 计算有效防御：先扣百分比穿甲，再扣固定穿甲
+function calcEffDef(atk, tgt) {
+  return Math.max(0, tgt.def * (1 - (atk.armorPenPct || 0)) - (atk.armorPen || 0));
+}
 /* Buff/Debuff effects on skills:
    dot:     { dmg, turns }       — 持续伤害(每回合开始)
    atkDown: { pct, turns }       — 攻击削减(百分比)
@@ -289,10 +293,10 @@ const ALL_PETS = [
               desc:'6回合后全面强化+10%；受伤储能，每9回合波击释放' },
     skills:[
       { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0,
-        desc:'6段交替普通/穿透共1.2×ATK，溅射10%',
-        cd:0, totalScale:1.2, splashPct:10 },
+        desc:'6段交替普通/穿透共1.2×ATK，每段溅射25%',
+        cd:0, totalScale:1.2, splashPct:25 },
       { name:'复制', type:'shellCopy', hits:0, power:0, pierce:0,
-        desc:'随机复制敌方一个技能并释放',
+        desc:'随机复制敌方2个技能并以60%效果释放',
         cd:4 },
     ]},
 ];
@@ -487,7 +491,8 @@ function createFighter(petId, side) {
     baseAtk:atk, baseDef:def, baseSpd:spd,
     atk, def, spd,
     crit: b.crit || 0.08,
-    armorPen: 0,  // 穿甲值，计算减伤时无视目标X点防御
+    armorPen: 0,     // 固定穿甲：无视目标X点防御
+    armorPenPct: 0,  // 百分比穿甲：无视目标X%防御
     passive: b.passive || null,
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
     alive:true,
@@ -572,7 +577,7 @@ function startBattle() {
           baseAtk:Math.round(pick.atk * m), baseDef:Math.round(pick.def * m), baseSpd:Math.round(pick.spd * m),
           atk:Math.round(pick.atk * m), def:Math.round(pick.def * m), spd:Math.round(pick.spd * m),
           crit: pick.crit || 0.08,
-          armorPen: 0,
+          armorPen: 0, armorPenPct: 0,
           passive: pick.passive || null,  // summon passive enabled
           passiveUsedThisTurn: false,
           alive: true,
@@ -718,6 +723,7 @@ function updateFighterStats(f, elId) {
     `<span class="${atkClass}">⚔攻击${f.atk}</span>` +
     `<span class="${defClass}">🛡防御${f.def}(${Math.round(f.def/(f.def+DEF_CONSTANT)*100)}%减伤)</span>` +
     (f.armorPen > 0 ? `<span class="stat-up">🗡穿甲${f.armorPen}</span>` : '') +
+    (f.armorPenPct > 0 ? `<span class="stat-up">🗡${Math.round(f.armorPenPct*100)}%穿甲</span>` : '') +
     passiveIcon;
 }
 
@@ -918,13 +924,13 @@ async function beginTurn() {
       f._auraLifesteal = f.passive.lifestealPct / 100;
       // Reflect
       f._auraReflect = f.passive.reflectPct / 100;
-      // Armor penetration
-      f.armorPen += Math.round(f.baseDef * f.passive.armorPenPct / 100);
+      // Percentage armor penetration
+      f.armorPenPct += f.passive.armorPenPct / 100;
       // Visual + log
       spawnFloatingNum(elId, '🐚气场觉醒!', 'crit-label', 0, -20);
       spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}防 +${hpGain}HP`, 'passive-num', 0, 10);
       updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% 穿甲+${Math.round(f.baseDef * f.passive.armorPenPct / 100)}</span>`);
+      addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
   }
   // Process buffs/debuffs at turn start
@@ -1709,8 +1715,8 @@ async function doDamage(attacker, target, skill) {
     const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
     if (isCrit) totalCrits++;
 
-    // DEF reduction: DEF/(DEF+40), attacker's armorPen reduces effective DEF
-    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    // DEF reduction: DEF/(DEF+40), attacker's armorPen/armorPenPct reduces effective DEF
+    const effectiveDef = calcEffDef(attacker, target);
     const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
     // Normal damage = basePower (minus pierce portion) × crit, reduced by DEF
@@ -2064,7 +2070,7 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
   let multiChance = attacker.passive.chance + (attacker._multiBonus || 0);
   while (target.alive && attacker.alive && Math.random() * 100 < multiChance) {
     const extraDmg = Math.round(attacker.atk * attacker.passive.dmgScale);
-    const eDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const eDef = calcEffDef(attacker, target);
     const eRed = eDef / (eDef + DEF_CONSTANT);
     const eFinal = Math.max(1, Math.round(extraDmg * (1 - eRed)));
     applyRawDmg(attacker, target, eFinal);
@@ -2093,7 +2099,7 @@ async function doGamblerCards(attacker, target, skill) {
     if (!target.alive) break;
     const scale = skill.minScale + Math.random() * (skill.maxScale - skill.minScale);
     const baseDmg = Math.round(attacker.atk * scale);
-    const eDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
     const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
@@ -2134,7 +2140,7 @@ async function doGamblerDraw(caster, _skill) {
     const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     const baseDmg = Math.round(caster.atk * 0.9);
     for (const e of enemies) {
-      const eDef = Math.max(0, e.def - (caster.armorPen || 0));
+      const eDef = calcEffDef(caster, e);
       const defRed = eDef / (eDef + DEF_CONSTANT);
       const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
       applyRawDmg(caster, e, dmg);
@@ -2187,7 +2193,7 @@ async function doGamblerBet(attacker, target, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
-    const eDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
     const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
     const total = normalDmg + piercePer;
@@ -2214,7 +2220,7 @@ async function doGamblerBet(attacker, target, skill) {
 async function doTwoHeadFear(attacker, target, skill) {
   // Deal 1×ATK normal damage
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
   const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
@@ -2435,7 +2441,7 @@ async function doTurtleShieldBash(attacker, target, skill) {
   const isCrit = Math.random() < effectiveCrit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
 
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
   let dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
 
@@ -2494,7 +2500,7 @@ async function doBasicBarrage(attacker, skill) {
     const isCrit = Math.random() < effectiveCrit;
     const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
 
-    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, target);
     const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
     let dmg = Math.max(1, Math.round(perHit * critMult * (1 - defReduction)));
 
@@ -2533,7 +2539,7 @@ async function doIceSpike(attacker, target, skill) {
   const perHit = attacker.atk * skill.totalScale / hits;
   let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
 
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
   for (let i = 0; i < hits; i++) {
@@ -2683,7 +2689,7 @@ async function doAngelEquality(attacker, target, skill) {
   const isCrit = forceCrit || Math.random() < effectiveCrit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
 
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
   // ── Hit 1: normal damage ──
@@ -2809,7 +2815,7 @@ async function doFortuneAllIn(attacker, target, skill) {
   for (let i = 0; i < coins; i++) {
     if (!target.alive) break;
     // Normal part through DEF
-    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, target);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
     const totalHit = normalDmg + piercePer;
@@ -2846,7 +2852,7 @@ async function doLightningStrike(attacker, mainTarget, skill) {
   for (let i = 0; i < skill.hits; i++) {
     if (!mainTarget.alive) break;
     // Main target: normal damage through DEF
-    const effectiveDef = Math.max(0, mainTarget.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, mainTarget);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const dmg = Math.max(1, Math.round(perHit * (1 - defRed)));
     applyRawDmg(attacker, mainTarget, dmg);
@@ -2901,7 +2907,7 @@ async function doLightningBarrage(attacker, skill) {
     if (!alive.length) break;
     const target = alive[Math.floor(Math.random() * alive.length)];
     // Normal damage through DEF
-    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, target);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const dmg = Math.max(1, Math.round(perHitDmg * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
@@ -2921,7 +2927,7 @@ async function doLightningBarrage(attacker, skill) {
 async function doPhoenixBurn(attacker, target, skill) {
   // Deal 1×ATK normal damage
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
   const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
   const tElId = getFighterElId(target);
@@ -2991,7 +2997,7 @@ async function doPhoenixScald(attacker, target, skill) {
 
   // Deal 0.7×ATK normal damage
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
   const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
@@ -3027,7 +3033,7 @@ async function doNinjaShuriken(attacker, target, skill) {
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}穿透</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
-    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, target);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
@@ -3065,7 +3071,7 @@ async function doNinjaBomb(attacker, skill) {
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
 
   for (const e of enemies) {
-    const effectiveDef = Math.max(0, e.def - (attacker.armorPen || 0));
+    const effectiveDef = calcEffDef(attacker, e);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
     applyRawDmg(attacker, e, dmg);
@@ -3497,7 +3503,7 @@ async function doShellStrike(attacker, target, skill) {
   let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
   let totalDmgDealt = 0;
 
-  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const effectiveDef = calcEffDef(attacker, target);
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
   for (let i = 0; i < hits; i++) {
@@ -3576,65 +3582,101 @@ async function doShellStrike(attacker, target, skill) {
 }
 
 async function doShellCopy(caster, _skill) {
+  // Collect all copyable skills from all alive enemies
   const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   if (!enemies.length) { await sleep(500); return; }
 
-  // Pick random enemy
-  const target = enemies[Math.floor(Math.random() * enemies.length)];
-  // Pick random skill (exclude shellCopy to prevent recursion)
-  const copyable = target.skills.filter(s => s.type !== 'shellCopy');
-  if (!copyable.length) {
-    addLog(`${caster.emoji}${caster.name} <b>复制</b>：${target.emoji}${target.name} 没有可复制的技能！`);
+  // Gather {enemy, skill} pairs from all enemies (exclude shellCopy)
+  const pool = [];
+  for (const e of enemies) {
+    for (const s of e.skills) {
+      if (s.type !== 'shellCopy') pool.push({ source: e, skill: s });
+    }
+  }
+  if (!pool.length) {
+    addLog(`${caster.emoji}${caster.name} <b>复制</b>：没有可复制的技能！`);
     await sleep(1000);
     return;
   }
-  const copied = copyable[Math.floor(Math.random() * copyable.length)];
-  const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `复制: ${copied.name}`, 'crit-label', 0, 0);
-  addLog(`${caster.emoji}${caster.name} <b>复制</b>了 ${target.emoji}${target.name} 的 <b>${copied.name}</b>！立即释放！`);
-  await sleep(800);
 
-  // Determine target for copied skill
-  const isAlly = copied.type === 'heal' || copied.type === 'shield' || copied.type === 'bubbleShield' || copied.type === 'ninjaTrap' || copied.type === 'angelBless';
-  const isAoe = copied.aoe || copied.aoeAlly || copied.type === 'hunterBarrage' || copied.type === 'ninjaBomb' || copied.type === 'lightningBarrage';
-  const isSelf = copied.type === 'phoenixShield' || copied.type === 'fortuneDice' || copied.type === 'lightningBuff' || copied.type === 'hidingDefend';
-
-  let copyTarget;
-  if (isSelf || isAoe) {
-    copyTarget = caster;
-  } else if (isAlly) {
-    const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
-    copyTarget = allies[Math.floor(Math.random() * allies.length)];
-  } else {
-    // Attack skill → lowest HP enemy
-    const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-    copyTarget = aliveEnemies.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
-  }
-  if (!copyTarget) { await sleep(500); return; }
-
-  // Temporarily assign copied skill and execute
-  const savedSkills = caster.skills;
-  caster.skills = [...savedSkills, { ...copied, cdLeft: 0 }];
-  const fakeIdx = caster.skills.length - 1;
-  const copiedRef = caster.skills[fakeIdx];
-  if (copiedRef.cd > 0) copiedRef.cdLeft = 0;
-
-  const atkEl = document.getElementById(getFighterElId(caster));
-  atkEl.classList.add('attack-anim');
-
-  if (isAoe && !copied.aoeAlly) {
-    const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-    for (const enemy of aliveEnemies) { await doDamage(caster, enemy, copiedRef); if (battleOver) break; }
-  } else if (copiedRef.type === 'heal') {
-    await doHeal(caster, copyTarget, copiedRef);
-  } else if (copiedRef.type === 'shield') {
-    await doShield(caster, copyTarget, copiedRef);
-  } else {
-    await doDamage(caster, copyTarget, copiedRef);
+  // Pick up to 2 random skills (no duplicate skill type)
+  const picked = [];
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  for (const p of shuffled) {
+    if (picked.length >= 2) break;
+    if (!picked.find(x => x.skill.type === p.skill.type)) picked.push(p);
   }
 
-  atkEl.classList.remove('attack-anim');
-  caster.skills = savedSkills;
+  const COPY_MULT = 0.6; // 60% effectiveness (40% reduction)
+
+  for (const { source, skill: origSkill } of picked) {
+    if (!caster.alive || battleOver) break;
+
+    const tElId = getFighterElId(source);
+    spawnFloatingNum(tElId, `复制: ${origSkill.name}`, 'crit-label', 0, 0);
+    addLog(`${caster.emoji}${caster.name} <b>复制</b>了 ${source.emoji}${source.name} 的 <b>${origSkill.name}</b>！(60%效果)`);
+    await sleep(600);
+
+    // Deep copy skill and apply 60% scaling to damage/shield/heal values
+    const copied = JSON.parse(JSON.stringify(origSkill));
+    if (copied.power) copied.power = Math.round(copied.power * COPY_MULT);
+    if (copied.pierce) copied.pierce = Math.round(copied.pierce * COPY_MULT);
+    if (copied.atkScale) copied.atkScale *= COPY_MULT;
+    if (copied.defScale) copied.defScale *= COPY_MULT;
+    if (copied.hpPct) copied.hpPct *= COPY_MULT;
+    if (copied.totalScale) copied.totalScale *= COPY_MULT;
+    if (copied.shield) copied.shield = Math.round(copied.shield * COPY_MULT);
+    if (copied.shieldFlat) copied.shieldFlat = Math.round(copied.shieldFlat * COPY_MULT);
+    if (copied.shieldHpPct) copied.shieldHpPct *= COPY_MULT;
+    if (copied.shieldAtkScale) copied.shieldAtkScale *= COPY_MULT;
+    if (copied.heal) copied.heal = Math.round(copied.heal * COPY_MULT);
+    if (copied.hot) copied.hot.hpPerTurn = Math.round(copied.hot.hpPerTurn * COPY_MULT);
+    if (copied.dot) copied.dot.dmg = Math.round(copied.dot.dmg * COPY_MULT);
+    copied.cdLeft = 0;
+
+    // Determine target
+    const isAlly = copied.type === 'heal' || copied.type === 'shield' || copied.type === 'bubbleShield' || copied.type === 'ninjaTrap' || copied.type === 'angelBless';
+    const isAoe = copied.aoe || copied.aoeAlly || copied.type === 'hunterBarrage' || copied.type === 'ninjaBomb' || copied.type === 'lightningBarrage';
+    const isSelf = copied.type === 'phoenixShield' || copied.type === 'fortuneDice' || copied.type === 'lightningBuff' || copied.type === 'hidingDefend';
+
+    let copyTarget;
+    if (isSelf || isAoe) {
+      copyTarget = caster;
+    } else if (isAlly) {
+      const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+      copyTarget = allies[Math.floor(Math.random() * allies.length)];
+    } else {
+      const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      copyTarget = aliveEnemies.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    }
+    if (!copyTarget) continue;
+
+    // Temporarily assign copied skill and execute
+    const savedSkills = caster.skills;
+    caster.skills = [...savedSkills, copied];
+    const copiedRef = caster.skills[caster.skills.length - 1];
+
+    const atkEl = document.getElementById(getFighterElId(caster));
+    atkEl.classList.add('attack-anim');
+
+    if (isAoe && !copied.aoeAlly) {
+      const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      for (const enemy of aliveEnemies) { await doDamage(caster, enemy, copiedRef); if (battleOver) break; }
+    } else if (copiedRef.type === 'heal') {
+      await doHeal(caster, copyTarget, copiedRef);
+    } else if (copiedRef.type === 'shield') {
+      await doShield(caster, copyTarget, copiedRef);
+    } else {
+      await doDamage(caster, copyTarget, copiedRef);
+    }
+
+    atkEl.classList.remove('attack-anim');
+    caster.skills = savedSkills;
+
+    checkDeaths(caster);
+    if (checkBattleEnd()) return;
+    await sleep(400);
+  }
 }
 
 // ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
