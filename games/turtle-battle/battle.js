@@ -34,11 +34,18 @@ const ALL_PETS = [
   //   counterAttack    — X%概率反击(造成基础攻击50%伤害)
   { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:38,  def:12, spd:10, crit:0.08,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
-    passive:{ type:'turnScaleAtk', pct:3, desc:'每回合攻击+3%' },
+    passive:{ type:'basicTurtle', bonusMap:{C:0,B:8,A:16,S:24,SS:32,SSS:48},
+              desc:'对敌人按稀有度增伤(B+8%...SSS+48%)' },
     skills:[
-      { name:'龟拳',     type:'physical', hits:1, power:40,  pierce:0,   desc:'普通一击',         cd:0 },
-      { name:'缩壳防御', type:'shield',   hits:1, power:0,   shield:60,  desc:'获得60护盾',       cd:3 },
-      { name:'头槌猛击', type:'physical', hits:1, power:65,  pierce:0,   desc:'全力头槌',         cd:2, atkDown:{pct:15,turns:2} },
+      { name:'攻击', type:'physical', hits:2, power:0, pierce:0,
+        desc:'2段共1.2×ATK普通伤害，自身ATK+15% 2回合',
+        cd:0, atkScale:1.2, selfAtkUpPct:{pct:15, turns:2} },
+      { name:'龟盾', type:'turtleShieldBash', hits:1, power:0, pierce:0,
+        desc:'0.8×ATK伤害，获得50%伤害值的永久护盾',
+        cd:2, atkScale:0.8, shieldFromDmgPct:50 },
+      { name:'打击', type:'basicBarrage', hits:10, power:0, pierce:0,
+        desc:'10段共2.5×ATK随机分布敌方',
+        cd:5, atkScale:2.5 },
     ]},
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:35,  def:18, spd:6, crit:0.05,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
@@ -682,7 +689,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️', frostAura:'❄️'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢'
 };
 
 function updateFighterStats(f, elId) {
@@ -1234,6 +1241,7 @@ function buildSkillDetail(s) {
     hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
     angelBless:'😇 祝福', angelEquality:'⚖️ 平等',
     iceSpike:'❄️ 冰锥', iceFrost:'❄️ 冰霜',
+    turtleShieldBash:'🛡 龟盾', basicBarrage:'🐢 打击',
   };
   lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
 
@@ -1365,6 +1373,16 @@ function buildSkillDetail(s) {
     lines.push(`<b>⚠注意</b> 随从阵亡则无效`);
   }
 
+  // Basic turtle
+  if (s.selfAtkUpPct) lines.push(`<b>⬆自身攻击</b> <span class="log-passive">+${s.selfAtkUpPct.pct}%</span> ${s.selfAtkUpPct.turns}回合`);
+  if (s.type === 'turtleShieldBash') {
+    lines.push(`<b>⚔️伤害</b> ${s.atkScale}×ATK 普通伤害`);
+    lines.push(`<b>🛡护盾</b> 获得造成伤害${s.shieldFromDmgPct}%的永久护盾`);
+  }
+  if (s.type === 'basicBarrage') {
+    lines.push(`<b>🐢分布</b> ${s.hits}段随机命中敌方，共${s.atkScale}×ATK`);
+  }
+
   // Ice turtle
   if (s.type === 'iceSpike') {
     lines.push(`<b>❄️交替</b> 6段普通/穿透交替，共${s.totalScale}×ATK`);
@@ -1416,7 +1434,7 @@ function pickSkill(idx) {
     return;
   }
   // AOE / auto-target: no target selection needed
-  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost') {
+  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage') {
     executePlayerAction(f, skill, null);
     return;
   }
@@ -1510,6 +1528,11 @@ async function executeAction(action) {
     await doHidingDefend(f, skill);
   } else if (skill.type === 'hidingCommand') {
     await doHidingCommand(f, skill);
+  } else if (skill.type === 'turtleShieldBash') {
+    const target = allFighters[action.targetId];
+    await doTurtleShieldBash(f, target, skill);
+  } else if (skill.type === 'basicBarrage') {
+    await doBasicBarrage(f, skill);
   } else if (skill.type === 'iceSpike') {
     const target = allFighters[action.targetId];
     await doIceSpike(f, target, skill);
@@ -1634,6 +1657,11 @@ async function doDamage(attacker, target, skill) {
     if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
       normalDmg = Math.round(normalDmg * (1 + attacker.passive.bonusDmgPct / 100));
     }
+    // Passive: basicTurtle — bonus damage based on target rarity
+    if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+      const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+      if (bonusPct > 0) normalDmg = Math.round(normalDmg * (1 + bonusPct / 100));
+    }
     // Fear: attacker with fear debuff deals less normal damage to the source
     const fearBuff = attacker.buffs.find(b => b.type === 'fear' && allFighters[b.sourceId] === target);
     if (fearBuff) {
@@ -1739,6 +1767,16 @@ async function doDamage(attacker, target, skill) {
 
   // Lifesteal is now handled in triggerOnHitEffects per hit
 
+  // Self buff: selfAtkUpPct
+  if (skill.selfAtkUpPct && attacker.alive) {
+    const atkGain = Math.round(attacker.baseAtk * skill.selfAtkUpPct.pct / 100);
+    attacker.buffs.push({ type:'atkUp', value:atkGain, turns:skill.selfAtkUpPct.turns });
+    recalcStats();
+    const aElId = getFighterElId(attacker);
+    spawnFloatingNum(aElId, `+${atkGain}攻`, 'passive-num', 300, 0);
+    renderStatusIcons(attacker);
+    addLog(`${attacker.emoji}${attacker.name} 自身 <span class="log-passive">攻击+${atkGain}(${skill.selfAtkUpPct.pct}%)</span> ${skill.selfAtkUpPct.turns}回合`);
+  }
   // Self buff: selfDefUpPct (used by 缩头乌龟 attack skill)
   if (skill.selfDefUpPct && attacker.alive) {
     const defGain = Math.round(attacker.baseDef * skill.selfDefUpPct.pct / 100);
@@ -2259,6 +2297,11 @@ async function summonUseRandomSkill(summon, owner) {
     await doHeal(summon, target, skill);
   } else if (skill.type === 'shield') {
     await doShield(summon, target, skill);
+  } else if (skill.type === 'turtleShieldBash') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doTurtleShieldBash(summon, eTarget, skill);
+  } else if (skill.type === 'basicBarrage') {
+    await doBasicBarrage(summon, skill);
   } else if (skill.type === 'iceSpike') {
     const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
     if (eTarget) await doIceSpike(summon, eTarget, skill);
@@ -2284,6 +2327,109 @@ async function summonUseRandomSkill(summon, owner) {
 
   // Check deaths after summon action
   checkDeaths(summon);
+}
+
+// ── BASIC TURTLE SKILLS ───────────────────────────────────
+async function doTurtleShieldBash(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const raw = Math.round(attacker.atk * skill.atkScale);
+
+  let effectiveCrit = attacker.crit;
+  if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+    effectiveCrit += attacker.passive.pct / 100;
+  }
+  const isCrit = Math.random() < effectiveCrit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  let dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+
+  // Passive: basicTurtle bonus
+  if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+    const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+    if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
+  }
+  // Passive: frostAura bonus
+  if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+    dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+  }
+
+  applyRawDmg(attacker, target, dmg, false);
+
+  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
+  updateHpBar(target, tElId);
+  await triggerOnHitEffects(attacker, target, dmg);
+
+  const tEl = document.getElementById(tElId);
+  if (tEl) { tEl.classList.add('hit-shake'); }
+  await sleep(500);
+  if (tEl) { tEl.classList.remove('hit-shake'); }
+
+  // Shield from damage
+  const shieldGain = Math.round(dmg * skill.shieldFromDmgPct / 100);
+  if (shieldGain > 0 && attacker.alive) {
+    attacker.shield += shieldGain;
+    const aElId = getFighterElId(attacker);
+    spawnFloatingNum(aElId, `+${shieldGain}🛡`, 'shield-num', 0, 0);
+    updateHpBar(attacker, aElId);
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>龟盾</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>${isCrit?' <span class="log-crit">暴击</span>':''} + <span class="log-shield">+${shieldGain}永久护盾</span>`);
+  if (target.alive) applySkillDebuffs(skill, target);
+}
+
+async function doBasicBarrage(attacker, skill) {
+  const hits = skill.hits;
+  const perHit = Math.round(attacker.atk * skill.atkScale / hits);
+  let totalDmg = 0;
+
+  const effectiveDef0 = DEF_CONSTANT; // placeholder, recalc per target
+
+  for (let i = 0; i < hits; i++) {
+    const enemies = getAliveEnemiesWithSummons(attacker.side);
+    if (!enemies.length) break;
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const tElId = getFighterElId(target);
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+    const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+    const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    let dmg = Math.max(1, Math.round(perHit * critMult * (1 - defReduction)));
+
+    // Passive: basicTurtle bonus
+    if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+      const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+      if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
+    }
+
+    applyRawDmg(attacker, target, dmg, false);
+    totalDmg += dmg;
+
+    const yOff = (i % 4) * 24;
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    updateHpBar(target, tElId);
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    await sleep(350);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(100);
+
+    checkDeaths(attacker);
+    if (battleOver) break;
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>打击</b> ${hits}段随机分布：<span class="log-direct">共${totalDmg}伤害</span>`);
 }
 
 // ── ICE TURTLE SKILLS ─────────────────────────────────────
