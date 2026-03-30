@@ -3541,6 +3541,21 @@ async function doShellStrike(attacker, target, skill) {
     }
     totalDmgDealt += dmg;
 
+    // Per-hit splash to other enemies
+    if (dmg > 0 && skill.splashPct > 0) {
+      const splashDmg = Math.round(dmg * skill.splashPct / 100);
+      if (splashDmg > 0) {
+        const others = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
+        for (const e of others) {
+          applyRawDmg(attacker, e, splashDmg, false);
+          const eElId = getFighterElId(e);
+          spawnFloatingNum(eElId, `-${splashDmg}溅射`, 'direct-dmg', 0, yOff);
+          updateHpBar(e, eElId);
+          await triggerOnHitEffects(attacker, e, splashDmg);
+        }
+      }
+    }
+
     await triggerOnHitEffects(attacker, target, dmg);
 
     const tEl = document.getElementById(tElId);
@@ -3551,25 +3566,12 @@ async function doShellStrike(attacker, target, skill) {
     await sleep(150);
   }
 
-  // Splash damage to other enemies (10% of total damage dealt)
-  if (totalDmgDealt > 0 && skill.splashPct > 0) {
-    const splashDmg = Math.round(totalDmgDealt * skill.splashPct / 100);
-    const others = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
-    for (const e of others) {
-      applyRawDmg(attacker, e, splashDmg, false);
-      const eElId = getFighterElId(e);
-      spawnFloatingNum(eElId, `-${splashDmg}溅射`, 'direct-dmg', 0, 0);
-      updateHpBar(e, eElId);
-      await triggerOnHitEffects(attacker, e, splashDmg);
-    }
-  }
-
   // Log
   const parts = [];
   if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
   if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
   if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
-  const splashNote = skill.splashPct > 0 ? ` (溅射${skill.splashPct}%)` : '';
+  const splashNote = skill.splashPct > 0 ? ` (每段溅射${skill.splashPct}%)` : '';
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}${splashNote}`);
 }
 
