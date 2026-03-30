@@ -280,12 +280,20 @@ const ALL_PETS = [
   // SSS级
   { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:360,  atk:42,  def:18, spd:12, crit:0.15,
     img:'../../assets/pets/龟壳v1.png', sprite:{frames:20,frameW:500,frameH:500,duration:2000},
-    passive:{ type:'turnScaleAtk', pct:3, desc:'每回合攻击+3%' },
+    passive:{ type:'auraAwaken',
+              awakenTurn:6,
+              atkPct:10, defPct:10, hpPct:10,
+              lifestealPct:10, reflectPct:10, armorPenPct:10,
+              energyStore:true, energyReleaseTurn:9,
+              energyDmgScale:0.008, energyShieldScale:0.01, energyShieldTurns:3,
+              desc:'6回合后全面强化+10%；受伤储能，每9回合波击释放' },
     skills:[
-      { name:'壳击波',   type:'magic',    hits:2, power:38,  pierce:25,  desc:'双段壳击，减攻20%',cd:0, atkDown:{pct:20,turns:2} },
-      { name:'终极护盾', type:'shield',   hits:1, power:0,   shield:180, desc:'获得180护盾',      cd:4 },
-      { name:'龟皇降临', type:'magic',    hits:10,power:14,  pierce:20,  desc:'10段终极，灼烧',   cd:5, dot:{dmg:25,turns:3} },
-      { name:'龟皇再生', type:'heal',     hits:1, power:0,   heal:150,   desc:'恢复150HP',        cd:5 },
+      { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0,
+        desc:'6段交替普通/穿透共1.2×ATK，溅射10%',
+        cd:0, totalScale:1.2, splashPct:10 },
+      { name:'复制', type:'shellCopy', hits:0, power:0, pierce:0,
+        desc:'随机复制敌方一个技能并释放',
+        cd:4 },
     ]},
 ];
 
@@ -496,6 +504,10 @@ function createFighter(petId, side) {
     _normalDmgDealt: 0,      // 普通伤害造成
     _summon: null,            // 缩头乌龟随从
     _summonElId: null,        // 随从卡片DOM id
+    _storedEnergy: 0,         // 龟壳储能值
+    _auraAwakened: false,     // 龟壳气场觉醒标记
+    _auraLifesteal: 0,        // 龟壳觉醒生命偷取
+    _auraReflect: 0,          // 龟壳觉醒反伤
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
 }
@@ -689,7 +701,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚'
 };
 
 function updateFighterStats(f, elId) {
@@ -806,6 +818,27 @@ function updateHpBar(f, elId) {
   } else if (bBar) {
     bBar.style.display = 'none';
   }
+
+  // Energy store bar (only for fighters with auraAwaken + energyStore passive)
+  let eBar = card.querySelector('.energy-store-bar');
+  if (f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore) {
+    if (!eBar) {
+      eBar = document.createElement('div');
+      eBar.className = 'energy-store-bar';
+      eBar.innerHTML = '<div class="energy-store-fill"></div>';
+      card.querySelector('.hp-bar').parentNode.insertBefore(eBar, card.querySelector('.hp-text'));
+    }
+    const maxVisual = f.maxHp * 2; // visual cap for bar width
+    const storePct = Math.min((f._storedEnergy || 0) / maxVisual * 100, 100);
+    eBar.querySelector('.energy-store-fill').style.width = storePct + '%';
+    eBar.setAttribute('title', `储能: ${Math.round(f._storedEnergy || 0)} (每${f.passive.energyReleaseTurn}回合释放波击)`);
+    let label = eBar.querySelector('.energy-store-label');
+    if (!label) { label = document.createElement('span'); label.className = 'energy-store-label'; eBar.appendChild(label); }
+    label.textContent = `⚡ ${Math.round(f._storedEnergy || 0)}`;
+    eBar.style.display = (f._storedEnergy || 0) > 0 ? '' : 'none';
+  } else if (eBar) {
+    eBar.style.display = 'none';
+  }
 }
 
 // Get all alive enemies including summons (for AOE)
@@ -866,6 +899,33 @@ async function beginTurn() {
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">防御+${gain}(已+${f._stoneDefGained}/${f.passive.maxDef})</span>`);
       }
     }
+    // Passive: auraAwaken — awaken at turn N with full stat boost
+    if (f.passive.type === 'auraAwaken' && !f._auraAwakened && turnNum >= f.passive.awakenTurn) {
+      f._auraAwakened = true;
+      const elId = getFighterElId(f);
+      // ATK boost
+      const atkGain = Math.round(f.baseAtk * f.passive.atkPct / 100);
+      f.baseAtk += atkGain;
+      // DEF boost
+      const defGain = Math.round(f.baseDef * f.passive.defPct / 100);
+      f.baseDef += defGain;
+      // MaxHP boost (scale current HP proportionally)
+      const hpGain = Math.round(f.maxHp * f.passive.hpPct / 100);
+      const oldMax = f.maxHp;
+      f.maxHp += hpGain;
+      f.hp = Math.round(f.hp * f.maxHp / oldMax);
+      // Lifesteal
+      f._auraLifesteal = f.passive.lifestealPct / 100;
+      // Reflect
+      f._auraReflect = f.passive.reflectPct / 100;
+      // Armor penetration
+      f.armorPen += Math.round(f.baseDef * f.passive.armorPenPct / 100);
+      // Visual + log
+      spawnFloatingNum(elId, '🐚气场觉醒!', 'crit-label', 0, -20);
+      spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}防 +${hpGain}HP`, 'passive-num', 0, 10);
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% 穿甲+${Math.round(f.baseDef * f.passive.armorPenPct / 100)}</span>`);
+    }
   }
   // Process buffs/debuffs at turn start
   await processBuffs();
@@ -897,10 +957,12 @@ async function nextBatch() {
   } else {
     // After every 2 batches (both sides acted) → round ended
     if (batchesThisRound >= 2) {
-      // End-of-round passives (lightning/fortune/hunter)
+      // End-of-round passives (lightning/fortune/hunter/energy wave)
       await processFortuneGold();
       if (battleOver) return;
       await processLightningStorm();
+      if (battleOver) return;
+      await processEnergyWave();
       if (battleOver) return;
       turnNum++;
       batchesThisRound = 0;
@@ -1578,6 +1640,11 @@ async function executeAction(action) {
     await doNinjaTrap(f, target, skill);
   } else if (skill.type === 'ninjaBomb') {
     await doNinjaBomb(f, skill);
+  } else if (skill.type === 'shellStrike') {
+    const target = allFighters[action.targetId];
+    await doShellStrike(f, target, skill);
+  } else if (skill.type === 'shellCopy') {
+    await doShellCopy(f, skill);
   } else {
     const target = allFighters[action.targetId];
     await doDamage(f, target, skill);
@@ -1960,6 +2027,33 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     if (actual > 0) {
       spawnFloatingNum(getFighterElId(attacker), `+${actual}吸血`, 'heal-num', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
+    }
+  }
+  // AuraAwaken: energy store — target stores received damage as energy
+  if (target.passive && target.passive.type === 'auraAwaken' && target.passive.energyStore && target.alive) {
+    target._storedEnergy = (target._storedEnergy || 0) + dmg;
+    spawnFloatingNum(tElId, `+${dmg}⚡`, 'passive-num', 350, 10);
+    updateHpBar(target, tElId); // refresh energy bar
+  }
+  // AuraAwaken: lifesteal — attacker heals from damage dealt
+  if (attacker._auraLifesteal > 0 && attacker.alive && dmg > 0) {
+    const auraHeal = Math.round(dmg * attacker._auraLifesteal);
+    const before = attacker.hp;
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + auraHeal);
+    const actual = Math.round(attacker.hp - before);
+    if (actual > 0) {
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}偷取`, 'heal-num', 350, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+    }
+  }
+  // AuraAwaken: reflect — target reflects damage back to attacker
+  if (target._auraReflect > 0 && target.alive && attacker.alive && dmg > 0) {
+    const reflDmg = Math.round(dmg * target._auraReflect);
+    if (reflDmg > 0) {
+      attacker.hp = Math.max(0, attacker.hp - reflDmg);
+      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}反伤`, 'counter-dmg', 400, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+      if (attacker.hp <= 0) attacker.alive = false;
     }
   }
 }
@@ -3392,6 +3486,184 @@ async function processLightningStorm() {
     checkDeaths(f);
     if (checkBattleEnd()) return;
     await sleep(600);
+  }
+}
+
+// ── SHELL TURTLE SKILLS (龟壳) ──────────────────────────
+async function doShellStrike(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const hits = skill.hits; // 6
+  const perHit = attacker.atk * skill.totalScale / hits;
+  let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
+  let totalDmgDealt = 0;
+
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  for (let i = 0; i < hits; i++) {
+    if (!target.alive) break;
+
+    // Dodge check
+    const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
+    if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      await sleep(280);
+      continue;
+    }
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    if (isCrit) totalCrits++;
+
+    const isNormal = (i % 2 === 0); // index 0,2,4 = normal; 1,3,5 = pierce
+    const raw = Math.round(perHit);
+    let dmg;
+    const yOff = (i % 4) * 24;
+
+    if (isNormal) {
+      dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+      const { shieldAbs } = applyRawDmg(attacker, target, dmg, false);
+      totalNormal += dmg;
+      totalShieldDmg += shieldAbs;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    } else {
+      dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
+      const { shieldAbs } = applyRawDmg(attacker, target, dmg, true);
+      totalPierce += dmg;
+      totalShieldDmg += shieldAbs;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+    }
+    totalDmgDealt += dmg;
+
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    updateHpBar(target, tElId);
+    await sleep(500);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(150);
+  }
+
+  // Splash damage to other enemies (10% of total damage dealt)
+  if (totalDmgDealt > 0 && skill.splashPct > 0) {
+    const splashDmg = Math.round(totalDmgDealt * skill.splashPct / 100);
+    const others = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
+    for (const e of others) {
+      applyRawDmg(attacker, e, splashDmg, false);
+      const eElId = getFighterElId(e);
+      spawnFloatingNum(eElId, `-${splashDmg}溅射`, 'direct-dmg', 0, 0);
+      updateHpBar(e, eElId);
+      await triggerOnHitEffects(attacker, e, splashDmg);
+    }
+  }
+
+  // Log
+  const parts = [];
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
+  const splashNote = skill.splashPct > 0 ? ` (溅射${skill.splashPct}%)` : '';
+  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}${splashNote}`);
+}
+
+async function doShellCopy(caster, _skill) {
+  const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  if (!enemies.length) { await sleep(500); return; }
+
+  // Pick random enemy
+  const target = enemies[Math.floor(Math.random() * enemies.length)];
+  // Pick random skill (exclude shellCopy to prevent recursion)
+  const copyable = target.skills.filter(s => s.type !== 'shellCopy');
+  if (!copyable.length) {
+    addLog(`${caster.emoji}${caster.name} <b>复制</b>：${target.emoji}${target.name} 没有可复制的技能！`);
+    await sleep(1000);
+    return;
+  }
+  const copied = copyable[Math.floor(Math.random() * copyable.length)];
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `复制: ${copied.name}`, 'crit-label', 0, 0);
+  addLog(`${caster.emoji}${caster.name} <b>复制</b>了 ${target.emoji}${target.name} 的 <b>${copied.name}</b>！立即释放！`);
+  await sleep(800);
+
+  // Determine target for copied skill
+  const isAlly = copied.type === 'heal' || copied.type === 'shield' || copied.type === 'bubbleShield' || copied.type === 'ninjaTrap' || copied.type === 'angelBless';
+  const isAoe = copied.aoe || copied.aoeAlly || copied.type === 'hunterBarrage' || copied.type === 'ninjaBomb' || copied.type === 'lightningBarrage';
+  const isSelf = copied.type === 'phoenixShield' || copied.type === 'fortuneDice' || copied.type === 'lightningBuff' || copied.type === 'hidingDefend';
+
+  let copyTarget;
+  if (isSelf || isAoe) {
+    copyTarget = caster;
+  } else if (isAlly) {
+    const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+    copyTarget = allies[Math.floor(Math.random() * allies.length)];
+  } else {
+    // Attack skill → lowest HP enemy
+    const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    copyTarget = aliveEnemies.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+  }
+  if (!copyTarget) { await sleep(500); return; }
+
+  // Temporarily assign copied skill and execute
+  const savedSkills = caster.skills;
+  caster.skills = [...savedSkills, { ...copied, cdLeft: 0 }];
+  const fakeIdx = caster.skills.length - 1;
+  const copiedRef = caster.skills[fakeIdx];
+  if (copiedRef.cd > 0) copiedRef.cdLeft = 0;
+
+  const atkEl = document.getElementById(getFighterElId(caster));
+  atkEl.classList.add('attack-anim');
+
+  if (isAoe && !copied.aoeAlly) {
+    const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    for (const enemy of aliveEnemies) { await doDamage(caster, enemy, copiedRef); if (battleOver) break; }
+  } else if (copiedRef.type === 'heal') {
+    await doHeal(caster, copyTarget, copiedRef);
+  } else if (copiedRef.type === 'shield') {
+    await doShield(caster, copyTarget, copiedRef);
+  } else {
+    await doDamage(caster, copyTarget, copiedRef);
+  }
+
+  atkEl.classList.remove('attack-anim');
+  caster.skills = savedSkills;
+}
+
+// ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
+async function processEnergyWave() {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'auraAwaken' || !f.passive.energyStore) continue;
+    if (turnNum < f.passive.energyReleaseTurn || turnNum % f.passive.energyReleaseTurn !== 0) continue;
+    if (!f._storedEnergy || f._storedEnergy <= 0) continue;
+    const stored = f._storedEnergy;
+    const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    // Wave damage to all enemies
+    const waveDmg = Math.round(stored * f.passive.energyDmgScale * f.atk);
+    for (const e of enemies) {
+      applyRawDmg(f, e, waveDmg, false);
+      const eElId = getFighterElId(e);
+      spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'pierce-dmg', 0, 0);
+      updateHpBar(e, eElId);
+    }
+    // Shield for self
+    const shieldAmt = Math.round(stored * f.passive.energyShieldScale * f.atk);
+    f.shield += shieldAmt;
+    const fElId = getFighterElId(f);
+    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, fElId);
+    // Log
+    addLog(`${f.emoji}${f.name} <span class="log-passive">⚡储能波击！储存${stored}能量 → 全体${waveDmg}伤害 + ${shieldAmt}护盾</span>`);
+    // Clear stored energy
+    f._storedEnergy = 0;
+    checkDeaths(f);
+    if (checkBattleEnd()) return;
+    await sleep(800);
   }
 }
 
