@@ -73,11 +73,16 @@ const ALL_PETS = [
     ]},
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:340,  atk:38,  def:14, spd:9, crit:0.08,
     img:'../../assets/pets/寒冰龟.png',
-    passive:{ type:'bonusDmgAbove60', pct:20, desc:'对HP>60%敌人+20%伤害' },
+    passive:{ type:'frostAura', atkDownPct:15, atkDownTurns:6,
+              bonusTargets:['lava','phoenix'], bonusDmgPct:20,
+              desc:'登场敌方全体ATK-15%持续6回合，对熔岩龟/凤凰龟+20%伤害' },
     skills:[
-      { name:'冰锥',     type:'magic',    hits:1, power:42,  pierce:10,  desc:'冰系攻击，减防20%',cd:0, defDown:{pct:20,turns:2} },
-      { name:'冰霜护盾', type:'shield',   hits:1, power:0,   shield:70,  desc:'获得70护盾',       cd:3 },
-      { name:'暴风雪',   type:'magic',    hits:4, power:18,  pierce:8,   desc:'4段冰暴，减攻30%', cd:4, atkDown:{pct:30,turns:2} },
+      { name:'冰锥', type:'iceSpike', hits:6, power:0, pierce:0,
+        desc:'6段交替普通/穿透共1.2×ATK', cd:0, totalScale:1.2 },
+      { name:'冰盾', type:'shield', hits:1, power:0, pierce:0, shield:0,
+        desc:'友方获得1.2×ATK护盾', cd:3, shieldAtkScale:1.2 },
+      { name:'冰霜', type:'iceFrost', hits:1, power:0, pierce:0,
+        desc:'全体敌方1×ATK穿透伤害', cd:4, atkScale:1.0 },
     ]},
   { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:290,  atk:42,  def:9,  spd:15, crit:0.20,
     img:'../../assets/pets/忍者龟.png',
@@ -519,6 +524,15 @@ function startBattle() {
       f.shield += shieldAmt;
       f._twoHeadHalfTriggered = false;
     }
+    // Frost aura: debuff all enemies ATK on entry
+    if (f.passive && f.passive.type === 'frostAura') {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      for (const e of enemies) {
+        e.buffs.push({ type:'atkDown', value:f.passive.atkDownPct, turns:f.passive.atkDownTurns });
+      }
+      recalcStats();
+      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${f.passive.atkDownPct}% ${f.passive.atkDownTurns}回合</span>`);
+    }
     // Summon ally: create a random C/B/A turtle as summon
     if (f.passive && f.passive.type === 'summonAlly') {
       const teamIds = allFighters.map(t => t.id);
@@ -668,7 +682,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', judgement:'⚖️', frostAura:'❄️'
 };
 
 function updateFighterStats(f, elId) {
@@ -1219,6 +1233,7 @@ function buildSkillDetail(s) {
     fortuneDice:'🪙 骰子', fortuneAllIn:'🪙 梭哈',
     hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
     angelBless:'😇 祝福', angelEquality:'⚖️ 平等',
+    iceSpike:'❄️ 冰锥', iceFrost:'❄️ 冰霜',
   };
   lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
 
@@ -1350,6 +1365,20 @@ function buildSkillDetail(s) {
     lines.push(`<b>⚠注意</b> 随从阵亡则无效`);
   }
 
+  // Ice turtle
+  if (s.type === 'iceSpike') {
+    lines.push(`<b>❄️交替</b> 6段普通/穿透交替，共${s.totalScale}×ATK`);
+    lines.push(`<b>奇数段</b> 普通伤害（受防御减免）`);
+    lines.push(`<b>偶数段</b> <span class="detail-pierce">穿透伤害（无视防御）</span>`);
+  }
+  if (s.type === 'iceFrost') {
+    lines.push(`<b>❄️范围</b> 🎯 全体敌方`);
+    lines.push(`<b>💜穿透</b> <span class="detail-pierce">${s.atkScale}×ATK穿透伤害（无视防御）</span>`);
+  }
+  if (s.shieldAtkScale) {
+    lines.push(`<b>🛡护盾</b> ${s.shieldAtkScale}×ATK`);
+  }
+
   // Angel turtle
   if (s.type === 'angelBless') {
     lines.push(`<b>🛡护盾</b> ${s.shieldScale}×ATK 持续${s.shieldTurns}回合`);
@@ -1387,7 +1416,7 @@ function pickSkill(idx) {
     return;
   }
   // AOE / auto-target: no target selection needed
-  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage') {
+  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost') {
     executePlayerAction(f, skill, null);
     return;
   }
@@ -1481,6 +1510,11 @@ async function executeAction(action) {
     await doHidingDefend(f, skill);
   } else if (skill.type === 'hidingCommand') {
     await doHidingCommand(f, skill);
+  } else if (skill.type === 'iceSpike') {
+    const target = allFighters[action.targetId];
+    await doIceSpike(f, target, skill);
+  } else if (skill.type === 'iceFrost') {
+    await doIceFrost(f, skill);
   } else if (skill.type === 'angelBless') {
     const target = allFighters[action.targetId];
     await doAngelBless(f, target, skill);
@@ -1595,6 +1629,10 @@ async function doDamage(attacker, target, skill) {
     // Passive: bonusDmgAbove60
     if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
       normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
+    }
+    // Passive: frostAura bonus damage vs specific targets
+    if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+      normalDmg = Math.round(normalDmg * (1 + attacker.passive.bonusDmgPct / 100));
     }
     // Fear: attacker with fear debuff deals less normal damage to the source
     const fearBuff = attacker.buffs.find(b => b.type === 'fear' && allFighters[b.sourceId] === target);
@@ -1786,10 +1824,11 @@ async function doHeal(caster, target, skill) {
 }
 
 async function doShield(caster, target, skill) {
-  // Calculate shield amount: fixed + % of caster's maxHP
+  // Calculate shield amount: fixed + % of caster's maxHP + ATK scaling
   let amount = skill.shield || 0;
   if (skill.shieldFlat) amount += skill.shieldFlat;
   if (skill.shieldHpPct) amount += Math.round(caster.maxHp * skill.shieldHpPct / 100);
+  if (skill.shieldAtkScale) amount += Math.round(caster.atk * skill.shieldAtkScale);
   target.shield += amount;
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `+${amount}🛡`, 'shield-num', 0, 0);
@@ -2188,7 +2227,7 @@ async function summonUseRandomSkill(summon, owner) {
   if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
 
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
-  const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage';
+  const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost';
   const isSelf = skill.type === 'phoenixShield' || skill.type === 'fortuneDice' || skill.type === 'lightningBuff' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand';
 
   let target;
@@ -2220,6 +2259,11 @@ async function summonUseRandomSkill(summon, owner) {
     await doHeal(summon, target, skill);
   } else if (skill.type === 'shield') {
     await doShield(summon, target, skill);
+  } else if (skill.type === 'iceSpike') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doIceSpike(summon, eTarget, skill);
+  } else if (skill.type === 'iceFrost') {
+    await doIceFrost(summon, skill);
   } else if (skill.type === 'angelBless') {
     await doAngelBless(summon, target, skill);
   } else if (skill.type === 'angelEquality') {
@@ -2240,6 +2284,130 @@ async function summonUseRandomSkill(summon, owner) {
 
   // Check deaths after summon action
   checkDeaths(summon);
+}
+
+// ── ICE TURTLE SKILLS ─────────────────────────────────────
+async function doIceSpike(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const hits = skill.hits; // 6
+  const perHit = attacker.atk * skill.totalScale / hits;
+  let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
+
+  const effectiveDef = Math.max(0, target.def - (attacker.armorPen || 0));
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  for (let i = 0; i < hits; i++) {
+    if (!target.alive) break;
+
+    // Dodge check
+    const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
+    if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      await sleep(280);
+      continue;
+    }
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    if (isCrit) totalCrits++;
+
+    const isNormal = (i % 2 === 0); // odd hits (1,3,5) = index 0,2,4 = normal; even hits (2,4,6) = index 1,3,5 = pierce
+    const raw = Math.round(perHit);
+    let dmg;
+    const yOff = (i % 4) * 24;
+
+    if (isNormal) {
+      dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+      // Frost bonus vs fire targets
+      if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+        dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+      }
+      applyRawDmg(attacker, target, dmg, false);
+      totalNormal += dmg;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    } else {
+      dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
+      // Frost bonus vs fire targets (pierce portion)
+      if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+        dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+      }
+      applyRawDmg(attacker, target, dmg, true);
+      totalPierce += dmg;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+    }
+
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    // Judgement passive
+    if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+      const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false);
+      totalNormal += judgeReduced;
+      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, yOff);
+      updateHpBar(target, tElId);
+    }
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    updateHpBar(target, tElId);
+    await sleep(500);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(150);
+  }
+
+  // Log
+  const parts = [];
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>冰锥</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}`);
+
+  if (target.alive) applySkillDebuffs(skill, target);
+}
+
+async function doIceFrost(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  const dmgBase = Math.round(attacker.atk * skill.atkScale);
+  let totalDmg = 0;
+
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    let dmg = dmgBase;
+    // Frost bonus vs fire targets
+    if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(enemy.id)) {
+      dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+    }
+    // Crit check
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    dmg = Math.max(1, Math.round(dmg * critMult));
+
+    applyRawDmg(attacker, enemy, dmg, true);
+    totalDmg += dmg;
+    const eElId = getFighterElId(enemy);
+    if (isCrit) spawnFloatingNum(eElId, '暴击!', 'crit-label', 0, 0);
+    spawnFloatingNum(eElId, `-${dmg}`, 'pierce-dmg', 80, 0);
+    updateHpBar(enemy, eElId);
+    await triggerOnHitEffects(attacker, enemy, dmg);
+
+    const eEl = document.getElementById(eElId);
+    if (eEl) { eEl.classList.add('hit-shake'); }
+    await sleep(400);
+    if (eEl) { eEl.classList.remove('hit-shake'); }
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体：<span class="log-pierce">${totalDmg}穿透伤害</span>`);
 }
 
 // ── ANGEL TURTLE SKILLS ───────────────────────────────────
