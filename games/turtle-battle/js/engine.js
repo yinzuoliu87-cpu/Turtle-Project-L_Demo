@@ -585,6 +585,47 @@ async function executeAction(action) {
   updateDmgStats();
 
   checkDeaths(f);
+
+  // Process pending mech transforms (async with dramatic pause)
+  for (const ff of allFighters) {
+    if (ff._pendingMech) {
+      const dc = ff._pendingMech;
+      ff._pendingMech = null;
+      const elId = getFighterElId(ff);
+      // Show death briefly
+      const el = document.getElementById(elId);
+      if (el) el.classList.add('dead');
+      addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
+      await sleep(1200);
+      // Transform to mech
+      ff.hp = ff.passive.mechHpPer * dc;
+      ff.maxHp = ff.hp;
+      ff.baseAtk = ff.passive.mechAtkPer * dc;
+      ff.atk = ff.baseAtk;
+      ff.baseDef = 0; ff.def = 0;
+      ff.shield = 0; ff.bubbleShieldVal = 0;
+      ff.crit = 0.08; ff.armorPen = 0;
+      ff.alive = true; ff._deathProcessed = false;
+      ff.name = '机甲';
+      ff.emoji = '🤖';
+      ff.buffs = [];
+      ff.passive = null;
+      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.0,
+        brief:'机甲自动攻击随机敌人，造成{N:atkScale*ATK}普通伤害',
+        detail:'机甲自动对随机敌方造成 100%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。' }];
+      ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
+      if (el) el.classList.remove('dead');
+      renderFighterCard(ff, elId);
+      updateHpBar(ff, elId);
+      spawnFloatingNum(elId, `机甲启动!`, 'crit-label', 0, -20);
+      await sleep(600);
+      spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
+      addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
+      try { sfxRebirth(); } catch(e) {}
+      await sleep(800);
+    }
+  }
+
   if (checkBattleEnd()) { animating=false; return; }
 
   // Hunter passive: check after every action
@@ -1141,34 +1182,13 @@ function checkDeaths(attacker) {
 
       // CyberDrone: transform drones into mech
       if (f.passive && f.passive.type === 'cyberDrone' && f._drones && f._drones.length > 0 && !f._isMech) {
-        const droneCount = f._drones.length;
+        // Mark for pending mech transform (handled async in executeAction after checkDeaths)
+        f._pendingMech = f._drones.length;
         f._drones = [];
         f._isMech = true;
-        f.hp = f.passive.mechHpPer * droneCount;
-        f.maxHp = f.hp;
-        f.baseAtk = f.passive.mechAtkPer * droneCount;
-        f.atk = f.baseAtk;
-        f.baseDef = 0; f.def = 0;
-        f.shield = 0; f.bubbleShieldVal = 0;
-        f.crit = 0.08; f.armorPen = 0;
-        f.alive = true;
-        f.name = '机甲';
-        f.emoji = '🤖';
-        f.buffs = [];
-        f.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.0,
-          brief:'机甲自动攻击随机敌人，造成{N:atkScale*ATK}普通伤害',
-          detail:'机甲自动对随机敌方造成 100%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。' }];
-        f._initAtk = 0; f._initDef = 0; f._initHp = 0; // all green
-        const elId = getFighterElId(f);
-        const deadEl = document.getElementById(elId);
-        if (deadEl) deadEl.classList.remove('dead');
-        renderFighterCard(f, elId);
-        updateHpBar(f, elId);
-        spawnFloatingNum(elId, `机甲启动!`, 'crit-label', 0, -20);
-        spawnFloatingNum(elId, `${droneCount}浮游炮→HP${f.hp} ATK${f.atk}`, 'passive-num', 300, 0);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">浮游炮×${droneCount}组装为机甲！HP${f.hp} ATK${f.atk}</span>`);
-        try { sfxRebirth(); } catch(e) {}
-        return; // skip death processing
+        f.alive = true; // keep alive so checkBattleEnd doesn't trigger
+        f.hp = 1; // temporary 1HP to stay alive
+        return; // skip normal death
       }
 
       f.alive = false; f.hp = 0; f._deathProcessed = true;
