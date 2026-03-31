@@ -126,8 +126,9 @@ async function simBattle(leftIds, rightIds) {
     // Buffs
     for (const f of allFighters) { if(!f.alive)continue;
       f.buffs.filter(b=>b.type==='dot').forEach(d=>{f.hp=Math.max(0,f.hp-d.value);if(f.hp<=0){f.alive=false;f._deathProcessed=true;}});
-      f.buffs.filter(b=>b.type==='phoenixBurnDot').forEach(pb=>{const d=pb.value+Math.round(f.maxHp*pb.hpPct/100);f.hp=Math.max(0,f.hp-d);if(f.hp<=0){f.alive=false;f._deathProcessed=true;}});
+      f.buffs.filter(b=>b.type==='phoenixBurnDot').forEach(pb=>{const d=pb.value+Math.round(f.maxHp*pb.hpPct/100);applyRawDmg(null,f,d,false,true);if(f.hp<=0){f.alive=false;f._deathProcessed=true;}});
       f.buffs.filter(b=>b.type==='hot').forEach(h=>{f.hp=Math.min(f.maxHp,f.hp+h.value);});
+      if(f._inkLink&&f._inkLink.turns>0){f._inkLink.turns--;if(f._inkLink.turns<=0)f._inkLink=null;}
       f.buffs.forEach(b=>b.turns--);f.buffs=f.buffs.filter(b=>b.turns>0);
     }
     recalcStats();

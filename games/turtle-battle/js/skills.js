@@ -1534,6 +1534,145 @@ async function doShellCopy(caster, _skill) {
   }
 }
 
+// ── LINE TURTLE (线条龟) ─────────────────────────────────
+function addInkStack(target, count) {
+  const max = 5;
+  const before = target._inkStacks || 0;
+  target._inkStacks = Math.min(max, before + count);
+  const gained = target._inkStacks - before;
+  if (gained > 0) {
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, `+${gained}🖊️`, 'passive-num', 300, 0);
+    // Ink link: sync stacks to partner
+    if (target._inkLink && target._inkLink.partner && target._inkLink.partner.alive) {
+      const partner = target._inkLink.partner;
+      const pBefore = partner._inkStacks || 0;
+      partner._inkStacks = Math.min(max, pBefore + gained);
+      const pGained = partner._inkStacks - pBefore;
+      if (pGained > 0) {
+        const pElId = getFighterElId(partner);
+        spawnFloatingNum(pElId, `+${pGained}🖊️🔗`, 'passive-num', 300, 0);
+        renderStatusIcons(partner);
+      }
+    }
+  }
+  renderStatusIcons(target);
+}
+
+async function doLineSketch(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  let totalDmg = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const baseDmg = Math.round(attacker.atk * skill.atkScale);
+    const eDef = calcEffDef(attacker, target);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+    let dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    // Ink amplification
+    if (target._inkStacks > 0) dmg = Math.round(dmg * (1 + target._inkStacks * 0.05));
+
+    applyRawDmg(attacker, target, dmg);
+    totalDmg += dmg;
+    addInkStack(target, 1);
+
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(400);
+    if (tEl) tEl.classList.remove('hit-shake');
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>素描</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}普通伤害</span>（墨迹${target._inkStacks}层）`);
+}
+
+async function doLineLink(attacker, target, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  // Hit primary target
+  const tElId = getFighterElId(target);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const eDef1 = calcEffDef(attacker, target);
+  const defRed1 = eDef1 / (eDef1 + DEF_CONSTANT);
+  let dmg1 = Math.max(1, Math.round(baseDmg * (1 - defRed1)));
+  if (target._inkStacks > 0) dmg1 = Math.round(dmg1 * (1 + target._inkStacks * 0.05));
+
+  applyRawDmg(attacker, target, dmg1);
+  addInkStack(target, 1);
+  spawnFloatingNum(tElId, `-${dmg1}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg1);
+  updateHpBar(target, tElId);
+
+  // Find second target (different alive enemy)
+  const second = enemies.find(e => e.alive && e !== target);
+  let dmg2 = 0;
+  if (second) {
+    const sElId = getFighterElId(second);
+    const eDef2 = calcEffDef(attacker, second);
+    const defRed2 = eDef2 / (eDef2 + DEF_CONSTANT);
+    dmg2 = Math.max(1, Math.round(baseDmg * (1 - defRed2)));
+    if (second._inkStacks > 0) dmg2 = Math.round(dmg2 * (1 + second._inkStacks * 0.05));
+
+    applyRawDmg(attacker, second, dmg2);
+    addInkStack(second, 1);
+    spawnFloatingNum(sElId, `-${dmg2}`, 'direct-dmg', 0, 0);
+    await triggerOnHitEffects(attacker, second, dmg2);
+    updateHpBar(second, sElId);
+
+    // Establish ink link between the two
+    target._inkLink = { partner: second, turns: skill.duration, transferPct: skill.transferPct };
+    second._inkLink = { partner: target, turns: skill.duration, transferPct: skill.transferPct };
+    spawnFloatingNum(tElId, '🔗连笔', 'crit-label', 0, -20);
+    spawnFloatingNum(sElId, '🔗连笔', 'crit-label', 0, -20);
+    renderStatusIcons(target);
+    renderStatusIcons(second);
+
+    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b>：连接${target.emoji}${target.name}与${second.emoji}${second.name} ${skill.duration}回合（伤害传递${skill.transferPct}%穿透）`);
+  } else {
+    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg1}普通伤害</span>+墨迹（无第二目标，无法建立连接）`);
+  }
+  await sleep(800);
+}
+
+async function doLineFinish(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const stacks = target._inkStacks || 0;
+
+  // Base normal damage
+  const baseNormal = Math.round(attacker.atk * skill.baseScale);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  // Ink amplification on base hit
+  let normalDmg = Math.max(1, Math.round(baseNormal * (1 - defRed)));
+  if (stacks > 0) normalDmg = Math.round(normalDmg * (1 + stacks * 0.05));
+
+  // Pierce damage per stack (ignores DEF)
+  const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks);
+
+  const totalDmg = normalDmg + pierceDmg;
+  applyRawDmg(attacker, target, totalDmg);
+
+  // Floating numbers
+  if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
+  spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, 0);
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+  await triggerOnHitEffects(attacker, target, totalDmg);
+
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+
+  // Clear ink stacks
+  target._inkStacks = 0;
+  renderStatusIcons(target);
+  // If linked partner, also clear partner's stacks? No — only clear targeted stacks.
+
+  addLog(`${attacker.emoji}${attacker.name} <b>画龙点睛</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}普通</span> + <span class="log-pierce">${pierceDmg}穿透</span>（${stacks}层墨迹引爆）`);
+  await sleep(800);
+}
+
 // ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
 async function processEnergyWave() {
   for (const f of allFighters) {

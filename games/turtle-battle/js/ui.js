@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️'
 };
 
 function updateFighterStats(f, elId) {
@@ -312,6 +312,14 @@ function renderStatusIcons(f) {
   // Lava shield indicator
   if (f._lavaShieldTurns > 0) {
     box.innerHTML += `<span class="status-dot" title="熔岩盾 剩${f._lavaShieldTurns}回合 被攻击每段反击">🌋${f._lavaShieldTurns}</span>`;
+  }
+  // Ink stacks indicator (on target being marked)
+  if (f._inkStacks > 0) {
+    box.innerHTML += `<span style="color:#1a1a2e;background:rgba(100,100,100,.2);padding:1px 5px;border-radius:6px" title="墨迹${f._inkStacks}层 受到伤害+${f._inkStacks*5}%">🖊️${f._inkStacks}</span>`;
+  }
+  // Ink link indicator
+  if (f._inkLink && f._inkLink.partner && f._inkLink.partner.alive && f._inkLink.turns > 0) {
+    box.innerHTML += `<span style="color:#6c5ce7;background:rgba(108,92,231,.15);padding:1px 5px;border-radius:6px" title="连笔链接${f._inkLink.partner.name} 剩${f._inkLink.turns}回合 受伤${f._inkLink.transferPct}%传递">🔗${f._inkLink.turns}</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);

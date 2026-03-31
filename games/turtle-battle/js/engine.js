@@ -44,6 +44,8 @@ function createFighter(petId, side) {
     _auraAwakened: false,     // 龟壳气场觉醒标记
     _auraLifesteal: 0,        // 龟壳觉醒生命偷取
     _auraReflect: 0,          // 龟壳觉醒反伤
+    _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
+    _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
 }
@@ -210,7 +212,8 @@ async function nextSideAction() {
   const canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
 
   // First round: left only sends 1
-  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : canAct.length;
+  const totalAlive = sideTeam.filter(f => f.alive).length;
+  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : totalAlive;
   const alreadyActed = sideTeam.filter(f => f.alive).length - canAct.length;
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
@@ -318,16 +321,17 @@ async function processBuffs() {
       if (checkBattleEnd()) return;
       continue;
     }
-    // Phoenix burn DoT (0.3×ATK + 5%maxHP per turn)
+    // Phoenix burn DoT (0.3×ATK + 5%maxHP per turn) — blocked by shields
     const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
     for (const pb of pBurns) {
       const burnDmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-      f.hp = Math.max(0, f.hp - burnDmg);
-      spawnFloatingNum(elId, `-${burnDmg}`, 'dot-dmg', 50, 0);
+      const { hpLoss, shieldAbs } = applyRawDmg(null, f, burnDmg, false, true);
+      if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0);
+      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'dot-dmg', 50, 0);
       updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>（剩余${pb.turns-1}回合）`);
+      addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
       hadTick = true;
-      if (f.hp <= 0) { f.alive = false; break; }
+      if (f.hp <= 0) break;
     }
     if (!f.alive) {
       checkDeaths(null);
@@ -412,6 +416,14 @@ async function processBuffs() {
         updateHpBar(f, elId);
       } else {
         addLog(`${f.emoji}${f.name} 缩头护盾到期（护盾已被消耗）`);
+      }
+    }
+    // Ink link tick-down
+    if (f._inkLink && f._inkLink.turns > 0) {
+      f._inkLink.turns--;
+      if (f._inkLink.turns <= 0) {
+        f._inkLink = null;
+        addLog(`${f.emoji}${f.name} 的连笔链接消散了`);
       }
     }
     // Tick down all buffs, remove expired
@@ -603,6 +615,15 @@ async function executeAction(action) {
     await doStarWormhole(f, target, skill);
   } else if (skill.type === 'starMeteor') {
     await doStarMeteor(f, skill);
+  } else if (skill.type === 'lineSketch') {
+    const target = allFighters[action.targetId];
+    await doLineSketch(f, target, skill);
+  } else if (skill.type === 'lineLink') {
+    const target = allFighters[action.targetId];
+    await doLineLink(f, target, skill);
+  } else if (skill.type === 'lineFinish') {
+    const target = allFighters[action.targetId];
+    await doLineFinish(f, target, skill);
   } else if (skill.type === 'cyberBuff') {
     // Self ATK buff
     if (skill.selfAtkUpPct) {
@@ -672,11 +693,12 @@ async function executeAction(action) {
       ff.alive = true; ff._deathProcessed = false;
       ff.name = '机甲';
       ff.emoji = '🤖';
+      ff.img = null; // clear original turtle image, show emoji instead
       ff.buffs = [];
       ff.passive = null;
-      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.0,
-        brief:'机甲自动攻击随机敌人，造成{N:atkScale*ATK}普通伤害',
-        detail:'机甲自动对随机敌方造成 100%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。' }];
+      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.5,
+        brief:'机甲攻击敌方，造成{N:1.5*ATK}普通伤害',
+        detail:'机甲对单体目标造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) el.classList.remove('dead');
       renderFighterCard(ff, elId);
@@ -685,6 +707,9 @@ async function executeAction(action) {
       await sleep(600);
       spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
+      // Allow mech to act this round — remove from actedThisSide
+      const mechIdx = allFighters.indexOf(ff);
+      if (actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
       try { sfxRebirth(); } catch(e) {}
       await sleep(800);
     }
@@ -775,9 +800,15 @@ async function doDamage(attacker, target, skill) {
       convertedPierce = Math.round(normalDmg * pcBuff.value / 100);
       normalDmg -= convertedPierce;
     }
-    const normalPart = normalDmg;
+    let normalPart = normalDmg;
     // Pierce damage: ignores DEF entirely, but hits shield
-    const piercePart = Math.round((skill.pierce || 0) * critMult) + convertedPierce;
+    let piercePart = Math.round((skill.pierce || 0) * critMult) + convertedPierce;
+    // Ink mark amplification: +5% per stack
+    if (target._inkStacks > 0) {
+      const inkAmp = 1 + target._inkStacks * 0.05;
+      normalPart = Math.round(normalPart * inkAmp);
+      piercePart = Math.round(piercePart * inkAmp);
+    }
     const totalHit = normalPart + piercePart;
 
     // Damage absorption: bubbleShield → shield → HP
@@ -1426,7 +1457,7 @@ function addLog(html, cls='') {
 }
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
-function applyRawDmg(source, target, amount, isPierce) {
+function applyRawDmg(source, target, amount, isPierce, _skipLink) {
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
@@ -1440,6 +1471,17 @@ function applyRawDmg(source, target, amount, isPierce) {
   }
   if (target._dmgTaken !== undefined) target._dmgTaken += amount;
   updateDmgStats();
+  // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner
+  if (!_skipLink && target._inkLink && target._inkLink.partner && target._inkLink.partner.alive && amount > 0) {
+    const transferAmt = Math.round(amount * target._inkLink.transferPct / 100);
+    if (transferAmt > 0) {
+      const partner = target._inkLink.partner;
+      applyRawDmg(source, partner, transferAmt, true, true); // _skipLink=true to prevent infinite loop
+      const pElId = getFighterElId(partner);
+      spawnFloatingNum(pElId, `-${transferAmt}🔗`, 'pierce-dmg', 0, 0);
+      updateHpBar(partner, pElId);
+    }
+  }
   return { hpLoss: rem, shieldAbs, bubbleAbs };
 }
 function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }

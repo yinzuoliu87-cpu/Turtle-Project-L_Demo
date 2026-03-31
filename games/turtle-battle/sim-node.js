@@ -147,10 +147,15 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       });
       f.buffs.filter(b => b.type === 'phoenixBurnDot').forEach(pb => {
         const dmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-        f.hp = Math.max(0, f.hp - dmg);
+        applyRawDmg(null, f, dmg, false, true); // burn goes through shields
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'hot').forEach(h => { f.hp = Math.min(f.maxHp, f.hp + h.value); });
+      // Ink link tick-down
+      if (f._inkLink && f._inkLink.turns > 0) {
+        f._inkLink.turns--;
+        if (f._inkLink.turns <= 0) f._inkLink = null;
+      }
       f.buffs.forEach(b => b.turns--);
       f.buffs = f.buffs.filter(b => b.turns > 0);
     }
