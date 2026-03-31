@@ -90,6 +90,17 @@ function getFighterElId(f) {
 // ── TURN SYSTEM ───────────────────────────────────────────
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
+  // Guest: skip logic processing — host will send sync
+  const isOnlineGuest = gameMode === 'pvp-online' && onlineSide === 'right';
+  if (isOnlineGuest) {
+    addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
+    try { sfxTurnStart(); } catch(e) {}
+    activeSide = 'left';
+    actedThisSide = new Set();
+    sidesActedThisRound = 0;
+    nextSideAction();
+    return;
+  }
   // Reduce cooldowns
   allFighters.forEach(f => {
     f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
@@ -271,6 +282,10 @@ async function beginTurn() {
   recalcStats();
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
   try { sfxTurnStart(); } catch(e) {}
+  // Host: sync state after turn-start passives/buffs
+  if (gameMode === 'pvp-online' && onlineSide === 'left') {
+    sendOnline({ type:'sync', state: buildStateSync() });
+  }
   // Start new round: left acts first
   activeSide = 'left';
   actedThisSide = new Set();
@@ -353,14 +368,17 @@ async function nextSideAction() {
 async function finishSide() {
   if (battleOver) return;
   sidesActedThisRound++;
+  const isOnlineGuest = gameMode === 'pvp-online' && onlineSide === 'right';
 
   if (sidesActedThisRound >= 2) {
     // Both sides acted → end of round
-    await processFortuneGold();
-    if (battleOver) return;
-    await processLightningStorm();
-    if (battleOver) return;
-    if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) return; }
+    if (!isOnlineGuest) {
+      await processFortuneGold();
+      if (battleOver) return;
+      await processLightningStorm();
+      if (battleOver) return;
+      if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) return; }
+    }
     isFirstRound = false;
     turnNum++;
     sidesActedThisRound = 0;
@@ -605,7 +623,16 @@ function cancelTarget() { document.getElementById('targetSelect').style.display=
 function executePlayerAction(f, skill, target) {
   document.getElementById('targetSelect').style.display = 'none';
   const action = { attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId: target ? allFighters.indexOf(target) : -1, aoe:!!skill.aoe };
-  if (gameMode === 'pvp-online') sendOnline({ type:'action', action });
+  if (gameMode === 'pvp-online') {
+    if (onlineSide === 'left') {
+      // Host: execute locally, then send action + sync to guest
+      executeAction(action);
+    } else {
+      // Guest: send pick to host, do NOT execute locally — wait for host
+      sendOnline({ type:'pick', action });
+    }
+    return;
+  }
   executeAction(action);
 }
 
@@ -850,6 +877,12 @@ async function executeAction(action) {
 
   animating = false;
 
+  // Host: send action + state sync to guest after execution
+  if (gameMode === 'pvp-online' && onlineSide === 'left') {
+    sendOnline({ type:'action', action });
+    sendOnline({ type:'sync', state: buildStateSync() });
+  }
+
   // Drain queued actions (online opponent sent action while we were animating)
   if (_actionQueue.length > 0) {
     const next = _actionQueue.shift();
@@ -858,6 +891,55 @@ async function executeAction(action) {
   }
 
   onActionComplete();
+}
+
+// Build lightweight state snapshot for online sync
+function buildStateSync() {
+  return {
+    turnNum,
+    activeSide,
+    fighters: allFighters.map(f => ({
+      hp: f.hp, maxHp: f.maxHp, shield: f.shield,
+      atk: f.atk, def: f.def, baseAtk: f.baseAtk, baseDef: f.baseDef,
+      alive: f.alive, crit: f.crit, armorPen: f.armorPen, armorPenPct: f.armorPenPct,
+      _deathProcessed: f._deathProcessed, _isMech: f._isMech,
+      _inkStacks: f._inkStacks, _shockStacks: f._shockStacks,
+      _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
+      _dmgDealt: f._dmgDealt, _dmgTaken: f._dmgTaken,
+      buffs: f.buffs.map(b => ({...b})),
+      skills: f.skills.map(s => ({ cdLeft: s.cdLeft })),
+    })),
+  };
+}
+
+// Apply state sync from host (guest side)
+function applyStateSync(state) {
+  turnNum = state.turnNum;
+  activeSide = state.activeSide;
+  state.fighters.forEach((sf, i) => {
+    if (!allFighters[i]) return;
+    const f = allFighters[i];
+    f.hp = sf.hp; f.maxHp = sf.maxHp; f.shield = sf.shield;
+    f.atk = sf.atk; f.def = sf.def; f.baseAtk = sf.baseAtk; f.baseDef = sf.baseDef;
+    f.alive = sf.alive; f.crit = sf.crit;
+    f.armorPen = sf.armorPen; f.armorPenPct = sf.armorPenPct;
+    f._deathProcessed = sf._deathProcessed; f._isMech = sf._isMech;
+    f._inkStacks = sf._inkStacks; f._shockStacks = sf._shockStacks;
+    f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
+    f._dmgDealt = sf._dmgDealt; f._dmgTaken = sf._dmgTaken;
+    f.buffs = sf.buffs;
+    sf.skills.forEach((ss, si) => { if (f.skills[si]) f.skills[si].cdLeft = ss.cdLeft; });
+    // Re-render
+    const elId = getFighterElId(f);
+    updateHpBar(f, elId);
+    updateFighterStats(f, elId);
+    renderStatusIcons(f);
+    const card = document.getElementById(elId);
+    if (card) card.classList.toggle('dead', !f.alive);
+    // Summon sync
+    if (f._summon) updateSummonHpBar(f._summon);
+  });
+  updateDmgStats();
 }
 
 /* ── DAMAGE — multi-hit with crit, floating numbers, debuff application ── */

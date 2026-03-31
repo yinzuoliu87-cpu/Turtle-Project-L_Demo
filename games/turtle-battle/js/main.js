@@ -139,8 +139,17 @@ function handleOnlineMessage(msg) {
       // Guest receives seed from host, now start battle
       startBattle(msg.seed);
       break;
+    case 'pick':
+      // Host receives guest's action choice → execute it
+      if (onlineSide === 'left') executeAction(msg.action);
+      break;
     case 'action':
-      executeAction(msg.action);
+      // Guest receives action from host → execute for animation
+      if (onlineSide === 'right') executeAction(msg.action);
+      break;
+    case 'sync':
+      // Guest receives state sync from host → patch state
+      if (onlineSide === 'right') applyStateSync(msg.state);
       break;
   }
 }
