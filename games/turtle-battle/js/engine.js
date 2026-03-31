@@ -56,6 +56,8 @@ function createFighter(petId, side) {
     _auraAwakened: false,     // 龟壳气场觉醒标记
     _auraLifesteal: 0,        // 龟壳觉醒生命偷取
     _auraReflect: 0,          // 龟壳觉醒反伤
+    _bambooCharged: false,    // 竹叶龟竹编充能状态
+    _diamondCollideCount: {},  // 钻石龟碰撞计数 {fighterIdx: count}
     _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
     _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
@@ -198,6 +200,14 @@ async function beginTurn() {
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
+    // Passive: bambooCharge — toggle charge every other turn
+    if (f.passive.type === 'bambooCharge') {
+      f._bambooCharged = !f._bambooCharged;
+      if (f._bambooCharged) {
+        spawnFloatingNum(getFighterElId(f), '🎋充能!', 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🎋竹编充能！本回合技能后追加强化攻击</span>`);
+      }
+    }
     // Passive: rainbowPrism — random team buff each turn
     if (f.passive.type === 'rainbowPrism') {
       const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
@@ -333,6 +343,20 @@ async function nextSideAction() {
   const isPlayer =
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
+
+  // Check for stunned fighters — auto-skip them
+  const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun'));
+  if (stunned.length > 0) {
+    for (const sf of stunned) {
+      actedThisSide.add(allFighters.indexOf(sf));
+      const sfElId = getFighterElId(sf);
+      spawnFloatingNum(sfElId, '💫眩晕跳过', 'debuff-label', 0, 0);
+      addLog(`${sf.emoji}${sf.name} 眩晕中，跳过行动！`);
+    }
+    await sleep(600);
+    nextSideAction();
+    return;
+  }
 
   if (isPlayer) {
     // Player picks which turtle to use
@@ -563,8 +587,25 @@ function recalcStats() {
     for (const b of f.buffs) {
       if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
       if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
-      if (b.type === 'defUp')   f.def += b.value;
+      if (b.type === 'defUp') {
+        const amp = (f.passive && f.passive.type === 'diamondStructure') ? (1 + f.passive.defBuffAmp / 100) : 1;
+        f.def += Math.round(b.value * amp);
+      }
       if (b.type === 'atkUp')   f.atk += b.value;
+      // Dice fate crit buff
+      if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
+    }
+    // GamblerBlood: dynamic crit based on lost HP
+    if (f.passive && f.passive.type === 'gamblerBlood') {
+      const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
+      const threshold = f.passive.maxCritAtLoss / 100;
+      const maxGain = f.passive.maxCritGain / 100;
+      const extraCrit = Math.min(maxGain, lostPct / threshold * maxGain);
+      f.crit = (f._initCrit || 0.25) + extraCrit;
+      // Re-apply diceFateCrit buff on top
+      for (const b of f.buffs) {
+        if (b.type === 'diceFateCrit') f.crit += b.value / 100;
+      }
     }
   });
 }
@@ -585,12 +626,12 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
   // AOE / auto-target: no target selection needed
-  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage' || skill.type === 'starMeteor') {
+  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage' || skill.type === 'starMeteor' || skill.type === 'diceAllIn') {
     executePlayerAction(f, skill, null);
     return;
   }
@@ -803,6 +844,25 @@ async function executeAction(action) {
     await doNinjaTrap(f, target, skill);
   } else if (skill.type === 'ninjaBomb') {
     await doNinjaBomb(f, skill);
+  } else if (skill.type === 'bambooLeaf') {
+    const target = allFighters[action.targetId];
+    await doBambooLeaf(f, target, skill);
+  } else if (skill.type === 'bambooHeal') {
+    await doBambooHeal(f, skill);
+  } else if (skill.type === 'diamondFortify') {
+    await doDiamondFortify(f, skill);
+  } else if (skill.type === 'diamondCollide') {
+    const target = allFighters[action.targetId];
+    await doDiamondCollide(f, target, skill);
+  } else if (skill.type === 'diceAttack') {
+    const target = allFighters[action.targetId];
+    await doDiceAttack(f, target, skill);
+  } else if (skill.type === 'diceAllIn') {
+    await doDiceAllIn(f, skill);
+  } else if (skill.type === 'diceFate') {
+    await doDiceFate(f, skill);
+  } else if (skill.type === 'chestOpen') {
+    await doChestOpen(f, skill);
   } else if (skill.type === 'shellStrike') {
     const target = allFighters[action.targetId];
     await doShellStrike(f, target, skill);
@@ -868,6 +928,17 @@ async function executeAction(action) {
   // Hunter passive: check after every action
   await processHunterKill();
   if (checkBattleEnd()) { animating=false; return; }
+
+  // BambooCharge follow-up: extra pierce attack after skill
+  if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged) {
+    f._bambooCharged = false;
+    const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    if (enemies.length) {
+      const target = enemies.sort((a,b) => a.hp - b.hp)[0];
+      await doBambooChargeAttack(f, target);
+      if (checkBattleEnd()) { animating=false; return; }
+    }
+  }
 
   // Summon auto-follow-up: after any owner action, summon auto-attacks (including hidingCommand = 2nd hit)
   if (f.passive && f.passive.type === 'summonAlly' && f._summon && f._summon.alive) {
@@ -966,17 +1037,22 @@ async function doDamage(attacker, target, skill) {
     if (skill.atkScale) basePower += Math.round(attacker.atk * skill.atkScale);
     if (skill.defScale) basePower += Math.round(attacker.def * skill.defScale);
     if (skill.hpPct) basePower += Math.round(target.maxHp * skill.hpPct / 100);
-    // If scaling used, total is split across hits
-    // atkScale/defScale/hpPct are now per-hit values, no auto-split needed
+    if (skill.selfHpPct) basePower += Math.round(attacker.maxHp * skill.selfHpPct / 100);
     if (skill.random) basePower = Math.round(basePower * (0.5 + Math.random() * 1.5));
 
-    // Passive: lowHpCrit — extra crit when HP < 30%
+    // Crit calculation
     let effectiveCrit = attacker.crit;
     if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
       effectiveCrit += attacker.passive.pct / 100;
     }
+    // GamblerBlood crit overflow → crit damage
+    let overflowCritDmg = 0;
+    if (effectiveCrit > 1.0) {
+      overflowCritDmg = (effectiveCrit - 1.0) * (attacker.passive && attacker.passive.overflowMult || 1.5);
+      effectiveCrit = 1.0;
+    }
     const isCrit = Math.random() < effectiveCrit;
-    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0) + overflowCritDmg) : 1;
     if (isCrit) totalCrits++;
 
     // DEF reduction: DEF/(DEF+40), attacker's armorPen/armorPenPct reduces effective DEF
@@ -1011,9 +1087,16 @@ async function doDamage(attacker, target, skill) {
       convertedPierce = Math.round(normalDmg * pcBuff.value / 100);
       normalDmg -= convertedPierce;
     }
+    // Diamond structure: flat damage reduction per hit (not pierce)
+    if (target.passive && target.passive.type === 'diamondStructure') {
+      const flatReduce = Math.round(target.def * target.passive.flatReductionPct / 100);
+      normalDmg = Math.max(1, normalDmg - flatReduce);
+    }
     let normalPart = normalDmg;
     // Pierce damage: ignores DEF entirely, but hits shield
-    let piercePart = Math.round((skill.pierce || 0) * critMult) + convertedPierce;
+    let pierceFlat = skill.pierce || 0;
+    if (skill.pierceScale) pierceFlat += Math.round(attacker.atk * skill.pierceScale);
+    let piercePart = Math.round(pierceFlat * critMult) + convertedPierce;
     // Ink mark amplification: +5% per stack
     if (target._inkStacks > 0) {
       const inkAmp = 1 + target._inkStacks * 0.05;
@@ -1469,7 +1552,7 @@ function aiAction(f) {
 
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase') target = f; // self-cast
+  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='bambooHeal') target = f; // self-cast
   else if (skill.type==='angelBless') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0]; // bless weakest ally
   else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
 

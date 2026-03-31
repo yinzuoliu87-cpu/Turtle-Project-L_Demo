@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'🎋', diamondStructure:'💎', gamblerBlood:'🎲'
 };
 
 function updateFighterStats(f, elId) {
@@ -288,6 +288,8 @@ function renderStatusIcons(f) {
     if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：穿透+${b.pierceBonusPct}% 普伤+${b.normalBonusPct}% 剩${b.turns}回合">🌀${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转穿透 剩${b.turns}回合">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
+    if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕${b.turns}回合">💫${b.turns}</span>`;
+    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
     return '';
   }).join('');
   // Star energy indicator
@@ -320,6 +322,10 @@ function renderStatusIcons(f) {
   // Ink link indicator
   if (f._inkLink && f._inkLink.partner && f._inkLink.partner.alive && f._inkLink.turns > 0) {
     box.innerHTML += `<span style="color:#6c5ce7;background:rgba(108,92,231,.15);padding:1px 5px;border-radius:6px" title="连笔链接${f._inkLink.partner.name} 剩${f._inkLink.turns}回合 受伤${f._inkLink.transferPct}%传递">🔗${f._inkLink.turns}</span>`;
+  }
+  // Bamboo charge indicator
+  if (f._bambooCharged) {
+    box.innerHTML += `<span style="color:#2d6a4f;background:rgba(45,106,79,.15);padding:1px 5px;border-radius:6px" title="竹编充能：本回合技能后追加强化攻击">🎋充能</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);

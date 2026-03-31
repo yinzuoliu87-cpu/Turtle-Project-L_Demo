@@ -1749,6 +1749,229 @@ async function doGhostStorm(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>灵魂风暴</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-pierce">${totalPierce}穿透</span> + 诅咒${skill.dotTurns}回合`);
 }
 
+// ── BAMBOO TURTLE (竹叶龟) ───────────────────────────────
+async function doBambooLeaf(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  let totalDmg = 0;
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
+    const eDef = calcEffDef(attacker, target);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg);
+    totalDmg += dmg;
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    await triggerOnHitEffects(attacker, target, dmg);
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(400);
+    if (tEl) tEl.classList.remove('hit-shake');
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>一叶刃</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>`);
+}
+
+async function doBambooHeal(caster, skill) {
+  const fElId = getFighterElId(caster);
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive && a !== caster);
+  if (allies.length > 0) {
+    // Heal self 15%
+    const healAmt = Math.round(caster.maxHp * skill.healPct / 100);
+    const before = caster.hp;
+    caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+    const actual = Math.round(caster.hp - before);
+    if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
+    updateHpBar(caster, fElId);
+    // Shield ally 15% of caster's maxHP
+    for (const a of allies) {
+      const shieldAmt = Math.round(caster.maxHp * skill.shieldPct / 100);
+      a.buffs.push({ type:'hidingShield', shieldVal:shieldAmt, healPct:0, turns:skill.shieldTurns + 1 });
+      a.shield += shieldAmt;
+      const aElId = getFighterElId(a);
+      spawnFloatingNum(aElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+      updateHpBar(a, aElId);
+    }
+    addLog(`${caster.emoji}${caster.name} <b>自然恢复</b>：<span class="log-heal">+${actual}HP</span>，队友获得 <span class="log-shield">${Math.round(caster.maxHp * skill.shieldPct / 100)}护盾</span> ${skill.shieldTurns}回合`);
+  } else {
+    // No ally: heal self 23%
+    const healAmt = Math.round(caster.maxHp * skill.soloHealPct / 100);
+    const before = caster.hp;
+    caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+    const actual = Math.round(caster.hp - before);
+    if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
+    updateHpBar(caster, fElId);
+    addLog(`${caster.emoji}${caster.name} <b>自然恢复</b>（无队友）：<span class="log-heal">+${actual}HP</span>`);
+  }
+  await sleep(800);
+}
+
+async function doBambooChargeAttack(attacker, target) {
+  const p = attacker.passive;
+  const fElId = getFighterElId(attacker);
+  const tElId = getFighterElId(target);
+  // Pierce damage: 100%ATK + 16%maxHP
+  const pierceDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
+  applyRawDmg(attacker, target, pierceDmg, true);
+  spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
+  spawnFloatingNum(tElId, '🎋充能!', 'crit-label', 0, -20);
+  await triggerOnHitEffects(attacker, target, pierceDmg);
+  updateHpBar(target, tElId);
+  // Heal 5% maxHP
+  const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
+  const before = attacker.hp;
+  attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+  const actual = Math.round(attacker.hp - before);
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
+  // Permanent maxHP gain: 25%ATK
+  const hpGain = Math.round(attacker.atk * p.hpGainAtkPct / 100);
+  attacker.maxHp += hpGain;
+  attacker.hp += hpGain;
+  spawnFloatingNum(fElId, `+${hpGain}HP`, 'passive-num', 400, 0);
+  updateHpBar(attacker, fElId);
+  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}穿透</span> <span class="log-heal">+${actual}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
+  await sleep(600);
+}
+
+// ── DIAMOND TURTLE (钻石龟) ──────────────────────────────
+async function doDiamondFortify(caster, skill) {
+  const fElId = getFighterElId(caster);
+  // Shield: 15% maxHP
+  const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  // Def buff: 20%ATK (diamondStructure passive will amplify in recalcStats)
+  const defGain = Math.round(caster.atk * skill.defUpAtkPct / 100);
+  caster.buffs.push({ type:'defUp', value:defGain, turns:skill.defUpTurns + 1 });
+  recalcStats();
+  spawnFloatingNum(fElId, `+${defGain}防`, 'passive-num', 200, 0);
+  updateHpBar(caster, fElId);
+  renderStatusIcons(caster);
+  updateFighterStats(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>坚不可摧</b>：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${defGain}防御 ${skill.defUpTurns}回合</span>`);
+  await sleep(800);
+}
+
+async function doDiamondCollide(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.def * skill.defScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg);
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  // Track collision count for stun
+  const tIdx = allFighters.indexOf(target);
+  if (!attacker._diamondCollideCount) attacker._diamondCollideCount = {};
+  attacker._diamondCollideCount[tIdx] = (attacker._diamondCollideCount[tIdx] || 0) + 1;
+  if (attacker._diamondCollideCount[tIdx] >= skill.stunAfter && target.alive) {
+    attacker._diamondCollideCount[tIdx] = 0;
+    target.buffs.push({ type:'stun', value:1, turns:2 }); // +1 for processBuffs tick
+    spawnFloatingNum(tElId, '💫眩晕!', 'crit-label', 0, -20);
+    renderStatusIcons(target);
+    addLog(`${target.emoji}${target.name} 被撞晕了！<span class="log-debuff">眩晕1回合</span>`);
+  }
+  await sleep(700);
+  if (tEl) tEl.classList.remove('hit-shake');
+  addLog(`${attacker.emoji}${attacker.name} <b>碰撞</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+}
+
+// ── DICE TURTLE (骰子龟) ────────────────────────────────
+async function doDiceAttack(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  // Total damage = 100%ATK + 100*critRate
+  const totalBase = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.crit * skill.critBonusMult);
+  const perHit = Math.round(totalBase / skill.hits);
+  let totalDmg = 0, totalCrits = 0;
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const eDef = calcEffDef(attacker, target);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+    let effectiveCrit = attacker.crit;
+    let overflowCritDmg = 0;
+    if (effectiveCrit > 1.0) { overflowCritDmg = (effectiveCrit - 1.0) * (attacker.passive?.overflowMult || 1.5); effectiveCrit = 1.0; }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmgPerm || 0) + overflowCritDmg) : 1;
+    if (isCrit) totalCrits++;
+    const dmg = Math.max(1, Math.round(perHit * critMult * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg);
+    totalDmg += dmg;
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, (i%3)*18 - 18);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%3)*18);
+    await triggerOnHitEffects(attacker, target, dmg);
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(400);
+    if (tEl) tEl.classList.remove('hit-shake');
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>骰子攻击</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''}`);
+}
+
+async function doDiceAllIn(attacker, skill) {
+  const fElId = getFighterElId(attacker);
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const pierceDmg = Math.round(attacker.atk * skill.atkScale);
+  let totalDmg = 0;
+  spawnFloatingNum(fElId, '🎲孤注一掷!', 'crit-label', 0, -20);
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    applyRawDmg(attacker, e, pierceDmg, true);
+    totalDmg += pierceDmg;
+    const eElId = getFighterElId(e);
+    spawnFloatingNum(eElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
+    updateHpBar(e, eElId);
+    await triggerOnHitEffects(attacker, e, pierceDmg);
+  }
+  // Lifesteal
+  if (skill.lifestealPct && attacker.alive && totalDmg > 0) {
+    const heal = Math.round(totalDmg * skill.lifestealPct / 100);
+    const before = attacker.hp;
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
+    const actual = Math.round(attacker.hp - before);
+    if (actual > 0) {
+      spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
+      updateHpBar(attacker, fElId);
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${pierceDmg}穿透</span>×${enemies.length} + 10%吸血`);
+  await sleep(800);
+}
+
+async function doDiceFate(caster, skill) {
+  const fElId = getFighterElId(caster);
+  const critGain = skill.minCrit + Math.floor(Math.random() * (skill.maxCrit - skill.minCrit + 1));
+  caster.buffs.push({ type:'diceFateCrit', value:critGain, turns:skill.duration + 1 });
+  recalcStats();
+  spawnFloatingNum(fElId, `🎲+${critGain}%暴击!`, 'crit-label', 0, -20);
+  renderStatusIcons(caster);
+  updateFighterStats(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>命运骰子</b>：<span class="log-passive">+${critGain}%暴击率 ${skill.duration}回合</span>${caster.crit > 1 ? ' (溢出' + Math.round((caster.crit-1)*100) + '%→' + Math.round((caster.crit-1)*150) + '%爆伤)' : ''}`);
+  await sleep(800);
+}
+
+// ── CHEST TURTLE (宝箱龟) ───────────────────────────────
+async function doChestOpen(caster, skill) {
+  const fElId = getFighterElId(caster);
+  // Heal 25% maxHP
+  const healAmt = Math.round(caster.maxHp * skill.healPct / 100);
+  const before = caster.hp;
+  caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+  const actual = Math.round(caster.hp - before);
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
+  // Shield 80%ATK
+  const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  updateHpBar(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>开箱惊喜</b>：<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
+  await sleep(800);
+}
+
 // ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
 async function processEnergyWave() {
   for (const f of allFighters) {
