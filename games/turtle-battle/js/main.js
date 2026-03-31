@@ -453,4 +453,8 @@ function loadCoins() {
   } catch(e){}
 }
 
+// ── INIT ──────────────────────────────────────────────────
+loadCoins();
+updateRecordDisplay();
+
 

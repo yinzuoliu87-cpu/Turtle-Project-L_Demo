@@ -1724,7 +1724,5 @@ function showToast(msg) {
   setTimeout(()=>t.classList.remove('show'),2000);
 }
 
-// ── INIT ──────────────────────────────────────────────────
-loadCoins();
-updateRecordDisplay();
+// ── INIT (moved to main.js to ensure correct load order) ──
 
