@@ -121,27 +121,27 @@ async function beginTurn() {
         spawnFloatingNum(elId, `+🛸`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
-      // Age all drones and fire mature ones
-      const toFire = [];
-      f._drones.forEach(d => { d.age++; if (d.age >= f.passive.droneMaxAge) toFire.push(d); });
-      for (const d of toFire) {
-        f._drones = f._drones.filter(x => x !== d);
-        const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-        if (enemies.length) {
-          const target = enemies[Math.floor(Math.random() * enemies.length)];
-          const dmg = Math.round(f.atk * f.passive.droneScale);
-          const eDef = Math.max(0, target.def - (f.armorPen || 0));
-          const defRed = eDef / (eDef + DEF_CONSTANT);
-          const finalDmg = Math.max(1, Math.round(dmg * (1 - defRed)));
-          applyRawDmg(f, target, finalDmg);
-          const tElId = getFighterElId(target);
-          spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, 0);
-          updateHpBar(target, tElId);
-          await triggerOnHitEffects(f, target, finalDmg);
-          addLog(`${f.emoji}${f.name} 浮游炮发射！→ ${target.emoji}${target.name} <span class="log-direct">${finalDmg}普通伤害</span>`);
-          checkDeaths(f);
-          if (checkBattleEnd()) return;
-        }
+      // Every drone fires every turn at random enemy
+      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+      for (let di = 0; di < f._drones.length; di++) {
+        if (!enemies.filter(e => e.alive).length) break;
+        const alive = enemies.filter(e => e.alive);
+        const target = alive[Math.floor(Math.random() * alive.length)];
+        const dmg = Math.round(f.atk * f.passive.droneScale);
+        const eDef = Math.max(0, target.def - (f.armorPen || 0));
+        const defRed = eDef / (eDef + DEF_CONSTANT);
+        const finalDmg = Math.max(1, Math.round(dmg * (1 - defRed)));
+        applyRawDmg(f, target, finalDmg);
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, 0);
+        updateHpBar(target, tElId);
+        await triggerOnHitEffects(f, target, finalDmg);
+        checkDeaths(f);
+        if (checkBattleEnd()) return;
+        await sleep(300);
+      }
+      if (f._drones.length > 0) {
+        addLog(`${f.emoji}${f.name} ${f._drones.length}个浮游炮分别打击！`);
       }
     }
     // Passive: auraAwaken — awaken at turn N with full stat boost
@@ -1070,8 +1070,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
 
 // ── AI ────────────────────────────────────────────────────
 function aiAction(f) {
-  const enemies = leftTeam.filter(e => e.alive);
-  const allies  = rightTeam.filter(a => a.alive);
+  const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const allies  = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
   if (!enemies.length) return;
   const ready = f.skills.filter(s => s.cdLeft === 0);
 
