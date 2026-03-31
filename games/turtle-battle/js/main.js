@@ -111,26 +111,32 @@ function joinRoom() {
   const status = document.getElementById('lobbyStatus');
   status.textContent = '正在连接PeerJS服务器…';
 
-  onlinePeer = new Peer(PEER_CONFIG);
+  onlinePeer = new Peer(null, PEER_CONFIG);
 
   const timeout = setTimeout(() => {
-    status.textContent = '连接超时，请检查网络后重试';
+    status.textContent = '连接PeerJS服务器超时，请检查网络后重试';
   }, 10000);
 
-  onlinePeer.on('open', () => {
+  onlinePeer.on('open', (myId) => {
     clearTimeout(timeout);
+    console.log('Guest peer open, my ID:', myId);
     status.textContent = '正在连接房间 ' + code + ' …';
     const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true });
     onlineConn = conn;
     setupConn(conn);
 
     const connTimeout = setTimeout(() => {
-      status.textContent = '连接房间超时，房间可能不存在';
+      status.textContent = '连接房间超时，房间可能不存在或对方网络不可达';
     }, 8000);
 
     conn.on('open', () => {
       clearTimeout(connTimeout);
       status.textContent = '已连接！等待房主开始…';
+    });
+    conn.on('error', (err) => {
+      clearTimeout(connTimeout);
+      console.error('Connection error:', err);
+      status.textContent = '连接房间失败：' + (err.message || err.type || err);
     });
   });
   onlinePeer.on('error', (err) => {
