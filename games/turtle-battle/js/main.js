@@ -48,11 +48,14 @@ function cleanupPeer() {
 
 // PeerJS server config — try public server first
 const PEER_CONFIG = {
-  debug: 1,
+  debug: 2,
   config: {
     iceServers: [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'stun:stun2.l.google.com:19302' },
+      { urls: 'stun:stun3.l.google.com:19302' },
+      { urls: 'stun:stun4.l.google.com:19302' },
     ]
   }
 };
@@ -121,13 +124,15 @@ function joinRoom() {
     clearTimeout(timeout);
     console.log('Guest peer open, my ID:', myId);
     status.textContent = '正在连接房间 ' + code + ' …';
-    const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true });
+    const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true, serialization: 'json' });
     onlineConn = conn;
     setupConn(conn);
 
     const connTimeout = setTimeout(() => {
-      status.textContent = '连接房间超时，房间可能不存在或对方网络不可达';
-    }, 8000);
+      // Check if peer was found but WebRTC failed
+      console.log('Connection state:', conn.open, conn.peerConnection?.connectionState);
+      status.textContent = '连接超时。可能原因：1)房间不存在 2)双方网络NAT穿透失败。请确认房间号正确且房主在线。';
+    }, 12000);
 
     conn.on('open', () => {
       clearTimeout(connTimeout);
@@ -163,6 +168,13 @@ function setupConn(conn) {
       showToast('对手断开连接');
       document.getElementById('lobbyStatus').textContent = '对手已断开';
     }
+  });
+  conn.on('error', (err) => {
+    console.error('DataConnection error:', err);
+  });
+  // Log ICE state for debugging
+  conn.on('iceStateChanged', (state) => {
+    console.log('ICE state:', state);
   });
 }
 
