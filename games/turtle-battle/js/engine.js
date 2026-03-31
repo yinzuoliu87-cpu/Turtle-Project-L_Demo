@@ -32,7 +32,8 @@ function createFighter(petId, side) {
     _formHpGain: 0, _formDefGain: 0, _formAtkLoss: 0, // 形态切换记录
     _rangedSkills: null,     // 保存远程技能组
     _isMech: false,
-    _deathProcessed: false,  // 防止重复处理死亡
+    _starEnergy: 0,          // 星际龟星能
+    _deathProcessed: false,
     _dmgDealt: 0,            // 伤害统计：总造成
     _dmgTaken: 0,            // 伤害统计：总承受
     _pierceDmgDealt: 0,      // 穿透伤害造成
@@ -229,6 +230,7 @@ async function nextSideAction() {
     // Player picks which turtle to use
     if (canAct.length === 1) {
       // Only one choice, auto-select
+      actedThisSide.add(allFighters.indexOf(canAct[0]));
       showActionPanel(canAct[0]);
     } else {
       // Show turtle picker
@@ -456,7 +458,7 @@ function pickSkill(idx) {
     return;
   }
   // AOE / auto-target: no target selection needed
-  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage') {
+  if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage' || skill.type === 'starMeteor') {
     executePlayerAction(f, skill, null);
     return;
   }
@@ -593,6 +595,14 @@ async function executeAction(action) {
     await doLightningBuff(f, skill);
   } else if (skill.type === 'lightningBarrage') {
     await doLightningBarrage(f, skill);
+  } else if (skill.type === 'starBeam') {
+    const target = allFighters[action.targetId];
+    await doStarBeam(f, target, skill);
+  } else if (skill.type === 'starWormhole') {
+    const target = allFighters[action.targetId];
+    await doStarWormhole(f, target, skill);
+  } else if (skill.type === 'starMeteor') {
+    await doStarMeteor(f, skill);
   } else if (skill.type === 'cyberBuff') {
     // Self ATK buff
     if (skill.selfAtkUpPct) {

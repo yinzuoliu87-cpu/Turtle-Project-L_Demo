@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐'
 };
 
 function updateFighterStats(f, elId) {
@@ -285,10 +285,17 @@ function renderStatusIcons(f) {
     if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合">🫧${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合">💨${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
+    if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：穿透+${b.pierceBonusPct}% 普伤+${b.normalBonusPct}% 剩${b.turns}回合">🌀${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转穿透 剩${b.turns}回合">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
     return '';
   }).join('');
+  // Star energy indicator
+  if (f._starEnergy > 0) {
+    const maxE = f.passive && f.passive.type === 'starEnergy' ? Math.round(f.maxHp * f.passive.maxChargePct / 100) : 100;
+    const full = f._starEnergy >= maxE;
+    box.innerHTML += `<span style="color:${full?'#ffd700':'#ffa500'};background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="星能${Math.round(f._starEnergy)}/${maxE}${full?' 满能！下次攻击爆发！':''}">⭐${Math.round(f._starEnergy)}${full?'💥':''}</span>`;
+  }
   // Drone count indicator
   if (f._drones && f._drones.length > 0) {
     const oldest = Math.max(...f._drones.map(d => d.age));

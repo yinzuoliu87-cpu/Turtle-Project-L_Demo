@@ -158,12 +158,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
     if (!leftTeam.some(f => f.alive) || !rightTeam.some(f => f.alive)) break;
 
-    // Build action order
+    // Build action order: R1 left×1→right all, R2+ left all→right all
     const lAlive = leftTeam.filter(f => f.alive);
     const rAlive = rightTeam.filter(f => f.alive);
-    const order = turnNum === 1 ?
-      (lAlive[0] ? [lAlive[0], ...rAlive, ...lAlive.slice(1)] : [...rAlive]) :
-      (turnNum % 2 === 0 ? [...rAlive, ...lAlive] : [...lAlive, ...rAlive]);
+    const leftActions = (turnNum === 1) ? (lAlive[0] ? [lAlive[0]] : []) : [...lAlive];
+    const order = [...leftActions, ...rAlive];
 
     for (const f of order) {
       if (!f || !f.alive || battleOver) continue;

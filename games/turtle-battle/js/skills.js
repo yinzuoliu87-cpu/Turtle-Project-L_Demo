@@ -949,6 +949,133 @@ async function doLightningBarrage(attacker, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>雷暴</b> ${skill.hits}次随机闪电，每次 <span class="log-direct">${perHitDmg}伤害</span>`);
 }
 
+// ── STAR TURTLE SKILLS ────────────────────────────────────
+
+// Helper: add star energy
+function addStarEnergy(f, dmg) {
+  if (!f.passive || f.passive.type !== 'starEnergy') return;
+  const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+  const gain = Math.round(dmg * f.passive.chargeRate / 100);
+  f._starEnergy = Math.min(maxE, (f._starEnergy || 0) + gain);
+}
+
+// Helper: check and consume star energy burst
+function checkStarBurst(f, target) {
+  if (!f.passive || f.passive.type !== 'starEnergy') return 0;
+  const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+  if (f._starEnergy < maxE) return 0;
+  // Full energy! Burst all as pierce damage
+  const burstDmg = Math.round(f._starEnergy);
+  f._starEnergy = 0;
+  // Check wormhole bonus on target
+  const wh = target.buffs ? target.buffs.find(b => b.type === 'wormhole') : null;
+  const finalBurst = wh ? Math.round(burstDmg * (1 + wh.pierceBonusPct / 100)) : burstDmg;
+  applyRawDmg(f, target, finalBurst, true);
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `⭐${finalBurst}`, 'pierce-dmg', 200, -20);
+  addLog(`${f.emoji}${f.name} <span class="log-passive">⭐星能爆发！</span>${target.emoji}${target.name} ${finalBurst} <span class="log-pierce">穿透伤害</span>`);
+  try { sfxExplosion(); } catch(e) {}
+  return finalBurst;
+}
+
+// Star Beam: 3 hits, 40%ATK + 5% target current HP each
+async function doStarBeam(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  let totalDmg = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(target.hp * skill.currentHpPct / 100);
+    const eDef = calcEffDef(attacker, target);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+
+    // Check wormhole normal bonus
+    const wh = target.buffs.find(b => b.type === 'wormhole' && b.sourceId === allFighters.indexOf(attacker));
+    let dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    if (wh) dmg = Math.round(dmg * (1 + wh.normalBonusPct / 100));
+
+    applyRawDmg(attacker, target, dmg);
+    totalDmg += dmg;
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    // Accumulate star energy
+    addStarEnergy(attacker, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(700);
+    if (tEl) tEl.classList.remove('hit-shake');
+    await sleep(200);
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>星光射线</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}普通伤害</span>`);
+
+  // Check star burst after all hits
+  if (target.alive) checkStarBurst(attacker, target);
+  renderStatusIcons(attacker);
+}
+
+// Wormhole: mark target for pierce/normal bonus
+async function doStarWormhole(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  // Remove existing wormhole from this attacker
+  target.buffs = target.buffs.filter(b => !(b.type === 'wormhole' && b.sourceId === allFighters.indexOf(attacker)));
+  target.buffs.push({
+    type: 'wormhole',
+    pierceBonusPct: skill.pierceBonusPct,
+    normalBonusPct: skill.normalBonusPct,
+    turns: skill.duration,
+    sourceId: allFighters.indexOf(attacker)
+  });
+  spawnFloatingNum(tElId, '🌀虫洞', 'debuff-label', 0, 0);
+  renderStatusIcons(target);
+  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">穿透+${skill.pierceBonusPct}% 普伤+${skill.normalBonusPct}% ${skill.duration}回合</span>`);
+  await sleep(800);
+}
+
+// Meteor: AOE 60%ATK + 50% star energy as pierce
+async function doStarMeteor(attacker, skill) {
+  const enemies = allFighters.filter(e => e.alive && e.side !== attacker.side);
+  if (!enemies.length) return;
+
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  // Consume 50% star energy
+  const energyConsume = Math.round((attacker._starEnergy || 0) * skill.energyConsumePct / 100);
+  attacker._starEnergy = (attacker._starEnergy || 0) - energyConsume;
+  const piercePerTarget = enemies.length > 0 ? Math.round(energyConsume / enemies.length) : 0;
+
+  for (const e of enemies) {
+    if (!e.alive) continue;
+    const eDef = calcEffDef(attacker, e);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+    const normalDmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    const totalDmg = normalDmg + piercePerTarget;
+    applyRawDmg(attacker, e, totalDmg);
+    const eId = getFighterElId(e);
+    if (normalDmg > 0) spawnFloatingNum(eId, `-${normalDmg}`, 'direct-dmg', 0, 0);
+    if (piercePerTarget > 0) spawnFloatingNum(eId, `-${piercePerTarget}`, 'pierce-dmg', 150, 0);
+    updateHpBar(e, eId);
+    await triggerOnHitEffects(attacker, e, totalDmg);
+
+    // Accumulate star energy from normal dmg
+    addStarEnergy(attacker, normalDmg);
+
+    // Apply def down
+    if (skill.defDown) {
+      const existing = e.buffs.find(b => b.type === 'defDown');
+      if (existing) { existing.value = Math.max(existing.value, skill.defDown.pct); existing.turns = Math.max(existing.turns, skill.defDown.turns); }
+      else e.buffs.push({ type: 'defDown', value: skill.defDown.pct, turns: skill.defDown.turns });
+      renderStatusIcons(e);
+    }
+  }
+  recalcStats();
+  renderStatusIcons(attacker);
+  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}普通</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}穿透/目标</span>` : ''} + 防御-${skill.defDown.pct}%`);
+  await sleep(800);
+}
+
 // ── CYBER SKILLS ──────────────────────────────────────────
 async function doCyberDeploy(caster, _skill) {
   if (!caster.passive || caster.passive.type !== 'cyberDrone') { await sleep(500); return; }
