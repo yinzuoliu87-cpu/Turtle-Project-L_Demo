@@ -179,17 +179,34 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       const ready = f.skills.filter(s => s.cdLeft === 0);
       if (!ready.length) continue;
 
-      const healS = ready.find(s => s.type === 'heal');
-      const shieldS = ready.find(s => s.type === 'shield');
-      const dmgS = ready.filter(s => s.type !== 'heal' && s.type !== 'shield' && !s.switchTo);
+      const SELF_TYPES = ['fortuneDice','phoenixShield','gamblerDraw','hidingDefend','hidingCommand',
+        'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','bambooHeal',
+        'lightningBuff'];
+      const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
+      const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
+        'starMeteor','diceAllIn'];
+
+      const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
+      const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield');
+      const dmgS = ready.filter(s => !SELF_TYPES.includes(s.type) && !ALLY_TYPES.includes(s.type) && !s.switchTo);
+      const selfS = ready.filter(s => SELF_TYPES.includes(s.type));
       let skill;
       if (healS && allies.some(a => a.hp / a.maxHp < 0.35)) skill = healS;
       else if (shieldS && allies.some(a => a.shield < 20)) skill = shieldS;
+      else if (selfS.length && Math.random() < 0.3) skill = selfS[Math.floor(Math.random() * selfS.length)];
       else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
       if (!skill) continue;
       if (skill.cd > 0) skill.cdLeft = skill.cd;
 
-      const target = enemies.sort((a, b) => a.hp - b.hp)[0];
+      // Target selection
+      let target;
+      if (SELF_TYPES.includes(skill.type)) {
+        target = f;
+      } else if (ALLY_TYPES.includes(skill.type)) {
+        target = allies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
+      } else {
+        target = enemies.sort((a, b) => a.hp - b.hp)[0];
+      }
 
       // Execute via real engine
       try {
@@ -234,7 +251,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
             ff.hp = ff.passive.mechHpPer * dc; ff.maxHp = ff.hp;
             ff.baseAtk = ff.passive.mechAtkPer * dc; ff.atk = ff.baseAtk;
             ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
-            ff.skills = [{ name: '机甲攻击', type: 'physical', hits: 1, power: 0, pierce: 0, cd: 0, atkScale: 1.0 }];
+            ff.skills = [{ name: '机甲攻击', type: 'physical', hits: 1, power: 0, pierce: 0, cd: 0, cdLeft: 0, atkScale: 1.5 }];
             return;
           }
           ff.alive = false; ff._deathProcessed = true;
@@ -337,7 +354,7 @@ async function runCustom(l1, l2, r1, r2, N) {
   const N = parseInt(args.find(a => !a.startsWith('-'))) || 20;
 
   if (args.includes('--matrix')) {
-    await runMatrix(N);
+    await runMatrix(Math.min(N, 5));
   } else if (args.includes('--help') || args.includes('-h')) {
     console.log('用法:');
     console.log('  node sim-node.js --matrix [N]     全龟矩阵对战(每对N局)');

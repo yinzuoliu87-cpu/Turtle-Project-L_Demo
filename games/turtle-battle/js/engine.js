@@ -1390,6 +1390,8 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Lightning shock stacks
   if (attacker.passive && attacker.passive.type === 'lightningStorm' && target.alive) {
     target._shockStacks = (target._shockStacks || 0) + 1;
+    spawnFloatingNum(tElId, `⚡${target._shockStacks}/${attacker.passive.stackMax}`, 'passive-num', 350, 10);
+    renderStatusIcons(target);
     if (target._shockStacks >= attacker.passive.stackMax) {
       const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
       applyRawDmg(attacker, target, sDmg);
