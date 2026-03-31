@@ -397,7 +397,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -539,6 +539,19 @@ async function executeAction(action) {
     await doLightningBuff(f, skill);
   } else if (skill.type === 'lightningBarrage') {
     await doLightningBarrage(f, skill);
+  } else if (skill.type === 'cyberBuff') {
+    // Self ATK buff
+    if (skill.selfAtkUpPct) {
+      const atkGain = Math.round(f.baseAtk * skill.selfAtkUpPct.pct / 100);
+      f.buffs.push({ type:'atkUp', value:atkGain, turns:skill.selfAtkUpPct.turns });
+      recalcStats();
+      const elId = getFighterElId(f);
+      spawnFloatingNum(elId, `+${atkGain}攻`, 'passive-num', 0, 0);
+      renderStatusIcons(f);
+      updateFighterStats(f, elId);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">自身攻击+${atkGain}(${skill.selfAtkUpPct.pct}%) ${skill.selfAtkUpPct.turns}回合</span>`);
+    }
+    await sleep(800);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
   } else if (skill.type === 'phoenixBurn') {

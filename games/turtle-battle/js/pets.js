@@ -309,7 +309,7 @@ const ALL_PETS = [
       { name:'激光枪', type:'physical', hits:5, power:0, pierce:0, cd:0, atkScale:0.16, hpPct:2.4,
         brief:'赛博龟发射激光5段，共{N:0.16*ATK*5}普通伤害+12%目标最大HP',
         detail:'赛博龟对单体目标发射激光5段，每段造成 16%×(攻击力={ATK}) = {N:0.16*ATK} + 2.4%目标最大HP 普通伤害，共 80%×(攻击力={ATK}) = {N:0.16*ATK*5} + 12%目标最大HP 普通伤害。' },
-      { name:'增益', type:'heal', hits:1, power:0, pierce:0, cd:3, selfAtkUpPct:{pct:35,turns:4},
+      { name:'增益', type:'cyberBuff', hits:1, power:0, pierce:0, cd:3, selfAtkUpPct:{pct:35,turns:4},
         brief:'赛博龟提升自身攻击力{B:ATK*0.35}（35%），持续4回合',
         detail:'赛博龟提升自身攻击力 35%×(攻击力={ATK}) = {B:ATK*0.35}点，持续4回合。\n冷却3回合。' },
       { name:'部署', type:'cyberDeploy', hits:1, power:0, pierce:0, cd:2,
