@@ -157,58 +157,59 @@
   <!-- Side indicator -->
   <div class="side-indicator" id="sideIndicator"></div>
 
-  <div class="battle-field">
-    <!-- LEFT TEAM (Player / P1) -->
-    <div class="battle-side side-left">
-      <div class="team-label team-label-left" id="teamLabelLeft">我方</div>
-      <div class="fighter-card" id="leftFighter0">
-        <div class="fighter-emoji"></div>
-        <div class="fighter-name"></div>
-        <div class="fighter-stats"></div>
-        <div class="hp-bar"><div class="hp-fill"></div></div>
-        <div class="hp-text"></div>
-        <div class="status-icons"></div>
+  <div class="battle-main-row">
+    <!-- BATTLE FIELD (center) -->
+    <div class="battle-field">
+      <div class="battle-side side-left">
+        <div class="team-label team-label-left" id="teamLabelLeft">我方</div>
+        <div class="fighter-card" id="leftFighter0">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+        <div class="fighter-card" id="leftFighter1">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
       </div>
-      <div class="fighter-card" id="leftFighter1">
-        <div class="fighter-emoji"></div>
-        <div class="fighter-name"></div>
-        <div class="fighter-stats"></div>
-        <div class="hp-bar"><div class="hp-fill"></div></div>
-        <div class="hp-text"></div>
-        <div class="status-icons"></div>
+      <div class="vs-badge">VS</div>
+      <div class="battle-side side-right">
+        <div class="team-label team-label-right" id="teamLabelRight">敌方</div>
+        <div class="fighter-card" id="rightFighter0">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+        <div class="fighter-card" id="rightFighter1">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
       </div>
     </div>
 
-    <!-- VS -->
-    <div class="vs-badge">VS</div>
-
-    <!-- RIGHT TEAM (Enemy / P2) -->
-    <div class="battle-side side-right">
-      <div class="team-label team-label-right" id="teamLabelRight">敌方</div>
-      <div class="fighter-card" id="rightFighter0">
-        <div class="fighter-emoji"></div>
-        <div class="fighter-name"></div>
-        <div class="fighter-stats"></div>
-        <div class="hp-bar"><div class="hp-fill"></div></div>
-        <div class="hp-text"></div>
-        <div class="status-icons"></div>
-      </div>
-      <div class="fighter-card" id="rightFighter1">
-        <div class="fighter-emoji"></div>
-        <div class="fighter-name"></div>
-        <div class="fighter-stats"></div>
-        <div class="hp-bar"><div class="hp-fill"></div></div>
-        <div class="hp-text"></div>
-        <div class="status-icons"></div>
-      </div>
+    <!-- DAMAGE STATS (right side) -->
+    <div class="dmg-stats-panel" id="dmgStatsPanel">
+      <div class="dmg-stats-header">伤害统计</div>
+      <div class="dmg-stats-body" id="dmgStatsBody"></div>
     </div>
   </div>
 
-  <!-- DAMAGE STATS PANEL -->
-  <div class="dmg-stats-panel" id="dmgStatsPanel">
-    <div class="dmg-stats-header">伤害统计 <span class="dmg-toggle" onclick="toggleDmgStats()">▼</span></div>
-    <div class="dmg-stats-body" id="dmgStatsBody"></div>
-  </div>
+  <!-- PASSIVE DETAIL POPUP -->
+  <div class="passive-popup" id="passivePopup" style="display:none"></div>
 
   <!-- ACTION PANEL -->
   <div class="action-panel" id="actionPanel">
@@ -248,6 +249,10 @@
 <div class="toast" id="toast"></div>
 
 <script src="audio.js"></script>
-<script src="battle.js"></script>
+<script src="js/pets.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 </body>
 </html>

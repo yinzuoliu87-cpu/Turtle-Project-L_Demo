@@ -1,0 +1,1442 @@
+async function doGamblerDraw(caster, _skill) {
+  const roll = Math.floor(Math.random() * 3);
+  const fElId = getFighterElId(caster);
+
+  if (roll === 0) {
+    // 1: Heal 10%HP + 5%HP shield
+    const healAmt = Math.round(caster.maxHp * 0.10);
+    const shieldAmt = Math.round(caster.maxHp * 0.05);
+    const before = caster.hp;
+    caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+    const actual = Math.round(caster.hp - before);
+    caster.shield += shieldAmt;
+    spawnFloatingNum(fElId, `🃏回复牌`, 'passive-num', 0, -20);
+    if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 400, 0);
+    updateHpBar(caster, fElId);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
+  } else if (roll === 1) {
+    // 2: Bomb card — 0.9ATK to all enemies
+    spawnFloatingNum(fElId, `🃏炸弹牌`, 'crit-label', 0, -20);
+    const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    const baseDmg = Math.round(caster.atk * 0.9);
+    for (const e of enemies) {
+      const eDef = calcEffDef(caster, e);
+      const defRed = eDef / (eDef + DEF_CONSTANT);
+      const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+      applyRawDmg(caster, e, dmg);
+      const eId = getFighterElId(e);
+      spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
+      updateHpBar(e, eId);
+    }
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏炸弹牌！对全体敌方 <span class="log-direct">${baseDmg}伤害</span>`);
+  } else {
+    // 3: Self buff — +15%ATK, +25%crit, +15%critDmg, 20% dmg→pierce, 3 turns
+    const atkGain = Math.round(caster.baseAtk * 0.15);
+    caster.buffs.push({ type:'atkUp', value:atkGain, turns:3 });
+    caster.crit += 0.25;
+    caster._extraCritDmgPerm = (caster._extraCritDmgPerm || 0) + 0.15;
+    caster.buffs.push({ type:'gamblerPierceConvert', value:20, turns:3 });
+    spawnFloatingNum(fElId, `🃏强化牌`, 'crit-label', 0, -20);
+    spawnFloatingNum(fElId, `+ATK+暴击+爆伤+穿透`, 'passive-num', 200, 0);
+    recalcStats();
+    renderStatusIcons(caster);
+    updateFighterStats(caster, fElId);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转穿透 3回合</span>`);
+  }
+  await sleep(1000);
+}
+
+async function doGamblerBet(attacker, target, skill) {
+  // Must have >50% HP
+  if (attacker.hp / attacker.maxHp <= 0.5) {
+    addLog(`${attacker.emoji}${attacker.name} <b>赌注</b>：HP不足50%，无法使用！`);
+    await sleep(1000);
+    return;
+  }
+  // Cost 50% HP directly (not through shield)
+  const hpCost = Math.round(attacker.hp * skill.hpCostPct / 100);
+  attacker.hp -= hpCost;
+  const fElId = getFighterElId(attacker);
+  spawnFloatingNum(fElId, `-${hpCost}HP`, 'direct-dmg', 0, 0);
+  updateHpBar(attacker, fElId);
+  addLog(`${attacker.emoji}${attacker.name} <b>赌注！</b>消耗 <span class="log-direct">${hpCost}HP</span>！`);
+  await sleep(500);
+
+  // Temporarily boost multi-hit chance by 20% (only for this skill)
+  attacker._multiBonus = (attacker._multiBonus || 0) + skill.multiBonus;
+
+  // 6 hits of boosted damage (hpCost split into 6 hits as pierce bonus)
+  const tElId = getFighterElId(target);
+  const piercePer = Math.round(hpCost / skill.hits);
+  const normalPer = Math.round(attacker.atk * 0.3);
+  let totalDmg = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const eDef = calcEffDef(attacker, target);
+    const defRed = eDef / (eDef + DEF_CONSTANT);
+    const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
+    const total = normalDmg + piercePer;
+    applyRawDmg(attacker, target, total);
+    totalDmg += total;
+    spawnFloatingNum(tElId, `-${total}🃏`, 'crit-dmg', 0, (i % 4) * 18);
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(500);
+    tEl.classList.remove('hit-shake');
+    await sleep(100);
+    // Multi-hit passive (boosted to 60% for this skill)
+    await tryGamblerMultiHit(attacker, target, tElId);
+  }
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>（每段含${piercePer}穿透）`);
+
+  // Remove temporary multi-hit bonus after this skill
+  attacker._multiBonus = Math.max(0, (attacker._multiBonus || 0) - skill.multiBonus);
+  await sleep(200);
+}
+
+// ── TWO-HEAD SKILLS (dual form) ───────────────────────────
+
+// Magic wave: 4 hits alternating normal/pierce
+async function doTwoHeadMagicWave(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  let totalDmg = 0;
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const baseDmg = Math.round(attacker.atk * skill.atkScale);
+    const isPierceHit = (i % 2 === 1); // odd index = pierce
+    let dmg;
+    if (isPierceHit) {
+      dmg = baseDmg; // pierce: no DEF reduction
+      applyRawDmg(attacker, target, dmg, true);
+      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 0, (i%4)*18);
+    } else {
+      const eDef = calcEffDef(attacker, target);
+      const defRed = eDef / (eDef + DEF_CONSTANT);
+      dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+      applyRawDmg(attacker, target, dmg);
+      spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i%4)*18);
+    }
+    totalDmg += dmg;
+    await triggerOnHitEffects(attacker, target, dmg);
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(600);
+    tEl.classList.remove('hit-shake');
+    await sleep(100);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>魔法波</b> 4段交替 → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}混合伤害</span>`);
+}
+
+// Form switch
+async function doTwoHeadSwitch(caster, target, skill) {
+  const fElId = getFighterElId(caster);
+  const p = caster.passive;
+
+  if (skill.switchTo === 'melee') {
+    // Remote → Melee
+    const hpGain = Math.round(caster.atk * p.hpScale);
+    const defGain = Math.round(caster.atk * p.defScale);
+    const atkLoss = Math.round(caster.atk * p.atkLossScale);
+    const shieldGain = Math.round(caster.atk * p.shieldScale);
+    // Store for reverting
+    caster._formHpGain = hpGain;
+    caster._formDefGain = defGain;
+    caster._formAtkLoss = atkLoss;
+    // Scale HP proportionally
+    const oldMax = caster.maxHp;
+    caster.maxHp += hpGain;
+    caster.hp = Math.round(caster.hp * caster.maxHp / oldMax);
+    caster.baseDef += defGain;
+    caster.baseAtk -= atkLoss;
+    caster.shield += shieldGain;
+    recalcStats();
+    // Switch skills
+    caster._rangedSkills = caster.skills;
+    const pet = ALL_PETS.find(p => p.id === caster.id);
+    caster.skills = (pet && pet.meleeSkills) ? pet.meleeSkills.map(s => ({...s, cdLeft:0})) : caster.skills;
+    caster._twoHeadForm = 'melee';
+    caster.name = '双头龟(近战)';
+    updateHpBar(caster, fElId);
+    renderFighterCard(caster, fElId);
+    spawnFloatingNum(fElId, '切换近战!', 'crit-label', 0, -20);
+    spawnFloatingNum(fElId, `+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}🛡`, 'passive-num', 200, 0);
+    addLog(`${caster.emoji}${caster.name} <span class="log-passive">切换近战形态！+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}护盾</span>`);
+  } else {
+    // Melee → Remote: revert stats + attack + def reduction
+    if (caster._formHpGain) {
+      const oldMax = caster.maxHp;
+      caster.maxHp -= caster._formHpGain;
+      caster.hp = Math.min(caster.maxHp, Math.round(caster.hp * caster.maxHp / oldMax));
+      caster.baseDef -= caster._formDefGain;
+      caster.baseAtk += caster._formAtkLoss;
+      caster._formHpGain = 0; caster._formDefGain = 0; caster._formAtkLoss = 0;
+    }
+    recalcStats();
+    // Switch skills back
+    if (caster._rangedSkills) {
+      caster.skills = caster._rangedSkills;
+      // Reset CDs on ranged skills
+      caster.skills.forEach(s => { if (s.type === 'twoHeadSwitch') s.cdLeft = skill.cd; });
+    }
+    caster._twoHeadForm = 'ranged';
+    caster.name = '双头龟(远程)';
+    updateHpBar(caster, fElId);
+    renderFighterCard(caster, fElId);
+    spawnFloatingNum(fElId, '切换远程!', 'crit-label', 0, -20);
+    addLog(`${caster.emoji}${caster.name} <span class="log-passive">切换远程形态！属性还原</span>`);
+    // Attack on switch: 1.4×ATK + def reduction
+    if (skill.atkScale && target && target.alive) {
+      const baseDmg = Math.round(caster.atk * skill.atkScale);
+      const eDef = calcEffDef(caster, target);
+      const defRed = eDef / (eDef + DEF_CONSTANT);
+      const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+      applyRawDmg(caster, target, dmg);
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+      await triggerOnHitEffects(caster, target, dmg);
+      updateHpBar(target, tElId);
+      addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${dmg}普通伤害</span>`);
+      // Def reduction
+      if (skill.defReductionScale) {
+        const defRedVal = Math.round(caster.atk * skill.defReductionScale);
+        const existing = target.buffs.find(b => b.type === 'defDown');
+        if (existing) { existing.value = Math.max(existing.value, defRedVal); existing.turns = Math.max(existing.turns, skill.defReductionTurns); }
+        else target.buffs.push({ type:'defDown', value:defRedVal, turns:skill.defReductionTurns });
+        spawnFloatingNum(tElId, `-${defRedVal}防`, 'debuff-label', 200, 0);
+        renderStatusIcons(target);
+        recalcStats();
+        addLog(`→ 减少 ${target.emoji}${target.name} {D:${defRedVal}}防御 ${skill.defReductionTurns}回合`);
+      }
+      await sleep(700);
+    }
+  }
+  await sleep(500);
+}
+
+// Absorb: damage + heal lost HP
+async function doTwoHeadAbsorb(attacker, target, skill) {
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg);
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(700);
+  tEl.classList.remove('hit-shake');
+  // Heal lost HP
+  if (attacker.alive && skill.healLostPct) {
+    const lostHp = attacker.maxHp - attacker.hp;
+    const heal = Math.round(lostHp * skill.healLostPct / 100);
+    const before = attacker.hp;
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
+    const actual = Math.round(attacker.hp - before);
+    if (actual > 0) {
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+    }
+    addLog(`${attacker.emoji}${attacker.name} <b>吸收</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>，<span class="log-heal">回复${actual}HP</span>`);
+  }
+  await sleep(200);
+}
+
+// Fear (kept for headless turtle which shares this skill)
+async function doTwoHeadFear(attacker, target, skill) {
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg);
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(700);
+  tEl.classList.remove('hit-shake');
+  if (target.alive) {
+    const existing = target.buffs.find(b => b.type === 'fear' && b.sourceId === allFighters.indexOf(attacker));
+    if (existing) { existing.turns = skill.fearTurns; }
+    else { target.buffs.push({ type:'fear', value:skill.fearReduction, turns:skill.fearTurns, sourceId:allFighters.indexOf(attacker) }); }
+    spawnFloatingNum(tElId, '恐惧!', 'debuff-label', 200, 0);
+    renderStatusIcons(target);
+    addLog(`${attacker.emoji}${attacker.name} <b>恐吓</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-debuff">恐惧${skill.fearTurns}回合</span>`);
+  }
+  await sleep(200);
+}
+
+async function doTwoHeadSteal(attacker, target, _skill) {
+  // Pick a random skill from target (excluding the steal skill itself)
+  const stealable = target.skills.filter(s => s.type !== 'twoHeadSteal' && s.cdLeft === 0);
+  if (!stealable.length) {
+    addLog(`${attacker.emoji}${attacker.name} <b>窃取</b>：${target.emoji}${target.name} 没有可窃取的技能！`);
+    await sleep(1000);
+    return;
+  }
+  const stolen = stealable[Math.floor(Math.random() * stealable.length)];
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `窃取: ${stolen.name}`, 'crit-label', 0, 0);
+  addLog(`${attacker.emoji}${attacker.name} <b>窃取</b>了 ${target.emoji}${target.name} 的 <b>${stolen.name}</b>！立即释放！`);
+  await sleep(800);
+
+  // Execute the stolen skill as if attacker used it
+  // Determine target for stolen skill
+  const isAlly = stolen.type === 'heal' || stolen.type === 'shield' || stolen.type === 'bubbleShield' || stolen.type === 'ninjaTrap' || stolen.type === 'angelBless';
+  const isAoe = stolen.aoe || stolen.aoeAlly || stolen.type === 'hunterBarrage' || stolen.type === 'ninjaBomb' || stolen.type === 'lightningBarrage';
+  const isSelf = stolen.type === 'phoenixShield' || stolen.type === 'fortuneDice' || stolen.type === 'lightningBuff';
+
+  let stolenTarget;
+  if (isSelf || isAoe) {
+    stolenTarget = attacker;
+  } else if (isAlly) {
+    const allies = (attacker.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+    stolenTarget = allies[Math.floor(Math.random() * allies.length)];
+  } else {
+    // Attack skill → use on the original target
+    stolenTarget = target.alive ? target : (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive)[0];
+  }
+  if (!stolenTarget) { await sleep(500); return; }
+
+  const fakeAction = {
+    attackerId: allFighters.indexOf(attacker),
+    skillIdx: -1, // not from attacker's own skills
+    targetId: allFighters.indexOf(stolenTarget),
+    aoe: isAoe && !stolen.aoeAlly,
+    _stolenSkill: stolen
+  };
+
+  // Temporarily assign stolen skill for executeAction
+  const savedSkills = attacker.skills;
+  attacker.skills = [...savedSkills, { ...stolen, cdLeft: 0 }];
+  fakeAction.skillIdx = attacker.skills.length - 1;
+
+  // Re-enter executeAction for the stolen skill (without the wrapper animations)
+  const stolenSkillRef = attacker.skills[fakeAction.skillIdx];
+  if (stolenSkillRef.cd > 0) stolenSkillRef.cdLeft = 0; // don't set CD on attacker
+
+  const atkEl = document.getElementById(getFighterElId(attacker));
+  atkEl.classList.add('attack-anim');
+
+  if (fakeAction.aoe) {
+    const enemies = (attacker.side==='left'?rightTeam:leftTeam).filter(e => e.alive);
+    for (const enemy of enemies) { await doDamage(attacker, enemy, stolenSkillRef); if (battleOver) break; }
+  } else if (stolenSkillRef.type === 'heal') {
+    await doHeal(attacker, stolenTarget, stolenSkillRef);
+  } else if (stolenSkillRef.type === 'shield') {
+    await doShield(attacker, stolenTarget, stolenSkillRef);
+  } else if (stolenSkillRef.type === 'physical' || stolenSkillRef.type === 'magic') {
+    await doDamage(attacker, stolenTarget, stolenSkillRef);
+  } else {
+    // For complex custom types, fall back to doDamage
+    await doDamage(attacker, stolenTarget, stolenSkillRef);
+  }
+
+  atkEl.classList.remove('attack-anim');
+  // Restore original skills
+  attacker.skills = savedSkills;
+}
+
+// ── HIDING TURTLE SKILLS ──────────────────────────────────
+async function doHidingDefend(caster, skill) {
+  const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
+  caster.shield += shieldAmt;
+  // Track shield for expiry heal
+  caster.buffs.push({ type:'hidingShield', turns:skill.shieldDuration, shieldVal:shieldAmt, healPct:skill.shieldHealPct });
+  const elId = getFighterElId(caster);
+  spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  updateHpBar(caster, elId);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} <b>防御</b>：<span class="log-shield">+${shieldAmt}护盾</span>（${skill.shieldDuration}回合，到期回复剩余盾${skill.shieldHealPct}%HP）`);
+  await sleep(800);
+}
+
+async function doHidingCommand(owner, _skill) {
+  const summon = owner._summon;
+  if (!summon || !summon.alive) {
+    const elId = getFighterElId(owner);
+    spawnFloatingNum(elId, '随从已阵亡', 'passive-num', 0, 0);
+    addLog(`${owner.emoji}${owner.name} <b>指挥</b>：随从已阵亡，技能无效！`);
+    await sleep(800);
+    return;
+  }
+  addLog(`${owner.emoji}${owner.name} <b>指挥</b>：命令 ${summon.emoji}${summon.name} 出击！`);
+  await sleep(400);
+  await summonUseRandomSkill(summon, owner);
+}
+
+// Helper: make a summon use a random available skill
+async function summonUseRandomSkill(summon, owner) {
+  if (!summon || !summon.alive) return;
+  const ready = summon.skills.filter(s => s.cdLeft === 0);
+  if (!ready.length) {
+    addLog(`${summon.emoji}${summon.name}(随从) 没有可用技能！`);
+    await sleep(500);
+    return;
+  }
+  const skill = ready[Math.floor(Math.random() * ready.length)];
+  if (skill.cd > 0) skill.cdLeft = skill.cd;
+
+  const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const allies = (summon.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+  // Add owner to allies list for heal/shield targeting
+  if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
+
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
+  const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost';
+  const isSelf = skill.type === 'phoenixShield' || skill.type === 'fortuneDice' || skill.type === 'lightningBuff' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand';
+
+  let target;
+  if (isSelf) {
+    target = summon;
+  } else if (isAoe) {
+    target = null; // handled below
+  } else if (isAlly) {
+    target = allies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+  } else {
+    target = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+  }
+
+  if (!target && !isAoe) { await sleep(500); return; }
+
+  const sElId = getFighterElId(summon);
+  const sCard = document.getElementById(sElId);
+  if (sCard) sCard.classList.add('attack-anim');
+
+  addLog(`${summon.emoji}${summon.name}(随从) 使用 <b>${skill.name}</b>！`);
+
+  // Execute the skill effect
+  if (isAoe && !skill.aoeAlly) {
+    for (const enemy of enemies) {
+      await doDamage(summon, enemy, skill);
+      if (battleOver) break;
+    }
+  } else if (skill.type === 'heal') {
+    await doHeal(summon, target, skill);
+  } else if (skill.type === 'shield') {
+    await doShield(summon, target, skill);
+  } else if (skill.type === 'turtleShieldBash') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doTurtleShieldBash(summon, eTarget, skill);
+  } else if (skill.type === 'basicBarrage') {
+    await doBasicBarrage(summon, skill);
+  } else if (skill.type === 'iceSpike') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doIceSpike(summon, eTarget, skill);
+  } else if (skill.type === 'iceFrost') {
+    await doIceFrost(summon, skill);
+  } else if (skill.type === 'angelBless') {
+    await doAngelBless(summon, target, skill);
+  } else if (skill.type === 'angelEquality') {
+    const eTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+    if (eTarget) await doAngelEquality(summon, eTarget, skill);
+  } else if (skill.type === 'physical' || skill.type === 'magic') {
+    await doDamage(summon, target, skill);
+  } else {
+    // Fallback for complex types
+    if (target && enemies.includes(target)) {
+      await doDamage(summon, target, skill);
+    } else {
+      await doDamage(summon, enemies[0] || target, skill);
+    }
+  }
+
+  if (sCard) sCard.classList.remove('attack-anim');
+
+  // Check deaths after summon action
+  checkDeaths(summon);
+}
+
+// ── BASIC TURTLE SKILLS ───────────────────────────────────
+async function doTurtleShieldBash(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const raw = Math.round(attacker.atk * skill.atkScale);
+
+  let effectiveCrit = attacker.crit;
+  if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+    effectiveCrit += attacker.passive.pct / 100;
+  }
+  const isCrit = Math.random() < effectiveCrit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+  const effectiveDef = calcEffDef(attacker, target);
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  let dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+
+  // Passive: basicTurtle bonus
+  if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+    const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+    if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
+  }
+  // Passive: frostAura bonus
+  if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+    dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+  }
+
+  applyRawDmg(attacker, target, dmg, false);
+
+  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
+  updateHpBar(target, tElId);
+  await triggerOnHitEffects(attacker, target, dmg);
+
+  const tEl = document.getElementById(tElId);
+  if (tEl) { tEl.classList.add('hit-shake'); }
+  await sleep(500);
+  if (tEl) { tEl.classList.remove('hit-shake'); }
+
+  // Shield from damage
+  const shieldGain = Math.round(dmg * skill.shieldFromDmgPct / 100);
+  if (shieldGain > 0 && attacker.alive) {
+    attacker.shield += shieldGain;
+    const aElId = getFighterElId(attacker);
+    spawnFloatingNum(aElId, `+${shieldGain}🛡`, 'shield-num', 0, 0);
+    updateHpBar(attacker, aElId);
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>龟盾</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>${isCrit?' <span class="log-crit">暴击</span>':''} + <span class="log-shield">+${shieldGain}永久护盾</span>`);
+  if (target.alive) applySkillDebuffs(skill, target);
+}
+
+async function doBasicBarrage(attacker, skill) {
+  const hits = skill.hits;
+  const perHit = Math.round(attacker.atk * skill.atkScale / hits);
+  let totalDmg = 0;
+
+  const effectiveDef0 = DEF_CONSTANT; // placeholder, recalc per target
+
+  for (let i = 0; i < hits; i++) {
+    const enemies = getAliveEnemiesWithSummons(attacker.side);
+    if (!enemies.length) break;
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const tElId = getFighterElId(target);
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+    const effectiveDef = calcEffDef(attacker, target);
+    const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    let dmg = Math.max(1, Math.round(perHit * critMult * (1 - defReduction)));
+
+    // Passive: basicTurtle bonus
+    if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+      const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+      if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
+    }
+
+    applyRawDmg(attacker, target, dmg, false);
+    totalDmg += dmg;
+
+    const yOff = (i % 4) * 24;
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    updateHpBar(target, tElId);
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    await sleep(350);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(100);
+
+    checkDeaths(attacker);
+    if (battleOver) break;
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>打击</b> ${hits}段随机分布：<span class="log-direct">共${totalDmg}伤害</span>`);
+}
+
+// ── ICE TURTLE SKILLS ─────────────────────────────────────
+async function doIceSpike(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const hits = skill.hits; // 6
+  const perHit = attacker.atk * skill.totalScale / hits;
+  let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
+
+  const effectiveDef = calcEffDef(attacker, target);
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  for (let i = 0; i < hits; i++) {
+    if (!target.alive) break;
+
+    // Dodge check
+    const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
+    if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      await sleep(280);
+      continue;
+    }
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    if (isCrit) totalCrits++;
+
+    const isNormal = (i % 2 === 0); // odd hits (1,3,5) = index 0,2,4 = normal; even hits (2,4,6) = index 1,3,5 = pierce
+    const raw = Math.round(perHit);
+    let dmg;
+    const yOff = (i % 4) * 24;
+
+    if (isNormal) {
+      dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+      // Frost bonus vs fire targets
+      if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+        dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+      }
+      applyRawDmg(attacker, target, dmg, false);
+      totalNormal += dmg;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    } else {
+      dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
+      // Frost bonus vs fire targets (pierce portion)
+      if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
+        dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+      }
+      applyRawDmg(attacker, target, dmg, true);
+      totalPierce += dmg;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+    }
+
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    // Judgement passive
+    if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+      const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false);
+      totalNormal += judgeReduced;
+      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, yOff);
+      updateHpBar(target, tElId);
+    }
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    updateHpBar(target, tElId);
+    await sleep(500);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(150);
+  }
+
+  // Log
+  const parts = [];
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>冰锥</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}`);
+
+  if (target.alive) applySkillDebuffs(skill, target);
+}
+
+async function doIceFrost(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  const dmgBase = Math.round(attacker.atk * skill.atkScale);
+  let totalDmg = 0;
+
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    let dmg = dmgBase;
+    // Frost bonus vs fire targets
+    if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(enemy.id)) {
+      dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+    }
+    // Crit check
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    dmg = Math.max(1, Math.round(dmg * critMult));
+
+    applyRawDmg(attacker, enemy, dmg, true);
+    totalDmg += dmg;
+    const eElId = getFighterElId(enemy);
+    if (isCrit) spawnFloatingNum(eElId, '暴击!', 'crit-label', 0, 0);
+    spawnFloatingNum(eElId, `-${dmg}`, 'pierce-dmg', 80, 0);
+    updateHpBar(enemy, eElId);
+    await triggerOnHitEffects(attacker, enemy, dmg);
+
+    const eEl = document.getElementById(eElId);
+    if (eEl) { eEl.classList.add('hit-shake'); }
+    await sleep(400);
+    if (eEl) { eEl.classList.remove('hit-shake'); }
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体：<span class="log-pierce">${totalDmg}穿透伤害</span>`);
+}
+
+// ── ANGEL TURTLE SKILLS ───────────────────────────────────
+async function doAngelBless(caster, target, skill) {
+  const shieldAmt = Math.round(caster.atk * skill.shieldScale);
+  const defGain = Math.round(caster.atk * skill.defBoostScale);
+  target.shield += shieldAmt;
+  target.buffs.push({ type:'defUp', value:defGain, turns:skill.defBoostTurns });
+  recalcStats();
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(tElId, `+${defGain}防`, 'passive-num', 300, 0);
+  updateHpBar(target, tElId);
+  renderStatusIcons(target);
+  addLog(`${caster.emoji}${caster.name} <b>祝福</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span>(${skill.shieldTurns}回合) + <span class="log-passive">防御+${defGain}</span>(${skill.defBoostTurns}回合)`);
+  await sleep(1000);
+}
+
+async function doAngelEquality(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const isHighRarity = skill.antiHighRarity.includes(target.rarity);
+  let totalDmgDealt = 0;
+
+  // Track judgement passive damage for this skill
+  skill._judgeTotal = 0;
+
+  // Effective crit
+  let effectiveCrit = attacker.crit;
+  if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+    effectiveCrit += attacker.passive.pct / 100;
+  }
+  const forceCrit = isHighRarity && skill.forceCrit;
+  const isCrit = forceCrit || Math.random() < effectiveCrit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+
+  const effectiveDef = calcEffDef(attacker, target);
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  // ── Hit 1: normal damage ──
+  const normalRaw = Math.round(attacker.atk * skill.normalScale);
+  let normalDmg = Math.max(1, Math.round(normalRaw * critMult * (1 - defReduction)));
+  // Passive bonusDmgAbove60
+  if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
+    normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
+  }
+  applyRawDmg(attacker, target, normalDmg, false);
+  totalDmgDealt += normalDmg;
+
+  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
+  updateHpBar(target, tElId);
+  await triggerOnHitEffects(attacker, target, normalDmg);
+
+  // Judgement passive on hit 1
+  if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+    const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+    const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+    applyRawDmg(attacker, target, judgeReduced, false);
+    totalDmgDealt += judgeReduced;
+    skill._judgeTotal += judgeReduced;
+    spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 0);
+    updateHpBar(target, tElId);
+  }
+
+  const tEl1 = document.getElementById(tElId);
+  if (tEl1) { tEl1.classList.add('hit-shake'); }
+  await sleep(700);
+  if (tEl1) { tEl1.classList.remove('hit-shake'); }
+  await sleep(200);
+
+  // ── Hit 2: pierce damage ──
+  if (target.alive) {
+    const pierceRaw = Math.round(attacker.atk * skill.pierceScale);
+    const pierceDmg = Math.max(1, Math.round(pierceRaw * critMult)); // pierce ignores DEF
+    applyRawDmg(attacker, target, pierceDmg, true);
+    totalDmgDealt += pierceDmg;
+
+    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 24);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 80, 24);
+    updateHpBar(target, tElId);
+    await triggerOnHitEffects(attacker, target, pierceDmg);
+
+    // Judgement passive on hit 2
+    if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
+      const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false);
+      totalDmgDealt += judgeReduced;
+      skill._judgeTotal += judgeReduced;
+      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 24);
+      updateHpBar(target, tElId);
+    }
+
+    const tEl2 = document.getElementById(tElId);
+    if (tEl2) { tEl2.classList.add('hit-shake'); }
+    await sleep(700);
+    if (tEl2) { tEl2.classList.remove('hit-shake'); }
+    await sleep(200);
+  }
+
+  // Log
+  const parts = [];
+  parts.push(`<span class="log-direct">普通${Math.round(attacker.atk * skill.normalScale)}</span>`);
+  parts.push(`<span class="log-pierce">穿透${Math.round(attacker.atk * skill.pierceScale)}</span>`);
+  if (skill._judgeTotal > 0) parts.push(`<span class="log-passive">⚖裁决${skill._judgeTotal}</span>`);
+  if (isCrit) parts.push(`<span class="log-crit">暴击</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>平等</b> → ${target.emoji}${target.name}：${parts.join(' + ')}${isHighRarity ? ' <span class="log-crit">[克制S级以上]</span>' : ''}`);
+
+  // Anti-high-rarity heal
+  if (isHighRarity && attacker.alive) {
+    const healAmt = Math.round(totalDmgDealt * skill.healPctOfDmg / 100);
+    const before = attacker.hp;
+    attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
+    const actual = Math.round(attacker.hp - before);
+    if (actual > 0) {
+      const aElId = getFighterElId(attacker);
+      spawnFloatingNum(aElId, `+${actual}`, 'heal-num', 0, 0);
+      updateHpBar(attacker, aElId);
+      addLog(`${attacker.emoji}${attacker.name} 平等克制：<span class="log-heal">回复${actual}HP</span>（总伤${totalDmgDealt}×${skill.healPctOfDmg}%）`);
+    }
+  }
+
+  // Clean up temp tracking
+  delete skill._judgeTotal;
+}
+
+// ── FORTUNE SKILLS ────────────────────────────────────────
+async function doFortuneDice(caster, skill) {
+  const roll = 1 + Math.floor(Math.random() * 6);
+  caster._goldCoins += roll;
+  const fElId = getFighterElId(caster);
+  spawnFloatingNum(fElId, `🎲${roll} +${roll}🪙`, 'passive-num', 0, 0);
+  // Heal 10% max HP
+  const healAmt = Math.round(caster.maxHp * skill.healPct / 100);
+  const before = caster.hp;
+  caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+  const actual = Math.round(caster.hp - before);
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 300, 0);
+  updateHpBar(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>骰子</b>：🎲${roll}！<span class="log-passive">+${roll}金币（共${caster._goldCoins}）</span> <span class="log-heal">+${actual}HP</span>`);
+  await sleep(1000);
+}
+
+async function doFortuneAllIn(attacker, target, skill) {
+  const coins = attacker._goldCoins;
+  if (coins <= 0) {
+    addLog(`${attacker.emoji}${attacker.name} <b>梭哈</b>：没有金币！`);
+    await sleep(700);
+    return;
+  }
+  attacker._goldCoins = 0;
+  const piercePer = Math.round(attacker.atk * skill.perCoinAtkPierce);
+  const normalPer = Math.round(attacker.atk * skill.perCoinAtkNormal);
+  const tElId = getFighterElId(target);
+  let totalPierce = 0, totalNormal = 0;
+
+  addLog(`${attacker.emoji}${attacker.name} <b>梭哈！</b> ${coins}枚金币全部投出！`);
+
+  for (let i = 0; i < coins; i++) {
+    if (!target.alive) break;
+    // Normal part through DEF
+    const effectiveDef = calcEffDef(attacker, target);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
+    const totalHit = normalDmg + piercePer;
+    applyRawDmg(attacker, target, totalHit);
+    totalPierce += piercePer;
+    totalNormal += normalDmg;
+    // Stagger visuals
+    const yOff = (i % 6) * 18;
+    spawnFloatingNum(tElId, `-${totalHit}🪙`, i < 10 ? 'crit-dmg' : 'direct-dmg', 0, yOff);
+    if (i % 3 === 0) {
+      const tEl = document.getElementById(tElId);
+      tEl.classList.add('hit-shake');
+      updateHpBar(target, tElId);
+      await sleep(180);
+      tEl.classList.remove('hit-shake');
+    }
+  }
+  updateHpBar(target, tElId);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalNormal}普通</span> + <span class="log-pierce">${totalPierce}穿透</span>（${coins}枚金币）`);
+  // Mark as used (cd=999 already prevents reuse)
+  await sleep(1000);
+}
+
+// ── LIGHTNING SKILLS ───────────────────────────────────────
+async function doLightningStrike(attacker, mainTarget, skill) {
+  // 5 hits on main target, each hit splashes 25% to secondary target
+  const totalDmg = Math.round(attacker.atk * skill.atkScale);
+  const perHit = Math.round(totalDmg / skill.hits);
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const secondaryTarget = enemies.find(e => e !== mainTarget && e.alive);
+  const tElId = getFighterElId(mainTarget);
+  let totalMain = 0, totalSplash = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!mainTarget.alive) break;
+    // Main target: normal damage through DEF
+    const effectiveDef = calcEffDef(attacker, mainTarget);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(perHit * (1 - defRed)));
+    applyRawDmg(attacker, mainTarget, dmg);
+    totalMain += dmg;
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+    await triggerOnHitEffects(attacker, mainTarget, dmg);
+    // Splash to secondary
+    if (secondaryTarget && secondaryTarget.alive) {
+      const splashDmg = Math.max(1, Math.round(dmg * skill.splashPct / 100));
+      applyRawDmg(attacker, secondaryTarget, splashDmg);
+      totalSplash += splashDmg;
+      const sElId = getFighterElId(secondaryTarget);
+      spawnFloatingNum(sElId, `-${splashDmg}`, 'direct-dmg', 200, 0);
+      updateHpBar(secondaryTarget, sElId);
+      await triggerOnHitEffects(attacker, secondaryTarget, splashDmg);
+    }
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    updateHpBar(mainTarget, tElId);
+    await sleep(600);
+    tEl.classList.remove('hit-shake');
+    await sleep(100);
+  }
+  let logStr = `${attacker.emoji}${attacker.name} <b>闪电打击</b> → ${mainTarget.emoji}${mainTarget.name}：<span class="log-direct">${totalMain}伤害</span>`;
+  if (totalSplash > 0 && secondaryTarget) logStr += ` + ${secondaryTarget.emoji}溅射<span class="log-direct">${totalSplash}</span>`;
+  addLog(logStr);
+}
+
+async function doLightningBuff(caster, skill) {
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+  for (const ally of allies) {
+    const val = Math.round(ally.baseAtk * skill.atkUpPct / 100);
+    const existing = ally.buffs.find(b => b.type === 'atkUp');
+    if (existing) { existing.value = Math.max(existing.value, val); existing.turns = Math.max(existing.turns, skill.atkUpTurns); }
+    else ally.buffs.push({ type: 'atkUp', value: val, turns: skill.atkUpTurns });
+    const aElId = getFighterElId(ally);
+    spawnFloatingNum(aElId, `+${val}攻`, 'passive-num', 0, 0);
+    renderStatusIcons(ally);
+  }
+  recalcStats();
+  addLog(`${caster.emoji}${caster.name} <b>威力增幅</b>：全体友方 <span class="log-passive">攻击+${skill.atkUpPct}% ${skill.atkUpTurns}回合</span>`);
+  await sleep(1000);
+}
+
+async function doLightningBarrage(attacker, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  if (!enemies.length) return;
+  const perHitDmg = Math.round(attacker.atk * skill.arrowScale);
+
+  for (let i = 0; i < skill.hits; i++) {
+    const alive = enemies.filter(e => e.alive);
+    if (!alive.length) break;
+    const target = alive[Math.floor(Math.random() * alive.length)];
+    // Normal damage through DEF
+    const effectiveDef = calcEffDef(attacker, target);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(perHitDmg * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg);
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 5) * 15);
+    await triggerOnHitEffects(attacker, target, dmg);
+    updateHpBar(target, tElId);
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    await sleep(100);
+    tEl.classList.remove('hit-shake');
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>雷暴</b> ${skill.hits}次随机闪电，每次 <span class="log-direct">${perHitDmg}伤害</span>`);
+}
+
+// ── CYBER SKILLS ──────────────────────────────────────────
+async function doCyberDeploy(caster, _skill) {
+  if (!caster.passive || caster.passive.type !== 'cyberDrone') { await sleep(500); return; }
+  if (caster._drones.length >= caster.passive.maxDrones) {
+    addLog(`${caster.emoji}${caster.name} 浮游炮已满（${caster.passive.maxDrones}个）！`);
+    await sleep(500);
+    return;
+  }
+  caster._drones.push({ age: 0 });
+  const elId = getFighterElId(caster);
+  spawnFloatingNum(elId, `+🛸`, 'passive-num', 0, 0);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} 部署浮游炮！（${caster._drones.length}/${caster.passive.maxDrones}）`);
+  await sleep(800);
+}
+
+// ── PHOENIX SKILLS ────────────────────────────────────────
+async function doPhoenixBurn(attacker, target, skill) {
+  // Deal 1×ATK normal damage
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effectiveDef = calcEffDef(attacker, target);
+  const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const tElId = getFighterElId(target);
+  applyRawDmg(attacker, target, dmg);
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+
+  // Apply phoenix burn DoT — same caster's burn only refreshes duration, not stack
+  if (target.alive) {
+    const casterId = allFighters.indexOf(attacker);
+    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot' && b.casterId === casterId);
+    if (existing) {
+      existing.turns = skill.burnTurns; // refresh only
+      spawnFloatingNum(tElId, `🔥刷新${skill.burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧刷新至${skill.burnTurns}回合</span>`);
+    } else {
+      const dotDmg = Math.round(attacker.atk * skill.burnAtkScale);
+      target.buffs.push({ type:'phoenixBurnDot', value:dotDmg, hpPct:skill.burnHpPct, turns:skill.burnTurns, casterId });
+      spawnFloatingNum(tElId, `🔥灼烧${skill.burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧${skill.burnTurns}回合</span>`);
+    }
+    renderStatusIcons(target);
+  }
+  await sleep(80);
+}
+
+async function doPhoenixShield(caster, skill) {
+  const amount = Math.round(caster.atk * skill.shieldScale);
+  caster._lavaShieldVal = amount;
+  caster._lavaShieldTurns = skill.duration;
+  caster._lavaShieldCounter = skill.counterScale;
+  // Also add as normal shield for visual
+  caster.shield += amount;
+  const fElId = getFighterElId(caster);
+  spawnFloatingNum(fElId, `+${amount}🌋`, 'passive-num', 0, 0);
+  updateHpBar(caster, fElId);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} <b>熔岩盾</b>：+${amount}护盾 ${skill.duration}回合，被攻击每段反击${Math.round(skill.counterScale*100)}%ATK`);
+  await sleep(1000);
+}
+
+async function doPhoenixScald(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+
+  // Break 50% of target's shields first
+  if (skill.shieldBreak && (target.shield > 0 || target.bubbleShieldVal > 0)) {
+    const breakPct = skill.shieldBreak / 100;
+    if (target.bubbleShieldVal > 0) {
+      const broken = Math.round(target.bubbleShieldVal * breakPct);
+      target.bubbleShieldVal -= broken;
+      spawnFloatingNum(tElId, `-${broken}🫧`, 'shield-dmg', 0, -15);
+    }
+    if (target.shield > 0) {
+      const broken = Math.round(target.shield * breakPct);
+      target.shield -= broken;
+      spawnFloatingNum(tElId, `-${broken}🛡`, 'shield-dmg', 100, -15);
+    }
+    addLog(`${attacker.emoji}${attacker.name} 烫伤破盾！<span class="log-debuff">破坏${skill.shieldBreak}%护盾</span>`);
+    updateHpBar(target, tElId);
+    await sleep(300);
+  }
+
+  // Deal 0.7×ATK normal damage
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effectiveDef = calcEffDef(attacker, target);
+  const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg);
+  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+
+  // Apply debuffs
+  if (target.alive) {
+    applySkillDebuffs(skill, target);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>烫伤</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+  await sleep(80);
+}
+
+// ── NINJA SKILLS ──────────────────────────────────────────
+async function doNinjaShuriken(attacker, target, skill) {
+  // 1.5×ATK damage, if crits → entire damage becomes pierce (ignores DEF)
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const isCrit = Math.random() < attacker.crit;
+  const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+  const tElId = getFighterElId(target);
+
+  if (isCrit) {
+    const pierceDmg = Math.round(baseDmg * critMult);
+    applyRawDmg(attacker, target, pierceDmg);
+    spawnFloatingNum(tElId, '暴击!转穿透', 'crit-label', 0, -18);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}穿透</span>`);
+    await triggerOnHitEffects(attacker, target, pierceDmg);
+  } else {
+    const effectiveDef = calcEffDef(attacker, target);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 100, 0);
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+    await triggerOnHitEffects(attacker, target, dmg);
+  }
+
+  const tEl = document.getElementById(tElId);
+  tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(450);
+  tEl.classList.remove('hit-shake');
+  // Trap triggers when the buffed ally is attacked, not here
+  await sleep(80);
+}
+
+async function doNinjaTrap(caster, target, skill) {
+  // Place hidden trap on ally — enemy can't see who has it
+  // Remove old trap from this caster
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam);
+  allies.forEach(a => { a.buffs = a.buffs.filter(b => !(b.type === 'trap' && b.casterId === allFighters.indexOf(caster))); });
+  // Add trap
+  target.buffs.push({ type:'trap', value: Math.round(caster.atk * skill.trapScale), turns:99, casterId: allFighters.indexOf(caster), hidden:true });
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, '夹子已布置', 'passive-num', 0, 0);
+  // Don't reveal which ally has it in the log (hidden from enemy)
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：在友方布置了隐形夹子`);
+  // Don't show trap in status icons (hidden)
+  await sleep(1000);
+}
+
+async function doNinjaBomb(attacker, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+
+  for (const e of enemies) {
+    const effectiveDef = calcEffDef(attacker, e);
+    const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    applyRawDmg(attacker, e, dmg);
+    const eId = getFighterElId(e);
+    spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
+    updateHpBar(e, eId);
+    await triggerOnHitEffects(attacker, e, dmg);
+
+    // Apply armor break (defDown by %)
+    if (skill.armorBreak) {
+      const ab = skill.armorBreak;
+      const existing = e.buffs.find(b => b.type === 'defDown');
+      if (existing) { existing.value = Math.max(existing.value, ab.pct); existing.turns = Math.max(existing.turns, ab.turns); }
+      else e.buffs.push({ type:'defDown', value:ab.pct, turns:ab.turns });
+      spawnFloatingNum(eId, `破甲${ab.pct}%`, 'debuff-label', 200, 0);
+      renderStatusIcons(e);
+    }
+  }
+  recalcStats();
+  addLog(`${attacker.emoji}${attacker.name} <b>炸弹</b> → 全体敌方：<span class="log-direct">${baseDmg}伤害</span> + <span class="log-debuff">破甲${skill.armorBreak.pct}% ${skill.armorBreak.turns}回合</span>`);
+  await sleep(1000);
+}
+
+// ── HUNTER SKILLS ─────────────────────────────────────────
+async function doHunterShot(attacker, target, skill) {
+  // If target < execThresh% HP: +execCrit% crit, +execCritDmg% crit damage
+  const isExec = target.hp / target.maxHp < skill.execThresh / 100;
+  const savedCrit = attacker.crit;
+  if (isExec) {
+    attacker.crit += skill.execCrit / 100;
+    addLog(`${attacker.emoji}${attacker.name} 猎人本能！目标血量低，<span class="log-crit">暴击率+${skill.execCrit}% 暴击伤害+${skill.execCritDmg}%</span>`);
+  }
+  // Temporarily boost crit damage multiplier
+  attacker._extraCritDmg = isExec ? skill.execCritDmg / 100 : 0;
+  await doDamage(attacker, target, skill);
+  attacker.crit = savedCrit;
+  attacker._extraCritDmg = 0;
+}
+
+async function doHunterBarrage(attacker, skill) {
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  if (!enemies.length) return;
+  const arrowDmg = Math.round(attacker.atk * skill.arrowScale);
+
+  for (let i = 0; i < skill.hits; i++) {
+    const alive = enemies.filter(e => e.alive);
+    if (!alive.length) break;
+    const target = alive[Math.floor(Math.random() * alive.length)];
+    // Pierce damage — ignores DEF, hits shields
+    applyRawDmg(attacker, target, arrowDmg, true); // isPierce
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', 0, (i % 4) * 20);
+    await triggerOnHitEffects(attacker, target, arrowDmg);
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(320);
+    tEl.classList.remove('hit-shake');
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭随机射出，每根 <span class="log-pierce">${arrowDmg}穿透</span>`);
+}
+
+async function doHunterStealth(attacker, target, skill) {
+  // 1) Deal damage
+  const dmgSkill = { ...skill, power: 0, atkScale: skill.dmgScale, hits: 1, type: 'physical' };
+  await doDamage(attacker, target, dmgSkill);
+
+  // 2) Gain dodge buff
+  const existing = attacker.buffs.find(b => b.type === 'dodge');
+  if (existing) { existing.turns = Math.max(existing.turns, skill.dodgeTurns); }
+  else attacker.buffs.push({ type: 'dodge', value: skill.dodgePct, turns: skill.dodgeTurns });
+
+  // 3) Gain shield
+  const shieldAmt = Math.round(attacker.atk * skill.shieldScale);
+  attacker.shield += shieldAmt;
+
+  const fElId = getFighterElId(attacker);
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  spawnFloatingNum(fElId, `闪避${skill.dodgePct}%`, 'passive-num', 400, -15);
+  updateHpBar(attacker, fElId);
+  renderStatusIcons(attacker);
+  addLog(`${attacker.emoji}${attacker.name} 进入隐蔽：<span class="log-passive">闪避${skill.dodgePct}% ${skill.dodgeTurns}回合</span> + <span class="log-shield">护盾+${shieldAmt}</span>`);
+}
+
+async function doBubbleShield(caster, target, skill) {
+  const amount = Math.round(caster.atk * skill.atkScale);
+  target.bubbleShieldVal = amount;
+  target.bubbleShieldTurns = skill.duration;
+  target.bubbleShieldOwner = caster;
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `+${amount}🫧`, 'bubble-num', 0, 0);
+  updateHpBar(target, tElId);
+  renderStatusIcons(target);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡盾+${amount}（${skill.duration}回合）</span>`);
+  await sleep(1000);
+}
+
+async function doBubbleBind(caster, target, skill) {
+  // Remove existing bind on this target
+  target.buffs = target.buffs.filter(b => b.type !== 'bubbleBind');
+  target.buffs.push({ type:'bubbleBind', value:skill.bindPct, turns:skill.duration });
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, '🫧束缚', 'bubble-num', 0, 0);
+  renderStatusIcons(target);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡束缚${skill.duration}回合（攻击者获得${skill.bindPct}%伤害护盾）</span>`);
+  await sleep(1000);
+}
+
+
+// ── SHELL TURTLE SKILLS (龟壳) ──────────────────────────
+async function doShellStrike(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const hits = skill.hits; // 6
+  const perHit = attacker.atk * skill.totalScale / hits;
+  let totalNormal = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
+  let totalDmgDealt = 0;
+
+  const effectiveDef = calcEffDef(attacker, target);
+  const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+  for (let i = 0; i < hits; i++) {
+    if (!target.alive) break;
+
+    // Dodge check
+    const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
+    if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      await sleep(280);
+      continue;
+    }
+
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+      effectiveCrit += attacker.passive.pct / 100;
+    }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    if (isCrit) totalCrits++;
+
+    const isNormal = (i % 2 === 0); // index 0,2,4 = normal; 1,3,5 = pierce
+    const raw = Math.round(perHit);
+    let dmg;
+    const yOff = (i % 4) * 24;
+
+    if (isNormal) {
+      dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
+      const { shieldAbs } = applyRawDmg(attacker, target, dmg, false);
+      totalNormal += dmg;
+      totalShieldDmg += shieldAbs;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+    } else {
+      dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
+      const { shieldAbs } = applyRawDmg(attacker, target, dmg, true);
+      totalPierce += dmg;
+      totalShieldDmg += shieldAbs;
+      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+    }
+    totalDmgDealt += dmg;
+
+    // Per-hit splash to other enemies
+    if (dmg > 0 && skill.splashPct > 0) {
+      const splashDmg = Math.round(dmg * skill.splashPct / 100);
+      if (splashDmg > 0) {
+        const others = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
+        for (const e of others) {
+          applyRawDmg(attacker, e, splashDmg, false);
+          const eElId = getFighterElId(e);
+          spawnFloatingNum(eElId, `-${splashDmg}溅射`, 'direct-dmg', 0, yOff);
+          updateHpBar(e, eElId);
+          await triggerOnHitEffects(attacker, e, splashDmg);
+        }
+      }
+    }
+
+    await triggerOnHitEffects(attacker, target, dmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) { tEl.classList.add('hit-shake'); }
+    updateHpBar(target, tElId);
+    await sleep(500);
+    if (tEl) { tEl.classList.remove('hit-shake'); }
+    await sleep(150);
+  }
+
+  // Log
+  const parts = [];
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
+  const splashNote = skill.splashPct > 0 ? ` (每段溅射${skill.splashPct}%)` : '';
+  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}${splashNote}`);
+}
+
+async function doShellCopy(caster, _skill) {
+  // Collect all copyable skills from all alive enemies
+  const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  if (!enemies.length) { await sleep(500); return; }
+
+  // Gather {enemy, skill} pairs from all enemies (exclude shellCopy)
+  const pool = [];
+  for (const e of enemies) {
+    for (const s of e.skills) {
+      if (s.type !== 'shellCopy') pool.push({ source: e, skill: s });
+    }
+  }
+  if (!pool.length) {
+    addLog(`${caster.emoji}${caster.name} <b>复制</b>：没有可复制的技能！`);
+    await sleep(1000);
+    return;
+  }
+
+  // Pick up to 2 random skills (no duplicate skill type)
+  const picked = [];
+  const shuffled = pool.sort(() => Math.random() - 0.5);
+  for (const p of shuffled) {
+    if (picked.length >= 2) break;
+    if (!picked.find(x => x.skill.type === p.skill.type)) picked.push(p);
+  }
+
+  const COPY_MULT = 0.6; // 60% effectiveness (40% reduction)
+
+  for (const { source, skill: origSkill } of picked) {
+    if (!caster.alive || battleOver) break;
+
+    const tElId = getFighterElId(source);
+    spawnFloatingNum(tElId, `复制: ${origSkill.name}`, 'crit-label', 0, 0);
+    addLog(`${caster.emoji}${caster.name} <b>复制</b>了 ${source.emoji}${source.name} 的 <b>${origSkill.name}</b>！(60%效果)`);
+    await sleep(600);
+
+    // Deep copy skill and apply 60% scaling to damage/shield/heal values
+    const copied = JSON.parse(JSON.stringify(origSkill));
+    if (copied.power) copied.power = Math.round(copied.power * COPY_MULT);
+    if (copied.pierce) copied.pierce = Math.round(copied.pierce * COPY_MULT);
+    if (copied.atkScale) copied.atkScale *= COPY_MULT;
+    if (copied.defScale) copied.defScale *= COPY_MULT;
+    if (copied.hpPct) copied.hpPct *= COPY_MULT;
+    if (copied.totalScale) copied.totalScale *= COPY_MULT;
+    if (copied.shield) copied.shield = Math.round(copied.shield * COPY_MULT);
+    if (copied.shieldFlat) copied.shieldFlat = Math.round(copied.shieldFlat * COPY_MULT);
+    if (copied.shieldHpPct) copied.shieldHpPct *= COPY_MULT;
+    if (copied.shieldAtkScale) copied.shieldAtkScale *= COPY_MULT;
+    if (copied.heal) copied.heal = Math.round(copied.heal * COPY_MULT);
+    if (copied.hot) copied.hot.hpPerTurn = Math.round(copied.hot.hpPerTurn * COPY_MULT);
+    if (copied.dot) copied.dot.dmg = Math.round(copied.dot.dmg * COPY_MULT);
+    copied.cdLeft = 0;
+
+    // Determine target
+    const isAlly = copied.type === 'heal' || copied.type === 'shield' || copied.type === 'bubbleShield' || copied.type === 'ninjaTrap' || copied.type === 'angelBless';
+    const isAoe = copied.aoe || copied.aoeAlly || copied.type === 'hunterBarrage' || copied.type === 'ninjaBomb' || copied.type === 'lightningBarrage';
+    const isSelf = copied.type === 'phoenixShield' || copied.type === 'fortuneDice' || copied.type === 'lightningBuff' || copied.type === 'hidingDefend';
+
+    let copyTarget;
+    if (isSelf || isAoe) {
+      copyTarget = caster;
+    } else if (isAlly) {
+      const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+      copyTarget = allies[Math.floor(Math.random() * allies.length)];
+    } else {
+      const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      copyTarget = aliveEnemies.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+    }
+    if (!copyTarget) continue;
+
+    // Temporarily assign copied skill and execute
+    const savedSkills = caster.skills;
+    caster.skills = [...savedSkills, copied];
+    const copiedRef = caster.skills[caster.skills.length - 1];
+
+    const atkEl = document.getElementById(getFighterElId(caster));
+    atkEl.classList.add('attack-anim');
+
+    if (isAoe && !copied.aoeAlly) {
+      const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      for (const enemy of aliveEnemies) { await doDamage(caster, enemy, copiedRef); if (battleOver) break; }
+    } else if (copiedRef.type === 'heal') {
+      await doHeal(caster, copyTarget, copiedRef);
+    } else if (copiedRef.type === 'shield') {
+      await doShield(caster, copyTarget, copiedRef);
+    } else {
+      await doDamage(caster, copyTarget, copiedRef);
+    }
+
+    atkEl.classList.remove('attack-anim');
+    caster.skills = savedSkills;
+
+    checkDeaths(caster);
+    if (checkBattleEnd()) return;
+    await sleep(400);
+  }
+}
+
+// ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
+async function processEnergyWave() {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'auraAwaken' || !f.passive.energyStore) continue;
+    if (turnNum < f.passive.energyReleaseTurn || turnNum % f.passive.energyReleaseTurn !== 0) continue;
+    if (!f._storedEnergy || f._storedEnergy <= 0) continue;
+    const stored = f._storedEnergy;
+    const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    // Wave damage to all enemies
+    const waveDmg = Math.round(stored * f.passive.energyDmgScale * f.atk);
+    for (const e of enemies) {
+      applyRawDmg(f, e, waveDmg, false);
+      const eElId = getFighterElId(e);
+      spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'pierce-dmg', 0, 0);
+      updateHpBar(e, eElId);
+    }
+    // Shield for self
+    const shieldAmt = Math.round(stored * f.passive.energyShieldScale * f.atk);
+    f.shield += shieldAmt;
+    const fElId = getFighterElId(f);
+    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, fElId);
+    // Log
+    addLog(`${f.emoji}${f.name} <span class="log-passive">⚡储能波击！储存${stored}能量 → 全体${waveDmg}伤害 + ${shieldAmt}护盾</span>`);
+    // Clear stored energy
+    f._storedEnergy = 0;
+    checkDeaths(f);
+    if (checkBattleEnd()) return;
+    await sleep(800);
+  }
+}
+
+
