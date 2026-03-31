@@ -311,17 +311,18 @@ async function runFullMatrix() {
 
   // Single turtle vs single turtle (1v1)
   for (let i = 0; i < pets.length; i++) {
-    results[pets[i]] = { wins:0, games:0, totalDmg:0 };
+    results[pets[i]] = { wins:0, games:0, totalDmg:0, totalTaken:0 };
     for (let j = i+1; j < pets.length; j++) {
-      if (!results[pets[j]]) results[pets[j]] = { wins:0, games:0, totalDmg:0 };
+      if (!results[pets[j]]) results[pets[j]] = { wins:0, games:0, totalDmg:0, totalTaken:0 };
 
       let aWins = 0;
       for (let k = 0; k < count; k++) {
-        // 1v1: each side has 1 turtle, duplicate to fill 2 slots
         const r = simRunBattle([pets[i], pets[i]], [pets[j], pets[j]]);
         if (r.winner === 'left') aWins++;
         results[pets[i]].totalDmg += r.left[0].dmgDealt + r.left[1].dmgDealt;
+        results[pets[i]].totalTaken += r.left[0].dmgTaken + r.left[1].dmgTaken;
         results[pets[j]].totalDmg += r.right[0].dmgDealt + r.right[1].dmgDealt;
+        results[pets[j]].totalTaken += r.right[0].dmgTaken + r.right[1].dmgTaken;
       }
       results[pets[i]].games += count;
       results[pets[j]].games += count;
@@ -347,10 +348,11 @@ async function runFullMatrix() {
     winRate: s.games > 0 ? s.wins/s.games : 0,
     wins: s.wins, games: s.games,
     avgDmg: s.games > 0 ? Math.round(s.totalDmg / s.games) : 0,
+    avgTaken: s.games > 0 ? Math.round(s.totalTaken / s.games) : 0,
   })).sort((a,b) => b.winRate - a.winRate);
 
   let html = `<h3>全龟胜率排行 (每对${count}局)</h3>`;
-  html += '<table><tr><th>#</th><th>龟</th><th>稀有度</th><th>胜率</th><th>胜/总</th><th>均伤</th><th>胜率条</th></tr>';
+  html += '<table><tr><th>#</th><th>龟</th><th>稀有度</th><th>胜率</th><th>胜/总</th><th>造成均伤</th><th>承受均伤</th><th>胜率条</th></tr>';
   sorted.forEach((s, i) => {
     const rate = Math.round(s.winRate * 100);
     const barW = rate;
@@ -361,6 +363,7 @@ async function runFullMatrix() {
       <td class="${rate>=50?'win':'lose'}">${rate}%</td>
       <td>${s.wins}/${s.games}</td>
       <td>${s.avgDmg}</td>
+      <td>${s.avgTaken}</td>
       <td class="bar-cell"><div class="bar ${rate>=50?'bar-green':'bar-red'}" style="width:${barW}%">&nbsp;</div></td>
     </tr>`;
   });
