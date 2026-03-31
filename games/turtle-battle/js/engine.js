@@ -648,9 +648,11 @@ async function executeAction(action) {
   }
   animating = true;
   const f = allFighters[action.attackerId];
+  if (!f) { console.error('executeAction: fighter not found', action); animating=false; return; }
   // Track this fighter as acted (needed for online: opponent actions come via network)
   actedThisSide.add(action.attackerId);
   const skill = f.skills[action.skillIdx];
+  if (!skill) { console.error('executeAction: skill not found', action, 'fighter:', f.name, 'skills:', f.skills.length); animating=false; onActionComplete(); return; }
 
   if (skill.cd > 0) skill.cdLeft = skill.cd;
 
