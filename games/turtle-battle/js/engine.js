@@ -1247,15 +1247,17 @@ function checkBattleEnd() {
 async function processHunterKill() {
   for (const f of allFighters) {
     if (!f.alive || !f.passive || f.passive.type !== 'hunterKill') continue;
-    const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    // Check ALL alive enemies (including summons and mechs)
+    const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
     for (const e of enemies) {
       if (e.hp / e.maxHp < f.passive.hpThresh / 100) {
         // Execute!
         const eElId = getFighterElId(e);
         spawnFloatingNum(eElId, '猎杀!', 'crit-label', 0, -20);
         spawnFloatingNum(eElId, '-99999', 'pierce-dmg', 100, 0);
-        e.hp = 0; e.alive = false;
-        document.getElementById(eElId).classList.add('dead');
+        e.hp = 0; e.alive = false; e._deathProcessed = true;
+        const deadEl = document.getElementById(eElId);
+        if (deadEl) deadEl.classList.add('dead');
         updateHpBar(e, eElId);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏹猎杀！</span>${e.emoji}${e.name} 被强化弩箭击杀！`,'death');
 
@@ -1264,10 +1266,9 @@ async function processHunterKill() {
         const sDef = Math.round(e.baseDef * f.passive.stealPct / 100);
         const sHp  = Math.round(e.maxHp   * f.passive.stealPct / 100);
         f.baseAtk += sAtk; f.baseDef += sDef; f.maxHp += sHp; f.hp += sHp;
-        // Lifesteal: permanent % of damage dealt heals hunter
-        if (f.passive.lifesteal && !f._lifestealApplied) {
-          f._lifestealPct = f.passive.lifesteal;
-          f._lifestealApplied = true;
+        // Lifesteal: stacks with each kill
+        if (f.passive.lifesteal) {
+          f._lifestealPct = (f._lifestealPct || 0) + f.passive.lifesteal;
         }
         const fElId = getFighterElId(f);
         spawnFloatingNum(fElId, `+${sAtk}攻+${sDef}防+${sHp}HP`, 'passive-num', 300, 0);
