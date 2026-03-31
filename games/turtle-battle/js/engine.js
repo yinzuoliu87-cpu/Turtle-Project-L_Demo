@@ -228,7 +228,7 @@ async function beginTurn() {
     const s = f._summon;
     s.passiveUsedThisTurn = false;
     const p = s.passive;
-    const sElId = getFighterElId(s);
+    const sElId = s._summonElId || getFighterElId(s);
     if (p.type === 'turnScaleAtk') {
       const gain = Math.round(s.baseAtk * p.pct / 100);
       s.baseAtk += gain; s.atk = s.baseAtk;
@@ -239,7 +239,7 @@ async function beginTurn() {
       const gain = Math.round(s.maxHp * p.pct / 100);
       s.maxHp += gain; s.hp += gain;
       spawnFloatingNum(sElId, `+${gain}HP`, 'passive-num', 0, 0);
-      updateHpBar(s, sElId);
+      updateSummonHpBar(s);
       addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">最大HP+${gain}</span>`);
     }
     if (p.type === 'stoneWall') {
