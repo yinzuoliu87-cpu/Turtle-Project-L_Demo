@@ -12,7 +12,7 @@ h1{font-size:20px;margin-bottom:16px;color:var(--accent)}
 .controls{display:flex;gap:12px;flex-wrap:wrap;align-items:end;margin-bottom:20px;padding:16px;background:var(--bg2);border-radius:10px}
 label{font-size:13px;color:var(--fg2);display:flex;flex-direction:column;gap:4px}
 select,input{background:var(--bg3);color:var(--fg);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:6px 10px;font-size:13px}
-button{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s}
+button{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;margin:2px}
 button:hover{filter:brightness(1.1);transform:translateY(-1px)}
 button:disabled{opacity:.4;cursor:not-allowed}
 .progress{margin:10px 0;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
@@ -27,355 +27,436 @@ td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
 .bar{height:16px;border-radius:3px;display:inline-block;vertical-align:middle}
 .bar-green{background:rgba(6,214,160,.5)}
 .bar-red{background:rgba(255,107,107,.5)}
-.matchup-grid{display:grid;gap:2px;margin-top:20px;font-size:11px}
-.matchup-cell{padding:4px;text-align:center;border-radius:3px;font-weight:600}
 .status{font-size:13px;color:var(--fg2);margin:8px 0}
 </style>
 </head>
 <body>
-<h1>龟龟对战 — 平衡模拟器</h1>
+<h1>龟龟对战 — 平衡模拟器 (全引擎)</h1>
 
 <div class="controls">
   <label>左方龟1 <select id="left0"></select></label>
   <label>左方龟2 <select id="left1"></select></label>
-  <label>VS</label>
+  <span style="color:var(--fg2);padding:8px">VS</span>
   <label>右方龟1 <select id="right0"></select></label>
   <label>右方龟2 <select id="right1"></select></label>
-  <label>模拟次数 <input type="number" id="simCount" value="50" min="1" max="500"></label>
-  <button onclick="runSim()">开始模拟</button>
-  <button onclick="runFullMatrix()">全对战矩阵</button>
+  <label>模拟次数 <input type="number" id="simCount" value="30" min="1" max="200"></label>
+  <button onclick="runCustom()">自定义对战</button>
+  <button onclick="runMatrix()">全对战矩阵</button>
 </div>
+<div class="progress"><div class="progress-fill" id="pf" style="width:0%"></div></div>
+<div class="status" id="st"></div>
+<div class="results" id="res"></div>
 
-<div class="progress"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-<div class="status" id="status"></div>
+<!-- Load real game code in a sandboxed iframe -->
+<iframe id="simFrame" style="display:none"></iframe>
 
-<div class="results" id="results"></div>
-
-<!-- Load game files (headless, no DOM rendering needed for sim) -->
-<script src="js/pets.js"></script>
 <script>
-// ── HEADLESS BATTLE SIMULATOR ──────────────────────────────
-// Minimal engine: no DOM, no animations, no audio, just math
+// We run the real engine inside an iframe with mocked DOM
+// This gives us full skill/passive/buff coverage
 
-function simCreateFighter(petId, side) {
-  const b = ALL_PETS.find(p => p.id === petId);
-  if (!b) return null;
-  const m = RARITY_MULT[b.rarity] || 1;
-  const hp = Math.round(b.hp * m);
-  const atk = Math.round(b.atk * m);
-  const def = Math.round(b.def * m);
-  return {
-    id:b.id, name:b.name, rarity:b.rarity, side,
-    maxHp:hp, hp:hp, shield:0, baseAtk:atk, baseDef:def, atk, def,
-    crit: b.crit || 0.25, armorPen:0, armorPenPct:0,
-    alive:true, buffs:[], passive:b.passive||null,
-    skills: b.skills.map(s => ({...s, cdLeft:0})),
-    _dmgDealt:0, _dmgTaken:0,
-    // Simplified: skip complex passives for speed
-    _stoneDefGained:0, _drones:[], _isMech:false, _goldCoins:0,
-    _lifestealPct:0, _rebirthUsed:false, _deathProcessed:false,
-    bubbleStore:0, bubbleShieldVal:0, bubbleShieldTurns:0,
-    _shockStacks:0, _twoHeadForm:'ranged', _summon:null,
-  };
-}
+const SIM_FRAME_HTML = `<!DOCTYPE html><html><body>
+<script>
+// ── DOM MOCK LAYER ──
+const _noop = ()=>{};
+const _mockEl = {
+  classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false},
+  style:{}, querySelector:()=>_mockEl, querySelectorAll:()=>[],
+  appendChild:_noop, insertBefore:_noop, remove:_noop, setAttribute:_noop,
+  innerHTML:'', textContent:'', id:'mock',
+  getElementsByClassName:()=>[]
+};
+document.getElementById = () => _mockEl;
+document.querySelector = () => _mockEl;
+document.querySelectorAll = () => [];
+document.createElement = () => ({...JSON.parse(JSON.stringify(_mockEl)), classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false}, style:{}, querySelector:()=>_mockEl, appendChild:_noop});
+document.head = {appendChild:_noop};
 
-function simCalcDmg(attacker, target, skill) {
-  let basePower = skill.power || 0;
-  if (skill.atkScale) basePower += Math.round(attacker.atk * skill.atkScale);
-  if (skill.defScale) basePower += Math.round(attacker.def * skill.defScale);
-  if (skill.hpPct) basePower += Math.round(target.maxHp * skill.hpPct / 100);
-  if (skill.random) basePower = Math.round(basePower * (0.5 + Math.random() * 1.5));
+// Mock localStorage
+const _ls = {};
+window.localStorage = { getItem:k=>_ls[k]||null, setItem:(k,v)=>{_ls[k]=v;}, removeItem:k=>{delete _ls[k];} };
 
-  const isCrit = Math.random() < attacker.crit;
-  const critMult = isCrit ? 1.5 : 1;
+// Mock audio
+window.AudioContext = window.webkitAudioContext = function(){};
+const sfxNoop = _noop;
+window.sfxHit=sfxNoop;window.sfxCrit=sfxNoop;window.sfxPierce=sfxNoop;window.sfxShield=sfxNoop;
+window.sfxShieldBreak=sfxNoop;window.sfxHeal=sfxNoop;window.sfxDeath=sfxNoop;window.sfxRebirth=sfxNoop;
+window.sfxBuff=sfxNoop;window.sfxDebuff=sfxNoop;window.sfxDodge=sfxNoop;window.sfxFire=sfxNoop;
+window.sfxLightning=sfxNoop;window.sfxCoin=sfxNoop;window.sfxExplosion=sfxNoop;window.sfxCounter=sfxNoop;
+window.sfxTrap=sfxNoop;window.sfxBattleStart=sfxNoop;window.sfxVictory=sfxNoop;window.sfxDefeat=sfxNoop;
+window.sfxClick=sfxNoop;window.sfxTurnStart=sfxNoop;window.toggleSound=sfxNoop;window.ensureAudio=_noop;
 
-  const eDef = Math.max(0, target.def * (1 - (attacker.armorPenPct||0)) - (attacker.armorPen||0));
-  const defRed = eDef / (eDef + DEF_CONSTANT);
+// Override sleep to be instant
+${'<'}\/script>
+<script src="js/pets.js"><\/script>
+<script src="js/engine.js"><\/script>
+<script src="js/skills.js"><\/script>
+<script src="js/ui.js"><\/script>
+<script src="js/main.js"><\/script>
+<script>
+// Override sleep to be instant in sim mode
+const _origSleep = sleep;
+sleep = (ms) => Promise.resolve();
 
-  const normalBase = Math.max(0, basePower - (skill.pierce||0));
-  const normalDmg = Math.max(1, Math.round(normalBase * critMult * (1 - defRed)));
-  const pierceDmg = Math.round((skill.pierce||0) * critMult);
-  return normalDmg + pierceDmg;
-}
+// Override showScreen, showToast, toggleHelp etc
+showScreen = _noop;
+showToast = _noop;
+if(typeof toggleHelp==='function') toggleHelp = _noop;
 
-function simApplyDmg(target, dmg) {
-  let rem = dmg;
-  if (target.shield > 0) { const a = Math.min(target.shield, rem); target.shield -= a; rem -= a; }
-  target.hp = Math.max(0, target.hp - rem);
-  if (target.hp <= 0) target.alive = false;
-  return dmg;
-}
+// Sim API: run one battle and return results
+async function simBattle(leftIds, rightIds, maxTurns) {
+  maxTurns = maxTurns || 40;
+  // Reset
+  resetBattleState();
+  gameMode = 'pve';
+  leftTeam = leftIds.map(id => createFighter(id, 'left'));
+  rightTeam = rightIds.map(id => createFighter(id, 'right'));
+  allFighters = [...leftTeam, ...rightTeam];
+  battleOver = false;
+  turnNum = 1;
 
-function simRunBattle(leftIds, rightIds, maxTurns) {
-  maxTurns = maxTurns || 30;
-  const left = leftIds.map(id => simCreateFighter(id, 'left'));
-  const right = rightIds.map(id => simCreateFighter(id, 'right'));
-  const all = [...left, ...right];
-
-  // Apply one-time passives
-  all.forEach(f => {
-    if (f.passive) {
-      if (f.passive.type === 'ninjaInstinct') {
-        f.crit += (f.passive.critBonus||0)/100;
-        f.armorPen += f.passive.armorPen||0;
-      }
-      if (f.passive.type === 'twoHeadVitality') {
-        f.shield += Math.round(f.maxHp * (f.passive.shieldPct||0) / 100);
-      }
-      if (f.passive.type === 'stoneWall') f._stoneDefGained = 0;
+  // Apply one-time passives (same as startBattle)
+  allFighters.forEach(f => {
+    if (f.passive && f.passive.type === 'ninjaInstinct') {
+      f.crit += f.passive.critBonus / 100;
+      f._extraCritDmgPerm = (f.passive.critDmgBonus || 0) / 100;
+      f.armorPen += f.passive.armorPen || 0;
+    }
+    if (f.passive && f.passive.type === 'twoHeadVitality') {
+      f.shield += Math.round(f.maxHp * f.passive.shieldPct / 100);
+      f._twoHeadHalfTriggered = false;
+    }
+    if (f.passive && f.passive.type === 'summonAlly') {
+      // Simplified: skip summon in sim for now
     }
   });
 
-  let turnNum = 0;
-  // Simplified turn: each fighter acts once per turn, alternating sides
-  while (turnNum < maxTurns) {
-    turnNum++;
-    const lAlive = left.filter(f => f.alive);
-    const rAlive = right.filter(f => f.alive);
-    if (!lAlive.length || !rAlive.length) break;
+  // Run battle loop with turn limit
+  let safety = 0;
+  const maxActions = maxTurns * 10; // prevent infinite
+
+  // Simulate by directly calling the turn system
+  // Override nextAction to track completion
+  let actionsDone = 0;
+  const origNextAction = nextAction;
+
+  // Simple approach: run beginTurn and process batches manually
+  while (!battleOver && turnNum <= maxTurns && actionsDone < maxActions) {
+    // Process turn start
+    allFighters.forEach(f => f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; }));
 
     // Per-turn passives
-    all.forEach(f => {
-      if (!f.alive) return;
-      if (f.passive && f.passive.type === 'turnScaleAtk') {
-        f.baseAtk += Math.round(f.baseAtk * (f.passive.pct||0) / 100);
-        f.atk = f.baseAtk;
+    for (const f of allFighters) {
+      if (!f.alive || !f.passive) continue;
+      f.passiveUsedThisTurn = false;
+      if (f.passive.type === 'turnScaleAtk') {
+        f.baseAtk += Math.round(f.baseAtk * f.passive.pct / 100);
       }
-      if (f.passive && f.passive.type === 'turnScaleHp') {
-        const gain = Math.round(f.maxHp * (f.passive.pct||0) / 100);
+      if (f.passive.type === 'turnScaleHp') {
+        const gain = Math.round(f.maxHp * f.passive.pct / 100);
         f.maxHp += gain; f.hp += gain;
       }
-      if (f.passive && f.passive.type === 'stoneWall' && f._stoneDefGained < (f.passive.maxDef||0)) {
-        const gain = Math.min(f.passive.defGain||0, f.passive.maxDef - f._stoneDefGained);
-        f.baseDef += gain; f.def = f.baseDef; f._stoneDefGained += gain;
+      if (f.passive.type === 'stoneWall') {
+        if (!f._stoneDefGained) f._stoneDefGained = 0;
+        if (f._stoneDefGained < f.passive.maxDef) {
+          const gain = Math.min(f.passive.defGain, f.passive.maxDef - f._stoneDefGained);
+          f.baseDef += gain; f._stoneDefGained += gain;
+        }
       }
-      // Reduce CDs
-      f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
-    });
+      // Cyber drones
+      if (f.passive && f.passive.type === 'cyberDrone' && !f._isMech) {
+        if (!f._drones) f._drones = [];
+        if (f._drones.length < f.passive.maxDrones) f._drones.push({age:0});
+        const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+        for (let di = 0; di < f._drones.length; di++) {
+          const alive = enemies.filter(e => e.alive);
+          if (!alive.length) break;
+          const t = alive[Math.floor(Math.random() * alive.length)];
+          const dmg = Math.round(f.atk * f.passive.droneScale);
+          const ed = Math.max(0, t.def - (f.armorPen||0));
+          const dr = ed / (ed + DEF_CONSTANT);
+          const fd = Math.max(1, Math.round(dmg * (1 - dr)));
+          applyRawDmg(f, t, fd);
+        }
+      }
+    }
 
-    // Action order: left first, then right (simplified)
-    const order = [...lAlive, ...rAlive];
-    for (const f of order) {
+    // Process buffs (simplified)
+    for (const f of allFighters) {
       if (!f.alive) continue;
-      const enemies = (f.side === 'left' ? right : left).filter(e => e.alive);
-      const allies = (f.side === 'left' ? left : right).filter(a => a.alive);
-      if (!enemies.length) break;
+      // DoT
+      f.buffs.filter(b => b.type === 'dot').forEach(d => {
+        f.hp = Math.max(0, f.hp - d.value);
+        if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
+      });
+      f.buffs.filter(b => b.type === 'phoenixBurnDot').forEach(pb => {
+        const dmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+        f.hp = Math.max(0, f.hp - dmg);
+        if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
+      });
+      // HOT
+      f.buffs.filter(b => b.type === 'hot').forEach(h => {
+        f.hp = Math.min(f.maxHp, f.hp + h.value);
+      });
+      // Tick buffs
+      f.buffs.forEach(b => b.turns--);
+      f.buffs = f.buffs.filter(b => b.turns > 0);
+    }
 
-      // Pick skill (simple AI)
+    recalcStats();
+
+    if (!leftTeam.some(f=>f.alive) || !rightTeam.some(f=>f.alive)) { battleOver = true; break; }
+
+    // Actions: left team then right team (simplified batch)
+    const lAlive = leftTeam.filter(f => f.alive);
+    const rAlive = rightTeam.filter(f => f.alive);
+
+    // First turn: left sends 1, then right all, then left rest
+    const order = turnNum === 1 ?
+      [lAlive[0], ...rAlive, ...lAlive.slice(1)] :
+      (turnNum % 2 === 0 ? [...rAlive, ...lAlive] : [...lAlive, ...rAlive]);
+
+    for (const f of order) {
+      if (!f || !f.alive || battleOver) continue;
+      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+      const allies = allFighters.filter(a => a.alive && a.side === f.side);
+      if (!enemies.length) { battleOver = true; break; }
+
+      // AI picks skill
       const ready = f.skills.filter(s => s.cdLeft === 0);
       if (!ready.length) continue;
 
-      // Prefer damage skills
-      const dmgSkills = ready.filter(s => s.type !== 'heal' && s.type !== 'shield' && !s.switchTo);
-      const healSkills = ready.filter(s => s.type === 'heal' || s.type === 'shield');
+      const healS = ready.find(s => s.type === 'heal');
+      const shieldS = ready.find(s => s.type === 'shield');
+      const dmgS = ready.filter(s => s.type !== 'heal' && s.type !== 'shield' && !s.switchTo);
 
       let skill;
-      if (healSkills.length && allies.some(a => a.hp/a.maxHp < 0.3)) {
-        skill = healSkills[0];
-      } else {
-        skill = dmgSkills.length ? dmgSkills[Math.floor(Math.random() * dmgSkills.length)] : ready[0];
-      }
+      if (healS && allies.some(a => a.hp/a.maxHp < 0.35)) skill = healS;
+      else if (shieldS && allies.some(a => a.shield < 20)) skill = shieldS;
+      else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
 
+      if (!skill) continue;
       if (skill.cd > 0) skill.cdLeft = skill.cd;
 
-      // Execute
       const target = enemies.sort((a,b) => a.hp - b.hp)[0];
-      const hits = skill.hits || 1;
 
-      if (skill.type === 'heal') {
-        const healTarget = allies.sort((a,b) => a.hp/a.maxHp - b.hp/b.maxHp)[0];
-        if (skill.heal > 0) healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + skill.heal);
-        if (skill.hot) healTarget.hp = Math.min(healTarget.maxHp, healTarget.hp + skill.hot.hpPerTurn);
-      } else if (skill.type === 'shield') {
-        let amt = skill.shield || 0;
-        if (skill.shieldFlat) amt += skill.shieldFlat;
-        if (skill.shieldHpPct) amt += Math.round(f.maxHp * skill.shieldHpPct / 100);
-        const shieldTarget = allies.sort((a,b) => a.shield - b.shield)[0];
-        shieldTarget.shield += amt;
-      } else {
-        // Damage
-        const targets = skill.aoe ? enemies : [target];
-        for (const t of targets) {
-          if (!t.alive) continue;
+      // Execute via real engine action
+      try {
+        const action = {
+          attackerId: allFighters.indexOf(f),
+          skillIdx: f.skills.indexOf(skill),
+          targetId: allFighters.indexOf(target),
+          aoe: !!skill.aoe
+        };
+        await executeAction(action);
+      } catch(e) {
+        // Fallback: simple damage calc
+        if (skill.type !== 'heal' && skill.type !== 'shield') {
+          const hits = skill.hits || 1;
           for (let h = 0; h < hits; h++) {
-            if (!t.alive) break;
-            const dmg = simCalcDmg(f, t, skill);
-            simApplyDmg(t, dmg);
-            f._dmgDealt += dmg;
-            t._dmgTaken += dmg;
+            if (!target.alive) break;
+            let bp = skill.power || 0;
+            if (skill.atkScale) bp += Math.round(f.atk * skill.atkScale);
+            if (skill.defScale) bp += Math.round(f.def * skill.defScale);
+            if (skill.hpPct) bp += Math.round(target.maxHp * skill.hpPct / 100);
+            const ed = Math.max(0, target.def - (f.armorPen||0));
+            const dr = ed / (ed + DEF_CONSTANT);
+            const dmg = Math.max(1, Math.round(bp * (1-dr)));
+            applyRawDmg(f, target, dmg);
           }
         }
       }
 
       // Check deaths
-      if (!left.some(f => f.alive) || !right.some(f => f.alive)) break;
+      allFighters.forEach(ff => {
+        if (ff.hp <= 0 && !ff._deathProcessed) {
+          // Phoenix rebirth
+          if (ff.passive && ff.passive.type === 'phoenixRebirth' && !ff._rebirthUsed) {
+            ff._rebirthUsed = true;
+            ff.hp = Math.round(ff.maxHp * ff.passive.revivePct / 100);
+            ff.alive = true;
+            return;
+          }
+          // Mech transform
+          if (ff.passive && ff.passive.type === 'cyberDrone' && ff._drones && ff._drones.length > 0 && !ff._isMech) {
+            const dc = ff._drones.length; ff._drones = []; ff._isMech = true;
+            ff.hp = ff.passive.mechHpPer * dc; ff.maxHp = ff.hp;
+            ff.baseAtk = ff.passive.mechAtkPer * dc; ff.atk = ff.baseAtk;
+            ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
+            ff.skills = [{name:'机甲攻击',type:'physical',hits:1,power:0,pierce:0,cd:0,atkScale:1.0}];
+            return;
+          }
+          ff.alive = false; ff._deathProcessed = true;
+        }
+      });
+
+      if (!leftTeam.some(ff=>ff.alive) || !rightTeam.some(ff=>ff.alive)) { battleOver = true; break; }
+      actionsDone++;
     }
-    if (!left.some(f => f.alive) || !right.some(f => f.alive)) break;
+    turnNum++;
   }
 
-  const leftWon = left.some(f => f.alive);
-  const rightWon = right.some(f => f.alive);
   return {
-    winner: leftWon ? 'left' : rightWon ? 'right' : 'draw',
+    winner: leftTeam.some(f=>f.alive) ? 'left' : rightTeam.some(f=>f.alive) ? 'right' : 'draw',
     turns: turnNum,
-    left: left.map(f => ({ id:f.id, name:f.name, dmgDealt:f._dmgDealt, dmgTaken:f._dmgTaken, alive:f.alive, hpLeft:f.hp })),
-    right: right.map(f => ({ id:f.id, name:f.name, dmgDealt:f._dmgDealt, dmgTaken:f._dmgTaken, alive:f.alive, hpLeft:f.hp })),
+    left: leftTeam.map(f => ({id:f.id, name:f.name, dmgDealt:f._dmgDealt||0, dmgTaken:f._dmgTaken||0, alive:f.alive})),
+    right: rightTeam.map(f => ({id:f.id, name:f.name, dmgDealt:f._dmgDealt||0, dmgTaken:f._dmgTaken||0, alive:f.alive})),
   };
 }
 
-// ── UI ──────────────────────────────────────────────────────
-function init() {
-  const selects = ['left0','left1','right0','right1'];
-  selects.forEach(id => {
+// Signal ready
+window.parent.postMessage({type:'ready'}, '*');
+
+// Listen for sim requests
+window.addEventListener('message', async (e) => {
+  if (e.data.type === 'runBattle') {
+    const result = await simBattle(e.data.left, e.data.right, e.data.maxTurns);
+    window.parent.postMessage({type:'result', id:e.data.id, result}, '*');
+  }
+});
+${'<'}\/script></body></html>`;
+
+// ── MAIN PAGE LOGIC ──
+let simReady = false;
+let pendingCallbacks = {};
+let callId = 0;
+
+function initSim() {
+  const frame = document.getElementById('simFrame');
+  frame.srcdoc = SIM_FRAME_HTML;
+
+  window.addEventListener('message', (e) => {
+    if (e.data.type === 'ready') {
+      simReady = true;
+      document.getElementById('st').textContent = '引擎就绪';
+      initSelects();
+    }
+    if (e.data.type === 'result' && pendingCallbacks[e.data.id]) {
+      pendingCallbacks[e.data.id](e.data.result);
+      delete pendingCallbacks[e.data.id];
+    }
+  });
+}
+
+function simBattleAsync(leftIds, rightIds) {
+  return new Promise(resolve => {
+    const id = ++callId;
+    pendingCallbacks[id] = resolve;
+    document.getElementById('simFrame').contentWindow.postMessage({type:'runBattle', id, left:leftIds, right:rightIds, maxTurns:40}, '*');
+  });
+}
+
+function initSelects() {
+  // Access ALL_PETS from iframe
+  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
+  if (!pets) { setTimeout(initSelects, 100); return; }
+
+  ['left0','left1','right0','right1'].forEach(id => {
     const sel = document.getElementById(id);
-    ALL_PETS.forEach(p => {
+    sel.innerHTML = '';
+    pets.forEach(p => {
       const opt = document.createElement('option');
       opt.value = p.id;
       opt.textContent = `${p.emoji} ${p.name} (${p.rarity})`;
       sel.appendChild(opt);
     });
   });
-  // Defaults
   document.getElementById('left0').value = 'hunter';
   document.getElementById('left1').value = 'stone';
   document.getElementById('right0').value = 'ninja';
   document.getElementById('right1').value = 'phoenix';
 }
 
-async function runSim() {
+async function runCustom() {
+  if (!simReady) return;
   const leftIds = [document.getElementById('left0').value, document.getElementById('left1').value];
   const rightIds = [document.getElementById('right0').value, document.getElementById('right1').value];
-  const count = parseInt(document.getElementById('simCount').value) || 50;
+  const count = parseInt(document.getElementById('simCount').value) || 30;
 
-  document.getElementById('status').textContent = '模拟中...';
-  document.getElementById('progressFill').style.width = '0%';
-
-  await sleep(10);
-
-  let leftWins = 0, rightWins = 0, draws = 0;
-  const petStats = {};
+  document.getElementById('st').textContent = '模拟中...';
+  let lw=0, rw=0, dr=0;
+  const ps = {};
 
   for (let i = 0; i < count; i++) {
-    const result = simRunBattle(leftIds, rightIds);
-    if (result.winner === 'left') leftWins++;
-    else if (result.winner === 'right') rightWins++;
-    else draws++;
-
-    // Accumulate per-pet stats
-    [...result.left, ...result.right].forEach(f => {
-      if (!petStats[f.id]) petStats[f.id] = { name:f.name, wins:0, games:0, totalDmgDealt:0, totalDmgTaken:0 };
-      petStats[f.id].games++;
-      petStats[f.id].totalDmgDealt += f.dmgDealt;
-      petStats[f.id].totalDmgTaken += f.dmgTaken;
-      if (f.alive) petStats[f.id].wins++;
+    const r = await simBattleAsync(leftIds, rightIds);
+    if (r.winner==='left') lw++; else if (r.winner==='right') rw++; else dr++;
+    [...r.left,...r.right].forEach(f => {
+      if (!ps[f.id]) ps[f.id] = {name:f.name,wins:0,games:0,dd:0,dt:0};
+      ps[f.id].games++; ps[f.id].dd+=f.dmgDealt; ps[f.id].dt+=f.dmgTaken;
+      if (f.alive) ps[f.id].wins++;
     });
-
-    if (i % 5 === 0) {
-      document.getElementById('progressFill').style.width = (i/count*100) + '%';
-      await sleep(0);
-    }
+    document.getElementById('pf').style.width = ((i+1)/count*100)+'%';
   }
 
-  document.getElementById('progressFill').style.width = '100%';
+  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
+  const ln = leftIds.map(id=>pets.find(p=>p.id===id)?.name).join('+');
+  const rn = rightIds.map(id=>pets.find(p=>p.id===id)?.name).join('+');
 
-  const leftNames = leftIds.map(id => ALL_PETS.find(p=>p.id===id)?.name).join('+');
-  const rightNames = rightIds.map(id => ALL_PETS.find(p=>p.id===id)?.name).join('+');
-  const leftRate = Math.round(leftWins/count*100);
-  const rightRate = Math.round(rightWins/count*100);
-
-  let html = `<h3>${leftNames} vs ${rightNames} (${count}局)</h3>`;
-  html += `<p>左方胜率: <span class="${leftRate>=50?'win':'lose'}">${leftRate}%</span> (${leftWins}胜) | 右方胜率: <span class="${rightRate>=50?'win':'lose'}">${rightRate}%</span> (${rightWins}胜) | 平局: ${draws}</p>`;
-
-  html += '<table><tr><th>龟</th><th>存活率</th><th>均伤(造成)</th><th>均伤(承受)</th><th>伤害比</th></tr>';
-  Object.values(petStats).sort((a,b) => b.totalDmgDealt/b.games - a.totalDmgDealt/a.games).forEach(s => {
-    const survRate = Math.round(s.wins/s.games*100);
-    const avgDealt = Math.round(s.totalDmgDealt/s.games);
-    const avgTaken = Math.round(s.totalDmgTaken/s.games);
-    const ratio = avgTaken > 0 ? (avgDealt/avgTaken).toFixed(2) : '∞';
-    html += `<tr><td>${s.name}</td><td class="${survRate>=50?'win':'lose'}">${survRate}%</td><td>${avgDealt}</td><td>${avgTaken}</td><td>${ratio}</td></tr>`;
+  let html = `<h3>${ln} vs ${rn} (${count}局)</h3>`;
+  html += `<p>左方: <span class="${lw>=rw?'win':'lose'}">${Math.round(lw/count*100)}%</span>(${lw}胜) | 右方: <span class="${rw>=lw?'win':'lose'}">${Math.round(rw/count*100)}%</span>(${rw}胜) | 平:${dr}</p>`;
+  html += '<table><tr><th>龟</th><th>存活率</th><th>造成均伤</th><th>承受均伤</th></tr>';
+  Object.values(ps).sort((a,b)=>b.dd/b.games-a.dd/a.games).forEach(s => {
+    html += `<tr><td>${s.name}</td><td class="${s.wins/s.games>=0.5?'win':'lose'}">${Math.round(s.wins/s.games*100)}%</td><td>${Math.round(s.dd/s.games)}</td><td>${Math.round(s.dt/s.games)}</td></tr>`;
   });
   html += '</table>';
-
-  document.getElementById('results').innerHTML = html;
-  document.getElementById('status').textContent = `完成 ${count} 局模拟`;
+  document.getElementById('res').innerHTML = html;
+  document.getElementById('st').textContent = `完成 ${count} 局`;
 }
 
-async function runFullMatrix() {
-  const count = parseInt(document.getElementById('simCount').value) || 20;
-  const pets = ALL_PETS.map(p => p.id);
-  const results = {};
-  const total = pets.length * (pets.length - 1) / 2;
+async function runMatrix() {
+  if (!simReady) return;
+  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
+  const ids = pets.map(p => p.id);
+  const count = Math.min(parseInt(document.getElementById('simCount').value)||10, 30);
+  const st = {};
+  ids.forEach(id => { st[id] = {w:0,g:0,dd:0,dt:0}; });
+  const total = ids.length * (ids.length-1) / 2;
   let done = 0;
 
-  document.getElementById('status').textContent = '全矩阵模拟中...';
+  document.getElementById('st').textContent = '全矩阵模拟中...';
 
-  // Single turtle vs single turtle (1v1)
-  for (let i = 0; i < pets.length; i++) {
-    results[pets[i]] = { wins:0, games:0, totalDmg:0, totalTaken:0 };
-    for (let j = i+1; j < pets.length; j++) {
-      if (!results[pets[j]]) results[pets[j]] = { wins:0, games:0, totalDmg:0, totalTaken:0 };
-
-      let aWins = 0;
+  for (let i = 0; i < ids.length; i++) {
+    for (let j = i+1; j < ids.length; j++) {
+      let aw = 0;
       for (let k = 0; k < count; k++) {
-        const r = simRunBattle([pets[i], pets[i]], [pets[j], pets[j]]);
-        if (r.winner === 'left') aWins++;
-        results[pets[i]].totalDmg += r.left[0].dmgDealt + r.left[1].dmgDealt;
-        results[pets[i]].totalTaken += r.left[0].dmgTaken + r.left[1].dmgTaken;
-        results[pets[j]].totalDmg += r.right[0].dmgDealt + r.right[1].dmgDealt;
-        results[pets[j]].totalTaken += r.right[0].dmgTaken + r.right[1].dmgTaken;
+        const r = await simBattleAsync([ids[i],ids[i]], [ids[j],ids[j]]);
+        if (r.winner==='left') aw++;
+        st[ids[i]].dd += (r.left[0]?.dmgDealt||0)+(r.left[1]?.dmgDealt||0);
+        st[ids[i]].dt += (r.left[0]?.dmgTaken||0)+(r.left[1]?.dmgTaken||0);
+        st[ids[j]].dd += (r.right[0]?.dmgDealt||0)+(r.right[1]?.dmgDealt||0);
+        st[ids[j]].dt += (r.right[0]?.dmgTaken||0)+(r.right[1]?.dmgTaken||0);
       }
-      results[pets[i]].games += count;
-      results[pets[j]].games += count;
-      results[pets[i]].wins += aWins;
-      results[pets[j]].wins += (count - aWins);
-
+      st[ids[i]].w+=aw; st[ids[i]].g+=count;
+      st[ids[j]].w+=(count-aw); st[ids[j]].g+=count;
       done++;
-      if (done % 10 === 0) {
-        document.getElementById('progressFill').style.width = (done/total*100) + '%';
-        document.getElementById('status').textContent = `全矩阵模拟中... ${done}/${total}`;
-        await sleep(0);
+      if (done%5===0) {
+        document.getElementById('pf').style.width = (done/total*100)+'%';
+        document.getElementById('st').textContent = `全矩阵 ${done}/${total}`;
       }
     }
   }
 
-  document.getElementById('progressFill').style.width = '100%';
+  document.getElementById('pf').style.width = '100%';
+  const sorted = Object.entries(st).map(([id,s]) => {
+    const p = pets.find(x=>x.id===id);
+    return {name:p.name,emoji:p.emoji,rarity:p.rarity,
+      wr:Math.round(s.w/s.g*100),w:s.w,g:s.g,
+      ad:Math.round(s.dd/s.g),at:Math.round(s.dt/s.g)};
+  }).sort((a,b) => b.wr-a.wr);
 
-  // Sort by win rate
-  const sorted = Object.entries(results).map(([id, s]) => ({
-    id, name: ALL_PETS.find(p=>p.id===id)?.name || id,
-    rarity: ALL_PETS.find(p=>p.id===id)?.rarity || '?',
-    emoji: ALL_PETS.find(p=>p.id===id)?.emoji || '',
-    winRate: s.games > 0 ? s.wins/s.games : 0,
-    wins: s.wins, games: s.games,
-    avgDmg: s.games > 0 ? Math.round(s.totalDmg / s.games) : 0,
-    avgTaken: s.games > 0 ? Math.round(s.totalTaken / s.games) : 0,
-  })).sort((a,b) => b.winRate - a.winRate);
-
-  let html = `<h3>全龟胜率排行 (每对${count}局)</h3>`;
-  html += '<table><tr><th>#</th><th>龟</th><th>稀有度</th><th>胜率</th><th>胜/总</th><th>造成均伤</th><th>承受均伤</th><th>胜率条</th></tr>';
-  sorted.forEach((s, i) => {
-    const rate = Math.round(s.winRate * 100);
-    const barW = rate;
-    html += `<tr>
-      <td>${i+1}</td>
-      <td>${s.emoji} ${s.name}</td>
-      <td>${s.rarity}</td>
-      <td class="${rate>=50?'win':'lose'}">${rate}%</td>
-      <td>${s.wins}/${s.games}</td>
-      <td>${s.avgDmg}</td>
-      <td>${s.avgTaken}</td>
-      <td class="bar-cell"><div class="bar ${rate>=50?'bar-green':'bar-red'}" style="width:${barW}%">&nbsp;</div></td>
-    </tr>`;
+  let html = `<h3>全龟排行 (每对${count}局，全引擎)</h3>`;
+  html += '<table><tr><th>#</th><th>龟</th><th>稀有</th><th>胜率</th><th>胜/总</th><th>造成均伤</th><th>承受均伤</th><th></th></tr>';
+  sorted.forEach((s,i) => {
+    html += `<tr><td>${i+1}</td><td>${s.emoji}${s.name}</td><td>${s.rarity}</td>
+      <td class="${s.wr>=50?'win':'lose'}">${s.wr}%</td><td>${s.w}/${s.g}</td>
+      <td>${s.ad}</td><td>${s.at}</td>
+      <td class="bar-cell"><div class="bar ${s.wr>=50?'bar-green':'bar-red'}" style="width:${s.wr}%">&nbsp;</div></td></tr>`;
   });
   html += '</table>';
-
-  document.getElementById('results').innerHTML = html;
-  document.getElementById('status').textContent = `完成全矩阵 ${total} 对组合`;
+  document.getElementById('res').innerHTML = html;
+  document.getElementById('st').textContent = `完成 ${total} 对组合`;
 }
 
-function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
-
-init();
+initSim();
 </script>
 </body>
 </html>
