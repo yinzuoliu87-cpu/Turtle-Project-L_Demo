@@ -51,7 +51,7 @@ function createFighter(petId, side) {
 function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
-  batchPhase=0; batchesThisRound=0;
+  resetTurnState();
 }
 
 
@@ -178,62 +178,121 @@ async function beginTurn() {
   recalcStats();
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
   try { sfxTurnStart(); } catch(e) {}
-  nextBatch();
+  // Start new round: left acts first
+  activeSide = 'left';
+  actedThisSide = new Set();
+  sidesActedThisRound = 0;
+  nextSideAction();
 }
 
-// ── BATCH TURN SYSTEM ─────────────────────────────────────
-// 左A → 右CD → 左AB → 右CD → 左AB → ...
-// batchPhase: 0=left×1(game start), then odd=right all, even=left all
-let batchPhase = 0;
-let batchesThisRound = 0;
+// ── TURN SYSTEM ───────────────────────────────────────────
+// Round 1: left×1 → right×all → end
+// Round 2+: left×all → right×all → end
+// Player chooses which turtle acts each time
+let activeSide = 'left';      // whose turn it is
+let actedThisSide = new Set(); // fighter indices that already acted this side
+let isFirstRound = true;
+let sidesActedThisRound = 0;  // 0, 1, or 2
 
-async function nextBatch() {
+function resetTurnState() {
+  activeSide = 'left';
+  actedThisSide = new Set();
+  isFirstRound = true;
+  sidesActedThisRound = 0;
+}
+
+async function nextSideAction() {
   if (battleOver) return;
-  const lAlive = leftTeam.filter(f => f.alive);
-  const rAlive = rightTeam.filter(f => f.alive);
-  turnQueue = [];
-  currentIdx = 0;
 
-  if (batchPhase === 0) {
-    // Game start: left sends 1 fighter
-    if (lAlive.length > 0) turnQueue.push(lAlive[0]);
-    batchPhase = 1;
-    batchesThisRound = 0;
-  } else {
-    // After every 2 batches (both sides acted) → round ended
-    if (batchesThisRound >= 2) {
-      // End-of-round passives (lightning/fortune/hunter/energy wave)
-      await processFortuneGold();
-      if (battleOver) return;
-      await processLightningStorm();
-      if (battleOver) return;
-      await processEnergyWave();
-      if (battleOver) return;
-      turnNum++;
-      batchesThisRound = 0;
-      beginTurn();
-      return;
-    }
-    if (batchPhase % 2 === 1) {
-      turnQueue.push(...rAlive);
-    } else {
-      turnQueue.push(...lAlive);
-    }
-    batchPhase++;
-    batchesThisRound++;
+  // Get alive fighters for active side that haven't acted yet
+  const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
+  const canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
+
+  // First round: left only sends 1
+  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : canAct.length;
+  const alreadyActed = sideTeam.filter(f => f.alive).length - canAct.length;
+
+  if (canAct.length === 0 || alreadyActed >= maxActions) {
+    // This side is done, switch to other side or end round
+    await finishSide();
+    return;
   }
 
-  if (turnQueue.length === 0) { nextBatch(); return; }
   renderSideIndicator();
-  nextAction();
+
+  // Determine if player or AI controls this side
+  const isPlayer =
+    (gameMode === 'pve' && activeSide === 'left') ||
+    (gameMode === 'pvp-online' && activeSide === onlineSide);
+
+  if (isPlayer) {
+    // Player picks which turtle to use
+    if (canAct.length === 1) {
+      // Only one choice, auto-select
+      showActionPanel(canAct[0]);
+    } else {
+      // Show turtle picker
+      showTurtlePicker(canAct);
+    }
+  } else {
+    // AI picks a turtle and acts
+    const panel = document.getElementById('actionPanel');
+    if (panel) panel.classList.remove('show');
+    const picker = document.getElementById('turtlePicker');
+    if (picker) picker.style.display = 'none';
+    const f = canAct[Math.floor(Math.random() * canAct.length)];
+    setTimeout(() => {
+      actedThisSide.add(allFighters.indexOf(f));
+      aiAction(f);
+    }, 800);
+  }
+}
+
+async function finishSide() {
+  if (battleOver) return;
+  sidesActedThisRound++;
+
+  if (sidesActedThisRound >= 2) {
+    // Both sides acted → end of round
+    await processFortuneGold();
+    if (battleOver) return;
+    await processLightningStorm();
+    if (battleOver) return;
+    if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) return; }
+    isFirstRound = false;
+    turnNum++;
+    sidesActedThisRound = 0;
+    beginTurn();
+    return;
+  }
+
+  // Switch to other side
+  activeSide = activeSide === 'left' ? 'right' : 'left';
+  actedThisSide = new Set();
+  await sleep(300);
+  nextSideAction();
+}
+
+// Called after a fighter finishes their action (from executeAction)
+function onActionComplete() {
+  if (battleOver) return;
+  nextSideAction();
+}
+
+// Mark fighter as acted and show action panel
+function selectTurtleToAct(fIdx) {
+  const f = allFighters[fIdx];
+  if (!f || !f.alive) return;
+  actedThisSide.add(fIdx);
+  const picker = document.getElementById('turtlePicker');
+  if (picker) picker.style.display = 'none';
+  showActionPanel(f);
 }
 
 function renderSideIndicator() {
   const el = document.getElementById('sideIndicator');
   if (!el) return;
-  if (currentIdx >= turnQueue.length) { el.innerHTML = ''; return; }
-  const f = turnQueue[currentIdx];
-  const isLeft = f.side === 'left';
+  const isLeft = activeSide === 'left';
   el.innerHTML = `<span class="side-ind ${isLeft?'side-ind-left':'side-ind-right'}">${isLeft?'◀ 我方行动':'敌方行动 ▶'}</span>`;
 }
 
@@ -377,14 +436,8 @@ function recalcStats() {
 }
 
 function nextAction() {
-  if (battleOver) return;
-  while (currentIdx < turnQueue.length && !turnQueue[currentIdx].alive) currentIdx++;
-  if (currentIdx >= turnQueue.length) {
-    nextBatch();
-    return;
-  }
-  renderSideIndicator();
-  showActionPanel(turnQueue[currentIdx]);
+  // Redirects to new turn system
+  onActionComplete();
 }
 
 let pendingSkillIdx = null;
@@ -641,8 +694,7 @@ async function executeAction(action) {
   }
 
   animating = false;
-  currentIdx++;
-  nextAction();
+  onActionComplete();
 }
 
 /* ── DAMAGE — multi-hit with crit, floating numbers, debuff application ── */
