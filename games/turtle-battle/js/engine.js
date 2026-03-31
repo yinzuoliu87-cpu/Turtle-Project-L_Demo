@@ -66,6 +66,7 @@ function createFighter(petId, side) {
 function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
+  _actionQueue=[];
   resetTurnState();
 }
 
@@ -609,8 +610,15 @@ function executePlayerAction(f, skill, target) {
 }
 
 // ── ACTION EXECUTION ──────────────────────────────────────
+let _actionQueue = [];
+
 async function executeAction(action) {
-  if (animating || battleOver) return;
+  if (battleOver) return;
+  // Queue actions that arrive while animating (e.g. online opponent's action)
+  if (animating) {
+    _actionQueue.push(action);
+    return;
+  }
   animating = true;
   const f = allFighters[action.attackerId];
   // Track this fighter as acted (needed for online: opponent actions come via network)
@@ -841,6 +849,14 @@ async function executeAction(action) {
   }
 
   animating = false;
+
+  // Drain queued actions (online opponent sent action while we were animating)
+  if (_actionQueue.length > 0) {
+    const next = _actionQueue.shift();
+    executeAction(next);
+    return;
+  }
+
   onActionComplete();
 }
 
