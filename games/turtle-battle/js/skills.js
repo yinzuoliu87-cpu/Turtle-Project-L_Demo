@@ -1673,6 +1673,82 @@ async function doLineFinish(attacker, target, skill) {
   await sleep(800);
 }
 
+// ── GHOST TURTLE (幽灵龟) ────────────────────────────────
+async function doGhostTouch(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  // Normal damage portion
+  const normalBase = Math.round(attacker.atk * skill.normalScale);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  let normalDmg = Math.max(1, Math.round(normalBase * (1 - defRed)));
+  // Ink amplification
+  if (target._inkStacks > 0) normalDmg = Math.round(normalDmg * (1 + target._inkStacks * 0.05));
+  // Pierce damage portion (ignores DEF)
+  const pierceDmg = Math.round(attacker.atk * skill.pierceScale);
+  const totalDmg = normalDmg + pierceDmg;
+
+  applyRawDmg(attacker, target, totalDmg);
+  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, 0);
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+  await triggerOnHitEffects(attacker, target, totalDmg);
+
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(700);
+  if (tEl) tEl.classList.remove('hit-shake');
+
+  addLog(`${attacker.emoji}${attacker.name} <b>幽魂触碰</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}普通</span> + <span class="log-pierce">${pierceDmg}穿透</span>`);
+}
+
+async function doGhostPhase(caster, skill) {
+  const fElId = getFighterElId(caster);
+  // Shield
+  const shieldAmt = Math.round(caster.atk * skill.shieldScale);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  // Dodge buff
+  caster.buffs.push({ type:'dodge', value:skill.dodgePct, turns:skill.dodgeTurns + 1 }); // +1 because processBuffs ticks at start
+  spawnFloatingNum(fElId, `👻虚化！闪避${skill.dodgePct}%`, 'passive-num', 200, 0);
+  updateHpBar(caster, fElId);
+  renderStatusIcons(caster);
+  addLog(`${caster.emoji}${caster.name} <b>虚化</b>：<span class="log-shield">+${shieldAmt}护盾</span> + <span class="log-passive">${skill.dodgePct}%闪避 ${skill.dodgeTurns}回合</span>`);
+  await sleep(800);
+}
+
+async function doGhostStorm(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  let totalPierce = 0;
+
+  for (let i = 0; i < skill.hits; i++) {
+    if (!target.alive) break;
+    const pierceDmg = Math.round(attacker.atk * skill.pierceScale);
+    // Ink amplification
+    const finalDmg = target._inkStacks > 0 ? Math.round(pierceDmg * (1 + target._inkStacks * 0.05)) : pierceDmg;
+
+    applyRawDmg(attacker, target, finalDmg, true);
+    totalPierce += finalDmg;
+    spawnFloatingNum(tElId, `-${finalDmg}`, 'pierce-dmg', 0, (i % 3) * 18);
+    await triggerOnHitEffects(attacker, target, finalDmg);
+
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(400);
+    if (tEl) tEl.classList.remove('hit-shake');
+  }
+
+  // Apply DoT
+  if (target.alive) {
+    const dotDmg = Math.round(attacker.atk * skill.dotScale);
+    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns });
+    spawnFloatingNum(tElId, '👻诅咒', 'debuff-label', 200, -10);
+    renderStatusIcons(target);
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>灵魂风暴</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-pierce">${totalPierce}穿透</span> + 诅咒${skill.dotTurns}回合`);
+}
+
 // ── ENERGY WAVE (龟壳 储能波击) ──────────────────────────
 async function processEnergyWave() {
   for (const f of allFighters) {

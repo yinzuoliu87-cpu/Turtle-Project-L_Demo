@@ -174,6 +174,41 @@ async function beginTurn() {
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
+    // Passive: rainbowPrism — random team buff each turn
+    if (f.passive.type === 'rainbowPrism') {
+      const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+      const roll = Math.floor(Math.random() * 3);
+      if (roll === 0) {
+        // Red: ATK up
+        for (const a of allies) {
+          const gain = Math.round(a.baseAtk * f.passive.atkPct / 100);
+          a.buffs.push({ type:'atkUp', value:gain, turns:2 });
+          spawnFloatingNum(getFighterElId(a), `+${gain}攻🔴`, 'passive-num', 0, 0);
+        }
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔴红光！全体友方攻击+${f.passive.atkPct}% 1回合</span>`);
+      } else if (roll === 1) {
+        // Blue: DEF up
+        for (const a of allies) {
+          const gain = Math.round(a.baseDef * f.passive.defPct / 100);
+          a.buffs.push({ type:'defUp', value:gain, turns:2 });
+          spawnFloatingNum(getFighterElId(a), `+${gain}防🔵`, 'passive-num', 0, 0);
+        }
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔵蓝光！全体友方防御+${f.passive.defPct}% 1回合</span>`);
+      } else {
+        // Green: heal
+        for (const a of allies) {
+          const heal = Math.round(a.maxHp * f.passive.healPct / 100);
+          const before = a.hp;
+          a.hp = Math.min(a.maxHp, a.hp + heal);
+          const actual = Math.round(a.hp - before);
+          if (actual > 0) spawnFloatingNum(getFighterElId(a), `+${actual}🟢`, 'heal-num', 0, 0);
+          updateHpBar(a, getFighterElId(a));
+        }
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🟢绿光！全体友方回复${f.passive.healPct}%最大HP</span>`);
+      }
+      recalcStats();
+      await sleep(500);
+    }
   }
   // Process buffs/debuffs at turn start
   await processBuffs();
@@ -465,7 +500,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -615,6 +650,14 @@ async function executeAction(action) {
     await doStarWormhole(f, target, skill);
   } else if (skill.type === 'starMeteor') {
     await doStarMeteor(f, skill);
+  } else if (skill.type === 'ghostTouch') {
+    const target = allFighters[action.targetId];
+    await doGhostTouch(f, target, skill);
+  } else if (skill.type === 'ghostPhase') {
+    await doGhostPhase(f, skill);
+  } else if (skill.type === 'ghostStorm') {
+    const target = allFighters[action.targetId];
+    await doGhostStorm(f, target, skill);
   } else if (skill.type === 'lineSketch') {
     const target = allFighters[action.targetId];
     await doLineSketch(f, target, skill);
@@ -872,7 +915,7 @@ async function doDamage(attacker, target, skill) {
 
   // Apply debuffs from skill (only if target still alive)
   if (target.alive) {
-    applySkillDebuffs(skill, target);
+    applySkillDebuffs(skill, target, attacker);
   }
 
   // Passive: counterAttack — target may counter
@@ -922,11 +965,21 @@ async function doDamage(attacker, target, skill) {
 }
 
 /* Apply debuffs: dot, atkDown, defDown */
-function applySkillDebuffs(skill, target) {
+function applySkillDebuffs(skill, target, attacker) {
   const debuffs = [];
   if (skill.dot)     debuffs.push({ type:'dot',     value:skill.dot.dmg,     turns:skill.dot.turns });
   if (skill.atkDown) debuffs.push({ type:'atkDown', value:skill.atkDown.pct, turns:skill.atkDown.turns });
   if (skill.defDown) debuffs.push({ type:'defDown', value:skill.defDown.pct, turns:skill.defDown.turns });
+
+  // PhoenixBurn from skill (e.g. rainbow storm)
+  if (skill.phoenixBurn && target.alive) {
+    const burnVal = (skill.phoenixBurn.atkPct && attacker) ? Math.round(attacker.atk * skill.phoenixBurn.atkPct / 100) : 0;
+    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns });
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
+    addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧 ${skill.phoenixBurn.turns}回合</span>`);
+    renderStatusIcons(target);
+  }
 
   for (const d of debuffs) {
     const finalTurns = d.turns;
@@ -1248,7 +1301,7 @@ function aiAction(f) {
 
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand') target = f; // self-cast
+  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase') target = f; // self-cast
   else if (skill.type==='angelBless') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0]; // bless weakest ally
   else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
 
@@ -1322,6 +1375,19 @@ function checkDeaths(attacker) {
         updateHpBar(attacker, aElId);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">钩锁！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-pierce">${dmg}穿透伤害</span>`);
         if (attacker.hp <= 0) { attacker.alive = false; }
+      }
+
+      // Passive: ghostCurse — curse all enemies on death with pierce DoT
+      if (f.passive && f.passive.type === 'ghostCurse') {
+        const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+        for (const e of enemies) {
+          const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
+          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns });
+          const eElId = getFighterElId(e);
+          spawnFloatingNum(eElId, `👻诅咒!`, 'crit-label', 0, -20);
+          renderStatusIcons(e);
+        }
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">怨灵诅咒！全体敌人每回合受10%最大HP持续伤害 ${f.passive.turns}回合</span>`);
       }
 
       // Passive: healOnKill — killer heals
