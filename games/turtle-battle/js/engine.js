@@ -1618,10 +1618,11 @@ function checkDeaths(attacker) {
         if (attacker.hp <= 0) { attacker.alive = false; }
       }
 
-      // Passive: deathHook — deal % maxHP as PIERCE damage to killer (bypasses shield+res)
-      if (f.passive && f.passive.type === 'deathHook' && attacker && attacker.alive) {
-        const dmg = Math.round(f.maxHp * f.passive.pct / 100);
-        // Pierce: bypass shield, directly to HP
+      // Passive: deathHook / pirateBarrage deathHook — deal % maxHP as PIERCE damage to killer
+      const hookPct = (f.passive && f.passive.type === 'deathHook') ? f.passive.pct
+                    : (f.passive && f.passive.type === 'pirateBarrage') ? f.passive.deathHookPct : 0;
+      if (hookPct > 0 && attacker && attacker.alive) {
+        const dmg = Math.round(f.maxHp * hookPct / 100);
         attacker.hp = Math.max(0, attacker.hp - dmg);
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);

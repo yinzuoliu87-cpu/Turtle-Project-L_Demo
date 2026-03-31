@@ -353,6 +353,19 @@ function startBattle(seed) {
       recalcStats();
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${f.passive.atkDownPct}% ${f.passive.atkDownTurns}回合</span>`);
     }
+    // Pirate barrage: opening bombardment on random enemy
+    if (f.passive && f.passive.type === 'pirateBarrage') {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      if (enemies.length) {
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const dmg = Math.round(f.maxHp * f.passive.bombardPct / 100);
+        applyRawDmg(f, target, dmg, true);
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'pierce-dmg', 0, 0);
+        updateHpBar(target, tElId);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}穿透伤害</span>`);
+      }
+    }
     // Summon ally: create a random C/B/A turtle as summon
     if (f.passive && f.passive.type === 'summonAlly') {
       const teamIds = allFighters.map(t => t.id);

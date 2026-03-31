@@ -1044,7 +1044,7 @@ async function doStarMeteor(attacker, skill) {
   // Consume 50% star energy
   const energyConsume = Math.round((attacker._starEnergy || 0) * skill.energyConsumePct / 100);
   attacker._starEnergy = (attacker._starEnergy || 0) - energyConsume;
-  const piercePerTarget = enemies.length > 0 ? Math.round(energyConsume / enemies.length) : 0;
+  const piercePerTarget = energyConsume; // full pierce to each target (不平均分)
 
   for (const e of enemies) {
     if (!e.alive) continue;
@@ -1072,7 +1072,7 @@ async function doStarMeteor(attacker, skill) {
   }
   recalcStats();
   renderStatusIcons(attacker);
-  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}普通</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}穿透/目标</span>` : ''} + 防御-${skill.defDown.pct}%`);
+  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}普通</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}穿透(每人)</span>` : ''} + 防御-${skill.defDown.pct}%`);
   await sleep(800);
 }
 
