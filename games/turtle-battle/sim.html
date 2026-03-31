@@ -13,447 +13,228 @@ h1{font-size:20px;margin-bottom:16px;color:var(--accent)}
 label{font-size:13px;color:var(--fg2);display:flex;flex-direction:column;gap:4px}
 select,input{background:var(--bg3);color:var(--fg);border:1px solid rgba(255,255,255,.1);border-radius:6px;padding:6px 10px;font-size:13px}
 button{background:linear-gradient(135deg,#238636,#2ea043);color:#fff;border:none;border-radius:8px;padding:10px 20px;font-size:14px;font-weight:700;cursor:pointer;transition:.2s;margin:2px}
-button:hover{filter:brightness(1.1);transform:translateY(-1px)}
-button:disabled{opacity:.4;cursor:not-allowed}
+button:hover{filter:brightness(1.1)}
 .progress{margin:10px 0;height:6px;background:var(--bg3);border-radius:3px;overflow:hidden}
 .progress-fill{height:100%;background:var(--accent);transition:width .1s}
-.results{margin-top:16px}
-table{width:100%;border-collapse:collapse;font-size:13px}
+table{width:100%;border-collapse:collapse;font-size:13px;margin-top:12px}
 th{text-align:left;padding:8px 10px;background:var(--bg2);color:var(--fg2);font-weight:600;border-bottom:1px solid rgba(255,255,255,.08)}
 td{padding:6px 10px;border-bottom:1px solid rgba(255,255,255,.04)}
-.win{color:var(--green);font-weight:700}
-.lose{color:var(--red)}
-.bar-cell{position:relative}
-.bar{height:16px;border-radius:3px;display:inline-block;vertical-align:middle}
-.bar-green{background:rgba(6,214,160,.5)}
-.bar-red{background:rgba(255,107,107,.5)}
+.win{color:var(--green);font-weight:700}.lose{color:var(--red)}
+.bar{height:14px;border-radius:3px;display:inline-block;vertical-align:middle}
+.bar-g{background:rgba(6,214,160,.5)}.bar-r{background:rgba(255,107,107,.5)}
 .status{font-size:13px;color:var(--fg2);margin:8px 0}
 </style>
 </head>
 <body>
 <h1>龟龟对战 — 平衡模拟器 (全引擎)</h1>
-
 <div class="controls">
-  <label>左方龟1 <select id="left0"></select></label>
-  <label>左方龟2 <select id="left1"></select></label>
+  <label>左方龟1<select id="s0"></select></label>
+  <label>左方龟2<select id="s1"></select></label>
   <span style="color:var(--fg2);padding:8px">VS</span>
-  <label>右方龟1 <select id="right0"></select></label>
-  <label>右方龟2 <select id="right1"></select></label>
-  <label>模拟次数 <input type="number" id="simCount" value="30" min="1" max="200"></label>
-  <button onclick="runCustom()">自定义对战</button>
-  <button onclick="runMatrix()">全对战矩阵</button>
+  <label>右方龟1<select id="s2"></select></label>
+  <label>右方龟2<select id="s3"></select></label>
+  <label>次数<input type="number" id="simN" value="20" min="1" max="200"></label>
+  <button id="btnCustom">自定义对战</button>
+  <button id="btnMatrix">全对战矩阵</button>
 </div>
 <div class="progress"><div class="progress-fill" id="pf" style="width:0%"></div></div>
-<div class="status" id="st"></div>
-<div class="results" id="res"></div>
+<div class="status" id="st">加载引擎中...</div>
+<div id="res"></div>
 
-<!-- Load real game code in a sandboxed iframe -->
-<iframe id="simFrame" style="display:none"></iframe>
+<!--
+  Step 1: Mock DOM elements that the engine expects
+  These invisible divs prevent getElementById from returning null
+-->
+<div style="display:none">
+  <div id="turnBanner"></div><div id="turnOrderBar"></div><div id="sideIndicator"></div>
+  <div id="teamLabelLeft"></div><div id="teamLabelRight"></div>
+  <div id="actionPanel"><div id="actingName"></div><div id="actionButtons"></div><div id="targetSelect" style="display:none"><div id="targetButtons"></div></div></div>
+  <div id="battleLog"></div><div id="dmgStatsPanel"><div id="dmgStatsBody"></div></div>
+  <div id="passivePopup" style="display:none"></div><div id="helpPanel" style="display:none"></div>
+  <div id="toast"></div><div id="soundBtn"></div><div id="coinDisplay"></div><div id="recordStats"></div>
+  <div id="screenMenu" class="screen"></div><div id="screenSelect" class="screen"></div>
+  <div id="screenBattle" class="screen"></div><div id="screenResult" class="screen"></div>
+  <div id="screenLobby" class="screen"></div><div id="screenDifficulty" class="screen"></div>
+  <div id="selectTitle"></div><div id="petGrid"></div><div id="slot0"></div><div id="slot1"></div>
+  <div id="btnConfirmTeam"></div><div id="joinRoomInput"></div><div id="roomCodeDisplay" style="display:none"></div>
+  <div id="roomCodeText"></div><div id="lobbyStatus"></div>
+  <div id="resultIcon"></div><div id="resultTitle"></div><div id="resultSub"></div>
+  <div id="resultRewards"></div>
+  <div id="leftFighter0"><div class="fighter-emoji"></div><div class="fighter-name"></div><div class="fighter-stats"></div><div class="hp-bar"><div class="hp-fill"></div></div><div class="hp-text"></div><div class="status-icons"></div></div>
+  <div id="leftFighter1"><div class="fighter-emoji"></div><div class="fighter-name"></div><div class="fighter-stats"></div><div class="hp-bar"><div class="hp-fill"></div></div><div class="hp-text"></div><div class="status-icons"></div></div>
+  <div id="rightFighter0"><div class="fighter-emoji"></div><div class="fighter-name"></div><div class="fighter-stats"></div><div class="hp-bar"><div class="hp-fill"></div></div><div class="hp-text"></div><div class="status-icons"></div></div>
+  <div id="rightFighter1"><div class="fighter-emoji"></div><div class="fighter-name"></div><div class="fighter-stats"></div><div class="hp-bar"><div class="hp-fill"></div></div><div class="hp-text"></div><div class="status-icons"></div></div>
+</div>
+
+<!-- Load real engine -->
+<script src="audio.js"></script>
+<script src="js/pets.js"></script>
+<script src="js/engine.js"></script>
+<script src="js/skills.js"></script>
+<script src="js/ui.js"></script>
+<script src="js/main.js"></script>
 
 <script>
-// We run the real engine inside an iframe with mocked DOM
-// This gives us full skill/passive/buff coverage
+// Override sleep to instant
+const _realSleep = sleep;
+sleep = () => Promise.resolve();
 
-const SIM_FRAME_HTML = `<!DOCTYPE html><html><body>
-<script>
-// ── DOM MOCK LAYER ──
-const _noop = ()=>{};
-const _mockEl = {
-  classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false},
-  style:{}, querySelector:()=>_mockEl, querySelectorAll:()=>[],
-  appendChild:_noop, insertBefore:_noop, remove:_noop, setAttribute:_noop,
-  innerHTML:'', textContent:'', id:'mock',
-  getElementsByClassName:()=>[]
-};
-document.getElementById = () => _mockEl;
-document.querySelector = () => _mockEl;
-document.querySelectorAll = () => [];
-document.createElement = () => ({...JSON.parse(JSON.stringify(_mockEl)), classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false}, style:{}, querySelector:()=>_mockEl, appendChild:_noop});
-document.head = {appendChild:_noop};
+// Override functions that show UI
+const _np = ()=>{};
+showScreen = _np; showToast = _np;
 
-// Mock localStorage
-const _ls = {};
-window.localStorage = { getItem:k=>_ls[k]||null, setItem:(k,v)=>{_ls[k]=v;}, removeItem:k=>{delete _ls[k];} };
-
-// Mock audio
-window.AudioContext = window.webkitAudioContext = function(){};
-const sfxNoop = _noop;
-window.sfxHit=sfxNoop;window.sfxCrit=sfxNoop;window.sfxPierce=sfxNoop;window.sfxShield=sfxNoop;
-window.sfxShieldBreak=sfxNoop;window.sfxHeal=sfxNoop;window.sfxDeath=sfxNoop;window.sfxRebirth=sfxNoop;
-window.sfxBuff=sfxNoop;window.sfxDebuff=sfxNoop;window.sfxDodge=sfxNoop;window.sfxFire=sfxNoop;
-window.sfxLightning=sfxNoop;window.sfxCoin=sfxNoop;window.sfxExplosion=sfxNoop;window.sfxCounter=sfxNoop;
-window.sfxTrap=sfxNoop;window.sfxBattleStart=sfxNoop;window.sfxVictory=sfxNoop;window.sfxDefeat=sfxNoop;
-window.sfxClick=sfxNoop;window.sfxTurnStart=sfxNoop;window.toggleSound=sfxNoop;window.ensureAudio=_noop;
-
-// Override sleep to be instant
-${'<'}\/script>
-<script src="js/pets.js"><\/script>
-<script src="js/engine.js"><\/script>
-<script src="js/skills.js"><\/script>
-<script src="js/ui.js"><\/script>
-<script src="js/main.js"><\/script>
-<script>
-// Override sleep to be instant in sim mode
-const _origSleep = sleep;
-sleep = (ms) => Promise.resolve();
-
-// Override showScreen, showToast, toggleHelp etc
-showScreen = _noop;
-showToast = _noop;
-if(typeof toggleHelp==='function') toggleHelp = _noop;
-
-// Sim API: run one battle and return results
-async function simBattle(leftIds, rightIds, maxTurns) {
-  maxTurns = maxTurns || 40;
-  // Reset
+// ── SIM BATTLE ──────────────────────────────────────────
+async function simBattle(leftIds, rightIds) {
   resetBattleState();
   gameMode = 'pve';
   leftTeam = leftIds.map(id => createFighter(id, 'left'));
   rightTeam = rightIds.map(id => createFighter(id, 'right'));
   allFighters = [...leftTeam, ...rightTeam];
-  battleOver = false;
-  turnNum = 1;
+  battleOver = false; turnNum = 1;
+  batchPhase = 0; batchesThisRound = 0;
 
-  // Apply one-time passives (same as startBattle)
+  // One-time passives
   allFighters.forEach(f => {
-    if (f.passive && f.passive.type === 'ninjaInstinct') {
-      f.crit += f.passive.critBonus / 100;
-      f._extraCritDmgPerm = (f.passive.critDmgBonus || 0) / 100;
-      f.armorPen += f.passive.armorPen || 0;
+    if (!f.passive) return;
+    if (f.passive.type === 'ninjaInstinct') {
+      f.crit += f.passive.critBonus/100;
+      f._extraCritDmgPerm = (f.passive.critDmgBonus||0)/100;
+      f.armorPen += f.passive.armorPen||0;
     }
-    if (f.passive && f.passive.type === 'twoHeadVitality') {
-      f.shield += Math.round(f.maxHp * f.passive.shieldPct / 100);
+    if (f.passive.type === 'twoHeadVitality') {
+      f.shield += Math.round(f.maxHp * f.passive.shieldPct/100);
       f._twoHeadHalfTriggered = false;
-    }
-    if (f.passive && f.passive.type === 'summonAlly') {
-      // Simplified: skip summon in sim for now
     }
   });
 
-  // Run battle loop with turn limit
-  let safety = 0;
-  const maxActions = maxTurns * 10; // prevent infinite
-
-  // Simulate by directly calling the turn system
-  // Override nextAction to track completion
-  let actionsDone = 0;
-  const origNextAction = nextAction;
-
-  // Simple approach: run beginTurn and process batches manually
-  while (!battleOver && turnNum <= maxTurns && actionsDone < maxActions) {
-    // Process turn start
-    allFighters.forEach(f => f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; }));
-
+  const MAX_TURNS = 40;
+  for (let turn = 0; turn < MAX_TURNS && !battleOver; turn++) {
+    allFighters.forEach(f => f.skills.forEach(s => { if(s.cdLeft>0)s.cdLeft--; }));
     // Per-turn passives
     for (const f of allFighters) {
-      if (!f.alive || !f.passive) continue;
+      if (!f.alive||!f.passive) continue;
       f.passiveUsedThisTurn = false;
-      if (f.passive.type === 'turnScaleAtk') {
-        f.baseAtk += Math.round(f.baseAtk * f.passive.pct / 100);
-      }
-      if (f.passive.type === 'turnScaleHp') {
-        const gain = Math.round(f.maxHp * f.passive.pct / 100);
-        f.maxHp += gain; f.hp += gain;
-      }
-      if (f.passive.type === 'stoneWall') {
-        if (!f._stoneDefGained) f._stoneDefGained = 0;
-        if (f._stoneDefGained < f.passive.maxDef) {
-          const gain = Math.min(f.passive.defGain, f.passive.maxDef - f._stoneDefGained);
-          f.baseDef += gain; f._stoneDefGained += gain;
-        }
-      }
-      // Cyber drones
-      if (f.passive && f.passive.type === 'cyberDrone' && !f._isMech) {
-        if (!f._drones) f._drones = [];
-        if (f._drones.length < f.passive.maxDrones) f._drones.push({age:0});
-        const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-        for (let di = 0; di < f._drones.length; di++) {
-          const alive = enemies.filter(e => e.alive);
-          if (!alive.length) break;
-          const t = alive[Math.floor(Math.random() * alive.length)];
-          const dmg = Math.round(f.atk * f.passive.droneScale);
-          const ed = Math.max(0, t.def - (f.armorPen||0));
-          const dr = ed / (ed + DEF_CONSTANT);
-          const fd = Math.max(1, Math.round(dmg * (1 - dr)));
-          applyRawDmg(f, t, fd);
-        }
-      }
+      const p = f.passive;
+      if (p.type==='turnScaleAtk'){f.baseAtk+=Math.round(f.baseAtk*p.pct/100);}
+      if (p.type==='turnScaleHp'){const g=Math.round(f.maxHp*p.pct/100);f.maxHp+=g;f.hp+=g;}
+      if (p.type==='stoneWall'){if(!f._stoneDefGained)f._stoneDefGained=0;if(f._stoneDefGained<p.maxDef){const g=Math.min(p.defGain,p.maxDef-f._stoneDefGained);f.baseDef+=g;f._stoneDefGained+=g;}}
+      if (p.type==='cyberDrone'&&!f._isMech){if(!f._drones)f._drones=[];if(f._drones.length<p.maxDrones)f._drones.push({age:0});
+        const en=allFighters.filter(e=>e.alive&&e.side!==f.side);
+        for(let di=0;di<f._drones.length;di++){const al=en.filter(e=>e.alive);if(!al.length)break;const t=al[Math.floor(Math.random()*al.length)];
+          const dmg=Math.round(f.atk*p.droneScale);const ed=Math.max(0,t.def-(f.armorPen||0));const dr=ed/(ed+DEF_CONSTANT);applyRawDmg(f,t,Math.max(1,Math.round(dmg*(1-dr))));}}
     }
-
-    // Process buffs (simplified)
-    for (const f of allFighters) {
-      if (!f.alive) continue;
-      // DoT
-      f.buffs.filter(b => b.type === 'dot').forEach(d => {
-        f.hp = Math.max(0, f.hp - d.value);
-        if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
-      });
-      f.buffs.filter(b => b.type === 'phoenixBurnDot').forEach(pb => {
-        const dmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-        f.hp = Math.max(0, f.hp - dmg);
-        if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
-      });
-      // HOT
-      f.buffs.filter(b => b.type === 'hot').forEach(h => {
-        f.hp = Math.min(f.maxHp, f.hp + h.value);
-      });
-      // Tick buffs
-      f.buffs.forEach(b => b.turns--);
-      f.buffs = f.buffs.filter(b => b.turns > 0);
+    // Buffs
+    for (const f of allFighters) { if(!f.alive)continue;
+      f.buffs.filter(b=>b.type==='dot').forEach(d=>{f.hp=Math.max(0,f.hp-d.value);if(f.hp<=0){f.alive=false;f._deathProcessed=true;}});
+      f.buffs.filter(b=>b.type==='phoenixBurnDot').forEach(pb=>{const d=pb.value+Math.round(f.maxHp*pb.hpPct/100);f.hp=Math.max(0,f.hp-d);if(f.hp<=0){f.alive=false;f._deathProcessed=true;}});
+      f.buffs.filter(b=>b.type==='hot').forEach(h=>{f.hp=Math.min(f.maxHp,f.hp+h.value);});
+      f.buffs.forEach(b=>b.turns--);f.buffs=f.buffs.filter(b=>b.turns>0);
     }
-
     recalcStats();
+    if(!leftTeam.some(f=>f.alive)||!rightTeam.some(f=>f.alive))break;
 
-    if (!leftTeam.some(f=>f.alive) || !rightTeam.some(f=>f.alive)) { battleOver = true; break; }
-
-    // Actions: left team then right team (simplified batch)
-    const lAlive = leftTeam.filter(f => f.alive);
-    const rAlive = rightTeam.filter(f => f.alive);
-
-    // First turn: left sends 1, then right all, then left rest
-    const order = turnNum === 1 ?
-      [lAlive[0], ...rAlive, ...lAlive.slice(1)] :
-      (turnNum % 2 === 0 ? [...rAlive, ...lAlive] : [...lAlive, ...rAlive]);
+    // Actions
+    const la=leftTeam.filter(f=>f.alive),ra=rightTeam.filter(f=>f.alive);
+    const order=turnNum===1?(la[0]?[la[0],...ra,...la.slice(1)]:[...ra]):(turnNum%2===0?[...ra,...la]:[...la,...ra]);
 
     for (const f of order) {
-      if (!f || !f.alive || battleOver) continue;
-      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-      const allies = allFighters.filter(a => a.alive && a.side === f.side);
-      if (!enemies.length) { battleOver = true; break; }
-
-      // AI picks skill
-      const ready = f.skills.filter(s => s.cdLeft === 0);
-      if (!ready.length) continue;
-
-      const healS = ready.find(s => s.type === 'heal');
-      const shieldS = ready.find(s => s.type === 'shield');
-      const dmgS = ready.filter(s => s.type !== 'heal' && s.type !== 'shield' && !s.switchTo);
-
+      if(!f||!f.alive||battleOver)continue;
+      const enemies=allFighters.filter(e=>e.alive&&e.side!==f.side);
+      if(!enemies.length){battleOver=true;break;}
+      const ready=f.skills.filter(s=>s.cdLeft===0);if(!ready.length)continue;
+      const allies=allFighters.filter(a=>a.alive&&a.side===f.side);
+      const hs=ready.find(s=>s.type==='heal'),ss=ready.find(s=>s.type==='shield');
+      const ds=ready.filter(s=>s.type!=='heal'&&s.type!=='shield'&&!s.switchTo);
       let skill;
-      if (healS && allies.some(a => a.hp/a.maxHp < 0.35)) skill = healS;
-      else if (shieldS && allies.some(a => a.shield < 20)) skill = shieldS;
-      else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
+      if(hs&&allies.some(a=>a.hp/a.maxHp<0.35))skill=hs;
+      else if(ss&&allies.some(a=>a.shield<20))skill=ss;
+      else skill=ds.length?ds[Math.floor(Math.random()*ds.length)]:ready[0];
+      if(!skill)continue;if(skill.cd>0)skill.cdLeft=skill.cd;
+      const target=enemies.sort((a,b)=>a.hp-b.hp)[0];
 
-      if (!skill) continue;
-      if (skill.cd > 0) skill.cdLeft = skill.cd;
-
-      const target = enemies.sort((a,b) => a.hp - b.hp)[0];
-
-      // Execute via real engine action
-      try {
-        const action = {
-          attackerId: allFighters.indexOf(f),
-          skillIdx: f.skills.indexOf(skill),
-          targetId: allFighters.indexOf(target),
-          aoe: !!skill.aoe
-        };
-        await executeAction(action);
-      } catch(e) {
-        // Fallback: simple damage calc
-        if (skill.type !== 'heal' && skill.type !== 'shield') {
-          const hits = skill.hits || 1;
-          for (let h = 0; h < hits; h++) {
-            if (!target.alive) break;
-            let bp = skill.power || 0;
-            if (skill.atkScale) bp += Math.round(f.atk * skill.atkScale);
-            if (skill.defScale) bp += Math.round(f.def * skill.defScale);
-            if (skill.hpPct) bp += Math.round(target.maxHp * skill.hpPct / 100);
-            const ed = Math.max(0, target.def - (f.armorPen||0));
-            const dr = ed / (ed + DEF_CONSTANT);
-            const dmg = Math.max(1, Math.round(bp * (1-dr)));
-            applyRawDmg(f, target, dmg);
-          }
+      try{
+        animating=false;
+        const savedNA=nextAction;nextAction=_np;
+        await executeAction({attackerId:allFighters.indexOf(f),skillIdx:f.skills.indexOf(skill),targetId:allFighters.indexOf(target),aoe:!!skill.aoe});
+        nextAction=savedNA;
+      }catch(e){
+        const h=skill.hits||1;for(let i=0;i<h;i++){if(!target.alive)break;
+          let bp=skill.power||0;if(skill.atkScale)bp+=Math.round(f.atk*skill.atkScale);if(skill.hpPct)bp+=Math.round(target.maxHp*skill.hpPct/100);
+          const ed=Math.max(0,target.def-(f.armorPen||0)),dr=ed/(ed+DEF_CONSTANT);applyRawDmg(f,target,Math.max(1,Math.round(bp*(1-dr))));
         }
       }
-
-      // Check deaths
-      allFighters.forEach(ff => {
-        if (ff.hp <= 0 && !ff._deathProcessed) {
-          // Phoenix rebirth
-          if (ff.passive && ff.passive.type === 'phoenixRebirth' && !ff._rebirthUsed) {
-            ff._rebirthUsed = true;
-            ff.hp = Math.round(ff.maxHp * ff.passive.revivePct / 100);
-            ff.alive = true;
-            return;
-          }
-          // Mech transform
-          if (ff.passive && ff.passive.type === 'cyberDrone' && ff._drones && ff._drones.length > 0 && !ff._isMech) {
-            const dc = ff._drones.length; ff._drones = []; ff._isMech = true;
-            ff.hp = ff.passive.mechHpPer * dc; ff.maxHp = ff.hp;
-            ff.baseAtk = ff.passive.mechAtkPer * dc; ff.atk = ff.baseAtk;
-            ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
-            ff.skills = [{name:'机甲攻击',type:'physical',hits:1,power:0,pierce:0,cd:0,atkScale:1.0}];
-            return;
-          }
-          ff.alive = false; ff._deathProcessed = true;
-        }
-      });
-
-      if (!leftTeam.some(ff=>ff.alive) || !rightTeam.some(ff=>ff.alive)) { battleOver = true; break; }
-      actionsDone++;
+      // Deaths
+      allFighters.forEach(ff=>{if(ff.hp<=0&&!ff._deathProcessed){
+        if(ff.passive&&ff.passive.type==='phoenixRebirth'&&!ff._rebirthUsed){ff._rebirthUsed=true;ff.hp=Math.round(ff.maxHp*ff.passive.revivePct/100);ff.alive=true;return;}
+        if(ff.passive&&ff.passive.type==='cyberDrone'&&ff._drones&&ff._drones.length>0&&!ff._isMech){const dc=ff._drones.length;ff._drones=[];ff._isMech=true;ff.hp=ff.passive.mechHpPer*dc;ff.maxHp=ff.hp;ff.baseAtk=ff.passive.mechAtkPer*dc;ff.atk=ff.baseAtk;ff.baseDef=0;ff.def=0;ff.alive=true;ff.buffs=[];ff.skills=[{name:'机甲攻击',type:'physical',hits:1,power:0,pierce:0,cd:0,atkScale:1.0}];return;}
+        ff.alive=false;ff._deathProcessed=true;
+      }});
+      if(!leftTeam.some(ff=>ff.alive)||!rightTeam.some(ff=>ff.alive)){battleOver=true;break;}
     }
     turnNum++;
   }
-
-  return {
-    winner: leftTeam.some(f=>f.alive) ? 'left' : rightTeam.some(f=>f.alive) ? 'right' : 'draw',
-    turns: turnNum,
-    left: leftTeam.map(f => ({id:f.id, name:f.name, dmgDealt:f._dmgDealt||0, dmgTaken:f._dmgTaken||0, alive:f.alive})),
-    right: rightTeam.map(f => ({id:f.id, name:f.name, dmgDealt:f._dmgDealt||0, dmgTaken:f._dmgTaken||0, alive:f.alive})),
+  return{
+    winner:leftTeam.some(f=>f.alive)?'left':rightTeam.some(f=>f.alive)?'right':'draw',
+    left:leftTeam.map(f=>({id:f.id,name:f.name,dd:f._dmgDealt||0,dt:f._dmgTaken||0,alive:f.alive})),
+    right:rightTeam.map(f=>({id:f.id,name:f.name,dd:f._dmgDealt||0,dt:f._dmgTaken||0,alive:f.alive})),
   };
 }
 
-// Signal ready
-window.parent.postMessage({type:'ready'}, '*');
-
-// Listen for sim requests
-window.addEventListener('message', async (e) => {
-  if (e.data.type === 'runBattle') {
-    const result = await simBattle(e.data.left, e.data.right, e.data.maxTurns);
-    window.parent.postMessage({type:'result', id:e.data.id, result}, '*');
-  }
-});
-${'<'}\/script></body></html>`;
-
-// ── MAIN PAGE LOGIC ──
-let simReady = false;
-let pendingCallbacks = {};
-let callId = 0;
-
+// ── UI ──────────────────────────────────────────────────
 function initSim() {
-  const frame = document.getElementById('simFrame');
-  frame.srcdoc = SIM_FRAME_HTML;
-
-  window.addEventListener('message', (e) => {
-    if (e.data.type === 'ready') {
-      simReady = true;
-      document.getElementById('st').textContent = '引擎就绪';
-      initSelects();
-    }
-    if (e.data.type === 'result' && pendingCallbacks[e.data.id]) {
-      pendingCallbacks[e.data.id](e.data.result);
-      delete pendingCallbacks[e.data.id];
-    }
+  ['s0','s1','s2','s3'].forEach(id=>{const sel=document.getElementById(id);
+    ALL_PETS.forEach(p=>{const o=document.createElement('option');o.value=p.id;o.textContent=`${p.emoji}${p.name}(${p.rarity})`;sel.appendChild(o);});
   });
+  document.getElementById('s0').value='hunter';document.getElementById('s1').value='stone';
+  document.getElementById('s2').value='ninja';document.getElementById('s3').value='phoenix';
+  document.getElementById('st').textContent='就绪';
+  document.getElementById('btnCustom').onclick=runCustom;
+  document.getElementById('btnMatrix').onclick=runMatrix;
 }
 
-function simBattleAsync(leftIds, rightIds) {
-  return new Promise(resolve => {
-    const id = ++callId;
-    pendingCallbacks[id] = resolve;
-    document.getElementById('simFrame').contentWindow.postMessage({type:'runBattle', id, left:leftIds, right:rightIds, maxTurns:40}, '*');
-  });
-}
-
-function initSelects() {
-  // Access ALL_PETS from iframe
-  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
-  if (!pets) { setTimeout(initSelects, 100); return; }
-
-  ['left0','left1','right0','right1'].forEach(id => {
-    const sel = document.getElementById(id);
-    sel.innerHTML = '';
-    pets.forEach(p => {
-      const opt = document.createElement('option');
-      opt.value = p.id;
-      opt.textContent = `${p.emoji} ${p.name} (${p.rarity})`;
-      sel.appendChild(opt);
-    });
-  });
-  document.getElementById('left0').value = 'hunter';
-  document.getElementById('left1').value = 'stone';
-  document.getElementById('right0').value = 'ninja';
-  document.getElementById('right1').value = 'phoenix';
-}
-
-async function runCustom() {
-  if (!simReady) return;
-  const leftIds = [document.getElementById('left0').value, document.getElementById('left1').value];
-  const rightIds = [document.getElementById('right0').value, document.getElementById('right1').value];
-  const count = parseInt(document.getElementById('simCount').value) || 30;
-
-  document.getElementById('st').textContent = '模拟中...';
-  let lw=0, rw=0, dr=0;
-  const ps = {};
-
-  for (let i = 0; i < count; i++) {
-    const r = await simBattleAsync(leftIds, rightIds);
-    if (r.winner==='left') lw++; else if (r.winner==='right') rw++; else dr++;
-    [...r.left,...r.right].forEach(f => {
-      if (!ps[f.id]) ps[f.id] = {name:f.name,wins:0,games:0,dd:0,dt:0};
-      ps[f.id].games++; ps[f.id].dd+=f.dmgDealt; ps[f.id].dt+=f.dmgTaken;
-      if (f.alive) ps[f.id].wins++;
-    });
-    document.getElementById('pf').style.width = ((i+1)/count*100)+'%';
+async function runCustom(){
+  const li=[document.getElementById('s0').value,document.getElementById('s1').value];
+  const ri=[document.getElementById('s2').value,document.getElementById('s3').value];
+  const N=parseInt(document.getElementById('simN').value)||20;
+  document.getElementById('st').textContent='模拟中...';
+  let lw=0,rw=0;const ps={};
+  for(let i=0;i<N;i++){
+    const r=await simBattle(li,ri);if(r.winner==='left')lw++;else if(r.winner==='right')rw++;
+    [...r.left,...r.right].forEach(f=>{if(!ps[f.id])ps[f.id]={name:f.name,wins:0,games:0,dd:0,dt:0};
+      ps[f.id].games++;ps[f.id].dd+=f.dd;ps[f.id].dt+=f.dt;if(f.alive)ps[f.id].wins++;});
+    document.getElementById('pf').style.width=((i+1)/N*100)+'%';
+    if(i%3===0)await new Promise(r=>requestAnimationFrame(r));
   }
-
-  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
-  const ln = leftIds.map(id=>pets.find(p=>p.id===id)?.name).join('+');
-  const rn = rightIds.map(id=>pets.find(p=>p.id===id)?.name).join('+');
-
-  let html = `<h3>${ln} vs ${rn} (${count}局)</h3>`;
-  html += `<p>左方: <span class="${lw>=rw?'win':'lose'}">${Math.round(lw/count*100)}%</span>(${lw}胜) | 右方: <span class="${rw>=lw?'win':'lose'}">${Math.round(rw/count*100)}%</span>(${rw}胜) | 平:${dr}</p>`;
-  html += '<table><tr><th>龟</th><th>存活率</th><th>造成均伤</th><th>承受均伤</th></tr>';
-  Object.values(ps).sort((a,b)=>b.dd/b.games-a.dd/a.games).forEach(s => {
-    html += `<tr><td>${s.name}</td><td class="${s.wins/s.games>=0.5?'win':'lose'}">${Math.round(s.wins/s.games*100)}%</td><td>${Math.round(s.dd/s.games)}</td><td>${Math.round(s.dt/s.games)}</td></tr>`;
+  const ln=li.map(id=>ALL_PETS.find(p=>p.id===id)?.name).join('+');
+  const rn=ri.map(id=>ALL_PETS.find(p=>p.id===id)?.name).join('+');
+  let h=`<h3>${ln} vs ${rn} (${N}局)</h3><p>左方:<span class="${lw>=rw?'win':'lose'}">${Math.round(lw/N*100)}%</span>(${lw}胜) | 右方:<span class="${rw>=lw?'win':'lose'}">${Math.round(rw/N*100)}%</span>(${rw}胜)</p>`;
+  h+='<table><tr><th>龟</th><th>存活率</th><th>造成均伤</th><th>承受均伤</th></tr>';
+  Object.values(ps).sort((a,b)=>b.dd/b.games-a.dd/a.games).forEach(s=>{
+    h+=`<tr><td>${s.name}</td><td class="${s.wins/s.games>=.5?'win':'lose'}">${Math.round(s.wins/s.games*100)}%</td><td>${Math.round(s.dd/s.games)}</td><td>${Math.round(s.dt/s.games)}</td></tr>`;
   });
-  html += '</table>';
-  document.getElementById('res').innerHTML = html;
-  document.getElementById('st').textContent = `完成 ${count} 局`;
+  document.getElementById('res').innerHTML=h+'</table>';
+  document.getElementById('st').textContent=`完成${N}局`;
 }
 
-async function runMatrix() {
-  if (!simReady) return;
-  const pets = document.getElementById('simFrame').contentWindow.ALL_PETS;
-  const ids = pets.map(p => p.id);
-  const count = Math.min(parseInt(document.getElementById('simCount').value)||10, 30);
-  const st = {};
-  ids.forEach(id => { st[id] = {w:0,g:0,dd:0,dt:0}; });
-  const total = ids.length * (ids.length-1) / 2;
-  let done = 0;
-
-  document.getElementById('st').textContent = '全矩阵模拟中...';
-
-  for (let i = 0; i < ids.length; i++) {
-    for (let j = i+1; j < ids.length; j++) {
-      let aw = 0;
-      for (let k = 0; k < count; k++) {
-        const r = await simBattleAsync([ids[i],ids[i]], [ids[j],ids[j]]);
-        if (r.winner==='left') aw++;
-        st[ids[i]].dd += (r.left[0]?.dmgDealt||0)+(r.left[1]?.dmgDealt||0);
-        st[ids[i]].dt += (r.left[0]?.dmgTaken||0)+(r.left[1]?.dmgTaken||0);
-        st[ids[j]].dd += (r.right[0]?.dmgDealt||0)+(r.right[1]?.dmgDealt||0);
-        st[ids[j]].dt += (r.right[0]?.dmgTaken||0)+(r.right[1]?.dmgTaken||0);
-      }
-      st[ids[i]].w+=aw; st[ids[i]].g+=count;
-      st[ids[j]].w+=(count-aw); st[ids[j]].g+=count;
-      done++;
-      if (done%5===0) {
-        document.getElementById('pf').style.width = (done/total*100)+'%';
-        document.getElementById('st').textContent = `全矩阵 ${done}/${total}`;
-      }
-    }
-  }
-
-  document.getElementById('pf').style.width = '100%';
-  const sorted = Object.entries(st).map(([id,s]) => {
-    const p = pets.find(x=>x.id===id);
-    return {name:p.name,emoji:p.emoji,rarity:p.rarity,
-      wr:Math.round(s.w/s.g*100),w:s.w,g:s.g,
-      ad:Math.round(s.dd/s.g),at:Math.round(s.dt/s.g)};
-  }).sort((a,b) => b.wr-a.wr);
-
-  let html = `<h3>全龟排行 (每对${count}局，全引擎)</h3>`;
-  html += '<table><tr><th>#</th><th>龟</th><th>稀有</th><th>胜率</th><th>胜/总</th><th>造成均伤</th><th>承受均伤</th><th></th></tr>';
-  sorted.forEach((s,i) => {
-    html += `<tr><td>${i+1}</td><td>${s.emoji}${s.name}</td><td>${s.rarity}</td>
-      <td class="${s.wr>=50?'win':'lose'}">${s.wr}%</td><td>${s.w}/${s.g}</td>
-      <td>${s.ad}</td><td>${s.at}</td>
-      <td class="bar-cell"><div class="bar ${s.wr>=50?'bar-green':'bar-red'}" style="width:${s.wr}%">&nbsp;</div></td></tr>`;
-  });
-  html += '</table>';
-  document.getElementById('res').innerHTML = html;
-  document.getElementById('st').textContent = `完成 ${total} 对组合`;
+async function runMatrix(){
+  const ids=ALL_PETS.map(p=>p.id),N=Math.min(parseInt(document.getElementById('simN').value)||10,30);
+  const st={};ids.forEach(id=>{st[id]={w:0,g:0,dd:0,dt:0};});
+  const total=ids.length*(ids.length-1)/2;let done=0;
+  document.getElementById('st').textContent='全矩阵模拟中...';
+  for(let i=0;i<ids.length;i++){for(let j=i+1;j<ids.length;j++){let aw=0;
+    for(let k=0;k<N;k++){const r=await simBattle([ids[i],ids[i]],[ids[j],ids[j]]);if(r.winner==='left')aw++;
+      st[ids[i]].dd+=(r.left[0]?.dd||0)+(r.left[1]?.dd||0);st[ids[i]].dt+=(r.left[0]?.dt||0)+(r.left[1]?.dt||0);
+      st[ids[j]].dd+=(r.right[0]?.dd||0)+(r.right[1]?.dd||0);st[ids[j]].dt+=(r.right[0]?.dt||0)+(r.right[1]?.dt||0);}
+    st[ids[i]].w+=aw;st[ids[i]].g+=N;st[ids[j]].w+=(N-aw);st[ids[j]].g+=N;done++;
+    if(done%3===0){document.getElementById('pf').style.width=(done/total*100)+'%';document.getElementById('st').textContent=`${done}/${total}`;await new Promise(r=>requestAnimationFrame(r));}
+  }}
+  document.getElementById('pf').style.width='100%';
+  const sorted=Object.entries(st).map(([id,s])=>{const p=ALL_PETS.find(x=>x.id===id);
+    return{name:p.name,emoji:p.emoji,rarity:p.rarity,wr:Math.round(s.w/s.g*100),w:s.w,g:s.g,ad:Math.round(s.dd/s.g),at:Math.round(s.dt/s.g)};}).sort((a,b)=>b.wr-a.wr);
+  let h=`<h3>全龟排行(每对${N}局)</h3><table><tr><th>#</th><th>龟</th><th>稀有</th><th>胜率</th><th>胜/总</th><th>造成均伤</th><th>承受均伤</th><th></th></tr>`;
+  sorted.forEach((s,i)=>{h+=`<tr><td>${i+1}</td><td>${s.emoji}${s.name}</td><td>${s.rarity}</td><td class="${s.wr>=50?'win':'lose'}">${s.wr}%</td><td>${s.w}/${s.g}</td><td>${s.ad}</td><td>${s.at}</td><td><div class="bar ${s.wr>=50?'bar-g':'bar-r'}" style="width:${s.wr}%">&nbsp;</div></td></tr>`;});
+  document.getElementById('res').innerHTML=h+'</table>';
+  document.getElementById('st').textContent=`完成${total}对`;
 }
 
 initSim();
