@@ -12,10 +12,11 @@ let selectedIds = [];
 let battleOver  = false;
 let animating   = false;
 
-// Online
+// Online (PeerJS)
 let onlineRoom = null;
 let onlineSide = null;
-let onlinePeer = null;
+let onlinePeer = null;   // Peer instance
+let onlineConn = null;   // DataConnection to the other player
 
 // ── SCREENS ───────────────────────────────────────────────
 function showScreen(id) {
@@ -28,62 +29,105 @@ function startMode(mode) {
   gameMode = mode;
   resetBattleState();
   if (mode === 'pve') {
-    difficulty = 'normal'; // wild encounter — default difficulty
+    difficulty = 'normal';
     selecting = 'left';
     selectedIds = [];
     showSelectScreen('选择你的队伍（选2只龟）');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
+    document.getElementById('lobbyStatus').textContent = '';
+    document.getElementById('roomCodeDisplay').style.display = 'none';
   }
 }
 
-// ── ONLINE LOBBY ──────────────────────────────────────────
+// ── ONLINE LOBBY (PeerJS) ─────────────────────────────────
+function cleanupPeer() {
+  if (onlineConn) { try { onlineConn.close(); } catch(e){} onlineConn = null; }
+  if (onlinePeer) { try { onlinePeer.destroy(); } catch(e){} onlinePeer = null; }
+}
+
 function createRoom() {
+  cleanupPeer();
   const code = String(Math.floor(100000 + Math.random() * 900000));
   onlineRoom = code;
   onlineSide = 'left';
-  document.getElementById('roomCodeDisplay').style.display = 'flex';
-  document.getElementById('roomCodeText').textContent = code;
-  document.getElementById('lobbyStatus').textContent = '等待对手加入…';
-  setupOnlineChannel(code);
-  sendOnline({ type:'create', room:code });
+  const peerId = 'turtle-battle-' + code;
+  document.getElementById('lobbyStatus').textContent = '正在创建房间…';
+
+  onlinePeer = new Peer(peerId);
+  onlinePeer.on('open', () => {
+    document.getElementById('roomCodeDisplay').style.display = 'flex';
+    document.getElementById('roomCodeText').textContent = code;
+    document.getElementById('lobbyStatus').textContent = '等待对手加入…';
+  });
+  onlinePeer.on('connection', (conn) => {
+    onlineConn = conn;
+    setupConn(conn);
+    conn.on('open', () => {
+      document.getElementById('lobbyStatus').textContent = '对手已加入！';
+      setTimeout(() => {
+        sendOnline({ type:'start' });
+        selecting = onlineSide;
+        selectedIds = [];
+        showSelectScreen('你是左方 — 选择队伍');
+      }, 500);
+    });
+  });
+  onlinePeer.on('error', (err) => {
+    document.getElementById('lobbyStatus').textContent = '连接失败：' + err.type;
+  });
 }
 
 function joinRoom() {
+  cleanupPeer();
   const code = document.getElementById('joinRoomInput').value.trim();
   if (code.length !== 6) { showToast('请输入6位房间号'); return; }
   onlineRoom = code;
   onlineSide = 'right';
-  setupOnlineChannel(code);
-  sendOnline({ type:'join', room:code });
-  document.getElementById('lobbyStatus').textContent = '正在加入房间…';
+  document.getElementById('lobbyStatus').textContent = '正在连接…';
+
+  onlinePeer = new Peer();
+  onlinePeer.on('open', () => {
+    const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true });
+    onlineConn = conn;
+    setupConn(conn);
+    conn.on('open', () => {
+      document.getElementById('lobbyStatus').textContent = '已连接！等待房主开始…';
+    });
+  });
+  onlinePeer.on('error', (err) => {
+    if (err.type === 'peer-unavailable') {
+      document.getElementById('lobbyStatus').textContent = '房间不存在或已关闭';
+    } else {
+      document.getElementById('lobbyStatus').textContent = '连接失败：' + err.type;
+    }
+  });
 }
 
 function copyRoomCode() {
   navigator.clipboard.writeText(onlineRoom).then(() => showToast('已复制房间号'));
 }
 
-function setupOnlineChannel(code) {
-  onlinePeer = new BroadcastChannel('turtle-battle-' + code);
-  onlinePeer.onmessage = e => handleOnlineMessage(e.data);
+function setupConn(conn) {
+  conn.on('data', (msg) => handleOnlineMessage(msg));
+  conn.on('close', () => {
+    if (!battleOver) {
+      showToast('对手断开连接');
+      document.getElementById('lobbyStatus').textContent = '对手已断开';
+    }
+  });
 }
-function sendOnline(msg) { if (onlinePeer) onlinePeer.postMessage(msg); }
+
+function sendOnline(msg) {
+  if (onlineConn && onlineConn.open) onlineConn.send(msg);
+}
 
 function handleOnlineMessage(msg) {
   switch (msg.type) {
-    case 'join':
-      document.getElementById('lobbyStatus').textContent = '对手已加入！';
-      setTimeout(() => {
-        selecting = onlineSide;
-        selectedIds = [];
-        showSelectScreen(onlineSide === 'left' ? '你是左方 — 选择队伍' : '你是右方 — 选择队伍');
-      }, 500);
-      if (onlineSide === 'left') sendOnline({ type:'start' });
-      break;
     case 'start':
       selecting = onlineSide;
       selectedIds = [];
-      showSelectScreen(onlineSide === 'left' ? '你是左方 — 选择队伍' : '你是右方 — 选择队伍');
+      showSelectScreen('你是右方 — 选择队伍');
       break;
     case 'team-ready':
       if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left'));
