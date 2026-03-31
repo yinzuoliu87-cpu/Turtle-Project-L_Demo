@@ -393,8 +393,13 @@ function selectTurtleToAct(fIdx) {
 function renderSideIndicator() {
   const el = document.getElementById('sideIndicator');
   if (!el) return;
-  const isLeft = activeSide === 'left';
-  el.innerHTML = `<span class="side-ind ${isLeft?'side-ind-left':'side-ind-right'}">${isLeft?'◀ 我方行动':'敌方行动 ▶'}</span>`;
+  if (gameMode === 'pvp-online') {
+    const isMyTurn = activeSide === onlineSide;
+    el.innerHTML = `<span class="side-ind ${isMyTurn?'side-ind-left':'side-ind-right'}">${isMyTurn?'⚔️ 你的回合':'⏳ 等待对手操作…'}</span>`;
+  } else {
+    const isLeft = activeSide === 'left';
+    el.innerHTML = `<span class="side-ind ${isLeft?'side-ind-left':'side-ind-right'}">${isLeft?'◀ 我方行动':'敌方行动 ▶'}</span>`;
+  }
 }
 
 async function processBuffs() {
