@@ -132,7 +132,12 @@ function handleOnlineMessage(msg) {
     case 'team-ready':
       if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left'));
       if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right'));
-      if (leftTeam.length === 2 && rightTeam.length === 2) startBattle();
+      // Only host (left) starts battle — it will generate seed and send it
+      if (leftTeam.length === 2 && rightTeam.length === 2 && onlineSide === 'left') startBattle();
+      break;
+    case 'battle-seed':
+      // Guest receives seed from host, now start battle
+      startBattle(msg.seed);
       break;
     case 'action':
       executeAction(msg.action);
@@ -207,7 +212,8 @@ function confirmTeam() {
     if (side === 'right') rightTeam = team.map(id => createFighter(id,'right'));
     sendOnline({ type:'team-ready', side, team });
     showToast('等待对手选择…');
-    if (leftTeam.length === 2 && rightTeam.length === 2) startBattle();
+    // Only host starts battle (generates seed); guest waits for battle-seed message
+    if (leftTeam.length === 2 && rightTeam.length === 2 && onlineSide === 'left') startBattle();
   }
 }
 
@@ -216,9 +222,21 @@ function goBackFromSelect() {
 }
 
 
-function startBattle() {
+let _battleSeed = 0;
+
+function startBattle(seed) {
   allFighters = [...leftTeam, ...rightTeam];
   battleOver = false; turnNum = 1;
+  // Seeded random for online sync
+  if (gameMode === 'pvp-online') {
+    if (!seed) {
+      // Host generates seed and sends it
+      seed = (Date.now() ^ (Math.random() * 0x7FFFFFFF)) | 0;
+      sendOnline({ type:'battle-seed', seed });
+    }
+    _battleSeed = seed;
+    seedBattleRng(seed);
+  }
   showScreen('screenBattle');
   // Set team labels
   const ll = document.getElementById('teamLabelLeft');

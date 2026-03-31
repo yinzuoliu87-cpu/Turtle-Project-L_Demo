@@ -1,3 +1,15 @@
+// ── SEEDED RANDOM (for online sync) ──────────────────────
+const _origMathRandom = Math.random;
+let _rngSeed = 0;
+function seedBattleRng(seed) {
+  _rngSeed = seed | 0;
+  Math.random = function() {
+    _rngSeed = (_rngSeed * 1664525 + 1013904223) | 0;
+    return (_rngSeed >>> 0) / 4294967296;
+  };
+}
+function unseedBattleRng() { Math.random = _origMathRandom; }
+
 // ── FIGHTER FACTORY ───────────────────────────────────────
 function createFighter(petId, side) {
   const b = ALL_PETS.find(p => p.id === petId);
@@ -1429,6 +1441,7 @@ function checkBattleEnd() {
   const lA = leftTeam.some(f=>f.alive), rA = rightTeam.some(f=>f.alive);
   if (!lA || !rA) {
     battleOver = true;
+    unseedBattleRng(); // restore Math.random
     document.getElementById('actionPanel').classList.remove('show');
     setTimeout(() => showResult(lA), 1200);
     return true;
