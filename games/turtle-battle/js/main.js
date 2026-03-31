@@ -46,25 +46,43 @@ function cleanupPeer() {
   if (onlinePeer) { try { onlinePeer.destroy(); } catch(e){} onlinePeer = null; }
 }
 
+// PeerJS server config — try public server first
+const PEER_CONFIG = {
+  debug: 1,
+  config: {
+    iceServers: [
+      { urls: 'stun:stun.l.google.com:19302' },
+      { urls: 'stun:stun1.l.google.com:19302' },
+    ]
+  }
+};
+
 function createRoom() {
   cleanupPeer();
   const code = String(Math.floor(100000 + Math.random() * 900000));
   onlineRoom = code;
   onlineSide = 'left';
   const peerId = 'turtle-battle-' + code;
-  document.getElementById('lobbyStatus').textContent = '正在创建房间…';
+  const status = document.getElementById('lobbyStatus');
+  status.textContent = '正在连接PeerJS服务器…';
 
-  onlinePeer = new Peer(peerId);
-  onlinePeer.on('open', () => {
+  onlinePeer = new Peer(peerId, PEER_CONFIG);
+
+  const timeout = setTimeout(() => {
+    status.textContent = '连接超时，PeerJS服务器可能不可用。请重试。';
+  }, 10000);
+
+  onlinePeer.on('open', (id) => {
+    clearTimeout(timeout);
     document.getElementById('roomCodeDisplay').style.display = 'flex';
     document.getElementById('roomCodeText').textContent = code;
-    document.getElementById('lobbyStatus').textContent = '等待对手加入…';
+    status.textContent = '房间已创建！等待对手加入… (房间号: ' + code + ')';
   });
   onlinePeer.on('connection', (conn) => {
     onlineConn = conn;
     setupConn(conn);
     conn.on('open', () => {
-      document.getElementById('lobbyStatus').textContent = '对手已加入！';
+      status.textContent = '对手已加入！';
       setTimeout(() => {
         sendOnline({ type:'start' });
         selecting = onlineSide;
@@ -74,7 +92,13 @@ function createRoom() {
     });
   });
   onlinePeer.on('error', (err) => {
-    document.getElementById('lobbyStatus').textContent = '连接失败：' + err.type;
+    clearTimeout(timeout);
+    console.error('PeerJS error:', err);
+    if (err.type === 'unavailable-id') {
+      status.textContent = '房间号冲突，请重新创建';
+    } else {
+      status.textContent = '连接失败：' + err.type + ' (' + (err.message||'') + ')';
+    }
   });
 }
 
@@ -84,22 +108,40 @@ function joinRoom() {
   if (code.length !== 6) { showToast('请输入6位房间号'); return; }
   onlineRoom = code;
   onlineSide = 'right';
-  document.getElementById('lobbyStatus').textContent = '正在连接…';
+  const status = document.getElementById('lobbyStatus');
+  status.textContent = '正在连接PeerJS服务器…';
 
-  onlinePeer = new Peer();
+  onlinePeer = new Peer(PEER_CONFIG);
+
+  const timeout = setTimeout(() => {
+    status.textContent = '连接超时，请检查网络后重试';
+  }, 10000);
+
   onlinePeer.on('open', () => {
+    clearTimeout(timeout);
+    status.textContent = '正在连接房间 ' + code + ' …';
     const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true });
     onlineConn = conn;
     setupConn(conn);
+
+    const connTimeout = setTimeout(() => {
+      status.textContent = '连接房间超时，房间可能不存在';
+    }, 8000);
+
     conn.on('open', () => {
-      document.getElementById('lobbyStatus').textContent = '已连接！等待房主开始…';
+      clearTimeout(connTimeout);
+      status.textContent = '已连接！等待房主开始…';
     });
   });
   onlinePeer.on('error', (err) => {
+    clearTimeout(timeout);
+    console.error('PeerJS error:', err);
     if (err.type === 'peer-unavailable') {
-      document.getElementById('lobbyStatus').textContent = '房间不存在或已关闭';
+      status.textContent = '房间 ' + code + ' 不存在或已关闭';
+    } else if (err.type === 'network') {
+      status.textContent = '网络错误，PeerJS服务器可能被防火墙拦截';
     } else {
-      document.getElementById('lobbyStatus').textContent = '连接失败：' + err.type;
+      status.textContent = '连接失败：' + err.type + ' (' + (err.message||'') + ')';
     }
   });
 }
