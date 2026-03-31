@@ -501,6 +501,7 @@ function showTurtlePicker(canAct) {
 }
 
 function showActionPanel(f) {
+  currentActingFighter = f; // track who's acting for pickSkill
   const picker = document.getElementById('turtlePicker');
   if (picker) picker.style.display = 'none';
   const panel = document.getElementById('actionPanel');

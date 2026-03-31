@@ -441,10 +441,11 @@ function nextAction() {
 }
 
 let pendingSkillIdx = null;
+let currentActingFighter = null; // the turtle currently acting (set by showActionPanel)
 
 function pickSkill(idx) {
   try { sfxClick(); } catch(e) {}
-  const f = turnQueue[currentIdx];
+  const f = currentActingFighter;
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
@@ -479,7 +480,7 @@ function showTargetSelect(targets) {
 }
 
 function selectTarget(fi) {
-  const f = turnQueue[currentIdx];
+  const f = currentActingFighter;
   const skill = f.skills[pendingSkillIdx];
   executePlayerAction(f, skill, allFighters[fi]);
 }
