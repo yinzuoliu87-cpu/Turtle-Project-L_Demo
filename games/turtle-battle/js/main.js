@@ -46,11 +46,12 @@ function cleanupPeer() {
   if (onlinePeer) { try { onlinePeer.destroy(); } catch(e){} onlinePeer = null; }
 }
 
-// PeerJS server config — try public server first
+// PeerJS server config
 let PEER_CONFIG = { debug: 1, config: { iceServers: [] } };
+let _turnReady = false;
 
 // Fetch TURN credentials from metered.ca (API Key, safe for frontend)
-(async function loadTurnServers() {
+let _turnPromise = (async function loadTurnServers() {
   try {
     const resp = await fetch('https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917');
     const servers = await resp.json();
@@ -65,9 +66,14 @@ let PEER_CONFIG = { debug: 1, config: { iceServers: [] } };
       { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
     ];
   }
+  _turnReady = true;
 })();
 
-function createRoom() {
+async function createRoom() {
+  if (!_turnReady) {
+    document.getElementById('lobbyStatus').textContent = '正在加载TURN服务器…';
+    await _turnPromise;
+  }
   cleanupPeer();
   const code = String(Math.floor(100000 + Math.random() * 900000));
   onlineRoom = code;
@@ -112,7 +118,11 @@ function createRoom() {
   });
 }
 
-function joinRoom() {
+async function joinRoom() {
+  if (!_turnReady) {
+    document.getElementById('lobbyStatus').textContent = '正在加载TURN服务器…';
+    await _turnPromise;
+  }
   cleanupPeer();
   const code = document.getElementById('joinRoomInput').value.trim();
   if (code.length !== 6) { showToast('请输入6位房间号'); return; }
