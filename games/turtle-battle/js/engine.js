@@ -286,8 +286,15 @@ async function nextSideAction() {
       // Show turtle picker
       showTurtlePicker(canAct);
     }
+  } else if (gameMode === 'pvp-online') {
+    // Online PVP: wait for opponent's action via network — hide UI, do nothing
+    const panel = document.getElementById('actionPanel');
+    if (panel) panel.classList.remove('show');
+    const picker = document.getElementById('turtlePicker');
+    if (picker) picker.style.display = 'none';
+    // Action will come from handleOnlineMessage → executeAction
   } else {
-    // AI picks a turtle and acts
+    // PVE AI picks a turtle and acts
     const panel = document.getElementById('actionPanel');
     if (panel) panel.classList.remove('show');
     const picker = document.getElementById('turtlePicker');
@@ -559,6 +566,8 @@ async function executeAction(action) {
   if (animating || battleOver) return;
   animating = true;
   const f = allFighters[action.attackerId];
+  // Track this fighter as acted (needed for online: opponent actions come via network)
+  actedThisSide.add(action.attackerId);
   const skill = f.skills[action.skillIdx];
 
   if (skill.cd > 0) skill.cdLeft = skill.cd;
