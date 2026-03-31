@@ -217,7 +217,7 @@ async function runCustom(){
 }
 
 async function runMatrix(){
-  const ids=ALL_PETS.map(p=>p.id),N=Math.min(parseInt(document.getElementById('simN').value)||10,30);
+  const ids=ALL_PETS.map(p=>p.id),N=Math.min(parseInt(document.getElementById('simN').value)||5,5);
   const st={};ids.forEach(id=>{st[id]={w:0,g:0,dd:0,dt:0};});
   const total=ids.length*(ids.length-1)/2;let done=0;
   document.getElementById('st').textContent='全矩阵模拟中...';
