@@ -47,18 +47,23 @@ function cleanupPeer() {
 }
 
 // PeerJS server config — try public server first
-const PEER_CONFIG = {
-  debug: 2,
-  config: {
-    iceServers: [
+let PEER_CONFIG = { debug: 1, config: { iceServers: [] } };
+
+// Fetch TURN credentials from metered.ca at startup
+(async function loadTurnServers() {
+  try {
+    const resp = await fetch('https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=Ea6tbBVJUZTbKni0msnkRs99zXMkvpiHzO1wQCFHWQ3QmmOy');
+    const servers = await resp.json();
+    PEER_CONFIG.config.iceServers = servers;
+    console.log('TURN servers loaded:', servers.length);
+  } catch(e) {
+    console.warn('Failed to load TURN servers, using STUN fallback:', e);
+    PEER_CONFIG.config.iceServers = [
       { urls: 'stun:stun.l.google.com:19302' },
       { urls: 'stun:stun1.l.google.com:19302' },
-      { urls: 'stun:stun2.l.google.com:19302' },
-      { urls: 'stun:stun3.l.google.com:19302' },
-      { urls: 'stun:stun4.l.google.com:19302' },
-    ]
+    ];
   }
-};
+})();
 
 function createRoom() {
   cleanupPeer();
