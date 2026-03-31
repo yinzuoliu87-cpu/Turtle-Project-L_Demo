@@ -222,6 +222,48 @@ async function beginTurn() {
       await sleep(500);
     }
   }
+  // Summon per-turn passives (same logic as above, for summons)
+  for (const f of allFighters) {
+    if (!f._summon || !f._summon.alive || !f._summon.passive) continue;
+    const s = f._summon;
+    s.passiveUsedThisTurn = false;
+    const p = s.passive;
+    const sElId = getFighterElId(s);
+    if (p.type === 'turnScaleAtk') {
+      const gain = Math.round(s.baseAtk * p.pct / 100);
+      s.baseAtk += gain; s.atk = s.baseAtk;
+      spawnFloatingNum(sElId, `+${gain}攻`, 'passive-num', 0, 0);
+      addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">攻击+${gain}</span>`);
+    }
+    if (p.type === 'turnScaleHp') {
+      const gain = Math.round(s.maxHp * p.pct / 100);
+      s.maxHp += gain; s.hp += gain;
+      spawnFloatingNum(sElId, `+${gain}HP`, 'passive-num', 0, 0);
+      updateHpBar(s, sElId);
+      addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">最大HP+${gain}</span>`);
+    }
+    if (p.type === 'stoneWall') {
+      if (!s._stoneDefGained) s._stoneDefGained = 0;
+      if (s._stoneDefGained < p.maxDef) {
+        const gain = Math.min(p.defGain, p.maxDef - s._stoneDefGained);
+        s.baseDef += gain; s.def = s.baseDef; s._stoneDefGained += gain;
+        spawnFloatingNum(sElId, `+${gain}防`, 'passive-num', 0, 0);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">防御+${gain}(已+${s._stoneDefGained}/${p.maxDef})</span>`);
+      }
+    }
+    if (p.type === 'lightningStorm') {
+      const enemies = allFighters.filter(e => e.alive && e.side !== s.side);
+      if (enemies.length) {
+        const t = enemies[Math.floor(Math.random() * enemies.length)];
+        const sDmg = Math.round(s.atk * p.shockScale);
+        applyRawDmg(s, t, sDmg, true);
+        const tElId = getFighterElId(t);
+        spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', 0, 0);
+        updateHpBar(t, tElId);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">⚡电击${t.emoji}${t.name} ${sDmg}穿透</span>`);
+      }
+    }
+  }
   // Process buffs/debuffs at turn start
   await processBuffs();
   // Recalculate stats after buff changes

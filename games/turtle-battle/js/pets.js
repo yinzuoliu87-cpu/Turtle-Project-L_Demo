@@ -301,9 +301,9 @@ const ALL_PETS = [
     img:'../../assets/pets/凤凰龟.png',
     passive:{ type:'phoenixRebirth', revivePct:25, desc:'首次死亡时以 25%×(最大HP={HP}) = {H:HP*0.25} HP复活' },
     skills:[
-      { name:'灼烧',   type:'phoenixBurn',   hits:1, power:0, pierce:0, cd:0, atkScale:1.0, burnTurns:5, burnAtkScale:0.3, burnHpPct:5,
+      { name:'灼烧',   type:'phoenixBurn',   hits:1, power:0, pierce:0, cd:0, atkScale:0.9, burnTurns:3, burnAtkScale:0.25, burnHpPct:3,
         brief:'凤凰龟造成{N:atkScale*ATK}普通伤害，施加灼烧{burnTurns}回合（每回合{N:burnAtkScale*ATK}+{burnHpPct}%目标HP）',
-        detail:'凤凰龟对单体目标造成 100%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。\n施加灼烧{burnTurns}回合，每回合造成 30%×(攻击力={ATK}) = {N:burnAtkScale*ATK} + {burnHpPct}%目标最大HP 普通伤害。\n同一只凤凰龟的灼烧不叠加，重复施加只刷新持续时间。' },
+        detail:'凤凰龟对单体目标造成 90%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。\n施加灼烧{burnTurns}回合，每回合造成 25%×(攻击力={ATK}) = {N:burnAtkScale*ATK} + {burnHpPct}%目标最大HP 普通伤害。\n同一只凤凰龟的灼烧不叠加，重复施加只刷新持续时间。' },
       { name:'熔岩盾', type:'phoenixShield', hits:1, power:0, pierce:0, cd:4, shieldScale:1.0, duration:4, counterScale:0.25,
         brief:'凤凰龟获得{S:shieldScale*ATK}熔岩护盾{duration}回合，被攻击每段反击{N:counterScale*ATK}普通伤害',
         detail:'凤凰龟获得 100%×(攻击力={ATK}) = {S:shieldScale*ATK} 熔岩护盾，持续{duration}回合。\n有护盾时被攻击的每段反击 25%×(攻击力={ATK}) = {N:counterScale*ATK} 伤害。\n冷却{cd}回合。' },
