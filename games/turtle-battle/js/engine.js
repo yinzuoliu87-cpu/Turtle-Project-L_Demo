@@ -760,7 +760,7 @@ async function executeAction(action) {
       ff.img = null; // clear original turtle image, show emoji instead
       ff.buffs = [];
       ff.passive = null;
-      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.5,
+      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
         brief:'机甲攻击敌方，造成{N:1.5*ATK}普通伤害',
         detail:'机甲对单体目标造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
