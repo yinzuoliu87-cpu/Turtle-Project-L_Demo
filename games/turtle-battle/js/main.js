@@ -49,18 +49,20 @@ function cleanupPeer() {
 // PeerJS server config — try public server first
 let PEER_CONFIG = { debug: 1, config: { iceServers: [] } };
 
-// Fetch TURN credentials from metered.ca at startup
+// Fetch TURN credentials from metered.ca (API Key, safe for frontend)
 (async function loadTurnServers() {
   try {
-    const resp = await fetch('https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=Ea6tbBVJUZTbKni0msnkRs99zXMkvpiHzO1wQCFHWQ3QmmOy');
+    const resp = await fetch('https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917');
     const servers = await resp.json();
     PEER_CONFIG.config.iceServers = servers;
-    console.log('TURN servers loaded:', servers.length);
+    console.log('TURN servers loaded:', servers.length, servers);
   } catch(e) {
-    console.warn('Failed to load TURN servers, using STUN fallback:', e);
+    console.warn('Failed to load TURN servers, using fallback:', e);
     PEER_CONFIG.config.iceServers = [
       { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'stun:stun1.l.google.com:19302' },
+      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+      { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
     ];
   }
 })();
