@@ -118,8 +118,8 @@ function updateFighterStats(f, elId) {
 
   const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
   const briefStats =
-    `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.webp')}攻击力${f.atk}</span>` +
-    `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.webp')}防御${f.def}(受到伤害-${defPct}%)</span>` +
+    `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击力${f.atk}</span>` +
+    `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.png')}防御${f.def}(受到伤害-${defPct}%)</span>` +
     passiveIcon +
     `<span class="stats-toggle" onclick="toggleFighterStats(event,${fIdx})">${wasExpanded?'▴':'▾'}</span>`;
 
