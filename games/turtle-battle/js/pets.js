@@ -113,9 +113,9 @@ const ALL_PETS = [
     img:'../../assets/pets/忍者龟.png',
     passive:{ type:'ninjaInstinct', critBonus:45, critDmgBonus:20, armorPen:8, desc:'+45%暴击+20%爆伤+8穿甲' },
     skills:[
-      { name:'飞镖',     type:'ninjaShuriken', hits:1, power:0, pierce:0, cd:0, atkScale:1.8,
-        brief:'忍者龟投掷飞镖造成{N:1.8*ATK}普通伤害，暴击时转为穿透伤害',
-        detail:'忍者龟对单体目标投掷飞镖，造成 180%×(攻击力={ATK}) = {N:1.8*ATK} 普通伤害。\n暴击时，全部伤害转为 {P:1.8*ATK}×暴击倍率 穿透伤害（无视防御）。' },
+      { name:'飞镖',     type:'ninjaShuriken', hits:1, power:0, pierce:0, cd:0, atkScale:1.5,
+        brief:'忍者龟投掷飞镖造成{N:1.5*ATK}普通伤害，暴击时转为穿透伤害',
+        detail:'忍者龟对单体目标投掷飞镖，造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。\n暴击时，全部伤害转为 {P:1.5*ATK}×暴击倍率 穿透伤害（无视防御）。' },
       { name:'陷阱',     type:'ninjaTrap', hits:1, power:0, pierce:0, cd:3, trapScale:1.8,
         brief:'忍者龟在友方身上布置隐形夹子，被攻击时触发{N:trapScale*ATK}普通伤害',
         detail:'忍者龟在友方单体身上布置隐形夹子（对手不可见）。\n该友方被攻击时触发，对攻击者造成 180%×(攻击力={ATK}) = {N:trapScale*ATK} 普通伤害，一次性消耗。\n冷却{cd}回合。' },

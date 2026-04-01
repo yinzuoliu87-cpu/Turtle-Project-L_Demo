@@ -56,16 +56,13 @@ const dir = path.join(__dirname, 'js');
 const files = ['pets.js', 'engine.js', 'skills.js', 'ui.js', 'main.js'];
 const combined = files.map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
 
-// Replace const/let with var for global scope eval
+// Replace const/let with var for global scope in vm
 const evalCode = combined
   .replace(/^const /gm, 'var ')
-  .replace(/^let /gm, 'var ')
-  .replace(/^async function /gm, 'global.$ASYNC = async function ')
-  .replace(/^function /gm, 'global.$FN = function ');
+  .replace(/^let /gm, 'var ');
 
-// Actually, just use vm.runInThisContext for proper global scope
 const vm = require('vm');
-vm.runInThisContext(combined);
+vm.runInThisContext(evalCode);
 
 // Override sleep to be instant
 global.sleep = () => Promise.resolve();
@@ -91,13 +88,14 @@ global.toggleDmgStats = _noop;
 async function simBattle(leftIds, rightIds, maxTurns = 40) {
   resetBattleState();
   gameMode = 'pve';
+  animating = false;
+  _actionQueue = [];
+  onlineSide = null;
   leftTeam = leftIds.map(id => createFighter(id, 'left'));
   rightTeam = rightIds.map(id => createFighter(id, 'right'));
   allFighters = [...leftTeam, ...rightTeam];
   battleOver = false;
   turnNum = 1;
-  batchPhase = 0;
-  batchesThisRound = 0;
 
   // Apply one-time passives
   allFighters.forEach(f => {
@@ -110,6 +108,19 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
     if (f.passive.type === 'twoHeadVitality') {
       f.shield += Math.round(f.maxHp * f.passive.shieldPct / 100);
       f._twoHeadHalfTriggered = false;
+    }
+    if (f.passive.type === 'frostAura') {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam);
+      for (const e of enemies) e.buffs.push({ type:'atkDown', value:f.passive.atkDownPct, turns:f.passive.atkDownTurns });
+      recalcStats();
+    }
+    if (f.passive.type === 'pirateBarrage') {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      if (enemies.length) {
+        const t = enemies[Math.floor(Math.random() * enemies.length)];
+        const dmg = Math.round(f.maxHp * f.passive.bombardPct / 100);
+        applyRawDmg(f, t, dmg, true);
+      }
     }
   });
 
@@ -207,6 +218,21 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       else if (selfS.length && Math.random() < 0.3) skill = selfS[Math.floor(Math.random() * selfS.length)];
       else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
       if (!skill) continue;
+
+      // Fortune AI: only use fortuneAllIn if coins can kill
+      const allInS = ready.find(s => s.type === 'fortuneAllIn');
+      if (allInS && f._goldCoins > 0) {
+        const perCoinDmg = Math.round(f.atk * 0.4);
+        const totalAllIn = perCoinDmg * f._goldCoins;
+        const weakest = enemies.sort((a,b) => (a.hp+a.shield) - (b.hp+b.shield))[0];
+        if (weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.8) {
+          skill = allInS;
+        } else if (skill === allInS) {
+          const other = ready.filter(s => s.type !== 'fortuneAllIn');
+          skill = other.length ? other[Math.floor(Math.random() * other.length)] : ready[0];
+        }
+      }
+
       if (skill.cd > 0) skill.cdLeft = skill.cd;
 
       // Target selection
@@ -222,6 +248,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       // Execute via real engine
       try {
         animating = false;
+        _actionQueue = [];
         const action = {
           attackerId: allFighters.indexOf(f),
           skillIdx: f.skills.indexOf(skill),
@@ -237,6 +264,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         global.nextAction = savedNextAction;
         global.onActionComplete = savedOnActionComplete;
       } catch (e) {
+        if (!e._simLogged) { console.error('Sim executeAction error:', f.name, skill.name, e.message); e._simLogged = true; }
         // Fallback
         const hits = skill.hits || 1;
         for (let h = 0; h < hits; h++) {
