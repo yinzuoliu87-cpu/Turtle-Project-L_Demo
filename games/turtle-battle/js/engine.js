@@ -949,7 +949,7 @@ async function executeAction(action) {
       ff.baseAtk = 0; ff.atk = 0;
       ff.baseDef = 0; ff.def = 0;
       ff.shield = 0; ff.bubbleShieldVal = 0;
-      ff.crit = 0.08; ff.armorPen = 0;
+      ff.crit = 0.25; ff.armorPen = 0;
       ff.alive = true; ff._deathProcessed = false;
       ff.name = '机甲';
       ff.emoji = '🤖';
