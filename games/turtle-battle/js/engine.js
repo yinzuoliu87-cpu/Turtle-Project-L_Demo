@@ -924,11 +924,11 @@ async function executeAction(action) {
       } catch(e) {}
       try { sfxRebirth(); } catch(e) {}
       await sleep(300);
-      // Transform to mech
-      ff.hp = ff.passive.mechHpPer * dc;
-      ff.maxHp = ff.hp;
-      ff.baseAtk = ff.passive.mechAtkPer * dc;
-      ff.atk = ff.baseAtk;
+      // Transform to mech — start at 0, ramp up
+      const finalHp = ff.passive.mechHpPer * dc;
+      const finalAtk = ff.passive.mechAtkPer * dc;
+      ff.hp = 1; ff.maxHp = 1;
+      ff.baseAtk = 1; ff.atk = 1;
       ff.baseDef = 0; ff.def = 0;
       ff.shield = 0; ff.bubbleShieldVal = 0;
       ff.crit = 0.08; ff.armorPen = 0;
@@ -948,14 +948,27 @@ async function executeAction(action) {
         setTimeout(() => el.classList.remove('mech-transform-anim'), 800);
       }
       renderFighterCard(ff, elId);
-      updateHpBar(ff, elId);
       spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25);
-      await sleep(500);
+      // Ramp up HP and ATK over 800ms
+      const rampSteps = 10;
+      for (let ri = 1; ri <= rampSteps; ri++) {
+        ff.hp = Math.round(finalHp * ri / rampSteps);
+        ff.maxHp = ff.hp;
+        ff.baseAtk = Math.round(finalAtk * ri / rampSteps);
+        ff.atk = ff.baseAtk;
+        updateHpBar(ff, elId);
+        updateFighterStats(ff, elId);
+        await sleep(80);
+      }
+      ff.hp = finalHp; ff.maxHp = finalHp;
+      ff.baseAtk = finalAtk; ff.atk = finalAtk;
+      updateHpBar(ff, elId);
+      updateFighterStats(ff, elId);
       spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
       const mechIdx = allFighters.indexOf(ff);
       if (actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
-      await sleep(600);
+      await sleep(400);
     }
   }
 
