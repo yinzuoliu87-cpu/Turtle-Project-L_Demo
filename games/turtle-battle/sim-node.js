@@ -231,13 +231,14 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
       if (!skill) continue;
 
-      // Fortune AI: only use fortuneAllIn if coins can kill
+      // Fortune AI: use fortuneAllIn if can kill or enough coins
       const allInS = ready.find(s => s.type === 'fortuneAllIn');
       if (allInS && f._goldCoins > 0) {
         const perCoinDmg = Math.round(f.atk * 0.4);
         const totalAllIn = perCoinDmg * f._goldCoins;
         const weakest = enemies.sort((a,b) => (a.hp+a.shield) - (b.hp+b.shield))[0];
-        if (weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.8) {
+        const canKill = weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.6;
+        if (canKill || f._goldCoins >= 12) {
           skill = allInS;
         } else if (skill === allInS) {
           const other = ready.filter(s => s.type !== 'fortuneAllIn');
