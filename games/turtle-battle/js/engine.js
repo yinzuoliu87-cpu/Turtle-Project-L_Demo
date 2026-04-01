@@ -1247,7 +1247,7 @@ async function doDamage(attacker, target, skill) {
     totalShieldDmg += shieldAbs;
 
     // Floating numbers — crit uses same color + icon, no separate "暴击!" text
-    const yOff = (i % 4) * 24;
+    const yOff = (i % 4) * 32;
     if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff);
     if (hpLoss > 0 && piercePart > 0) {
       const normalHp = Math.min(normalPart, hpLoss);
@@ -1627,10 +1627,10 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
     num.textContent = text;
-    const ox = (Math.random() - 0.5) * 44;
+    const ox = (Math.random() - 0.5) * 80;
     num.style.left = `calc(50% + ${ox}px)`;
     num.style.setProperty('--y-start', `-${20 + (yOffset||0)}px`);
-    num.style.setProperty('--y-end', `-${60 + (yOffset||0)}px`);
+    num.style.setProperty('--y-end', `-${70 + (yOffset||0)}px`);
     parent.appendChild(num);
     setTimeout(() => num.remove(), 4000);
     // SFX based on type

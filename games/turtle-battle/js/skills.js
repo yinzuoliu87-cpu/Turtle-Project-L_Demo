@@ -80,7 +80,7 @@ async function doGamblerBet(attacker, target, skill) {
     const total = normalDmg + piercePer;
     applyRawDmg(attacker, target, total);
     totalDmg += total;
-    spawnFloatingNum(tElId, `-${total}🃏`, 'crit-dmg', 0, (i % 4) * 18);
+    spawnFloatingNum(tElId, `-${total}🃏`, 'crit-dmg', 0, (i % 4) * 28);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -539,7 +539,7 @@ async function doBasicBarrage(attacker, skill) {
     applyRawDmg(attacker, target, dmg, false);
     totalDmg += dmg;
 
-    const yOff = (i % 4) * 24;
+    const yOff = (i % 4) * 32;
 
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     updateHpBar(target, tElId);
@@ -574,7 +574,7 @@ async function doIceSpike(attacker, target, skill) {
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
     if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
-      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 32);
       await sleep(280);
       continue;
     }
@@ -590,7 +590,7 @@ async function doIceSpike(attacker, target, skill) {
     const isNormal = (i % 2 === 0); // odd hits (1,3,5) = index 0,2,4 = normal; even hits (2,4,6) = index 1,3,5 = pierce
     const raw = Math.round(perHit);
     let dmg;
-    const yOff = (i % 4) * 24;
+    const yOff = (i % 4) * 32;
 
     if (isNormal) {
       dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
@@ -849,7 +849,7 @@ async function doFortuneAllIn(attacker, target, skill) {
     totalPierce += piercePer;
     totalNormal += normalDmg;
     // Stagger visuals
-    const yOff = (i % 6) * 18;
+    const yOff = (i % 6) * 26;
     spawnFloatingNum(tElId, `-${totalHit}🪙`, i < 10 ? 'crit-dmg' : 'direct-dmg', 0, yOff);
     if (i % 3 === 0) {
       const tEl = document.getElementById(tElId);
@@ -938,7 +938,7 @@ async function doLightningBarrage(attacker, skill) {
     const dmg = Math.max(1, Math.round(perHitDmg * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 5) * 15);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 5) * 24);
     await triggerOnHitEffects(attacker, target, dmg);
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
@@ -996,7 +996,7 @@ async function doStarBeam(attacker, target, skill) {
 
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
 
     // Accumulate star energy
@@ -1290,7 +1290,7 @@ async function doHunterBarrage(attacker, skill) {
     // Pierce damage — ignores DEF, hits shields
     applyRawDmg(attacker, target, arrowDmg, true); // isPierce
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', 0, (i % 4) * 20);
+    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', 0, (i % 4) * 30);
     await triggerOnHitEffects(attacker, target, arrowDmg);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
@@ -1365,7 +1365,7 @@ async function doShellStrike(attacker, target, skill) {
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
     if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
-      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 24);
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 32);
       await sleep(280);
       continue;
     }
@@ -1381,7 +1381,7 @@ async function doShellStrike(attacker, target, skill) {
     const isNormal = (i % 2 === 0); // index 0,2,4 = normal; 1,3,5 = pierce
     const raw = Math.round(perHit);
     let dmg;
-    const yOff = (i % 4) * 24;
+    const yOff = (i % 4) * 32;
 
     if (isNormal) {
       dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
@@ -1596,7 +1596,7 @@ async function doLineSketch(attacker, target, skill) {
     totalDmg += dmg;
     addInkStack(target, 1);
 
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
 
     const tEl = document.getElementById(tElId);
@@ -1748,7 +1748,7 @@ async function doGhostStorm(attacker, target, skill) {
 
     applyRawDmg(attacker, target, finalDmg, true);
     totalPierce += finalDmg;
-    spawnFloatingNum(tElId, `-${finalDmg}`, 'pierce-dmg', 0, (i % 3) * 18);
+    spawnFloatingNum(tElId, `-${finalDmg}`, 'pierce-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, finalDmg);
 
     const tEl = document.getElementById(tElId);
@@ -1802,7 +1802,7 @@ async function doBambooLeaf(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 18);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
