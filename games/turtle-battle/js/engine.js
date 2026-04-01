@@ -57,6 +57,7 @@ function createFighter(petId, side) {
     _auraLifesteal: 0,        // 龟壳觉醒生命偷取
     _auraReflect: 0,          // 龟壳觉醒反伤
     _bambooCharged: false,    // 竹叶龟竹编充能状态
+    _bambooCounter: 0,       // 竹叶龟充能计数器
     _diamondCollideCount: {},  // 钻石龟碰撞计数 {fighterIdx: count}
     _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
     _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
@@ -69,13 +70,28 @@ function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
   _actionQueue=[];
+  currentActingFighter = null;
+  pendingSkillIdx = null;
   resetTurnState();
   // Clean up DOM state from previous battle
   document.querySelectorAll('.fighter-card').forEach(el => {
     el.classList.remove('dead','death-anim','hit-shake','attack-anim','mech-transform-anim');
+    el.style.opacity = '';
+    el.style.display = '';
   });
+  // Remove summon mini cards
+  document.querySelectorAll('.summon-mini').forEach(el => el.remove());
+  // Remove particles and overlays
+  document.querySelectorAll('.bamboo-orb,.mech-drone-particle,.mech-transform-flash,.death-screen-flash').forEach(el => el.remove());
   const overlay = document.getElementById('disconnectOverlay');
   if (overlay) overlay.remove();
+  // Hide panels
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
+  const picker = document.getElementById('turtlePicker');
+  if (picker) picker.style.display = 'none';
+  const targetSel = document.getElementById('targetSelect');
+  if (targetSel) targetSel.style.display = 'none';
   unseedBattleRng();
 }
 
@@ -214,14 +230,20 @@ async function beginTurn() {
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
-    // Passive: bambooCharge — toggle charge every other turn
+    // Passive: bambooCharge — charge every other turn, only consume on actual skill use
     if (f.passive.type === 'bambooCharge') {
-      f._bambooCharged = !f._bambooCharged;
       f._bambooFired = false;
-      if (f._bambooCharged) {
-        spawnFloatingNum(getFighterElId(f), '🎋充能!', 'passive-num', 0, 0);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🎋竹编充能！本回合技能后追加强化攻击</span>`);
+      if (!f._bambooCharged) {
+        // Not charged yet — accumulate
+        f._bambooCounter = (f._bambooCounter || 0) + 1;
+        if (f._bambooCounter >= 2) {
+          f._bambooCharged = true;
+          f._bambooCounter = 0;
+          spawnFloatingNum(getFighterElId(f), '🎋充能!', 'passive-num', 0, 0);
+          addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🎋竹编充能！本回合技能后追加强化攻击</span>`);
+        }
       }
+      // If still charged from last turn (didn't fire — stunned etc), keep it
     }
     // Passive: candySteal — steal 18% maxHP from random enemy at turn 5
     if (f.passive.type === 'candySteal' && turnNum === f.passive.stealTurn) {
@@ -1034,13 +1056,14 @@ async function executeAction(action) {
   if (checkBattleEnd()) { animating=false; return; }
 
   // BambooCharge follow-up: extra pierce attack after skill
-  if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged) {
+  if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged && !f._bambooFired) {
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     if (enemies.length) {
-      // Prefer the same target as the skill just used; fallback to lowest HP
       const skillTarget = action.targetId >= 0 ? allFighters[action.targetId] : null;
       const target = (skillTarget && skillTarget.alive && skillTarget.side !== f.side) ? skillTarget : enemies.sort((a,b) => a.hp - b.hp)[0];
       await doBambooChargeAttack(f, target);
+      // Consume charge — will need to accumulate again
+      f._bambooCharged = false;
       if (checkBattleEnd()) { animating=false; return; }
     }
   }

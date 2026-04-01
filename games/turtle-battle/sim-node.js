@@ -148,8 +148,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
       if (p.type === 'bambooCharge') {
-        f._bambooCharged = !f._bambooCharged;
         f._bambooFired = false;
+        if (!f._bambooCharged) {
+          f._bambooCounter = (f._bambooCounter || 0) + 1;
+          if (f._bambooCounter >= 2) { f._bambooCharged = true; f._bambooCounter = 0; }
+        }
       }
       if (p.type === 'gamblerBlood') {
         const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
@@ -308,6 +311,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           const hpGain = Math.round(f.atk * bp.hpGainAtkPct / 100);
           f.maxHp += hpGain; f.hp += hpGain;
           f._bambooFired = true;
+          f._bambooCharged = false; // consume charge
         }
       }
 
