@@ -320,9 +320,9 @@ const ALL_PETS = [
       { name:'威力增幅', type:'lightningBuff', hits:1, power:0, pierce:0, cd:4, atkUpPct:30, atkUpTurns:4,
         brief:'闪电龟为全体友方提升攻击力+{B:ATK*0.3}（{atkUpPct}%），持续{atkUpTurns}回合',
         detail:'闪电龟为全体友方提升攻击力 {atkUpPct}%×(攻击力={ATK}) = {B:ATK*0.3}点，持续{atkUpTurns}回合。\n冷却{cd}回合。' },
-      { name:'雷暴',     type:'lightningBarrage', hits:20, power:0, pierce:0, cd:5, arrowScale:0.16,
+      { name:'雷暴',     type:'lightningBarrage', hits:20, power:0, pierce:0, cd:5, arrowScale:0.13,
         brief:'闪电龟释放{hits}次闪电随机命中敌方，每次{N:arrowScale*ATK}普通伤害，每次叠电击层',
-        detail:'释放{hits}次闪电，随机分布到敌方。\n每次造成 16%×(攻击力={ATK}) = {N:arrowScale*ATK} 普通伤害。每次命中叠1层电击。\n冷却{cd}回合。' },
+        detail:'释放{hits}次闪电，随机分布到敌方。\n每次造成 13%×(攻击力={ATK}) = {N:arrowScale*ATK} 普通伤害。每次命中叠1层电击。\n冷却{cd}回合。' },
     ]},
   // S级
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:340,  atk:42,  def:14, spd:13, crit:0.25,
