@@ -126,7 +126,7 @@ function updateFighterStats(f, elId) {
   const detailStats =
     `<div class="stats-detail" id="statsDetail${fIdx}" style="display:${wasExpanded?'flex':'none'}">` +
     `<span class="${sc(critPct, Math.round(f._initCrit*100))}">${ic('crit-icon.png')}暴击 ${critPct}%</span>` +
-    `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
+    `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-dmg-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
     `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen}</span>` +
     `<span class="${sc(lifesteal, f._initLifesteal)}">${ic('lifesteal-icon.png')}吸血 ${lifesteal}%</span>` +
     `<span class="${dodgePct > 0 ? 'stat-up' : ''}">${ic('dodge-icon.png')}闪避 ${dodgePct}%</span>` +
