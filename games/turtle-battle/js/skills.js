@@ -1890,21 +1890,20 @@ async function doBambooChargeAttack(attacker, target) {
   updateHpBar(target, tElId);
   // ── 打中同时绿球飞出 ──
   spawnBambooOrb(tElId, fElId);
-  await sleep(400);
-  if (tEl) tEl.classList.remove('hit-shake');
-  await sleep(400);
-
-  // ── 回复 + 成长 ──
-  const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
-  const before = attacker.hp;
-  attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
-  const actual = Math.round(attacker.hp - before);
-  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
   await sleep(300);
+  if (tEl) tEl.classList.remove('hit-shake');
+  // 等绿球到达（飞行650ms，已等300ms）
+  await sleep(350);
+
+  // ── 绿球到达：立刻回血+血条变化 ──
+  const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
   const hpGain = Math.round(attacker.atk * p.hpGainAtkPct / 100);
+  const before = attacker.hp;
   attacker.maxHp += hpGain;
-  attacker.hp += hpGain;
-  spawnFloatingNum(fElId, `+${hpGain}HP`, 'passive-num', 0, 20);
+  attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt + hpGain);
+  const actualHeal = Math.round(attacker.hp - before);
+  spawnFloatingNum(fElId, `+${actualHeal}`, 'heal-num', 0, 0);
+  spawnFloatingNum(fElId, `+${hpGain}最大HP`, 'passive-num', 0, 20);
   updateHpBar(attacker, fElId);
 
   // Mark as fired so icon stops glowing
