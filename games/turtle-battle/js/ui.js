@@ -212,7 +212,7 @@ function updateHpBar(f, elId) {
     bsEl.style.display = 'none';
   }
 
-  // HP bar tick marks (every 100 = thick, every 20 = thin)
+  // HP bar tick marks (LOL style: every 100 = major, every 25 = minor)
   let tickContainer = card.querySelector('.hp-ticks');
   if (!tickContainer) {
     tickContainer = document.createElement('div');
@@ -220,9 +220,10 @@ function updateHpBar(f, elId) {
     card.querySelector('.hp-bar').appendChild(tickContainer);
   }
   let ticksHtml = '';
-  for (let v = 20; v < barMax; v += 20) {
+  const tickStep = 25;
+  for (let v = tickStep; v < barMax; v += tickStep) {
     const pct = v / barMax * 100;
-    if (pct >= 100) break;
+    if (pct >= 99.5) break;
     const isMajor = v % 100 === 0;
     ticksHtml += `<div class="hp-tick${isMajor ? ' hp-tick-major' : ''}" style="left:${pct}%"></div>`;
   }

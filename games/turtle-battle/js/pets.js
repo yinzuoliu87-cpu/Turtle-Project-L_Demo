@@ -36,7 +36,7 @@ const ALL_PETS = [
   //   shieldOnHit      — 受击时获得X护盾(每回合1次)
   //   healOnKill       — 击杀时恢复X%最大HP
   //   counterAttack    — X%概率反击(造成基础攻击50%伤害)
-  { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:38,  def:12, spd:10, crit:0.25,
+  { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:40,  def:12, spd:10, crit:0.25,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     passive:{ type:'basicTurtle', bonusMap:{C:5,B:15,A:20,S:26,SS:32,SSS:46},
               desc:'攻击时按目标稀有度增伤：C+5% B+15% A+20% S+26% SS+32% SSS+46%' },
