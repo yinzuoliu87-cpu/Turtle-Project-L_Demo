@@ -1277,24 +1277,32 @@ async function doHunterShot(attacker, target, skill) {
 async function doHunterBarrage(attacker, skill) {
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   if (!enemies.length) return;
-  const arrowDmg = Math.round(attacker.atk * skill.arrowScale);
+  const baseArrow = Math.round(attacker.atk * skill.arrowScale);
+  let totalDmg = 0, totalCrits = 0;
 
   for (let i = 0; i < skill.hits; i++) {
     const alive = enemies.filter(e => e.alive);
     if (!alive.length) break;
     const target = alive[Math.floor(Math.random() * alive.length)];
-    // Pierce damage — ignores DEF, hits shields
-    applyRawDmg(attacker, target, arrowDmg, true); // isPierce
+    // Crit per arrow
+    let effectiveCrit = attacker.crit;
+    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) effectiveCrit += attacker.passive.pct / 100;
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmgPerm || 0)) : 1;
+    if (isCrit) totalCrits++;
+    const arrowDmg = Math.max(1, Math.round(baseArrow * critMult));
+    applyRawDmg(attacker, target, arrowDmg, true);
+    totalDmg += arrowDmg;
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${arrowDmg}`, 'pierce-dmg', 0, (i % 4) * 30);
+    spawnFloatingNum(tElId, `-${arrowDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, (i % 4) * 30, {atkSide: attacker.side, amount: arrowDmg});
     await triggerOnHitEffects(attacker, target, arrowDmg);
     const tEl = document.getElementById(tElId);
-    tEl.classList.add('hit-shake');
+    if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
-    await sleep(320);
-    tEl.classList.remove('hit-shake');
+    await sleep(280);
+    if (tEl) tEl.classList.remove('hit-shake');
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭随机射出，每根 <span class="log-pierce">${arrowDmg}穿透</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭：<span class="log-pierce">${totalDmg}穿透</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''}`);
 }
 
 async function doHunterStealth(attacker, target, skill) {
