@@ -39,7 +39,7 @@ const ALL_PETS = [
   { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:38,  def:12, spd:10, crit:0.25,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     passive:{ type:'basicTurtle', bonusMap:{C:0,B:8,A:16,S:24,SS:32,SSS:48},
-              desc:'对敌人按稀有度增伤(B+8%...SSS+48%)' },
+              desc:'攻击时按目标稀有度增伤：C+0% B+8% A+16% S+24% SS+32% SSS+48%' },
     skills:[
       { name:'攻击', type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.6, selfAtkUpPct:{pct:15, turns:2},
         brief:'小龟攻击2段，共{N:0.6*ATK*2}普通伤害，自身攻击+15% 2回合',
