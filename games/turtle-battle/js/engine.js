@@ -955,7 +955,7 @@ async function executeAction(action) {
       ff.emoji = '🤖';
       ff.img = null;
       ff.buffs = [];
-      ff.passive = { type:'mechBody', droneCount:dc, desc:`由${dc}个浮游炮组装而成。\nHP = 30×${dc} = ${finalHp}\nATK = 5×${dc} = ${finalAtk}\n每回合自动攻击血量最低的敌人，造成 150%ATK 普通伤害。` };
+      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n防御力 = 0，暴击率 = 25%\n每回合自动攻击血量最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 普通伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
         brief:'机甲自动攻击血量最低的敌人，造成{N:1.5*ATK}普通伤害',
         detail:'机甲自动锁定血量最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
