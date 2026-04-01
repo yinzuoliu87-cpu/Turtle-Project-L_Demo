@@ -189,7 +189,7 @@ async function beginTurn() {
         applyRawDmg(f, target, finalDmg);
         totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, (di % 3) * 14);
+        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
         updateHpBar(target, tElId);
@@ -1631,7 +1631,9 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     else num.textContent = text;
 
     // Size scales with damage amount (14-32px, crit +20%)
-    const amount = opts && opts.amount || 0;
+    let amount = opts && opts.amount || 0;
+    // Auto-extract amount from text if not provided (e.g. "-42" → 42)
+    if (!amount && typeof text === 'string') { const m = text.match(/\d+/); if (m) amount = parseInt(m[0]); }
     if (amount > 0) {
       let sz = amount < 20 ? 14 : amount < 60 ? 14 + (amount-20)/40*8 : amount < 150 ? 22 + (amount-60)/90*6 : 28;
       sz = Math.min(32, sz);
@@ -1647,13 +1649,18 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const ox = (Math.random() - 0.5) * 8;
     const y0 = -(15 + (yOffset || 0));
 
-    if (isDmg && opts && opts.atkSide) {
-      // ── DAMAGE: jump in attack direction, arc down, fade ──
-      // Attack from left → number jumps right; from right → jumps left
-      const dir = opts.atkSide === 'left' ? 1 : -1;
-      const jumpX = dir * (30 + Math.random() * 20);
-      const jumpY = -(25 + Math.random() * 15); // upward
-      const gravity = 300;
+    if (isDmg) {
+      // ── DAMAGE: jump away from attacker, arc down, fade ──
+      // Auto-detect: if target is on right side of screen, attacker is left → jump right
+      let dir = 1;
+      if (opts && opts.atkSide) {
+        dir = opts.atkSide === 'left' ? 1 : -1;
+      } else {
+        try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
+      }
+      const jumpX = dir * (15 + Math.random() * 10);
+      const jumpY = -(12 + Math.random() * 8); // upward
+      const gravity = 150;
       const totalDur = 1400;
       const start = performance.now();
 
