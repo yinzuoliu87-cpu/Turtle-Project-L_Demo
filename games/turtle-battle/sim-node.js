@@ -13,6 +13,7 @@ const _mockEl = {
   classList: { add:_noop, remove:_noop, toggle:_noop, contains:()=>false },
   style: {}, querySelector: () => _mockEl, querySelectorAll: () => [],
   appendChild:_noop, insertBefore:_noop, remove:_noop, setAttribute:_noop,
+  addEventListener:_noop, removeEventListener:_noop,
   innerHTML:'', textContent:'', id:'mock',
 };
 global.document = {
@@ -21,17 +22,27 @@ global.document = {
   querySelectorAll: () => [],
   createElement: () => ({...JSON.parse(JSON.stringify(_mockEl)),
     classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false},
-    style:{}, querySelector:()=>_mockEl, appendChild:_noop}),
+    style:{}, querySelector:()=>_mockEl, appendChild:_noop,
+    addEventListener:_noop, removeEventListener:_noop}),
   head: { appendChild:_noop },
+  body: { appendChild:_noop },
   addEventListener: _noop,
 };
 global.window = global;
 global.localStorage = { getItem:()=>null, setItem:_noop, removeItem:_noop };
 global.navigator = { clipboard: { writeText: () => Promise.resolve() } };
 global.BroadcastChannel = function(){ this.postMessage=_noop; this.onmessage=null; };
+global.Peer = function(){ this.on=_noop; this.connect=()=>({on:_noop,send:_noop,open:false}); this.destroy=_noop; };
+global.fetch = () => Promise.resolve({ json: () => Promise.resolve([]) });
 global.AudioContext = global.webkitAudioContext = function(){};
-global.setTimeout = (fn, ms) => { fn(); return 0; };
-global.clearTimeout = _noop;
+const _realSetTimeout = global.setTimeout;
+const _realClearTimeout = global.clearTimeout;
+// Override setTimeout to be instant for game sleep() calls, but keep real one for internals
+global.setTimeout = (fn, ms) => {
+  if (typeof fn === 'function') { fn(); return 0; }
+  return _realSetTimeout(fn, ms);
+};
+global.clearTimeout = (id) => { if (id) _realClearTimeout(id); };
 
 // Mock all SFX
 ['sfxHit','sfxCrit','sfxPierce','sfxShield','sfxShieldBreak','sfxHeal','sfxDeath',
@@ -219,9 +230,12 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         };
         // Temporarily override nextAction to prevent recursion
         const savedNextAction = global.nextAction;
+        const savedOnActionComplete = global.onActionComplete;
         global.nextAction = _noop;
+        global.onActionComplete = _noop;
         await executeAction(action);
         global.nextAction = savedNextAction;
+        global.onActionComplete = savedOnActionComplete;
       } catch (e) {
         // Fallback
         const hits = skill.hits || 1;
