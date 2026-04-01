@@ -933,7 +933,6 @@ async function executeAction(action) {
 
   // BambooCharge follow-up: extra pierce attack after skill
   if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged) {
-    f._bambooCharged = false;
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     if (enemies.length) {
       const target = enemies.sort((a,b) => a.hp - b.hp)[0];
