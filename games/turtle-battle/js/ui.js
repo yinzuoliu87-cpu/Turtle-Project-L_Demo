@@ -104,8 +104,11 @@ function updateFighterStats(f, elId) {
   const fIdx = allFighters.indexOf(f);
   const sc = (cur, init) => cur > init ? 'stat-up' : cur < init ? 'stat-down' : '';
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
-  const critPct = Math.round((f.crit || 0) * 100);
-  const critDmg = Math.round((1.5 + (f._extraCritDmgPerm || 0)) * 100);
+  const rawCrit = (f.crit || 0);
+  const overflowCrit = Math.max(0, rawCrit - 1.0);
+  const overflowMult = (f.passive && f.passive.overflowMult) || 1.5;
+  const critPct = Math.min(100, Math.round(rawCrit * 100));
+  const critDmg = Math.round((1.5 + (f._extraCritDmgPerm || 0) + overflowCrit * overflowMult) * 100);
   const lifesteal = f._lifestealPct || 0;
   const dodge = f.buffs ? f.buffs.find(b => b.type === 'dodge') : null;
   const dodgePct = dodge ? dodge.value : 0;
@@ -122,7 +125,7 @@ function updateFighterStats(f, elId) {
   const detailStats =
     `<div class="stats-detail" id="statsDetail${fIdx}" style="display:${wasExpanded?'flex':'none'}">` +
     `<span class="${sc(critPct, Math.round(f._initCrit*100))}">暴击 ${critPct}%</span>` +
-    `<span>爆伤 ${critDmg}%</span>` +
+    `<span class="${critDmg > 150 ? 'stat-up' : ''}">爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
     `<span class="${sc(f.armorPen, f._initArmorPen)}">穿甲 ${f.armorPen}</span>` +
     `<span class="${sc(lifesteal, f._initLifesteal)}">吸血 ${lifesteal}%</span>` +
     `<span class="${dodgePct > 0 ? 'stat-up' : ''}">闪避 ${dodgePct}%</span>` +
