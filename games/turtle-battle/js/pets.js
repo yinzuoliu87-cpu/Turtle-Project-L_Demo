@@ -154,7 +154,7 @@ const ALL_PETS = [
   },
   { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',    rarity:'B',   hp:300,  atk:42,  def:9,  spd:14, crit:0.25,
     img:'../../assets/pets/幽灵龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
-    passive:{ type:'ghostCurse', hpPct:10, turns:3, desc:'死亡时诅咒全体敌人3回合，每回合受到 {D:HP*0.1} 穿透伤害（10%目标最大HP）' },
+    passive:{ type:'ghostCurse', hpPct:10, turns:3, desc:'死亡时诅咒全体敌人3回合，每回合受到10%目标最大HP的穿透持续伤害' },
     skills:[
       { name:'幽魂触碰', type:'ghostTouch', hits:1, power:0, pierce:0, cd:0, normalScale:0.5, pierceScale:1.0,
         brief:'灵体攻击：{N:0.5*ATK}普伤 + {P:ATK}穿透',
