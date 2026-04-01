@@ -636,6 +636,13 @@ function pickSkill(idx) {
     return;
   }
   // AOE / auto-target: no target selection needed
+  // MechAttack: auto-target lowest HP enemy
+  if (skill.type === 'mechAttack') {
+    const enemies = (f.side==='left'?rightTeam:leftTeam).filter(e => e.alive);
+    const target = enemies.sort((a,b) => a.hp - b.hp)[0];
+    if (target) executePlayerAction(f, skill, target);
+    return;
+  }
   if (skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBuff' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost' || skill.type === 'basicBarrage' || skill.type === 'starMeteor' || skill.type === 'diceAllIn') {
     executePlayerAction(f, skill, null);
     return;
@@ -870,6 +877,9 @@ async function executeAction(action) {
     await doDiceFate(f, skill);
   } else if (skill.type === 'chestOpen') {
     await doChestOpen(f, skill);
+  } else if (skill.type === 'mechAttack') {
+    const target = allFighters[action.targetId];
+    await doDamage(f, target, skill);
   } else if (skill.type === 'shellStrike') {
     const target = allFighters[action.targetId];
     await doShellStrike(f, target, skill);
@@ -945,10 +955,10 @@ async function executeAction(action) {
       ff.emoji = '🤖';
       ff.img = null;
       ff.buffs = [];
-      ff.passive = null;
-      ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
-        brief:'机甲攻击敌方，造成{N:1.5*ATK}普通伤害',
-        detail:'机甲对单体目标造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
+      ff.passive = { type:'mechBody', droneCount:dc, desc:`由${dc}个浮游炮组装而成。\nHP = 30×${dc} = ${finalHp}\nATK = 5×${dc} = ${finalAtk}\n每回合自动攻击血量最低的敌人，造成 150%ATK 普通伤害。` };
+      ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
+        brief:'机甲自动攻击血量最低的敌人，造成{N:1.5*ATK}普通伤害',
+        detail:'机甲自动锁定血量最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) {
         el.classList.remove('dead');

@@ -321,7 +321,8 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
             ff.hp = ff.passive.mechHpPer * dc; ff.maxHp = ff.hp;
             ff.baseAtk = ff.passive.mechAtkPer * dc; ff.atk = ff.baseAtk;
             ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
-            ff.skills = [{ name: '机甲攻击', type: 'physical', hits: 1, power: 0, pierce: 0, cd: 0, cdLeft: 0, atkScale: 1.5 }];
+            ff.passive = { type:'mechBody', droneCount:dc };
+            ff.skills = [{ name: '机甲攻击', type: 'mechAttack', hits: 1, power: 0, pierce: 0, cd: 0, cdLeft: 0, atkScale: 1.5 }];
             return;
           }
           // Ghost curse: apply DoT to all enemies on death
