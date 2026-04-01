@@ -655,7 +655,11 @@ function recalcStats() {
       if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
       if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
       if (b.type === 'defUp') {
-        const amp = (f.passive && f.passive.type === 'diamondStructure') ? (1 + f.passive.defBuffAmp / 100) : 1;
+        // Diamond structure: amplify def buffs for self AND all allies on same team
+        let amp = 1;
+        const team = f.side === 'left' ? leftTeam : rightTeam;
+        const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
+        if (diamond) amp = 1 + diamond.passive.defBuffAmp / 100;
         f.def += Math.round(b.value * amp);
       }
       if (b.type === 'atkUp')   f.atk += b.value;
