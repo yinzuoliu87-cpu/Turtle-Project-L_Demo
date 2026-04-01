@@ -516,7 +516,7 @@ async function processBuffs() {
     const dots = f.buffs.filter(b => b.type === 'dot');
     for (const d of dots) {
       f.hp = Math.max(0, f.hp - d.value);
-      spawnFloatingNum(elId, `-${d.value}`, 'dot-dmg', 0, 0);
+      spawnFloatingNum(elId, `-${d.value}`, 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
       hadTick = true;
@@ -532,8 +532,8 @@ async function processBuffs() {
     for (const pb of pBurns) {
       const burnDmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
       const { hpLoss, shieldAbs } = applyRawDmg(null, f, burnDmg, false, true);
-      if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0);
-      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'dot-dmg', 50, 0);
+      if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
+      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'dot-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
       hadTick = true;
@@ -1345,14 +1345,14 @@ async function doDamage(attacker, target, skill) {
 /* Apply debuffs: dot, atkDown, defDown */
 function applySkillDebuffs(skill, target, attacker) {
   const debuffs = [];
-  if (skill.dot)     debuffs.push({ type:'dot',     value:skill.dot.dmg,     turns:skill.dot.turns });
+  if (skill.dot)     debuffs.push({ type:'dot',     value:skill.dot.dmg,     turns:skill.dot.turns, sourceSide: attacker ? attacker.side : null });
   if (skill.atkDown) debuffs.push({ type:'atkDown', value:skill.atkDown.pct, turns:skill.atkDown.turns });
   if (skill.defDown) debuffs.push({ type:'defDown', value:skill.defDown.pct, turns:skill.defDown.turns });
 
   // PhoenixBurn from skill (e.g. rainbow storm)
   if (skill.phoenixBurn && target.alive) {
     const burnVal = (skill.phoenixBurn.atkPct && attacker) ? Math.round(attacker.atk * skill.phoenixBurn.atkPct / 100) : 0;
-    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns });
+    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns, sourceSide: attacker ? attacker.side : null });
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
     addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧 ${skill.phoenixBurn.turns}回合</span>`);
@@ -1645,7 +1645,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     parent.appendChild(num);
 
     // Determine animation type
-    const isDmg = (cls.includes('dmg') || cls.includes('pierce')) && cls !== 'dot-dmg' && cls !== 'shield-dmg';
+    const isDmg = (cls.includes('dmg') || cls.includes('pierce')) && cls !== 'shield-dmg';
     const ox = (Math.random() - 0.5) * 8;
     const y0 = -(15 + (yOffset || 0));
 
@@ -1871,7 +1871,7 @@ function checkDeaths(attacker) {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         for (const e of enemies) {
           const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
-          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns });
+          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side });
           const eElId = getFighterElId(e);
           spawnFloatingNum(eElId, `👻诅咒!`, 'crit-label', 0, -20);
           renderStatusIcons(e);

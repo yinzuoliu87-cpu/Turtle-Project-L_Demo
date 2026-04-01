@@ -224,7 +224,7 @@ body{
    ═══════════════════════════════════════ */
 .floating-num{
   position:absolute;
-  left:50%;top:20px;
+  left:50%;top:40px;
   font-weight:900;font-size:24px;
   pointer-events:none;z-index:50;
   white-space:nowrap;

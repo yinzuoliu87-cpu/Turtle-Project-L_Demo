@@ -1761,7 +1761,7 @@ async function doGhostStorm(attacker, target, skill) {
   // Apply DoT
   if (target.alive) {
     const dotDmg = Math.round(attacker.atk * skill.dotScale);
-    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns });
+    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side });
     spawnFloatingNum(tElId, '👻诅咒', 'debuff-label', 200, -10);
     renderStatusIcons(target);
   }
