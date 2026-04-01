@@ -237,8 +237,8 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         const perCoinDmg = Math.round(f.atk * 0.4);
         const totalAllIn = perCoinDmg * f._goldCoins;
         const weakest = enemies.sort((a,b) => (a.hp+a.shield) - (b.hp+b.shield))[0];
-        const canKill = weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.6;
-        if (canKill || f._goldCoins >= 12) {
+        const canKill = weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.7;
+        if (canKill || f._goldCoins >= 18) {
           skill = allInS;
         } else if (skill === allInS) {
           const other = ready.filter(s => s.type !== 'fortuneAllIn');

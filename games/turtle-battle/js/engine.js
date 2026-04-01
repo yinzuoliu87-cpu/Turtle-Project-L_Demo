@@ -1630,8 +1630,8 @@ function aiAction(f) {
     const perCoinDmg = Math.round(f.atk * 0.2) + Math.round(f.atk * 0.2);
     const totalAllInDmg = perCoinDmg * f._goldCoins;
     const weakest = enemies.sort((a,b) => (a.hp + a.shield) - (b.hp + b.shield))[0];
-    const canKill = weakest && totalAllInDmg >= (weakest.hp + weakest.shield) * 0.6;
-    const enoughCoins = f._goldCoins >= 12;
+    const canKill = weakest && totalAllInDmg >= (weakest.hp + weakest.shield) * 0.7;
+    const enoughCoins = f._goldCoins >= 18;
     if (canKill || enoughCoins) {
       skill = allInSkill;
     } else if (skill === allInSkill) {
