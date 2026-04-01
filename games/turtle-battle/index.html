@@ -109,47 +109,55 @@
     <div class="help-grid">
       <div class="help-item">
         <span class="help-icon">⚔️</span>
-        <div><b>攻击 (ATK)</b><br>影响技能伤害。公式: 威力 × ATK/(ATK+DEF)</div>
+        <div><b>攻击力 (ATK)</b><br>技能伤害基于攻击力百分比计算，如"90%ATK"</div>
       </div>
       <div class="help-item">
         <span class="help-icon">🛡</span>
-        <div><b>防御 (DEF)</b><br>减伤% = DEF/(DEF+40)。递减效果，越高越难堆。穿透伤害无视防御</div>
+        <div><b>防御力 (DEF)</b><br>减伤% = DEF÷(DEF+40)，递减收益。穿透伤害无视防御</div>
       </div>
       <div class="help-item">
         <span class="help-icon">🗡</span>
-        <div><b>穿甲</b><br>计算减伤时无视目标对应点数的防御。例如穿甲5=目标少算5点DEF</div>
+        <div><b>穿甲</b><br>无视目标等量防御值。百分比穿甲无视目标对应比例防御</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#ff4444">■</span>
-        <div><b>直接伤害</b><br>经过防御和抗性减免后的普通伤害</div>
+        <div><b>普通伤害（红色）</b><br>受防御减免。数字越大字号越大，暴击时带暴击图标</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#d06bff">■</span>
-        <div><b>穿透伤害</b><br>无视防御，但会被护盾吸收</div>
+        <div><b>穿透伤害（紫色）</b><br>无视防御，但会被护盾吸收</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#fff">■</span>
-        <div><b>护盾</b><br>额外生命层。所有伤害先消耗护盾，护盾耗尽后才扣血</div>
+        <div><b>护盾（白色）</b><br>额外生命层，所有伤害先消耗护盾再扣血。血条上白色部分</div>
       </div>
       <div class="help-item">
-        <span class="help-icon">💥</span>
-        <div><b>暴击 (CRIT)</b><br>有概率触发，伤害 ×1.5。HP 低时部分龟暴击率提升</div>
+        <span class="help-icon help-color" style="color:#06d6a0">■</span>
+        <div><b>回复（绿色）</b><br>恢复生命值，不超过最大HP</div>
       </div>
       <div class="help-item">
-        <span class="help-icon">🔥</span>
-        <div><b>灼烧 (DoT)</b><br>持续伤害，每回合开始自动扣血，持续若干回合</div>
+        <img src="assets/crit-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>暴击</b><br>基础暴击率25%，暴击伤害×1.5倍。暴击时数字带暴击图标</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon" style="color:#ff6600">🔥</span>
+        <div><b>灼烧 / 持续伤害</b><br>每回合开始自动扣血，会被护盾吸收</div>
       </div>
       <div class="help-item">
         <span class="help-icon">⬇️</span>
-        <div><b>削减 (Debuff)</b><br>降低目标攻击/防御/速度的百分比，持续若干回合</div>
+        <div><b>减益效果</b><br>减攻/减防：降低百分比，持续若干回合。眩晕：跳过1回合行动</div>
       </div>
       <div class="help-item">
         <span class="help-icon">⭐</span>
-        <div><b>被动技能</b><br>每只龟的固有能力，战斗中自动触发。鼠标悬停卡片上的图标查看</div>
+        <div><b>被动技能</b><br>每只龟的固有能力，战斗中自动触发。点击卡片上的图标查看详情</div>
       </div>
       <div class="help-item">
         <span class="help-icon">📊</span>
-        <div><b>伤害公式</b><br>普通伤害 = 威力 × 暴击 × (1-减伤%)。穿透 = 原值 × 暴击。全部先打护盾再扣血</div>
+        <div><b>伤害公式</b><br>普通伤害 = 基础值 × 暴击倍率 × (1 - 减伤%)<br>穿透伤害 = 基础值 × 暴击倍率（无视防御）<br>伤害顺序：先打泡泡盾 → 护盾 → 生命值</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon">🎮</span>
+        <div><b>回合规则</b><br>第1回合：左方出1只 → 右方全部出手<br>第2回合起：左方全部 → 右方全部<br>每回合双方选择哪只龟行动</div>
       </div>
     </div>
   </div>
