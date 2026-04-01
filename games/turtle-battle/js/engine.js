@@ -223,6 +223,31 @@ async function beginTurn() {
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🎋竹编充能！本回合技能后追加强化攻击</span>`);
       }
     }
+    // Passive: candySteal — steal 18% maxHP from random enemy at turn 5
+    if (f.passive.type === 'candySteal' && turnNum === f.passive.stealTurn) {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      if (enemies.length) {
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const stealAmt = Math.round(target.maxHp * f.passive.stealPct / 100);
+        // Reduce target maxHP and current HP
+        target.maxHp -= stealAmt;
+        target.hp = Math.min(target.hp, target.maxHp);
+        if (target.hp <= 0) { target.hp = 1; } // don't kill from steal
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
+        updateHpBar(target, tElId);
+        updateFighterStats(target, tElId);
+        // Add to candy turtle maxHP and current HP
+        f.maxHp += stealAmt;
+        f.hp += stealAmt;
+        const fElId = getFighterElId(f);
+        spawnFloatingNum(fElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
+        updateHpBar(f, fElId);
+        updateFighterStats(f, fElId);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大生命值！</span>`);
+        await sleep(800);
+      }
+    }
     // Passive: rainbowPrism — random team buff each turn
     if (f.passive.type === 'rainbowPrism') {
       const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
