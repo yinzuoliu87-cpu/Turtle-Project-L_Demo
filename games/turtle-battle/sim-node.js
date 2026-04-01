@@ -36,6 +36,8 @@ global.navigator = { clipboard: { writeText: () => Promise.resolve() } };
 global.BroadcastChannel = function(){ this.postMessage=_noop; this.onmessage=null; };
 global.Peer = function(){ this.on=_noop; this.connect=()=>({on:_noop,send:_noop,open:false}); this.destroy=_noop; };
 global.fetch = () => Promise.resolve({ json: () => Promise.resolve([]) });
+global.requestAnimationFrame = (fn) => { return 0; }; // don't execute — visual only
+global.performance = { now: () => Date.now() };
 global.AudioContext = global.webkitAudioContext = function(){};
 const _realSetTimeout = global.setTimeout;
 const _realClearTimeout = global.clearTimeout;
