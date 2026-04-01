@@ -1552,7 +1552,22 @@ function aiAction(f) {
       }
     }
   }
+  // Fortune turtle AI: only use fortuneAllIn if coins can kill an enemy
   if (!skill) skill = ready[0];
+  const allInSkill = ready.find(s => s.type === 'fortuneAllIn');
+  if (allInSkill && f._goldCoins > 0) {
+    // Estimate damage per coin: 0.2*ATK normal + 0.2*ATK pierce
+    const perCoinDmg = Math.round(f.atk * 0.2) + Math.round(f.atk * 0.2);
+    const totalAllInDmg = perCoinDmg * f._goldCoins;
+    const weakest = enemies.sort((a,b) => (a.hp + a.shield) - (b.hp + b.shield))[0];
+    if (weakest && totalAllInDmg >= (weakest.hp + weakest.shield) * 0.8) {
+      skill = allInSkill; // Can likely kill, go all in
+    } else if (skill === allInSkill) {
+      // Don't waste coins, pick another skill
+      const other = ready.filter(s => s.type !== 'fortuneAllIn');
+      skill = other.length ? other[Math.floor(Math.random() * other.length)] : ready[0];
+    }
+  }
 
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
