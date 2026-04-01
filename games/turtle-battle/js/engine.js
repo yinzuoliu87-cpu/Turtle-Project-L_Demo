@@ -1898,6 +1898,20 @@ function checkDeaths(attacker) {
         addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">击杀回血${heal}HP</span>`);
       }
 
+      // Passive: hunterKill — killer steals stats on kill (any kill, not just execute)
+      if (attacker && attacker.alive && attacker.passive && attacker.passive.type === 'hunterKill') {
+        const sAtk = Math.round(f.baseAtk * attacker.passive.stealPct / 100);
+        const sDef = Math.round(f.baseDef * attacker.passive.stealPct / 100);
+        const sHp  = Math.round(f.maxHp   * attacker.passive.stealPct / 100);
+        attacker.baseAtk += sAtk; attacker.baseDef += sDef; attacker.maxHp += sHp; attacker.hp += sHp;
+        if (attacker.passive.lifesteal) attacker._lifestealPct = (attacker._lifestealPct || 0) + attacker.passive.lifesteal;
+        const aElId = getFighterElId(attacker);
+        spawnFloatingNum(aElId, `+${sAtk}攻+${sDef}防+${sHp}HP`, 'passive-num', 300, 0);
+        updateHpBar(attacker, aElId);
+        recalcStats();
+        addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">🏹击杀吸收 攻+${sAtk} 防+${sDef} HP+${sHp}</span>`);
+      }
+
       // Fortune gold: all alive fortune turtles gain 8 coins on any death
       allFighters.forEach(fg => {
         if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {

@@ -126,7 +126,7 @@ const ALL_PETS = [
   { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:293,  atk:49,  def:11, spd:7, crit:0.25,
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
-              desc:'双形态切换：远程(高攻低防) ↔ 近战(+{H:ATK*1.5}HP +{D:ATK*0.25}防 -{N:ATK*0.3}攻 +{S:ATK*1.1}盾)' },
+              desc:'双头龟可在远程和近战形态间切换。\n\n远程形态（默认）：高攻击低防御，擅长输出。\n\n切换近战时获得：\n最大HP +150%×ATK = {H:ATK*1.5}（当前HP按比例缩放）\n防御 +25%×ATK = {D:ATK*0.25}\n攻击 -30%×ATK = -{N:ATK*0.3}\n护盾 +110%×ATK = {S:ATK*1.1}\n\n切换远程时还原属性，并对目标造成140%ATK普通伤害+减防。' },
     // 远程技能组（默认）
     skills:[
       { name:'魔法波', type:'twoHeadMagicWave', hits:4, power:0, pierce:0, cd:0, atkScale:0.4,
