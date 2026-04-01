@@ -154,6 +154,23 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           if (f._bambooCounter >= 2) { f._bambooCharged = true; f._bambooCounter = 0; }
         }
       }
+      if (p.type === 'rainbowPrism') {
+        const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+        const roll = Math.floor(Math.random() * 3);
+        if (roll === 0) { for (const a of allies) { a.buffs.push({ type:'atkUp', value:Math.round(a.baseAtk * p.atkPct / 100), turns:2 }); } }
+        else if (roll === 1) { for (const a of allies) { a.buffs.push({ type:'defUp', value:Math.round(a.baseDef * p.defPct / 100), turns:2 }); } }
+        else { for (const a of allies) { a.hp = Math.min(a.maxHp, a.hp + Math.round(a.maxHp * p.healPct / 100)); } }
+        recalcStats();
+      }
+      if (p.type === 'candySteal' && turnNum === p.stealTurn) {
+        const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+        if (enemies.length) {
+          const t = enemies[Math.floor(Math.random() * enemies.length)];
+          const stealAmt = Math.round(t.maxHp * p.stealPct / 100);
+          t.maxHp -= stealAmt; t.hp = Math.min(t.hp, t.maxHp); if (t.hp <= 0) t.hp = 1;
+          f.maxHp += stealAmt; f.hp += stealAmt;
+        }
+      }
       if (p.type === 'gamblerBlood') {
         const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
         const threshold = p.maxCritAtLoss / 100;

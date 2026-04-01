@@ -108,20 +108,20 @@
     <div class="help-title">术语说明 <span class="help-close" onclick="toggleHelp()">✕</span></div>
     <div class="help-grid">
       <div class="help-item">
-        <span class="help-icon">⚔️</span>
+        <img src="assets/atk-icon.png" class="help-icon" style="width:20px;height:20px">
         <div><b>攻击力 (ATK)</b><br>技能伤害基于攻击力百分比计算，如"90%ATK"</div>
       </div>
       <div class="help-item">
-        <span class="help-icon">🛡</span>
+        <img src="assets/def-icon.png" class="help-icon" style="width:20px;height:20px">
         <div><b>防御力 (DEF)</b><br>减伤% = DEF÷(DEF+40)，递减收益。穿透伤害无视防御</div>
       </div>
       <div class="help-item">
-        <span class="help-icon">🗡</span>
+        <img src="assets/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px">
         <div><b>穿甲</b><br>无视目标等量防御值。百分比穿甲无视目标对应比例防御</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#ff4444">■</span>
-        <div><b>普通伤害（红色）</b><br>受防御减免。数字越大字号越大，暴击时带暴击图标</div>
+        <div><b>普通伤害（红色）</b><br>受防御减免。数字越大字号越大</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#d06bff">■</span>
@@ -132,12 +132,24 @@
         <div><b>护盾（白色）</b><br>额外生命层，所有伤害先消耗护盾再扣血。血条上白色部分</div>
       </div>
       <div class="help-item">
-        <span class="help-icon help-color" style="color:#06d6a0">■</span>
-        <div><b>回复（绿色）</b><br>恢复生命值，不超过最大HP</div>
+        <img src="assets/hp-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>生命值（绿色回复）</b><br>恢复生命值，不超过最大HP</div>
       </div>
       <div class="help-item">
         <img src="assets/crit-icon.png" class="help-icon" style="width:20px;height:20px">
-        <div><b>暴击</b><br>基础暴击率25%，暴击伤害×1.5倍。暴击时数字带暴击图标</div>
+        <div><b>暴击率</b><br>基础暴击率25%，暴击时触发额外伤害</div>
+      </div>
+      <div class="help-item">
+        <img src="assets/crit-dmg-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>暴击伤害</b><br>暴击时伤害倍率，基础×1.5倍。暴击数字前显示此图标</div>
+      </div>
+      <div class="help-item">
+        <img src="assets/lifesteal-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>生命偷取</b><br>造成伤害时按比例回复自身生命值</div>
+      </div>
+      <div class="help-item">
+        <img src="assets/dodge-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>闪避率</b><br>有概率完全闪避一段攻击，不受伤害</div>
       </div>
       <div class="help-item">
         <span class="help-icon" style="color:#ff6600">🔥</span>
