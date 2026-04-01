@@ -181,18 +181,39 @@ function copyRoomCode() {
 function setupConn(conn) {
   conn.on('data', (msg) => handleOnlineMessage(msg));
   conn.on('close', () => {
+    onlineConn = null;
     if (!battleOver) {
-      showToast('对手断开连接');
-      document.getElementById('lobbyStatus').textContent = '对手已断开';
+      showDisconnectOverlay();
     }
   });
   conn.on('error', (err) => {
     console.error('DataConnection error:', err);
+    if (!battleOver) showDisconnectOverlay();
   });
-  // Log ICE state for debugging
   conn.on('iceStateChanged', (state) => {
     console.log('ICE state:', state);
+    if (state === 'disconnected' || state === 'failed') {
+      if (!battleOver) showDisconnectOverlay();
+    }
   });
+}
+
+// Disconnect overlay with retry
+function showDisconnectOverlay() {
+  if (document.getElementById('disconnectOverlay')) return;
+  const overlay = document.createElement('div');
+  overlay.id = 'disconnectOverlay';
+  overlay.className = 'disconnect-overlay';
+  overlay.innerHTML = `
+    <div class="disconnect-box">
+      <div class="disconnect-icon">📡</div>
+      <div class="disconnect-title">连接已断开</div>
+      <div class="disconnect-msg">对手可能锁屏或网络中断</div>
+      <button class="btn btn-primary" onclick="location.reload()">返回大厅</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  animating = false;
+  battleOver = true;
 }
 
 function sendOnline(msg) {
