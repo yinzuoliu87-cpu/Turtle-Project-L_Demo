@@ -153,7 +153,7 @@ async function beginTurn() {
       // Every drone fires every turn at random enemy — speed scales with count
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
       const droneCount = f._drones.length;
-      const perDroneDelay = Math.max(120, Math.round(500 / Math.sqrt(droneCount))); // 1炮500ms, 4炮250ms, 9炮167ms, 10炮158ms
+      const perDroneDelay = 550;
       let totalDroneDmg = 0;
       for (let di = 0; di < droneCount; di++) {
         if (!enemies.filter(e => e.alive).length) break;
@@ -172,7 +172,7 @@ async function beginTurn() {
         updateHpBar(target, tElId);
         await triggerOnHitEffects(f, target, finalDmg);
         checkDeaths(f);
-        if (checkBattleEnd()) return;
+        if (checkBattleEnd()) { await sleep(600); return; }
         await sleep(perDroneDelay);
         if (tEl) tEl.classList.remove('hit-shake');
       }
@@ -1768,6 +1768,8 @@ function checkDeaths(attacker) {
 }
 
 function checkBattleEnd() {
+  // Don't end battle if a mech transform is pending
+  if (allFighters.some(f => f._pendingMech)) return false;
   const lA = leftTeam.some(f=>f.alive), rA = rightTeam.some(f=>f.alive);
   if (!lA || !rA) {
     battleOver = true;
