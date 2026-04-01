@@ -228,7 +228,7 @@ body{
   pointer-events:none;z-index:50;
   white-space:nowrap;
   text-shadow:0 2px 8px rgba(0,0,0,.7);
-  animation:floatUp 4s ease-out forwards;
+  animation:popAndDrift 2.5s ease-out forwards;
 }
 /* Direct damage — RED */
 .floating-num.direct-dmg{color:#ff4444;font-size:22px}
@@ -290,6 +290,14 @@ body{
   15% {opacity:1; transform:translate(-50%,var(--y-start,-20px)) scale(1)}
   60% {opacity:.9;transform:translate(-50%,var(--y-end,-55px)) scale(1)}
   100%{opacity:0; transform:translate(-50%,var(--y-end,-75px)) scale(.7)}
+}
+/* Pop out from center, pause, then drift sideways and fade */
+@keyframes popAndDrift{
+  0%  {opacity:0; transform:translate(-50%, var(--y-start,-20px)) scale(0.4)}
+  12% {opacity:1; transform:translate(-50%, var(--y-start,-20px)) scale(1.15)}
+  22% {opacity:1; transform:translate(-50%, var(--y-start,-20px)) scale(1)}
+  50% {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px)), calc(var(--y-start,-20px) - 10px)) scale(1)}
+  100%{opacity:0; transform:translate(calc(-50% + var(--x-drift,20px) * 2.5), calc(var(--y-start,-20px) - 25px)) scale(0.7)}
 }
 
 /* ── MECH TRANSFORM ── */

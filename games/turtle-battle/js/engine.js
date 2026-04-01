@@ -1627,10 +1627,11 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
     num.textContent = text;
-    const ox = (Math.random() - 0.5) * 80;
+    const ox = (Math.random() - 0.5) * 30;
+    const drift = (Math.random() > 0.5 ? 1 : -1) * (25 + Math.random() * 35);
     num.style.left = `calc(50% + ${ox}px)`;
     num.style.setProperty('--y-start', `-${20 + (yOffset||0)}px`);
-    num.style.setProperty('--y-end', `-${70 + (yOffset||0)}px`);
+    num.style.setProperty('--x-drift', `${drift}px`);
     parent.appendChild(num);
     setTimeout(() => num.remove(), 4000);
     // SFX based on type
