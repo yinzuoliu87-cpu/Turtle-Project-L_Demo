@@ -181,7 +181,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
       const SELF_TYPES = ['fortuneDice','phoenixShield','gamblerDraw','hidingDefend','hidingCommand',
         'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','bambooHeal',
-        'lightningBuff'];
+        'lightningBuff','iceShield'];
       const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
       const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
         'starMeteor','diceAllIn'];

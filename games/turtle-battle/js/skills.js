@@ -1749,6 +1749,27 @@ async function doGhostStorm(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>灵魂风暴</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-pierce">${totalPierce}穿透</span> + 诅咒${skill.dotTurns}回合`);
 }
 
+// ── ICE SHIELD (寒冰龟) ─────────────────────────────────
+async function doIceShield(caster, skill) {
+  const fElId = getFighterElId(caster);
+  // Self: 140% ATK permanent shield
+  const selfShield = Math.round(caster.atk * skill.selfScale);
+  caster.shield += selfShield;
+  spawnFloatingNum(fElId, `+${selfShield}🛡`, 'shield-num', 0, 0);
+  updateHpBar(caster, fElId);
+  // Ally: 80% ATK permanent shield
+  const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive && a !== caster);
+  for (const a of allies) {
+    const allyShield = Math.round(caster.atk * skill.allyScale);
+    a.shield += allyShield;
+    const aElId = getFighterElId(a);
+    spawnFloatingNum(aElId, `+${allyShield}🛡`, 'shield-num', 0, 0);
+    updateHpBar(a, aElId);
+  }
+  addLog(`${caster.emoji}${caster.name} <b>冰盾</b>：自身 <span class="log-shield">+${selfShield}护盾</span>，友方 <span class="log-shield">+${Math.round(caster.atk * skill.allyScale)}护盾</span>`);
+  await sleep(800);
+}
+
 // ── BAMBOO TURTLE (竹叶龟) ───────────────────────────────
 async function doBambooLeaf(attacker, target, skill) {
   const tElId = getFighterElId(target);

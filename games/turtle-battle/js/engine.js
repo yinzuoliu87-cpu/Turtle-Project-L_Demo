@@ -626,7 +626,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -844,6 +844,8 @@ async function executeAction(action) {
     await doNinjaTrap(f, target, skill);
   } else if (skill.type === 'ninjaBomb') {
     await doNinjaBomb(f, skill);
+  } else if (skill.type === 'iceShield') {
+    await doIceShield(f, skill);
   } else if (skill.type === 'bambooLeaf') {
     const target = allFighters[action.targetId];
     await doBambooLeaf(f, target, skill);
@@ -1554,7 +1556,7 @@ function aiAction(f) {
 
   let target;
   if (skill.type==='heal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='bambooHeal') target = f; // self-cast
+  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='bambooHeal' || skill.type==='iceShield') target = f; // self-cast
   else if (skill.type==='angelBless') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0]; // bless weakest ally
   else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
 
