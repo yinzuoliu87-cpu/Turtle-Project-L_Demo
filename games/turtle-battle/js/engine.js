@@ -893,35 +893,35 @@ async function executeAction(action) {
       if (el) el.classList.add('dead');
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
       // Spawn drone assembly particles flying toward the card
-      for (let di = 0; di < dc; di++) {
-        setTimeout(() => {
+      try {
+        const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
+        for (let di = 0; di < dc; di++) {
           const particle = document.createElement('div');
           particle.className = 'mech-drone-particle';
-          document.body.appendChild(particle);
-          const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
           const angle = (di / dc) * Math.PI * 2;
           const dist = 80 + Math.random() * 60;
-          const sx = cardRect.left + cardRect.width/2 + Math.cos(angle) * dist;
-          const sy = cardRect.top + cardRect.height/2 + Math.sin(angle) * dist;
-          particle.style.left = sx + 'px';
-          particle.style.top = sy + 'px';
+          particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px';
+          particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px';
+          document.body.appendChild(particle);
           requestAnimationFrame(() => {
-            particle.style.transition = 'all 0.6s ease-in';
+            particle.style.transition = `all ${0.4 + di*0.05}s ease-in`;
             particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px';
             particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px';
             particle.style.opacity = '0';
             particle.style.transform = 'scale(0.3)';
           });
-          setTimeout(() => particle.remove(), 700);
-        }, di * 100);
-      }
+          setTimeout(() => particle.remove(), 1500);
+        }
+      } catch(e) {}
       try { sfxExplosion(); } catch(e) {}
-      await sleep(800 + dc * 100);
+      await sleep(1000);
       // Screen flash for transform
-      const flash = document.createElement('div');
-      flash.className = 'mech-transform-flash';
-      document.body.appendChild(flash);
-      setTimeout(() => flash.remove(), 600);
+      try {
+        const flash = document.createElement('div');
+        flash.className = 'mech-transform-flash';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 600);
+      } catch(e) {}
       try { sfxRebirth(); } catch(e) {}
       await sleep(300);
       // Transform to mech

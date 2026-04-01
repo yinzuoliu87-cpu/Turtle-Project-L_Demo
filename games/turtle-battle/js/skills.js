@@ -1910,7 +1910,7 @@ async function doBambooChargeAttack(attacker, target) {
   attacker._bambooFired = true;
   renderStatusIcons(attacker);
 
-  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}穿透</span> <span class="log-heal">+${actual}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}穿透</span> <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
   await sleep(400);
 }
 
