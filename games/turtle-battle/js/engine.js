@@ -1258,7 +1258,7 @@ async function doDamage(attacker, target, skill) {
       spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, { atkSide: attacker.side, amount: hpLoss });
     }
     if (piercePart > 0 && shieldAbs >= totalHit) {
-      spawnFloatingNum(tElId, `穿${piercePart}`, 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: piercePart });
+      spawnFloatingNum(tElId, `-${piercePart}`, 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: piercePart });
     }
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
