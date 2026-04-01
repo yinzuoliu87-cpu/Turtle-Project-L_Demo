@@ -323,8 +323,8 @@ function renderStatusIcons(f) {
   if (f._inkLink && f._inkLink.partner && f._inkLink.partner.alive && f._inkLink.turns > 0) {
     box.innerHTML += `<span style="color:#6c5ce7;background:rgba(108,92,231,.15);padding:1px 5px;border-radius:6px" title="连笔链接${f._inkLink.partner.name} 剩${f._inkLink.turns}回合 受伤${f._inkLink.transferPct}%传递">🔗${f._inkLink.turns}</span>`;
   }
-  // Bamboo charge indicator with glow animation
-  if (f._bambooCharged) {
+  // Bamboo charge indicator with glow animation (hide after fired)
+  if (f._bambooCharged && !f._bambooFired) {
     box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击">🎋充能</span>`;
   }
   // Also refresh stats row to show debuff color changes

@@ -203,6 +203,7 @@ async function beginTurn() {
     // Passive: bambooCharge — toggle charge every other turn
     if (f.passive.type === 'bambooCharge') {
       f._bambooCharged = !f._bambooCharged;
+      f._bambooFired = false;
       if (f._bambooCharged) {
         spawnFloatingNum(getFighterElId(f), '🎋充能!', 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🎋竹编充能！本回合技能后追加强化攻击</span>`);
