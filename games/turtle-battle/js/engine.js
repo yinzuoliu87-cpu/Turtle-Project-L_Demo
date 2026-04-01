@@ -70,6 +70,13 @@ function resetBattleState() {
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
   _actionQueue=[];
   resetTurnState();
+  // Clean up DOM state from previous battle
+  document.querySelectorAll('.fighter-card').forEach(el => {
+    el.classList.remove('dead','death-anim','hit-shake','attack-anim','mech-transform-anim');
+  });
+  const overlay = document.getElementById('disconnectOverlay');
+  if (overlay) overlay.remove();
+  unseedBattleRng();
 }
 
 
