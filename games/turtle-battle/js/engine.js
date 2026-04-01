@@ -1634,8 +1634,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     let amount = opts && opts.amount || 0;
     // Auto-extract amount from text if not provided (e.g. "-42" → 42)
     if (!amount && typeof text === 'string') { const m = text.match(/\d+/); if (m) amount = parseInt(m[0]); }
-    if (amount > 0) {
-      let sz = amount < 20 ? 20 : amount < 60 ? 20 + (amount-20)/40*8 : amount < 150 ? 28 + (amount-60)/90*8 : 36;
+    {
+      let sz = amount < 20 ? 24 : amount < 60 ? 24 + (amount-20)/40*5 : amount < 150 ? 29 + (amount-60)/90*7 : 36;
       sz = Math.min(40, sz);
       const isCrit = cls.startsWith('crit');
       if (isCrit) sz = Math.min(46, sz * 1.2);
