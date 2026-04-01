@@ -398,8 +398,8 @@ const ALL_PETS = [
     ]},
   { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:320,  atk:44,  def:12, spd:16, crit:0.25,
     img:'../../assets/pets/星际龟v1.png', sprite:{frames:12,frameW:500,frameH:500,duration:1200},
-    passive:{ type:'starEnergy', chargeRate:20, maxChargePct:50,
-              desc:'造成伤害积累星能(伤害20%)，上限{B:HP*0.5}，满能下次攻击附加等量{P:穿透爆发}' },
+    passive:{ type:'starEnergy', chargeRate:45, maxChargePct:70,
+              desc:'造成伤害积累星能(伤害45%)，上限{B:HP*0.7}，满能下次攻击附加等量{P:穿透爆发}' },
     skills:[
       { name:'星光射线', type:'starBeam', hits:3, power:0, pierce:0, cd:0, atkScale:0.4, currentHpPct:5,
         brief:'星际龟发射3段共{N:0.4*ATK*3}+15%目标当前HP普通伤害，积累星能',
