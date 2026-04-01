@@ -1674,10 +1674,10 @@ function checkDeaths(attacker) {
       // Fortune gold: all alive fortune turtles gain 8 coins on any death
       allFighters.forEach(fg => {
         if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
-          fg._goldCoins += 8;
+          fg._goldCoins += 9;
           const fgElId = getFighterElId(fg);
-          spawnFloatingNum(fgElId, `+8🪙`, 'passive-num', 500, 0);
-          addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+8（共${fg._goldCoins}）</span>`);
+          spawnFloatingNum(fgElId, `+9🪙`, 'passive-num', 500, 0);
+          addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+9（共${fg._goldCoins}）</span>`);
         }
       });
     }
@@ -1753,7 +1753,7 @@ async function processHunterKill() {
 async function processFortuneGold() {
   for (const f of allFighters) {
     if (!f.alive || !f.passive || f.passive.type !== 'fortuneGold') continue;
-    const roll = 1 + Math.floor(Math.random() * 6);
+    const roll = 3 + Math.floor(Math.random() * 6); // 3~8
     f._goldCoins += roll;
     const fElId = getFighterElId(f);
     spawnFloatingNum(fElId, `+${roll}🪙`, 'passive-num', 0, 0);

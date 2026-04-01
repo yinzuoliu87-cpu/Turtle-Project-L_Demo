@@ -808,7 +808,7 @@ async function doAngelEquality(attacker, target, skill) {
 
 // ── FORTUNE SKILLS ────────────────────────────────────────
 async function doFortuneDice(caster, skill) {
-  const roll = 1 + Math.floor(Math.random() * 6);
+  const roll = 3 + Math.floor(Math.random() * 6); // 3~8
   caster._goldCoins += roll;
   const fElId = getFighterElId(caster);
   spawnFloatingNum(fElId, `🎲${roll} +${roll}🪙`, 'passive-num', 0, 0);
