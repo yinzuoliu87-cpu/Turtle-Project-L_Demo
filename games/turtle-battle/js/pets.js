@@ -126,7 +126,8 @@ const ALL_PETS = [
   { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:293,  atk:49,  def:11, spd:7, crit:0.25,
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
-              desc:'双头龟可在远程和近战形态间切换。\n\n远程形态（默认）：高攻击低防御，擅长输出。\n\n切换近战时获得：\n最大HP +150%×ATK = {H:ATK*1.5}（当前HP按比例缩放）\n防御 +25%×ATK = {D:ATK*0.25}\n攻击 -30%×ATK = -{N:ATK*0.3}\n护盾 +110%×ATK = {S:ATK*1.1}\n\n切换远程时还原属性，并对目标造成140%ATK普通伤害+减防。' },
+              desc:'双头龟可在远程和近战形态间切换。\n基础属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为远程形态，切换近战时：\n生命值增加 {H:ATK*1.5}（150%攻击力）\n防御增加 {D:ATK*0.25}（25%攻击力）\n攻击降低 {N:ATK*0.3}（30%攻击力）\n获得 {S:ATK*1.1} 护盾（110%攻击力）\n\n切换远程时还原所有属性，并对目标造成140%ATK伤害+减防。',
+              descMelee:'双头龟可在远程和近战形态间切换。\n当前属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为近战形态，切换远程时：\n还原生命值（按比例缩放）\n还原防御和攻击至原始值\n对目标造成 {N:ATK*1.4} 普通伤害（140%ATK）\n减少目标 {D:ATK*0.1} 防御4回合' },
     // 远程技能组（默认）
     skills:[
       { name:'魔法波', type:'twoHeadMagicWave', hits:4, power:0, pierce:0, cd:0, atkScale:0.4,

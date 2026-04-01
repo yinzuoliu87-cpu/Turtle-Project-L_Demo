@@ -899,8 +899,9 @@ function showPassivePopup(e, fIdx) {
   if (!f || !f.passive) return;
   const popup = document.getElementById('passivePopup');
   const icon = PASSIVE_ICONS[f.passive.type] || '⭐';
-  // Render passive desc through template engine (supports {N:expr} etc)
-  const descRendered = renderSkillTemplate(f.passive.desc, f, f.passive);
+  // Render passive desc — use descMelee if in melee form
+  const descText = (f._twoHeadForm === 'melee' && f.passive.descMelee) ? f.passive.descMelee : f.passive.desc;
+  const descRendered = renderSkillTemplate(descText, f, f.passive);
   popup.innerHTML = `<div class="passive-popup-title">${icon} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
   popup.style.display = 'block';
   // Position near click
