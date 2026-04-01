@@ -611,7 +611,7 @@ async function doIceSpike(attacker, target, skill) {
       applyRawDmg(attacker, target, dmg, true);
       totalPierce += dmg;
   
-      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff);
     }
 
     await triggerOnHitEffects(attacker, target, dmg);
@@ -669,7 +669,7 @@ async function doIceFrost(attacker, skill) {
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
 
-    spawnFloatingNum(eElId, `-${dmg}`, 'pierce-dmg', 80, 0);
+    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, 0, {atkSide: attacker.side, amount: dmg});
     updateHpBar(enemy, eElId);
     await triggerOnHitEffects(attacker, enemy, dmg);
 
