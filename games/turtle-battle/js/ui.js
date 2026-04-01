@@ -212,6 +212,22 @@ function updateHpBar(f, elId) {
     bsEl.style.display = 'none';
   }
 
+  // HP bar tick marks (every 100 = thick, every 20 = thin)
+  let tickContainer = card.querySelector('.hp-ticks');
+  if (!tickContainer) {
+    tickContainer = document.createElement('div');
+    tickContainer.className = 'hp-ticks';
+    card.querySelector('.hp-bar').appendChild(tickContainer);
+  }
+  let ticksHtml = '';
+  for (let v = 20; v < barMax; v += 20) {
+    const pct = v / barMax * 100;
+    if (pct >= 100) break;
+    const isMajor = v % 100 === 0;
+    ticksHtml += `<div class="hp-tick${isMajor ? ' hp-tick-major' : ''}" style="left:${pct}%"></div>`;
+  }
+  tickContainer.innerHTML = ticksHtml;
+
   // HP + Shield text (two lines)
   const maxHpClass = f.maxHp > f._initHp ? 'stat-up' : '';
   let hpLine = `<div class="hp-line">❤️ ${Math.ceil(f.hp)}/<span class="${maxHpClass}">${f.maxHp}</span></div>`;
