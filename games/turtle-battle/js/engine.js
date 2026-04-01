@@ -150,9 +150,12 @@ async function beginTurn() {
         spawnFloatingNum(elId, `+🛸`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
-      // Every drone fires every turn at random enemy
+      // Every drone fires every turn at random enemy — speed scales with count
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-      for (let di = 0; di < f._drones.length; di++) {
+      const droneCount = f._drones.length;
+      const perDroneDelay = Math.max(120, Math.round(500 / Math.sqrt(droneCount))); // 1炮500ms, 4炮250ms, 9炮167ms, 10炮158ms
+      let totalDroneDmg = 0;
+      for (let di = 0; di < droneCount; di++) {
         if (!enemies.filter(e => e.alive).length) break;
         const alive = enemies.filter(e => e.alive);
         const target = alive[Math.floor(Math.random() * alive.length)];
@@ -161,20 +164,20 @@ async function beginTurn() {
         const defRed = eDef / (eDef + DEF_CONSTANT);
         const finalDmg = Math.max(1, Math.round(dmg * (1 - defRed)));
         applyRawDmg(f, target, finalDmg);
+        totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, 0);
+        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, (di % 3) * 14);
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
         updateHpBar(target, tElId);
         await triggerOnHitEffects(f, target, finalDmg);
         checkDeaths(f);
         if (checkBattleEnd()) return;
-        await sleep(400);
+        await sleep(perDroneDelay);
         if (tEl) tEl.classList.remove('hit-shake');
-        await sleep(150);
       }
-      if (f._drones.length > 0) {
-        addLog(`${f.emoji}${f.name} ${f._drones.length}个浮游炮分别打击！`);
+      if (droneCount > 0) {
+        addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}伤害</span>`);
       }
     }
     // Passive: auraAwaken — awaken at turn N with full stat boost
