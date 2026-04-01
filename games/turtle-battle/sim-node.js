@@ -314,8 +314,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 }
 
 // ── CLI Runner ──────────────────────────────────────────────
+const MATRIX_EXCLUDE = ['space','bubble','hiding','fortune','line']; // 模拟不准的龟排除矩阵
+
 async function runMatrix(N) {
-  const ids = ALL_PETS.map(p => p.id);
+  const ids = ALL_PETS.map(p => p.id).filter(id => !MATRIX_EXCLUDE.includes(id));
   const st = {};
   ids.forEach(id => { st[id] = { w: 0, g: 0, dd: 0, dt: 0 }; });
   const total = ids.length * (ids.length - 1) / 2;
