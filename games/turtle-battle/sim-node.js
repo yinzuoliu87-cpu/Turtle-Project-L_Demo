@@ -162,6 +162,14 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         else { for (const a of allies) { a.hp = Math.min(a.maxHp, a.hp + Math.round(a.maxHp * p.healPct / 100)); } }
         recalcStats();
       }
+      if (p.type === 'lightningStorm') {
+        const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+        if (enemies.length) {
+          const t = enemies[Math.floor(Math.random() * enemies.length)];
+          const sDmg = Math.round(f.atk * p.shockScale);
+          applyRawDmg(f, t, sDmg, true);
+        }
+      }
       if (p.type === 'candySteal' && turnNum === p.stealTurn) {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         if (enemies.length) {
@@ -227,6 +235,8 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
     for (const f of order) {
       if (!f || !f.alive || battleOver) continue;
+      // Skip stunned fighters
+      if (f.buffs.some(b => b.type === 'stun')) continue;
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
       const allies = allFighters.filter(a => a.alive && a.side === f.side);
       if (!enemies.length) { battleOver = true; break; }
