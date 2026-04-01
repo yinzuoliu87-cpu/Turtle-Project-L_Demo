@@ -223,12 +223,11 @@ body{
    persistent 2.5s, color-coded
    ═══════════════════════════════════════ */
 .floating-num{
-  position:absolute;left:50%;
+  position:absolute;
   font-weight:900;font-size:18px;
   pointer-events:none;z-index:50;
   white-space:nowrap;
   text-shadow:0 2px 8px rgba(0,0,0,.7);
-  animation:numThrow 2.2s ease-out forwards;
   will-change:transform,opacity;
 }
 /* Direct damage — RED */

@@ -1626,14 +1626,55 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     if (!parent) return;
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
-    num.textContent = text;
-    const ox = (Math.random() - 0.5) * 30;
-    const drift = (Math.random() > 0.5 ? 1 : -1) * (25 + Math.random() * 35);
-    num.style.left = `calc(50% + ${ox}px)`;
-    num.style.setProperty('--y-start', `-${20 + (yOffset||0)}px`);
-    num.style.setProperty('--x-drift', `${drift}px`);
+    if (typeof text === 'string' && text.includes('<')) num.innerHTML = text;
+    else num.textContent = text;
     parent.appendChild(num);
-    setTimeout(() => num.remove(), 4000);
+
+    // Physics: throw with velocity, gravity pulls down, pause at landing, drift away
+    const startX = (Math.random() - 0.5) * 20;
+    const yStart = -(20 + (yOffset || 0));
+    const vx = (Math.random() > 0.5 ? 1 : -1) * (60 + Math.random() * 50); // px/s sideways
+    const vy = -(180 + Math.random() * 60); // px/s upward launch
+    const gravity = 420; // px/s² pull down
+    const totalDur = 2200; // ms total
+    const landTime = -vy / gravity * 2 * 1000; // ms when ball returns to launch height
+    const pauseDur = 350; // ms pause at landing
+    const driftPhaseStart = landTime + pauseDur;
+
+    let x = startX, y = yStart;
+    let landX = 0, landY = 0;
+    const start = performance.now();
+
+    function tick(now) {
+      const elapsed = now - start;
+      if (elapsed >= totalDur) { num.remove(); return; }
+      const t = elapsed / 1000; // seconds
+
+      if (elapsed < landTime) {
+        // Phase 1: throw arc
+        x = startX + vx * t;
+        y = yStart + vy * t + 0.5 * gravity * t * t;
+        const scale = elapsed < 100 ? 0.4 + (elapsed / 100) * 0.7 : 1.0 + Math.max(0, 0.1 - elapsed / 5000);
+        num.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+        num.style.opacity = '1';
+      } else if (elapsed < driftPhaseStart) {
+        // Phase 2: pause at landing point
+        if (!landX) { landX = x; landY = y; }
+        num.style.transform = `translate(${landX}px, ${landY}px) scale(0.95)`;
+        num.style.opacity = '1';
+      } else {
+        // Phase 3: drift away and fade
+        if (!landX) { landX = x; landY = y; }
+        const driftT = (elapsed - driftPhaseStart) / (totalDur - driftPhaseStart);
+        const ease = 1 - (1 - driftT) * (1 - driftT); // ease-out
+        const driftX = landX + Math.sign(vx) * 40 * ease;
+        const driftY = landY - 15 * ease;
+        num.style.transform = `translate(${driftX}px, ${driftY}px) scale(${0.95 - 0.3 * ease})`;
+        num.style.opacity = String(1 - ease);
+      }
+      requestAnimationFrame(tick);
+    }
+    requestAnimationFrame(tick);
     // SFX based on type
     const sfxMap = {
       'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
