@@ -291,13 +291,14 @@ body{
   60% {opacity:.9;transform:translate(-50%,var(--y-end,-55px)) scale(1)}
   100%{opacity:0; transform:translate(-50%,var(--y-end,-75px)) scale(.7)}
 }
-/* Pop out from center, pause, then drift sideways and fade */
+/* Pop out with gravity arc: jump up, arc down, then drift and fade */
 @keyframes popAndDrift{
-  0%  {opacity:0; transform:translate(-50%, var(--y-start,-20px)) scale(0.4)}
-  12% {opacity:1; transform:translate(-50%, var(--y-start,-20px)) scale(1.15)}
-  22% {opacity:1; transform:translate(-50%, var(--y-start,-20px)) scale(1)}
-  50% {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px)), calc(var(--y-start,-20px) - 10px)) scale(1)}
-  100%{opacity:0; transform:translate(calc(-50% + var(--x-drift,20px) * 2.5), calc(var(--y-start,-20px) - 25px)) scale(0.7)}
+  0%  {opacity:0; transform:translate(-50%, var(--y-start,-20px)) scale(0.3)}
+  8%  {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px) * 0.3), calc(var(--y-start,-20px) - 35px)) scale(1.1)}
+  18% {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px) * 0.6), calc(var(--y-start,-20px) - 18px)) scale(1)}
+  30% {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px) * 0.8), calc(var(--y-start,-20px) - 8px)) scale(0.95)}
+  50% {opacity:1; transform:translate(calc(-50% + var(--x-drift,20px)), calc(var(--y-start,-20px) - 5px)) scale(0.95)}
+  100%{opacity:0; transform:translate(calc(-50% + var(--x-drift,20px) * 1.8), calc(var(--y-start,-20px) + 5px)) scale(0.7)}
 }
 
 /* ── MECH TRANSFORM ── */
