@@ -1675,8 +1675,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
         // Impact pop: big → shrink to 0.5 → hold at 0.5
         let scale;
         if (elapsed < 60) scale = (elapsed / 60) * popSize;           // 0 → big
-        else if (elapsed < 180) scale = popSize - (popSize - 0.5) * ((elapsed - 60) / 120);  // big → 0.5
-        else scale = 0.5;
+        else if (elapsed < 180) scale = popSize - (popSize - 0.7) * ((elapsed - 60) / 120);  // big → 0.7
+        else scale = 0.7;
 
         // Parabolic arc
         const x = ox + jumpX * t * 2;
