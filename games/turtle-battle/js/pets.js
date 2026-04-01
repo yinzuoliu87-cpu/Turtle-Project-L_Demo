@@ -356,7 +356,7 @@ const ALL_PETS = [
   { id:'cyber',     name:'赛博龟',   emoji:'🤖🐢',    rarity:'S',   hp:330,  atk:43,  def:13, spd:15, crit:0.25,
     img:'../../assets/pets/赛博龟.png',
     passive:{ type:'cyberDrone', droneScale:0.13, droneMaxAge:5, maxDrones:10, mechHpPer:30, mechAtkPer:5,
-              desc:'每回合生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成 {N:ATK*0.13} 普通伤害（13%ATK）。\n赛博龟阵亡时，全部浮游炮组装为机甲：\n机甲HP = 30×{B:droneCount} = {H:mechHp}\n机甲ATK = 5×{B:droneCount} = {N:mechAtk}\n机甲每回合自动攻击血量最低的敌人，造成150%ATK普通伤害。' },
+              desc:'每回合生成1个浮游炮（当前拥有 {B:droneCount} 个，最多拥有10个浮游炮）。\n每个浮游炮每回合对随机敌人造成 {N:ATK*0.13} 普通伤害（13%×攻击力）。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n机甲生命值 = 30 × 浮游炮数量（当前{B:droneCount}个）= {H:mechHp}\n机甲攻击力 = 5 × 浮游炮数量（当前{B:droneCount}个）= {N:mechAtk}\n机甲防御力 = 0，暴击率 = 8%\n机甲无法使用技能，每回合自动攻击血量最低的敌人，造成150%×机甲攻击力的普通伤害。\n浮游炮越多，机甲越强。' },
     skills:[
       { name:'激光枪', type:'physical', hits:5, power:0, pierce:0, cd:0, atkScale:0.15, hpPct:2.4,
         brief:'赛博龟发射激光5段，共{N:0.15*ATK*5}普通伤害+12%目标最大HP',
