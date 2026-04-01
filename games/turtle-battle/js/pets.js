@@ -68,7 +68,7 @@ const ALL_PETS = [
   { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, spd:12, crit:0.25,
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
     passive:{ type:'bambooCharge', atkPct:105, selfHpPct:18, healSelfHpPct:9, hpGainAtkPct:30,
-              desc:'每隔1回合充能，技能后追加穿透攻击(105%ATK+18%HP)={P:ATK*1.05+HP*0.18}，回复{H:HP*0.09}HP，永久+{H:ATK*0.3}最大HP' },
+              desc:'每隔1回合充能🎋，充能回合技能释放后追加一发强化普攻：造成 {P:ATK*1.05+HP*0.18} 穿透伤害(105%ATK+18%最大HP)，回复 {H:HP*0.09} HP(9%最大HP)，并永久增加 {H:ATK*0.3} 最大生命值(30%ATK)' },
     skills:[
       { name:'一叶刃', type:'bambooLeaf', hits:3, power:0, pierce:0, cd:0, atkScale:0.22, selfHpPct:8,
         brief:'竹叶龟甩出3片叶刃，每段{N:0.22*ATK}+8%最大HP普通伤害',
