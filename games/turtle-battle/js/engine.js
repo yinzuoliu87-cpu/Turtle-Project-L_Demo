@@ -1631,7 +1631,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     parent.appendChild(num);
 
     // Physics: throw with velocity, gravity pulls down, pause at landing, drift away
-    const startX = (Math.random() - 0.5) * 20;
+    const startX = (Math.random() - 0.5) * 6;
     const yStart = -(20 + (yOffset || 0));
     const vx = (Math.random() > 0.5 ? 1 : -1) * (60 + Math.random() * 50); // px/s sideways
     const vy = -(180 + Math.random() * 60); // px/s upward launch
