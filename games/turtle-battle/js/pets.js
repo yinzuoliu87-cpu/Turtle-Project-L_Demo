@@ -407,9 +407,9 @@ const ALL_PETS = [
       { name:'虫洞', type:'starWormhole', hits:1, power:0, pierce:0, cd:3, pierceBonusPct:30, normalBonusPct:15, duration:3,
         brief:'标记敌人3回合：受到穿透+30%，星际龟普伤+15%',
         detail:'星际龟对敌方单体施加虫洞标记3回合。\n被标记目标受到的所有穿透伤害+{B:30}%。\n星际龟对该目标的普通伤害+{B:15}%。\n冷却3回合。' },
-      { name:'流星暴击', type:'starMeteor', hits:1, power:0, pierce:0, cd:4, atkScale:1.0, aoe:true, energyConsumePct:50, defDown:{pct:20,turns:3},
-        brief:'全体敌方{N:ATK}+50%星能转穿透（不平均分），减防20%',
-        detail:'星际龟对全体敌方造成 100%×(攻击力={ATK}) = {N:ATK} 普通伤害。\n消耗当前50%星能转为穿透伤害（每个目标都受到全额穿透）。\n施加防御-20% 3回合。\n冷却4回合。' },
+      { name:'流星暴击', type:'starMeteor', hits:1, power:0, pierce:0, cd:4, atkScale:1.0, aoe:true, energyReadPct:50, defDown:{pct:20,turns:3},
+        brief:'全体敌方{N:ATK}普通 + 50%星能值穿透（不消耗），减防20%',
+        detail:'星际龟对全体敌方造成 100%×(攻击力={ATK}) = {N:ATK} 普通伤害。\n附加当前星能50%的穿透伤害（每人全额，不消耗星能）。\n施加防御-20% 3回合。\n冷却4回合。' },
     ]},
   // SS级
   { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:380,  atk:35,  def:22, spd:5, crit:0.25,

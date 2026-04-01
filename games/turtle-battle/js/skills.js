@@ -1041,10 +1041,9 @@ async function doStarMeteor(attacker, skill) {
   if (!enemies.length) return;
 
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
-  // Consume 50% star energy
-  const energyConsume = Math.round((attacker._starEnergy || 0) * skill.energyConsumePct / 100);
-  attacker._starEnergy = (attacker._starEnergy || 0) - energyConsume;
-  const piercePerTarget = energyConsume; // full pierce to each target (不平均分)
+  // Read 50% star energy as pierce (don't consume)
+  const readPct = skill.energyReadPct || skill.energyConsumePct || 50;
+  const piercePerTarget = Math.round((attacker._starEnergy || 0) * readPct / 100);
 
   for (const e of enemies) {
     if (!e.alive) continue;
