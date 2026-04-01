@@ -894,7 +894,10 @@ async function executeAction(action) {
       const elId = getFighterElId(ff);
       // Show death briefly
       const el = document.getElementById(elId);
+      // Show death immediately
+      ff.hp = 0; ff.alive = false;
       if (el) el.classList.add('dead');
+      updateHpBar(ff, elId);
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
       // Spawn drone assembly particles flying toward the card
       try {
@@ -928,11 +931,12 @@ async function executeAction(action) {
       } catch(e) {}
       try { sfxRebirth(); } catch(e) {}
       await sleep(300);
-      // Transform to mech — start at 0, ramp up
+      // Transform to mech
       const finalHp = ff.passive.mechHpPer * dc;
       const finalAtk = ff.passive.mechAtkPer * dc;
-      ff.hp = 1; ff.maxHp = 1;
-      ff.baseAtk = 1; ff.atk = 1;
+      ff.maxHp = finalHp;
+      ff.hp = 0;
+      ff.baseAtk = 0; ff.atk = 0;
       ff.baseDef = 0; ff.def = 0;
       ff.shield = 0; ff.bubbleShieldVal = 0;
       ff.crit = 0.08; ff.armorPen = 0;
@@ -952,22 +956,24 @@ async function executeAction(action) {
         setTimeout(() => el.classList.remove('mech-transform-anim'), 800);
       }
       renderFighterCard(ff, elId);
-      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25);
-      // Ramp up HP and ATK over 800ms
-      const rampSteps = 10;
+      updateHpBar(ff, elId);
+      spawnFloatingNum(elId, `🤖机甲充能中...`, 'crit-label', 0, -25);
+      // Ramp up HP and ATK over ~3 seconds
+      const rampSteps = 20;
+      const rampInterval = 150; // 20×150ms = 3000ms
       for (let ri = 1; ri <= rampSteps; ri++) {
         ff.hp = Math.round(finalHp * ri / rampSteps);
-        ff.maxHp = ff.hp;
         ff.baseAtk = Math.round(finalAtk * ri / rampSteps);
         ff.atk = ff.baseAtk;
         updateHpBar(ff, elId);
         updateFighterStats(ff, elId);
-        await sleep(80);
+        await sleep(rampInterval);
       }
       ff.hp = finalHp; ff.maxHp = finalHp;
       ff.baseAtk = finalAtk; ff.atk = finalAtk;
       updateHpBar(ff, elId);
       updateFighterStats(ff, elId);
+      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25);
       spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
       const mechIdx = allFighters.indexOf(ff);
