@@ -14,6 +14,7 @@ const _mockEl = {
   style: {}, querySelector: () => _mockEl, querySelectorAll: () => [],
   appendChild:_noop, insertBefore:_noop, remove:_noop, setAttribute:_noop,
   addEventListener:_noop, removeEventListener:_noop,
+  getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50}),
   innerHTML:'', textContent:'', id:'mock',
 };
 global.document = {
@@ -23,7 +24,8 @@ global.document = {
   createElement: () => ({...JSON.parse(JSON.stringify(_mockEl)),
     classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false},
     style:{}, querySelector:()=>_mockEl, appendChild:_noop,
-    addEventListener:_noop, removeEventListener:_noop}),
+    addEventListener:_noop, removeEventListener:_noop,
+    getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50})}),
   head: { appendChild:_noop },
   body: { appendChild:_noop },
   addEventListener: _noop,
@@ -142,6 +144,16 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           const g = Math.min(p.defGain, p.maxDef - f._stoneDefGained);
           f.baseDef += g; f._stoneDefGained += g;
         }
+      }
+      if (p.type === 'bambooCharge') {
+        f._bambooCharged = !f._bambooCharged;
+        f._bambooFired = false;
+      }
+      if (p.type === 'gamblerBlood') {
+        const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
+        const threshold = p.maxCritAtLoss / 100;
+        const maxGain = p.maxCritGain / 100;
+        f.crit = (f._initCrit || 0.25) + Math.min(maxGain, lostPct / threshold * maxGain);
       }
       if (p.type === 'cyberDrone' && !f._isMech) {
         if (!f._drones) f._drones = [];
@@ -280,6 +292,22 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
 
+      // Bamboo charge follow-up
+      if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged && !f._bambooFired) {
+        const bEnemies = allFighters.filter(e => e.alive && e.side !== f.side);
+        if (bEnemies.length) {
+          const bTarget = (target && target.alive && target.side !== f.side) ? target : bEnemies.sort((a,b) => a.hp - b.hp)[0];
+          const bp = f.passive;
+          const pierceDmg = Math.round(f.atk * bp.atkPct / 100) + Math.round(f.maxHp * bp.selfHpPct / 100);
+          applyRawDmg(f, bTarget, pierceDmg, true);
+          const healAmt = Math.round(f.maxHp * bp.healSelfHpPct / 100);
+          f.hp = Math.min(f.maxHp, f.hp + healAmt);
+          const hpGain = Math.round(f.atk * bp.hpGainAtkPct / 100);
+          f.maxHp += hpGain; f.hp += hpGain;
+          f._bambooFired = true;
+        }
+      }
+
       // Check deaths
       allFighters.forEach(ff => {
         if (ff.hp <= 0 && !ff._deathProcessed) {
@@ -295,6 +323,14 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
             ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
             ff.skills = [{ name: '机甲攻击', type: 'physical', hits: 1, power: 0, pierce: 0, cd: 0, cdLeft: 0, atkScale: 1.5 }];
             return;
+          }
+          // Ghost curse: apply DoT to all enemies on death
+          if (ff.passive && ff.passive.type === 'ghostCurse') {
+            const cursedEnemies = allFighters.filter(e => e.alive && e.side !== ff.side);
+            for (const ce of cursedEnemies) {
+              const dotDmg = Math.round(ce.maxHp * ff.passive.hpPct / 100);
+              ce.buffs.push({ type:'dot', value:dotDmg, turns:ff.passive.turns });
+            }
           }
           ff.alive = false; ff._deathProcessed = true;
         }
