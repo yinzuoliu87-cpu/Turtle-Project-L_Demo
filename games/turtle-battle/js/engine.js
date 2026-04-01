@@ -163,11 +163,15 @@ async function beginTurn() {
         applyRawDmg(f, target, finalDmg);
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, 0);
+        const tEl = document.getElementById(tElId);
+        if (tEl) tEl.classList.add('hit-shake');
         updateHpBar(target, tElId);
         await triggerOnHitEffects(f, target, finalDmg);
         checkDeaths(f);
         if (checkBattleEnd()) return;
-        await sleep(300);
+        await sleep(400);
+        if (tEl) tEl.classList.remove('hit-shake');
+        await sleep(150);
       }
       if (f._drones.length > 0) {
         addLog(`${f.emoji}${f.name} ${f._drones.length}个浮游炮分别打击！`);
