@@ -1833,21 +1833,39 @@ function spawnBambooOrb(fromElId, toElId) {
   if (!fromEl || !toEl) return;
   const fromRect = fromEl.getBoundingClientRect();
   const toRect = toEl.getBoundingClientRect();
+  const sx = fromRect.left + fromRect.width / 2;
+  const sy = fromRect.top + fromRect.height / 2;
+  const ex = toRect.left + toRect.width / 2;
+  const ey = toRect.top + toRect.height / 2;
+  // Arc height: bigger arc for longer distances
+  const dist = Math.sqrt((ex-sx)**2 + (ey-sy)**2);
+  const arcH = Math.max(60, dist * 0.4);
+
   const orb = document.createElement('div');
   orb.className = 'bamboo-orb';
-  // Start at target center
-  const sx = fromRect.left + fromRect.width / 2 - 11;
-  const sy = fromRect.top + fromRect.height / 2 - 11;
-  orb.style.left = sx + 'px';
-  orb.style.top = sy + 'px';
-  // Animate to attacker via CSS transition
   document.body.appendChild(orb);
-  requestAnimationFrame(() => {
-    orb.style.transition = 'left 0.6s ease-in-out, top 0.6s ease-in-out';
-    orb.style.left = (toRect.left + toRect.width / 2 - 11) + 'px';
-    orb.style.top = (toRect.top + toRect.height / 2 - 11) + 'px';
-  });
-  setTimeout(() => orb.remove(), 800);
+
+  const duration = 650;
+  const start = performance.now();
+  function tick(now) {
+    let t = Math.min(1, (now - start) / duration);
+    // Ease: slow start, fast middle, slow end
+    const ease = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
+    // Linear interpolation for x
+    const x = sx + (ex - sx) * ease;
+    // Parabolic arc for y: -4*arcH*t*(t-1) peaks at t=0.5
+    const arc = -4 * arcH * t * (t - 1);
+    const y = sy + (ey - sy) * ease - arc;
+    // Scale: grow in middle, shrink at end
+    const scale = 1 + 0.5 * Math.sin(t * Math.PI);
+    orb.style.left = (x - 11) + 'px';
+    orb.style.top = (y - 11) + 'px';
+    orb.style.transform = `scale(${scale})`;
+    orb.style.opacity = t > 0.85 ? (1 - t) / 0.15 : 1;
+    if (t < 1) requestAnimationFrame(tick);
+    else orb.remove();
+  }
+  requestAnimationFrame(tick);
 }
 
 async function doBambooChargeAttack(attacker, target) {
