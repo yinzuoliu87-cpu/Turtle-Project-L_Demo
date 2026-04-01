@@ -1872,30 +1872,42 @@ async function doBambooChargeAttack(attacker, target) {
   const p = attacker.passive;
   const fElId = getFighterElId(attacker);
   const tElId = getFighterElId(target);
-  // Pierce damage: 105%ATK + 18%maxHP
+
+  // ── 蓄力停顿 ──
+  spawnFloatingNum(fElId, '🎋蓄力...', 'passive-num', 0, -20);
+  await sleep(600);
+
+  // ── 打出强化普攻 ──
   const pierceDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
   applyRawDmg(attacker, target, pierceDmg, true);
-  spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
   spawnFloatingNum(tElId, '🎋充能!', 'crit-label', 0, -20);
+  spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
   await triggerOnHitEffects(attacker, target, pierceDmg);
   updateHpBar(target, tElId);
-  // Green orb effect: fly from target to attacker
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+
+  // ── 绿球飞回 ──
   spawnBambooOrb(tElId, fElId);
-  await sleep(300);
-  // Heal 9% maxHP
+  await sleep(700);
+
+  // ── 回复 + 成长 ──
   const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
   const before = attacker.hp;
   attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
   const actual = Math.round(attacker.hp - before);
-  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
-  // Permanent maxHP gain: 30%ATK
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
+  await sleep(300);
   const hpGain = Math.round(attacker.atk * p.hpGainAtkPct / 100);
   attacker.maxHp += hpGain;
   attacker.hp += hpGain;
-  spawnFloatingNum(fElId, `+${hpGain}HP`, 'passive-num', 400, 0);
+  spawnFloatingNum(fElId, `+${hpGain}HP`, 'passive-num', 0, 20);
   updateHpBar(attacker, fElId);
+
   addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}穿透</span> <span class="log-heal">+${actual}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
-  await sleep(500);
+  await sleep(400);
 }
 
 // ── DIAMOND TURTLE (钻石龟) ──────────────────────────────
