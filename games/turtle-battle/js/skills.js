@@ -838,9 +838,9 @@ async function doFortuneAllIn(attacker, target, skill) {
 
   addLog(`${attacker.emoji}${attacker.name} <b>梭哈！</b> ${coins}枚金币全部投出！`);
 
+  const perCoinDelay = Math.max(200, Math.round(600 / Math.sqrt(coins))); // 1币600ms, 4币300ms, 16币150ms
   for (let i = 0; i < coins; i++) {
     if (!target.alive) break;
-    // Normal part through DEF
     const effectiveDef = calcEffDef(attacker, target);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
     const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
@@ -848,21 +848,17 @@ async function doFortuneAllIn(attacker, target, skill) {
     applyRawDmg(attacker, target, totalHit);
     totalPierce += piercePer;
     totalNormal += normalDmg;
-    // Stagger visuals
-    const yOff = (i % 6) * 26;
-    spawnFloatingNum(tElId, `-${totalHit}🪙`, i < 10 ? 'crit-dmg' : 'direct-dmg', 0, yOff);
-    if (i % 3 === 0) {
-      const tEl = document.getElementById(tElId);
-      tEl.classList.add('hit-shake');
-      updateHpBar(target, tElId);
-      await sleep(180);
-      tEl.classList.remove('hit-shake');
-    }
+    const yOff = (i % 4) * 28;
+    spawnFloatingNum(tElId, `-${totalHit}🪙`, 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: totalHit});
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(perCoinDelay);
+    if (tEl) tEl.classList.remove('hit-shake');
   }
   updateHpBar(target, tElId);
   addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalNormal}普通</span> + <span class="log-pierce">${totalPierce}穿透</span>（${coins}枚金币）`);
-  // Mark as used (cd=999 already prevents reuse)
-  await sleep(1000);
+  await sleep(600);
 }
 
 // ── LIGHTNING SKILLS ───────────────────────────────────────

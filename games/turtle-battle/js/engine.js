@@ -81,8 +81,8 @@ function resetBattleState() {
   });
   // Remove summon mini cards
   document.querySelectorAll('.summon-mini').forEach(el => el.remove());
-  // Remove particles and overlays
-  document.querySelectorAll('.bamboo-orb,.mech-drone-particle,.mech-transform-flash,.death-screen-flash').forEach(el => el.remove());
+  // Remove particles, floating numbers, and overlays
+  document.querySelectorAll('.bamboo-orb,.mech-drone-particle,.mech-transform-flash,.death-screen-flash,.floating-num').forEach(el => el.remove());
   const overlay = document.getElementById('disconnectOverlay');
   if (overlay) overlay.remove();
   // Hide panels
@@ -92,6 +92,11 @@ function resetBattleState() {
   if (picker) picker.style.display = 'none';
   const targetSel = document.getElementById('targetSelect');
   if (targetSel) targetSel.style.display = 'none';
+  // Clear stun indicators and side indicator
+  const sideInd = document.getElementById('sideIndicator');
+  if (sideInd) sideInd.innerHTML = '';
+  const turnBanner = document.getElementById('turnBanner');
+  if (turnBanner) turnBanner.textContent = '';
   unseedBattleRng();
 }
 
