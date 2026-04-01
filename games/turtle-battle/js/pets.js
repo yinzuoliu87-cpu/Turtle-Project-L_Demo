@@ -201,8 +201,8 @@ const ALL_PETS = [
               desc:'基于已损HP获得暴击率(损30%HP→+50%暴击)，溢出每1%→1.5%爆伤' },
     skills:[
       { name:'骰子攻击', type:'diceAttack', hits:3, power:0, pierce:0, cd:0, atkScale:0.9, critBonusMult:100,
-        brief:'骰子龟掷3颗骰子，共{N:0.9*ATK}+暴击率×100普通伤害，每段可暴击',
-        detail:'骰子龟对单体掷出3颗骰子。\n总伤害 = 90%×(攻击力={ATK}) = {N:0.9*ATK} + 100×暴击率。\n均分为3段，每段独立判定暴击。\n暴击率越高基础伤害越高。' },
+        brief:'骰子龟掷3颗骰子，共{N:0.9*ATK+crit*100}普通伤害，每段可暴击',
+        detail:'骰子龟对单体掷出3颗骰子。\n总伤害 = 90%×(攻击力={ATK}) + 100×(暴击率={N:crit*100}%) = {N:0.9*ATK+crit*100} 普通伤害。\n均分为3段，每段独立判定暴击。\n暴击率越高基础伤害越高。' },
       { name:'孤注一掷', type:'diceAllIn', hits:1, power:0, pierce:0, cd:3, atkScale:1.1, lifestealPct:10,
         brief:'骰子龟对每个敌人造成{P:1.1*ATK}穿透伤害，本次10%生命偷取',
         detail:'骰子龟拼命一搏，获得本次攻击10%生命偷取。\n对每个敌方造成 110%×(攻击力={ATK}) = {P:1.1*ATK} 穿透伤害。\n穿透伤害无视防御。吸血基于造成的总伤害。\n冷却{cd}回合。' },
