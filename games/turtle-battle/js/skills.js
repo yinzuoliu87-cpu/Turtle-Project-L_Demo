@@ -1875,23 +1875,24 @@ async function doBambooChargeAttack(attacker, target) {
 
   // ── 蓄力停顿 ──
   spawnFloatingNum(fElId, '🎋蓄力...', 'passive-num', 0, -20);
+  try { sfxBambooCharge(); } catch(e) {}
   await sleep(600);
 
   // ── 打出强化普攻 ──
   const pierceDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
   applyRawDmg(attacker, target, pierceDmg, true);
+  try { sfxBambooHit(); } catch(e) {}
   spawnFloatingNum(tElId, '🎋充能!', 'crit-label', 0, -20);
   spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
   await triggerOnHitEffects(attacker, target, pierceDmg);
   updateHpBar(target, tElId);
-  await sleep(500);
-  if (tEl) tEl.classList.remove('hit-shake');
-
-  // ── 绿球飞回 ──
+  // ── 打中同时绿球飞出 ──
   spawnBambooOrb(tElId, fElId);
-  await sleep(700);
+  await sleep(400);
+  if (tEl) tEl.classList.remove('hit-shake');
+  await sleep(400);
 
   // ── 回复 + 成长 ──
   const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);

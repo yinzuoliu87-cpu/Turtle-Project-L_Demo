@@ -228,3 +228,33 @@ function sfxClick() {
 function sfxTurnStart() {
   _osc('triangle', 523, 0.06, 0.06, 784);
 }
+
+// ── Bamboo charge: wind-up whoosh → nature chime impact ──
+function sfxBambooCharge() {
+  const c = ensureAudio(), t = c.currentTime;
+  // Whoosh: rising filtered noise
+  const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate);
+  const d = buf.getChannelData(0);
+  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(i / d.length * Math.PI);
+  const n = c.createBufferSource(), gn = c.createGain(), flt = c.createBiquadFilter();
+  n.buffer = buf;
+  flt.type = 'bandpass'; flt.frequency.setValueAtTime(400, t); flt.frequency.exponentialRampToValueAtTime(2000, t + 0.35); flt.Q.value = 2;
+  gn.gain.setValueAtTime(0.1, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  n.connect(flt); flt.connect(gn); gn.connect(masterGain);
+  n.start(t);
+}
+function sfxBambooHit() {
+  const c = ensureAudio(), t = c.currentTime;
+  // Nature chime: two harmonics
+  [392, 784, 1175].forEach((f, i) => {
+    const o = c.createOscillator(), g = c.createGain();
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f, t);
+    g.gain.setValueAtTime(0.07 - i * 0.015, t);
+    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+    o.connect(g); g.connect(masterGain);
+    o.start(t); o.stop(t + 0.3);
+  });
+  // Soft thud
+  _osc('triangle', 220, 0.15, 0.08, 110);
+}

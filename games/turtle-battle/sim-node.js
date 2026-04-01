@@ -48,7 +48,7 @@ global.clearTimeout = (id) => { if (id) _realClearTimeout(id); };
 ['sfxHit','sfxCrit','sfxPierce','sfxShield','sfxShieldBreak','sfxHeal','sfxDeath',
  'sfxRebirth','sfxBuff','sfxDebuff','sfxDodge','sfxFire','sfxLightning','sfxCoin',
  'sfxExplosion','sfxCounter','sfxTrap','sfxBattleStart','sfxVictory','sfxDefeat',
- 'sfxClick','sfxTurnStart','toggleSound','ensureAudio'
+ 'sfxClick','sfxTurnStart','sfxBambooCharge','sfxBambooHit','toggleSound','ensureAudio'
 ].forEach(name => { global[name] = _noop; });
 
 // ── Load Real Engine Code ──────────────────────────────────

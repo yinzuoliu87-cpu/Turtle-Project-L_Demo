@@ -935,7 +935,9 @@ async function executeAction(action) {
   if (f.alive && f.passive && f.passive.type === 'bambooCharge' && f._bambooCharged) {
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     if (enemies.length) {
-      const target = enemies.sort((a,b) => a.hp - b.hp)[0];
+      // Prefer the same target as the skill just used; fallback to lowest HP
+      const skillTarget = action.targetId >= 0 ? allFighters[action.targetId] : null;
+      const target = (skillTarget && skillTarget.alive && skillTarget.side !== f.side) ? skillTarget : enemies.sort((a,b) => a.hp - b.hp)[0];
       await doBambooChargeAttack(f, target);
       if (checkBattleEnd()) { animating=false; return; }
     }
