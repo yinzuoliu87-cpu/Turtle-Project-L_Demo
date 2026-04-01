@@ -404,6 +404,14 @@ function renderSkillTemplate(template, f, s) {
     selfDefUpPct: s.selfDefUpPct ? s.selfDefUpPct.pct : 0, selfDefUpTurns: s.selfDefUpPct ? s.selfDefUpPct.turns : 0,
     hotPerTurn: s.hot ? s.hot.hpPerTurn : 0, hotTurns: s.hot ? s.hot.turns : 0,
     shieldFlat: s.shieldFlat || 0, shieldHpPctVal: s.shieldHpPct || 0,
+    totalScale: s.totalScale || 0, shieldTurns: s.shieldTurns || 0,
+    defBoostTurns: s.defBoostTurns || 0, stunAfter: s.stunAfter || 0,
+    transferPct: s.transferPct || 0,
+    maxStacks: s.maxStacks || (f.passive && f.passive.maxStacks) || 0,
+    pctPerStack: s.pctPerStack || (f.passive && f.passive.pctPerStack) || 0,
+    atkPct: s.atkPct || (f.passive && f.passive.atkPct) || 0,
+    defPct: s.defPct || (f.passive && f.passive.defPct) || 0,
+    defBuffAmp: s.defBuffAmp || (f.passive && f.passive.defBuffAmp) || 0,
   };
 
   let result = template.replace(/\{([NPHSB]):([^}]+)\}|\{([^}]+)\}/g, (match, color, expr, plainExpr) => {
