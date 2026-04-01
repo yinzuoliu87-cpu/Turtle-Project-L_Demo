@@ -2016,17 +2016,26 @@ async function doDiceAttack(attacker, target, skill) {
 async function doDiceAllIn(attacker, skill) {
   const fElId = getFighterElId(attacker);
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-  const pierceDmg = Math.round(attacker.atk * skill.atkScale);
-  let totalDmg = 0;
+  const basePierce = Math.round(attacker.atk * skill.atkScale);
+  let totalDmg = 0, totalCrits = 0;
   spawnFloatingNum(fElId, '🎲孤注一掷!', 'crit-label', 0, -20);
   for (const e of enemies) {
     if (!e.alive) continue;
+    // Crit check per target
+    let effectiveCrit = attacker.crit;
+    let overflowCritDmg = 0;
+    if (effectiveCrit > 1.0) { overflowCritDmg = (effectiveCrit - 1.0) * (attacker.passive?.overflowMult || 1.5); effectiveCrit = 1.0; }
+    const isCrit = Math.random() < effectiveCrit;
+    const critMult = isCrit ? (1.5 + (attacker._extraCritDmgPerm || 0) + overflowCritDmg) : 1;
+    if (isCrit) totalCrits++;
+    const pierceDmg = Math.max(1, Math.round(basePierce * critMult));
     applyRawDmg(attacker, e, pierceDmg, true);
     totalDmg += pierceDmg;
     const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
+    spawnFloatingNum(eElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
     updateHpBar(e, eElId);
     await triggerOnHitEffects(attacker, e, pierceDmg);
+    await sleep(300);
   }
   // Lifesteal
   if (skill.lifestealPct && attacker.alive && totalDmg > 0) {
@@ -2039,8 +2048,8 @@ async function doDiceAllIn(attacker, skill) {
       updateHpBar(attacker, fElId);
     }
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${pierceDmg}穿透</span>×${enemies.length} + 10%吸血`);
-  await sleep(800);
+  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${totalDmg}穿透</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + 10%吸血`);
+  await sleep(500);
 }
 
 async function doDiceFate(caster, skill) {
