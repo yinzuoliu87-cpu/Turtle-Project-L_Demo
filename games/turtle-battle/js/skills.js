@@ -1436,15 +1436,19 @@ async function doShellStrike(attacker, target, skill) {
 }
 
 async function doShellCopy(caster, _skill) {
-  // Collect all copyable skills from all alive enemies
+  // Blacklist: skills that make no sense when copied
+  const COPY_BLACKLIST = ['shellCopy','twoHeadSteal','cyberDeploy','cyberBuff','hidingDefend',
+    'hidingCommand','diceFate','fortuneDice','bambooHeal','bambooLeaf','ghostPhase',
+    'diamondFortify','iceShield','twoHeadSwitch','mechAttack','chestOpen'];
+
   const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   if (!enemies.length) { await sleep(500); return; }
 
-  // Gather {enemy, skill} pairs from all enemies (exclude shellCopy)
+  // Gather copyable {enemy, skill} pairs
   const pool = [];
   for (const e of enemies) {
     for (const s of e.skills) {
-      if (s.type !== 'shellCopy') pool.push({ source: e, skill: s });
+      if (!COPY_BLACKLIST.includes(s.type)) pool.push({ source: e, skill: s });
     }
   }
   if (!pool.length) {
@@ -1461,17 +1465,17 @@ async function doShellCopy(caster, _skill) {
     if (!picked.find(x => x.skill.type === p.skill.type)) picked.push(p);
   }
 
-  const COPY_MULT = 0.6; // 60% effectiveness (40% reduction)
+  const COPY_MULT = 0.6;
 
   for (const { source, skill: origSkill } of picked) {
     if (!caster.alive || battleOver) break;
 
-    const tElId = getFighterElId(source);
-    spawnFloatingNum(tElId, `复制: ${origSkill.name}`, 'crit-label', 0, 0);
+    const fElId = getFighterElId(caster);
+    spawnFloatingNum(fElId, `复制: ${origSkill.name}`, 'crit-label', 0, 0);
     addLog(`${caster.emoji}${caster.name} <b>复制</b>了 ${source.emoji}${source.name} 的 <b>${origSkill.name}</b>！(60%效果)`);
     await sleep(600);
 
-    // Deep copy skill and apply 60% scaling to damage/shield/heal values
+    // Deep copy and apply 60% scaling
     const copied = JSON.parse(JSON.stringify(origSkill));
     if (copied.power) copied.power = Math.round(copied.power * COPY_MULT);
     if (copied.pierce) copied.pierce = Math.round(copied.pierce * COPY_MULT);
@@ -1479,6 +1483,8 @@ async function doShellCopy(caster, _skill) {
     if (copied.defScale) copied.defScale *= COPY_MULT;
     if (copied.hpPct) copied.hpPct *= COPY_MULT;
     if (copied.totalScale) copied.totalScale *= COPY_MULT;
+    if (copied.pierceScale) copied.pierceScale *= COPY_MULT;
+    if (copied.selfHpPct) copied.selfHpPct *= COPY_MULT;
     if (copied.shield) copied.shield = Math.round(copied.shield * COPY_MULT);
     if (copied.shieldFlat) copied.shieldFlat = Math.round(copied.shieldFlat * COPY_MULT);
     if (copied.shieldHpPct) copied.shieldHpPct *= COPY_MULT;
@@ -1486,43 +1492,59 @@ async function doShellCopy(caster, _skill) {
     if (copied.heal) copied.heal = Math.round(copied.heal * COPY_MULT);
     if (copied.hot) copied.hot.hpPerTurn = Math.round(copied.hot.hpPerTurn * COPY_MULT);
     if (copied.dot) copied.dot.dmg = Math.round(copied.dot.dmg * COPY_MULT);
+    if (copied.normalScale) copied.normalScale *= COPY_MULT;
+    // Star meteor: no star energy on caster = 0 pierce (correct by design)
     copied.cdLeft = 0;
 
-    // Determine target
-    const isAlly = copied.type === 'heal' || copied.type === 'shield' || copied.type === 'bubbleShield' || copied.type === 'ninjaTrap' || copied.type === 'angelBless';
-    const isAoe = copied.aoe || copied.aoeAlly || copied.type === 'hunterBarrage' || copied.type === 'ninjaBomb' || copied.type === 'lightningBarrage';
-    const isSelf = copied.type === 'phoenixShield' || copied.type === 'fortuneDice' || copied.type === 'lightningBuff' || copied.type === 'hidingDefend';
+    // Target selection: auto, no picker
+    const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
+    const AOE_TYPES_SET = new Set(['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage','starMeteor','diceAllIn']);
+    const SELF_TYPES_SET = new Set(['phoenixShield','lightningBuff','gamblerDraw']);
 
     let copyTarget;
+    const isAlly = ALLY_TYPES.includes(copied.type);
+    const isAoe = copied.aoe || copied.aoeAlly || AOE_TYPES_SET.has(copied.type);
+    const isSelf = SELF_TYPES_SET.has(copied.type);
+
     if (isSelf || isAoe) {
       copyTarget = caster;
     } else if (isAlly) {
       const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
-      copyTarget = allies[Math.floor(Math.random() * allies.length)];
+      copyTarget = allies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
     } else {
       const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-      copyTarget = aliveEnemies.sort((a, b) => a.hp / a.maxHp - b.hp / b.maxHp)[0];
+      copyTarget = aliveEnemies.sort((a, b) => a.hp - b.hp)[0];
     }
     if (!copyTarget) continue;
 
-    // Temporarily assign copied skill and execute
+    // Temporarily assign copied skill and execute via real engine
     const savedSkills = caster.skills;
     caster.skills = [...savedSkills, copied];
-    const copiedRef = caster.skills[caster.skills.length - 1];
+    const copiedIdx = caster.skills.length - 1;
 
     const atkEl = document.getElementById(getFighterElId(caster));
     atkEl.classList.add('attack-anim');
 
-    if (isAoe && !copied.aoeAlly) {
-      const aliveEnemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-      for (const enemy of aliveEnemies) { await doDamage(caster, enemy, copiedRef); if (battleOver) break; }
-    } else if (copiedRef.type === 'heal') {
-      await doHeal(caster, copyTarget, copiedRef);
-    } else if (copiedRef.type === 'shield') {
-      await doShield(caster, copyTarget, copiedRef);
-    } else {
-      await doDamage(caster, copyTarget, copiedRef);
+    // Use executeAction for full routing (lightning triggers, etc.)
+    const savedOnAction = window.onActionComplete;
+    const savedNext = window.nextAction;
+    window.onActionComplete = () => {};
+    window.nextAction = () => {};
+    animating = false;
+    try {
+      await executeAction({
+        attackerId: allFighters.indexOf(caster),
+        skillIdx: copiedIdx,
+        targetId: allFighters.indexOf(copyTarget),
+        aoe: !!copied.aoe
+      });
+    } catch(e) {
+      console.error('shellCopy exec error:', e);
+      // Fallback: simple doDamage
+      if (copyTarget && copyTarget.alive) await doDamage(caster, copyTarget, copied);
     }
+    window.onActionComplete = savedOnAction;
+    window.nextAction = savedNext;
 
     atkEl.classList.remove('attack-anim');
     caster.skills = savedSkills;
