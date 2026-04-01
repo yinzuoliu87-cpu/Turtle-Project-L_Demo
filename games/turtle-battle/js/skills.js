@@ -483,7 +483,7 @@ async function doTurtleShieldBash(attacker, target, skill) {
 
   applyRawDmg(attacker, target, dmg, false);
 
-  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, dmg);
@@ -540,7 +540,7 @@ async function doBasicBarrage(attacker, skill) {
     totalDmg += dmg;
 
     const yOff = (i % 4) * 24;
-    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, dmg);
@@ -600,7 +600,7 @@ async function doIceSpike(attacker, target, skill) {
       }
       applyRawDmg(attacker, target, dmg, false);
       totalNormal += dmg;
-      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+  
       spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     } else {
       dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
@@ -610,7 +610,7 @@ async function doIceSpike(attacker, target, skill) {
       }
       applyRawDmg(attacker, target, dmg, true);
       totalPierce += dmg;
-      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+  
       spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
     }
 
@@ -668,7 +668,7 @@ async function doIceFrost(attacker, skill) {
     applyRawDmg(attacker, enemy, dmg, true);
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
-    if (isCrit) spawnFloatingNum(eElId, '暴击!', 'crit-label', 0, 0);
+
     spawnFloatingNum(eElId, `-${dmg}`, 'pierce-dmg', 80, 0);
     updateHpBar(enemy, eElId);
     await triggerOnHitEffects(attacker, enemy, dmg);
@@ -728,7 +728,7 @@ async function doAngelEquality(attacker, target, skill) {
   applyRawDmg(attacker, target, normalDmg, false);
   totalDmgDealt += normalDmg;
 
-  if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 0);
+
   spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, normalDmg);
@@ -757,7 +757,7 @@ async function doAngelEquality(attacker, target, skill) {
     applyRawDmg(attacker, target, pierceDmg, true);
     totalDmgDealt += pierceDmg;
 
-    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, 24);
+
     spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 80, 24);
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, pierceDmg);
@@ -1196,8 +1196,7 @@ async function doNinjaShuriken(attacker, target, skill) {
   if (isCrit) {
     const pierceDmg = Math.round(baseDmg * critMult);
     applyRawDmg(attacker, target, pierceDmg);
-    spawnFloatingNum(tElId, '暴击!转穿透', 'crit-label', 0, -18);
-    spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0);
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}穿透</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
@@ -1389,14 +1388,14 @@ async function doShellStrike(attacker, target, skill) {
       const { shieldAbs } = applyRawDmg(attacker, target, dmg, false);
       totalNormal += dmg;
       totalShieldDmg += shieldAbs;
-      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+  
       spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     } else {
       dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
       const { shieldAbs } = applyRawDmg(attacker, target, dmg, true);
       totalPierce += dmg;
       totalShieldDmg += shieldAbs;
-      if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
+  
       spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
     }
     totalDmgDealt += dmg;
@@ -2002,7 +2001,7 @@ async function doDiceAttack(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(perHit * critMult * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, (i%3)*18 - 18);
+
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%3)*18);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);

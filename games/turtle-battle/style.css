@@ -241,12 +241,13 @@ body{
 /* Shield gain — WHITE bright */
 .floating-num.shield-num{color:#fff;font-size:22px}
 /* Crit damage — ORANGE GOLD */
-.floating-num.crit-dmg{color:#ffa500;font-size:26px}
+.floating-num.crit-dmg{color:#ff4444;font-size:26px}
+.floating-num.crit-pierce{color:#d06bff;font-size:24px}
 .floating-num.crit-label{color:#ffd700;font-size:14px;font-weight:900}
-.floating-num.crit-dmg::before,.floating-num.crit-label::before{
-  content:'';display:inline-block;width:18px;height:18px;
+.floating-num.crit-dmg::before,.floating-num.crit-pierce::before{
+  content:'';display:inline-block;width:20px;height:20px;
   background:url('assets/crit-icon.png') center/contain no-repeat;
-  vertical-align:middle;margin-right:2px;
+  vertical-align:middle;margin-right:1px;
 }
 /* DoT damage — ORANGE */
 .floating-num.dot-dmg{color:#ff6600;font-size:18px}

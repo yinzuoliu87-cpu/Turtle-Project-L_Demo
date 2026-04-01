@@ -1246,15 +1246,14 @@ async function doDamage(attacker, target, skill) {
     totalPierce += piercePart;
     totalShieldDmg += shieldAbs;
 
-    // Floating numbers — immediate (delay=0), since loop timing is controlled by sleep
+    // Floating numbers — crit uses same color + icon, no separate "暴击!" text
     const yOff = (i % 4) * 24;
-    if (isCrit) spawnFloatingNum(tElId, '暴击!', 'crit-label', 0, yOff - 18);
     if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff);
     if (hpLoss > 0 && piercePart > 0) {
       const normalHp = Math.min(normalPart, hpLoss);
       const pierceHp = hpLoss - normalHp;
       if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
-      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, 'pierce-dmg', 200, yOff);
+      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 200, yOff);
     } else if (hpLoss > 0) {
       spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     }
@@ -1636,7 +1635,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     setTimeout(() => num.remove(), 4000);
     // SFX based on type
     const sfxMap = {
-      'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-label': sfxCrit,
+      'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
       'pierce-dmg': sfxPierce, 'shield-dmg': sfxShieldBreak,
       'shield-num': sfxShield, 'heal-num': sfxHeal,
       'dot-dmg': sfxFire, 'counter-dmg': sfxCounter,
