@@ -432,16 +432,83 @@ async function runCustom(l1, l2, r1, r2, N) {
   });
 }
 
+// ── Mixed Team Mode ────────────────────────────────────────
+async function runMixed(partnersPerTurtle, matchesPerPartner) {
+  const ids = ALL_PETS.map(p => p.id).filter(id => !MATRIX_EXCLUDE.includes(id));
+  const st = {};
+  ids.forEach(id => { st[id] = { w: 0, g: 0, dd: 0, dt: 0 }; });
+
+  const totalMatches = ids.length * partnersPerTurtle * matchesPerPartner;
+  let done = 0;
+  process.stdout.write(`混搭模拟 ${ids.length}龟 × ${partnersPerTurtle}搭档 × ${matchesPerPartner}对手 = ${totalMatches}场...\n`);
+
+  for (const myId of ids) {
+    // Pick random partners (excluding self)
+    const otherIds = ids.filter(id => id !== myId);
+    const partners = otherIds.sort(() => Math.random() - 0.5).slice(0, partnersPerTurtle);
+
+    for (const partnerId of partners) {
+      // Pick random enemy teams
+      for (let m = 0; m < matchesPerPartner; m++) {
+        const enemyPool = ids.filter(id => id !== myId && id !== partnerId);
+        const shuffled = enemyPool.sort(() => Math.random() - 0.5);
+        const e1 = shuffled[0], e2 = shuffled[1];
+
+        const r = await simBattle([myId, partnerId], [e1, e2]);
+        const won = r.winner === 'left';
+
+        // Track stats for all 4 participants
+        st[myId].g++; st[partnerId].g++; st[e1].g++; st[e2].g++;
+        if (won) { st[myId].w++; st[partnerId].w++; }
+        else { st[e1].w++; st[e2].w++; }
+        st[myId].dd += r.left[0].dd; st[myId].dt += r.left[0].dt;
+        st[partnerId].dd += r.left[1].dd; st[partnerId].dt += r.left[1].dt;
+        st[e1].dd += r.right[0].dd; st[e1].dt += r.right[0].dt;
+        st[e2].dd += r.right[1].dd; st[e2].dt += r.right[1].dt;
+
+        done++;
+        if (done % 50 === 0) process.stdout.write(`  ${done}/${totalMatches} (${Math.round(done / totalMatches * 100)}%)\r`);
+      }
+    }
+  }
+
+  const sorted = Object.entries(st).map(([id, s]) => {
+    const p = ALL_PETS.find(x => x.id === id);
+    return {
+      name: p.name, emoji: p.emoji, rarity: p.rarity,
+      wr: s.g > 0 ? Math.round(s.w / s.g * 100) : 0, w: s.w, g: s.g,
+      ad: s.g > 0 ? Math.round(s.dd / s.g) : 0, at: s.g > 0 ? Math.round(s.dt / s.g) : 0
+    };
+  }).sort((a, b) => b.wr - a.wr);
+
+  console.log('\n');
+  console.log(' #  龟名         稀有  胜率   胜/总      造成均伤  承受均伤');
+  console.log('─── ──────────── ──── ────── ────────── ──────── ────────');
+  sorted.forEach((s, i) => {
+    const rank = String(i + 1).padStart(2);
+    const name = (s.emoji + s.name).padEnd(12);
+    const rar = s.rarity.padEnd(4);
+    const wr = (s.wr + '%').padStart(4);
+    const wg = (s.w + '/' + s.g).padStart(9);
+    const ad = String(s.ad).padStart(8);
+    const at = String(s.at).padStart(8);
+    console.log(`${rank}. ${name} ${rar} ${wr}   ${wg}   ${ad}  ${at}`);
+  });
+}
+
 // ── Main ────────────────────────────────────────────────────
 (async () => {
   const args = process.argv.slice(2);
   const N = parseInt(args.find(a => !a.startsWith('-'))) || 20;
 
-  if (args.includes('--matrix')) {
+  if (args.includes('--mixed')) {
+    await runMixed(10, 5); // 10 partners × 5 matches each
+  } else if (args.includes('--matrix')) {
     await runMatrix(Math.min(N, 5));
   } else if (args.includes('--help') || args.includes('-h')) {
     console.log('用法:');
-    console.log('  node sim-node.js --matrix [N]     全龟矩阵对战(每对N局)');
+    console.log('  node sim-node.js --matrix [N]     同龟矩阵对战(每对N局)');
+    console.log('  node sim-node.js --mixed           混搭阵容模拟(10搭档×5对手)');
     console.log('  node sim-node.js [l1] [l2] [r1] [r2] [N]  自定义2v2');
     console.log('  node sim-node.js --list            列出所有龟ID');
     console.log('\n例: node sim-node.js hunter stone ninja phoenix 50');
@@ -450,7 +517,6 @@ async function runCustom(l1, l2, r1, r2, N) {
   } else if (args.length >= 4 && !args[0].startsWith('-')) {
     await runCustom(args[0], args[1], args[2], args[3], N);
   } else {
-    // Default: matrix with 20 rounds
     await runMatrix(N);
   }
 })();
