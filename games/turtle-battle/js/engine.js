@@ -1630,48 +1630,44 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     else num.textContent = text;
     parent.appendChild(num);
 
-    // Physics: throw with velocity, gravity pulls down, pause at landing, drift away
-    const startX = (Math.random() - 0.5) * 6;
-    const yStart = -(20 + (yOffset || 0));
-    const vx = (Math.random() > 0.5 ? 1 : -1) * (60 + Math.random() * 50); // px/s sideways
-    const vy = -(180 + Math.random() * 60); // px/s upward launch
-    const gravity = 420; // px/s² pull down
-    const totalDur = 2200; // ms total
-    const landTime = -vy / gravity * 2 * 1000; // ms when ball returns to launch height
-    const pauseDur = 350; // ms pause at landing
-    const driftPhaseStart = landTime + pauseDur;
-
-    let x = startX, y = yStart;
-    let landX = 0, landY = 0;
+    // LOL style: pop → hold → slow float up → fade
+    const ox = (Math.random() - 0.5) * 12;
+    const y0 = -(20 + (yOffset || 0));
+    const totalDur = 1600;
+    const popEnd = 120;     // pop animation duration
+    const holdEnd = 400;    // hold still until this time
+    const fadeStart = 1100; // start fading
+    const floatDist = 35;   // total upward drift px
     const start = performance.now();
 
     function tick(now) {
       const elapsed = now - start;
       if (elapsed >= totalDur) { num.remove(); return; }
-      const t = elapsed / 1000; // seconds
 
-      if (elapsed < landTime) {
-        // Phase 1: throw arc
-        x = startX + vx * t;
-        y = yStart + vy * t + 0.5 * gravity * t * t;
-        const scale = elapsed < 100 ? 0.4 + (elapsed / 100) * 0.7 : 1.0 + Math.max(0, 0.1 - elapsed / 5000);
-        num.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
-        num.style.opacity = '1';
-      } else if (elapsed < driftPhaseStart) {
-        // Phase 2: pause at landing point
-        if (!landX) { landX = x; landY = y; }
-        num.style.transform = `translate(${landX}px, ${landY}px) scale(0.95)`;
-        num.style.opacity = '1';
+      let scale, opacity, y;
+      if (elapsed < popEnd) {
+        // Pop: scale 0 → 1.25
+        const p = elapsed / popEnd;
+        scale = p * 1.25;
+        y = y0;
+        opacity = Math.min(1, p * 2);
+      } else if (elapsed < holdEnd) {
+        // Settle: scale 1.25 → 1.0, stay put
+        const p = (elapsed - popEnd) / (holdEnd - popEnd);
+        scale = 1.25 - 0.25 * p;
+        y = y0;
+        opacity = 1;
       } else {
-        // Phase 3: drift away and fade
-        if (!landX) { landX = x; landY = y; }
-        const driftT = (elapsed - driftPhaseStart) / (totalDur - driftPhaseStart);
-        const ease = 1 - (1 - driftT) * (1 - driftT); // ease-out
-        const driftX = landX + Math.sign(vx) * 40 * ease;
-        const driftY = landY - 15 * ease;
-        num.style.transform = `translate(${driftX}px, ${driftY}px) scale(${0.95 - 0.3 * ease})`;
-        num.style.opacity = String(1 - ease);
+        // Float up slowly
+        const p = (elapsed - holdEnd) / (totalDur - holdEnd);
+        const ease = p * (2 - p); // ease-out
+        scale = 1.0;
+        y = y0 - floatDist * ease;
+        opacity = elapsed > fadeStart ? 1 - (elapsed - fadeStart) / (totalDur - fadeStart) : 1;
       }
+
+      num.style.transform = `translate(calc(-50% + ${ox}px), ${y}px) scale(${scale})`;
+      num.style.opacity = String(Math.max(0, opacity));
       requestAnimationFrame(tick);
     }
     requestAnimationFrame(tick);
