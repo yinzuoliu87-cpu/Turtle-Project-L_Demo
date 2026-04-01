@@ -116,19 +116,20 @@ function updateFighterStats(f, elId) {
   // Preserve detail expand state
   const wasExpanded = document.getElementById('statsDetail'+fIdx)?.style.display === 'flex';
 
+  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
   const briefStats =
-    `<span class="${sc(f.atk, f._initAtk)}">⚔攻击力${f.atk}</span>` +
-    `<span class="${sc(f.def, f._initDef)}">🛡防御${f.def}(受到伤害-${defPct}%)</span>` +
+    `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.webp')}攻击力${f.atk}</span>` +
+    `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.webp')}防御${f.def}(受到伤害-${defPct}%)</span>` +
     passiveIcon +
     `<span class="stats-toggle" onclick="toggleFighterStats(event,${fIdx})">${wasExpanded?'▴':'▾'}</span>`;
 
   const detailStats =
     `<div class="stats-detail" id="statsDetail${fIdx}" style="display:${wasExpanded?'flex':'none'}">` +
-    `<span class="${sc(critPct, Math.round(f._initCrit*100))}">暴击 ${critPct}%</span>` +
-    `<span class="${critDmg > 150 ? 'stat-up' : ''}">爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
-    `<span class="${sc(f.armorPen, f._initArmorPen)}">穿甲 ${f.armorPen}</span>` +
-    `<span class="${sc(lifesteal, f._initLifesteal)}">吸血 ${lifesteal}%</span>` +
-    `<span class="${dodgePct > 0 ? 'stat-up' : ''}">闪避 ${dodgePct}%</span>` +
+    `<span class="${sc(critPct, Math.round(f._initCrit*100))}">${ic('crit-icon.png')}暴击 ${critPct}%</span>` +
+    `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
+    `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen}</span>` +
+    `<span class="${sc(lifesteal, f._initLifesteal)}">${ic('lifesteal-icon.png')}吸血 ${lifesteal}%</span>` +
+    `<span class="${dodgePct > 0 ? 'stat-up' : ''}">${ic('dodge-icon.png')}闪避 ${dodgePct}%</span>` +
     `</div>`;
 
   statsEl.innerHTML = `<div class="stats-brief">${briefStats}</div>${detailStats}`;
@@ -234,7 +235,7 @@ function updateHpBar(f, elId) {
 
   // HP + Shield text (two lines)
   const maxHpClass = f.maxHp > f._initHp ? 'stat-up' : '';
-  let hpLine = `<div class="hp-line">❤️ ${Math.ceil(f.hp)}/<span class="${maxHpClass}">${f.maxHp}</span></div>`;
+  let hpLine = `<div class="hp-line"><img src="assets/hp-icon.png" class="stat-icon"> ${Math.ceil(f.hp)}/<span class="${maxHpClass}">${f.maxHp}</span></div>`;
   const shieldParts = [];
   if (f.shield > 0) shieldParts.push(`<span class="shield-val">🛡${Math.ceil(f.shield)}</span>`);
   if (f.bubbleShieldVal > 0) shieldParts.push(`<span class="bubble-val">🫧${Math.ceil(f.bubbleShieldVal)} <small>${f.bubbleShieldTurns}回合</small></span>`);
