@@ -1,3 +1,14 @@
+// Shared crit helper — returns { isCrit, critMult }
+function calcCrit(f) {
+  let effectiveCrit = f.crit || 0.25;
+  if (f.passive && f.passive.type === 'lowHpCrit' && f.hp / f.maxHp < 0.3) effectiveCrit += f.passive.pct / 100;
+  let overflowDmg = 0;
+  if (effectiveCrit > 1.0) { overflowDmg = (effectiveCrit - 1.0) * (f.passive && f.passive.overflowMult || 1.5); effectiveCrit = 1.0; }
+  const isCrit = Math.random() < effectiveCrit;
+  const critMult = isCrit ? (1.5 + (f._extraCritDmgPerm || 0) + (f._extraCritDmg || 0) + overflowDmg) : 1;
+  return { isCrit, critMult };
+}
+
 async function doGamblerDraw(caster, _skill) {
   const roll = Math.floor(Math.random() * 3);
   const fElId = getFighterElId(caster);
@@ -74,13 +85,14 @@ async function doGamblerBet(attacker, target, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
-    const normalDmg = Math.max(1, Math.round(normalPer * (1 - defRed)));
+    const normalDmg = Math.max(1, Math.round(normalPer * critMult * (1 - defRed)));
     const total = normalDmg + piercePer;
     applyRawDmg(attacker, target, total);
     totalDmg += total;
-    spawnFloatingNum(tElId, `-${total}🃏`, 'crit-dmg', 0, (i % 4) * 28);
+    spawnFloatingNum(tElId, `-${total}🃏`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -105,19 +117,20 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
   let totalDmg = 0;
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale);
     const isPierceHit = (i % 2 === 1); // odd index = pierce
     let dmg;
     if (isPierceHit) {
-      dmg = baseDmg; // pierce: no DEF reduction
+      dmg = Math.round(baseDmg * critMult); // pierce: no DEF reduction
       applyRawDmg(attacker, target, dmg, true);
-      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 0, (i%4)*18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, (i%4)*18);
     } else {
       const eDef = calcEffDef(attacker, target);
       const defRed = eDef / (eDef + DEF_CONSTANT);
-      dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+      dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
       applyRawDmg(attacker, target, dmg);
-      spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i%4)*18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%4)*18);
     }
     totalDmg += dmg;
     await triggerOnHitEffects(attacker, target, dmg);
@@ -219,13 +232,14 @@ async function doTwoHeadSwitch(caster, target, skill) {
 
 // Absorb: damage + heal lost HP
 async function doTwoHeadAbsorb(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');
@@ -250,13 +264,14 @@ async function doTwoHeadAbsorb(attacker, target, skill) {
 
 // Fear (kept for headless turtle which shares this skill)
 async function doTwoHeadFear(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');
@@ -873,13 +888,14 @@ async function doLightningStrike(attacker, mainTarget, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!mainTarget.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     // Main target: normal damage through DEF
     const effectiveDef = calcEffDef(attacker, mainTarget);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
-    const dmg = Math.max(1, Math.round(perHit * (1 - defRed)));
+    const dmg = Math.max(1, Math.round(perHit * critMult * (1 - defRed)));
     applyRawDmg(attacker, mainTarget, dmg);
     totalMain += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, mainTarget, dmg);
     // Splash to secondary
     if (secondaryTarget && secondaryTarget.alive) {
@@ -887,7 +903,7 @@ async function doLightningStrike(attacker, mainTarget, skill) {
       applyRawDmg(attacker, secondaryTarget, splashDmg);
       totalSplash += splashDmg;
       const sElId = getFighterElId(secondaryTarget);
-      spawnFloatingNum(sElId, `-${splashDmg}`, 'direct-dmg', 200, 0);
+      spawnFloatingNum(sElId, `-${splashDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 200, 0);
       updateHpBar(secondaryTarget, sElId);
       await triggerOnHitEffects(attacker, secondaryTarget, splashDmg);
     }
@@ -928,13 +944,14 @@ async function doLightningBarrage(attacker, skill) {
     const alive = enemies.filter(e => e.alive);
     if (!alive.length) break;
     const target = alive[Math.floor(Math.random() * alive.length)];
+    const {isCrit, critMult} = calcCrit(attacker);
     // Normal damage through DEF
     const effectiveDef = calcEffDef(attacker, target);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
-    const dmg = Math.max(1, Math.round(perHitDmg * (1 - defRed)));
+    const dmg = Math.max(1, Math.round(perHitDmg * critMult * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 5) * 24);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 5) * 24);
     await triggerOnHitEffects(attacker, target, dmg);
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
@@ -981,18 +998,19 @@ async function doStarBeam(attacker, target, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(target.hp * skill.currentHpPct / 100);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
 
     // Check wormhole normal bonus
     const wh = target.buffs.find(b => b.type === 'wormhole' && b.sourceId === allFighters.indexOf(attacker));
-    let dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    let dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
     if (wh) dmg = Math.round(dmg * (1 + wh.normalBonusPct / 100));
 
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
 
     // Accumulate star energy
@@ -1043,14 +1061,16 @@ async function doStarMeteor(attacker, skill) {
 
   for (const e of enemies) {
     if (!e.alive) continue;
+    const {isCrit, critMult} = calcCrit(attacker);
     const eDef = calcEffDef(attacker, e);
     const defRed = eDef / (eDef + DEF_CONSTANT);
-    const normalDmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
-    const totalDmg = normalDmg + piercePerTarget;
+    const normalDmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+    const pierceFinal = Math.round(piercePerTarget * critMult);
+    const totalDmg = normalDmg + pierceFinal;
     applyRawDmg(attacker, e, totalDmg);
     const eId = getFighterElId(e);
-    if (normalDmg > 0) spawnFloatingNum(eId, `-${normalDmg}`, 'direct-dmg', 0, 0);
-    if (piercePerTarget > 0) spawnFloatingNum(eId, `-${piercePerTarget}`, 'pierce-dmg', 150, 0);
+    if (normalDmg > 0) spawnFloatingNum(eId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    if (pierceFinal > 0) spawnFloatingNum(eId, `-${pierceFinal}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 150, 0);
     updateHpBar(e, eId);
     await triggerOnHitEffects(attacker, e, totalDmg);
 
@@ -1090,13 +1110,14 @@ async function doCyberDeploy(caster, _skill) {
 // ── PHOENIX SKILLS ────────────────────────────────────────
 async function doPhoenixBurn(attacker, target, skill) {
   // Deal 1×ATK normal damage
+  const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effectiveDef = calcEffDef(attacker, target);
   const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg);
-  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');
@@ -1160,12 +1181,13 @@ async function doPhoenixScald(attacker, target, skill) {
   }
 
   // Deal 0.7×ATK normal damage
+  const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effectiveDef = calcEffDef(attacker, target);
   const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
-  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');
@@ -1234,12 +1256,13 @@ async function doNinjaBomb(attacker, skill) {
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
 
   for (const e of enemies) {
+    const {isCrit, critMult} = calcCrit(attacker);
     const effectiveDef = calcEffDef(attacker, e);
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
-    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
     applyRawDmg(attacker, e, dmg);
     const eId = getFighterElId(e);
-    spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
+    spawnFloatingNum(eId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     updateHpBar(e, eId);
     await triggerOnHitEffects(attacker, e, dmg);
 
@@ -1589,10 +1612,11 @@ async function doLineSketch(attacker, target, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
-    let dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    let dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
     // Ink amplification
     if (target._inkStacks > 0) dmg = Math.round(dmg * (1 + target._inkStacks * 0.05));
 
@@ -1600,7 +1624,7 @@ async function doLineSketch(attacker, target, skill) {
     totalDmg += dmg;
     addInkStack(target, 1);
 
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
 
     const tEl = document.getElementById(tElId);
@@ -1616,16 +1640,17 @@ async function doLineSketch(attacker, target, skill) {
 async function doLineLink(attacker, target, skill) {
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   // Hit primary target
+  const {isCrit: isCrit1, critMult: critMult1} = calcCrit(attacker);
   const tElId = getFighterElId(target);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const eDef1 = calcEffDef(attacker, target);
   const defRed1 = eDef1 / (eDef1 + DEF_CONSTANT);
-  let dmg1 = Math.max(1, Math.round(baseDmg * (1 - defRed1)));
+  let dmg1 = Math.max(1, Math.round(baseDmg * critMult1 * (1 - defRed1)));
   if (target._inkStacks > 0) dmg1 = Math.round(dmg1 * (1 + target._inkStacks * 0.05));
 
   applyRawDmg(attacker, target, dmg1);
   addInkStack(target, 1);
-  spawnFloatingNum(tElId, `-${dmg1}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg1}`, isCrit1 ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg1);
   updateHpBar(target, tElId);
 
@@ -1633,15 +1658,16 @@ async function doLineLink(attacker, target, skill) {
   const second = enemies.find(e => e.alive && e !== target);
   let dmg2 = 0;
   if (second) {
+    const {isCrit: isCrit2, critMult: critMult2} = calcCrit(attacker);
     const sElId = getFighterElId(second);
     const eDef2 = calcEffDef(attacker, second);
     const defRed2 = eDef2 / (eDef2 + DEF_CONSTANT);
-    dmg2 = Math.max(1, Math.round(baseDmg * (1 - defRed2)));
+    dmg2 = Math.max(1, Math.round(baseDmg * critMult2 * (1 - defRed2)));
     if (second._inkStacks > 0) dmg2 = Math.round(dmg2 * (1 + second._inkStacks * 0.05));
 
     applyRawDmg(attacker, second, dmg2);
     addInkStack(second, 1);
-    spawnFloatingNum(sElId, `-${dmg2}`, 'direct-dmg', 0, 0);
+    spawnFloatingNum(sElId, `-${dmg2}`, isCrit2 ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, second, dmg2);
     updateHpBar(second, sElId);
 
@@ -1663,25 +1689,26 @@ async function doLineLink(attacker, target, skill) {
 async function doLineFinish(attacker, target, skill) {
   const tElId = getFighterElId(target);
   const stacks = target._inkStacks || 0;
+  const {isCrit, critMult} = calcCrit(attacker);
 
   // Base normal damage
   const baseNormal = Math.round(attacker.atk * skill.baseScale);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
   // Ink amplification on base hit
-  let normalDmg = Math.max(1, Math.round(baseNormal * (1 - defRed)));
+  let normalDmg = Math.max(1, Math.round(baseNormal * critMult * (1 - defRed)));
   if (stacks > 0) normalDmg = Math.round(normalDmg * (1 + stacks * 0.05));
 
   // Pierce damage per stack (ignores DEF)
-  const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks);
+  const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks * critMult);
 
   const totalDmg = normalDmg + pierceDmg;
   applyRawDmg(attacker, target, totalDmg);
 
   // Floating numbers
   if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
-  spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, 0);
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 0);
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -1700,20 +1727,21 @@ async function doLineFinish(attacker, target, skill) {
 // ── GHOST TURTLE (幽灵龟) ────────────────────────────────
 async function doGhostTouch(attacker, target, skill) {
   const tElId = getFighterElId(target);
+  const {isCrit, critMult} = calcCrit(attacker);
   // Normal damage portion
   const normalBase = Math.round(attacker.atk * skill.normalScale);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
-  let normalDmg = Math.max(1, Math.round(normalBase * (1 - defRed)));
+  let normalDmg = Math.max(1, Math.round(normalBase * critMult * (1 - defRed)));
   // Ink amplification
   if (target._inkStacks > 0) normalDmg = Math.round(normalDmg * (1 + target._inkStacks * 0.05));
   // Pierce damage portion (ignores DEF)
-  const pierceDmg = Math.round(attacker.atk * skill.pierceScale);
+  const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
   const totalDmg = normalDmg + pierceDmg;
 
   applyRawDmg(attacker, target, totalDmg);
-  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, 0);
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 100, 0);
+  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 0);
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -1746,13 +1774,14 @@ async function doGhostStorm(attacker, target, skill) {
 
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
-    const pierceDmg = Math.round(attacker.atk * skill.pierceScale);
+    const {isCrit, critMult} = calcCrit(attacker);
+    const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
     // Ink amplification
     const finalDmg = target._inkStacks > 0 ? Math.round(pierceDmg * (1 + target._inkStacks * 0.05)) : pierceDmg;
 
     applyRawDmg(attacker, target, finalDmg, true);
     totalPierce += finalDmg;
-    spawnFloatingNum(tElId, `-${finalDmg}`, 'pierce-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${finalDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, finalDmg);
 
     const tEl = document.getElementById(tElId);
@@ -1800,13 +1829,14 @@ async function doBambooLeaf(attacker, target, skill) {
   let totalDmg = 0;
   for (let i = 0; i < skill.hits; i++) {
     if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
-    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -1959,12 +1989,13 @@ async function doDiamondFortify(caster, skill) {
 
 async function doDiamondCollide(attacker, target, skill) {
   const tElId = getFighterElId(target);
+  const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.def * skill.defScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   applyRawDmg(attacker, target, dmg);
-  spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
