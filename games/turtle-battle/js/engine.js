@@ -1246,19 +1246,19 @@ async function doDamage(attacker, target, skill) {
     totalPierce += piercePart;
     totalShieldDmg += shieldAbs;
 
-    // Floating numbers — crit uses same color + icon, no separate "暴击!" text
+    // Floating numbers — direction based on attacker side
     const yOff = (i % 4) * 32;
-    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff);
+    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff, { atkSide: attacker.side, amount: shieldAbs });
     if (hpLoss > 0 && piercePart > 0) {
       const normalHp = Math.min(normalPart, hpLoss);
       const pierceHp = hpLoss - normalHp;
-      if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
-      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 200, yOff);
+      if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, { atkSide: attacker.side, amount: normalHp });
+      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: pierceHp });
     } else if (hpLoss > 0) {
-      spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, { atkSide: attacker.side, amount: hpLoss });
     }
     if (piercePart > 0 && shieldAbs >= totalHit) {
-      spawnFloatingNum(tElId, `穿${piercePart}`, 'pierce-dmg', 200, yOff);
+      spawnFloatingNum(tElId, `穿${piercePart}`, 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: piercePart });
     }
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
@@ -1620,7 +1620,8 @@ async function doGamblerCards(attacker, target, skill) {
 }
 
 // ── FLOATING NUMBERS — persistent 2.5s ────────────────────
-function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
+// opts: { atkSide:'left'|'right', amount:number } — optional
+function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
   setTimeout(() => {
     const parent = document.getElementById(elId);
     if (!parent) return;
@@ -1628,49 +1629,89 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset) {
     num.className = 'floating-num ' + cls;
     if (typeof text === 'string' && text.includes('<')) num.innerHTML = text;
     else num.textContent = text;
+
+    // Size scales with damage amount (14-32px, crit +20%)
+    const amount = opts && opts.amount || 0;
+    if (amount > 0) {
+      let sz = amount < 20 ? 14 : amount < 60 ? 14 + (amount-20)/40*8 : amount < 150 ? 22 + (amount-60)/90*6 : 28;
+      sz = Math.min(32, sz);
+      const isCrit = cls.startsWith('crit');
+      if (isCrit) sz = Math.min(36, sz * 1.2);
+      num.style.fontSize = sz + 'px';
+    }
+
     parent.appendChild(num);
 
-    // LOL style: pop → hold → slow float up → fade
-    const ox = (Math.random() - 0.5) * 12;
-    const y0 = -(20 + (yOffset || 0));
-    const totalDur = 1600;
-    const popEnd = 120;     // pop animation duration
-    const holdEnd = 400;    // hold still until this time
-    const fadeStart = 1100; // start fading
-    const floatDist = 35;   // total upward drift px
-    const start = performance.now();
+    // Determine animation type
+    const isDmg = cls.includes('dmg') || cls.includes('pierce') || cls === 'counter-dmg' || cls === 'death-explode' || cls === 'dot-dmg';
+    const ox = (Math.random() - 0.5) * 8;
+    const y0 = -(15 + (yOffset || 0));
 
-    function tick(now) {
-      const elapsed = now - start;
-      if (elapsed >= totalDur) { num.remove(); return; }
+    if (isDmg && opts && opts.atkSide) {
+      // ── DAMAGE: jump in attack direction, arc down, fade ──
+      // Attack from left → number jumps right; from right → jumps left
+      const dir = opts.atkSide === 'left' ? 1 : -1;
+      const jumpX = dir * (30 + Math.random() * 20);
+      const jumpY = -(25 + Math.random() * 15); // upward
+      const gravity = 300;
+      const totalDur = 1400;
+      const start = performance.now();
 
-      let scale, opacity, y;
-      if (elapsed < popEnd) {
-        // Pop: scale 0 → 1.25
-        const p = elapsed / popEnd;
-        scale = p * 1.25;
-        y = y0;
-        opacity = Math.min(1, p * 2);
-      } else if (elapsed < holdEnd) {
-        // Settle: scale 1.25 → 1.0, stay put
-        const p = (elapsed - popEnd) / (holdEnd - popEnd);
-        scale = 1.25 - 0.25 * p;
-        y = y0;
-        opacity = 1;
-      } else {
-        // Float up slowly
-        const p = (elapsed - holdEnd) / (totalDur - holdEnd);
-        const ease = p * (2 - p); // ease-out
-        scale = 1.0;
-        y = y0 - floatDist * ease;
-        opacity = elapsed > fadeStart ? 1 - (elapsed - fadeStart) / (totalDur - fadeStart) : 1;
+      function tickDmg(now) {
+        const elapsed = now - start;
+        if (elapsed >= totalDur) { num.remove(); return; }
+        const t = elapsed / 1000;
+
+        // Pop scale
+        let scale;
+        if (elapsed < 80) scale = (elapsed / 80) * 1.15;
+        else if (elapsed < 180) scale = 1.15 - 0.15 * ((elapsed - 80) / 100);
+        else scale = 1.0;
+
+        // Parabolic arc
+        const x = ox + jumpX * t * 2;
+        const y = y0 + jumpY * t * 2 + 0.5 * gravity * t * t;
+
+        // Fade in second half
+        const opacity = elapsed < 600 ? 1 : 1 - (elapsed - 600) / (totalDur - 600);
+
+        num.style.transform = `translate(calc(-50% + ${x}px), ${y}px) scale(${scale})`;
+        num.style.opacity = String(Math.max(0, opacity));
+        requestAnimationFrame(tickDmg);
       }
+      requestAnimationFrame(tickDmg);
+    } else {
+      // ── HEAL/SHIELD/STATUS: float up gently, fade ──
+      const totalDur = 1500;
+      const start = performance.now();
 
-      num.style.transform = `translate(calc(-50% + ${ox}px), ${y}px) scale(${scale})`;
-      num.style.opacity = String(Math.max(0, opacity));
-      requestAnimationFrame(tick);
+      function tickHeal(now) {
+        const elapsed = now - start;
+        if (elapsed >= totalDur) { num.remove(); return; }
+
+        let scale, opacity, y;
+        if (elapsed < 100) {
+          scale = (elapsed / 100) * 1.2;
+          y = y0;
+          opacity = Math.min(1, elapsed / 50);
+        } else if (elapsed < 350) {
+          scale = 1.2 - 0.2 * ((elapsed - 100) / 250);
+          y = y0;
+          opacity = 1;
+        } else {
+          const p = (elapsed - 350) / (totalDur - 350);
+          const ease = p * (2 - p);
+          scale = 1.0;
+          y = y0 - 30 * ease;
+          opacity = elapsed > 1000 ? 1 - (elapsed - 1000) / (totalDur - 1000) : 1;
+        }
+
+        num.style.transform = `translate(calc(-50% + ${ox}px), ${y}px) scale(${scale})`;
+        num.style.opacity = String(Math.max(0, opacity));
+        requestAnimationFrame(tickHeal);
+      }
+      requestAnimationFrame(tickHeal);
     }
-    requestAnimationFrame(tick);
     // SFX based on type
     const sfxMap = {
       'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
