@@ -1664,16 +1664,19 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       const totalDur = 1400;
       const start = performance.now();
 
+      // Base size from amount for impact pop
+      const popSize = amount < 20 ? 1.6 : amount < 60 ? 1.8 : amount < 150 ? 2.2 : 2.5;
+
       function tickDmg(now) {
         const elapsed = now - start;
         if (elapsed >= totalDur) { num.remove(); return; }
         const t = elapsed / 1000;
 
-        // Pop scale
+        // Impact pop: big → shrink to 0.5 → hold at 0.5
         let scale;
-        if (elapsed < 80) scale = (elapsed / 80) * 1.15;
-        else if (elapsed < 180) scale = 1.15 - 0.15 * ((elapsed - 80) / 100);
-        else scale = 1.0;
+        if (elapsed < 60) scale = (elapsed / 60) * popSize;           // 0 → big
+        else if (elapsed < 180) scale = popSize - (popSize - 0.5) * ((elapsed - 60) / 120);  // big → 0.5
+        else scale = 0.5;
 
         // Parabolic arc
         const x = ox + jumpX * t * 2;
