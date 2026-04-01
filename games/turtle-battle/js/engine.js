@@ -892,7 +892,38 @@ async function executeAction(action) {
       const el = document.getElementById(elId);
       if (el) el.classList.add('dead');
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
-      await sleep(1200);
+      // Spawn drone assembly particles flying toward the card
+      for (let di = 0; di < dc; di++) {
+        setTimeout(() => {
+          const particle = document.createElement('div');
+          particle.className = 'mech-drone-particle';
+          document.body.appendChild(particle);
+          const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
+          const angle = (di / dc) * Math.PI * 2;
+          const dist = 80 + Math.random() * 60;
+          const sx = cardRect.left + cardRect.width/2 + Math.cos(angle) * dist;
+          const sy = cardRect.top + cardRect.height/2 + Math.sin(angle) * dist;
+          particle.style.left = sx + 'px';
+          particle.style.top = sy + 'px';
+          requestAnimationFrame(() => {
+            particle.style.transition = 'all 0.6s ease-in';
+            particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px';
+            particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px';
+            particle.style.opacity = '0';
+            particle.style.transform = 'scale(0.3)';
+          });
+          setTimeout(() => particle.remove(), 700);
+        }, di * 100);
+      }
+      try { sfxExplosion(); } catch(e) {}
+      await sleep(800 + dc * 100);
+      // Screen flash for transform
+      const flash = document.createElement('div');
+      flash.className = 'mech-transform-flash';
+      document.body.appendChild(flash);
+      setTimeout(() => flash.remove(), 600);
+      try { sfxRebirth(); } catch(e) {}
+      await sleep(300);
       // Transform to mech
       ff.hp = ff.passive.mechHpPer * dc;
       ff.maxHp = ff.hp;
@@ -904,25 +935,27 @@ async function executeAction(action) {
       ff.alive = true; ff._deathProcessed = false;
       ff.name = '机甲';
       ff.emoji = '🤖';
-      ff.img = null; // clear original turtle image, show emoji instead
+      ff.img = null;
       ff.buffs = [];
       ff.passive = null;
       ff.skills = [{ name:'机甲攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
         brief:'机甲攻击敌方，造成{N:1.5*ATK}普通伤害',
         detail:'机甲对单体目标造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
-      if (el) el.classList.remove('dead');
+      if (el) {
+        el.classList.remove('dead');
+        el.classList.add('mech-transform-anim');
+        setTimeout(() => el.classList.remove('mech-transform-anim'), 800);
+      }
       renderFighterCard(ff, elId);
       updateHpBar(ff, elId);
-      spawnFloatingNum(elId, `机甲启动!`, 'crit-label', 0, -20);
-      await sleep(600);
+      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25);
+      await sleep(500);
       spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
-      // Allow mech to act this round — remove from actedThisSide
       const mechIdx = allFighters.indexOf(ff);
       if (actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
-      try { sfxRebirth(); } catch(e) {}
-      await sleep(800);
+      await sleep(600);
     }
   }
 
