@@ -985,9 +985,9 @@ function showPassivePopup(e, fIdx) {
   const passiveName = f.passive.name || '被动';
   if (briefText) {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div>
-      <div class="passive-popup-brief">${briefText}</div>
-      <div class="passive-popup-detail" style="display:none">${descRendered}</div>
-      <span class="passive-detail-toggle" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.previousElementSibling.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.previousElementSibling.style.display==='none'?'详细 ▾':'简略 ▴'">详细 ▾</span>`;
+      <div class="passive-popup-brief" id="passiveBrief">${briefText}</div>
+      <div class="passive-popup-detail" id="passiveDetail" style="display:none">${descRendered}</div>
+      <span class="passive-detail-toggle" onclick="togglePassiveDetail()">详细 ▾</span>`;
   } else {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div><div class="passive-popup-desc">${descRendered}</div>`;
   }
@@ -999,6 +999,16 @@ function showPassivePopup(e, fIdx) {
   popup.style.top = y + 'px';
   // Close on next click anywhere
   setTimeout(() => document.addEventListener('click', closePassivePopup, { once: true }), 10);
+}
+function togglePassiveDetail() {
+  const brief = document.getElementById('passiveBrief');
+  const detail = document.getElementById('passiveDetail');
+  const toggle = document.querySelector('.passive-detail-toggle');
+  if (!brief || !detail || !toggle) return;
+  const showing = detail.style.display !== 'none';
+  brief.style.display = showing ? 'block' : 'none';
+  detail.style.display = showing ? 'none' : 'block';
+  toggle.textContent = showing ? '详细 ▾' : '简略 ▴';
 }
 function closePassivePopup() {
   document.getElementById('passivePopup').style.display = 'none';
