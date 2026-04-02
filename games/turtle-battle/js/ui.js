@@ -195,26 +195,26 @@ function updateHpBar(f, elId) {
   }
   const oldPct = delayBar._pct || hpPct;
   if (hpPct < oldPct) {
-    // HP dropped — delay bar stays at old width (deep red), then shrinks
+    // HP dropped — delay bar holds briefly then smoothly shrinks
     delayBar.style.width = oldPct + '%';
-    delayBar.style.background = 'linear-gradient(180deg, #cc3333 0%, #991111 100%)';
-    delayBar.style.opacity = '0.8';
+    delayBar.style.background = 'linear-gradient(180deg, #ee5555 40%, #aa2222 60%)';
+    delayBar.style.opacity = '1';
     delayBar.style.transition = 'none';
-    requestAnimationFrame(() => {
-      delayBar.style.transition = 'width 0.7s ease-out 0.4s, opacity 0.7s ease-out 0.4s';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      delayBar.style.transition = 'width 0.5s ease-in-out 0.2s, opacity 0.4s ease-in 0.5s';
       delayBar.style.width = hpPct + '%';
       delayBar.style.opacity = '0';
-    });
+    }));
   } else if (hpPct > oldPct) {
-    // HP gained — delay bar flashes bright heal green
+    // HP gained — brief green flash
     delayBar.style.width = hpPct + '%';
-    delayBar.style.background = 'linear-gradient(180deg, #66ffaa 0%, #06d6a0 100%)';
-    delayBar.style.opacity = '0.6';
+    delayBar.style.background = 'linear-gradient(180deg, #66ffaa 40%, #06d6a0 60%)';
+    delayBar.style.opacity = '0.7';
     delayBar.style.transition = 'none';
-    requestAnimationFrame(() => {
-      delayBar.style.transition = 'opacity 0.5s ease-out 0.15s';
+    requestAnimationFrame(() => requestAnimationFrame(() => {
+      delayBar.style.transition = 'opacity 0.4s ease-out 0.1s';
       delayBar.style.opacity = '0';
-    });
+    }));
   }
   delayBar._pct = hpPct;
 
@@ -230,9 +230,9 @@ function updateHpBar(f, elId) {
   if (hpPct < oldPct) {
     fill.classList.add('hp-flash');
     setTimeout(() => {
-      fill.style.transition = 'filter 0.2s ease-out';
+      fill.style.transition = 'width .15s ease-out, filter 0.15s ease-out';
       fill.classList.remove('hp-flash');
-    }, 80);
+    }, 60);
   }
 
   // Shield = white bar after HP

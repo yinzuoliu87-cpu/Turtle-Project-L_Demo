@@ -197,15 +197,15 @@ body{
 }
 /* Delay trail — red on damage */
 .hp-delay{position:absolute;left:0;top:0;height:100%;z-index:0;pointer-events:none}
-/* Main HP fill — gradient for depth */
+/* Main HP fill */
 .hp-fill{
   position:absolute;left:0;top:0;height:100%;
-  transition:width .3s ease;z-index:1;
+  transition:width .15s ease-out;z-index:1;
   image-rendering:pixelated;
 }
-/* HP hit flash overlay */
+/* HP hit flash */
 .hp-fill.hp-flash{
-  filter:brightness(2.5) saturate(0.3);
+  filter:brightness(2) saturate(0.5);
   transition:filter 0s;
 }
 .shield-fill{position:absolute;top:0;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.55) 40%,rgba(200,200,220,.35) 60%);transition:width .35s ease,left .35s ease;pointer-events:none;z-index:2}
