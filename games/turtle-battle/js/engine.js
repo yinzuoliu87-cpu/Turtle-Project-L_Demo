@@ -51,9 +51,8 @@ function createFighter(petId, side) {
     _deathProcessed: false,
     _dmgDealt: 0,            // 伤害统计：总造成
     _dmgTaken: 0,            // 伤害统计：总承受
-    _physDmgDealt: 0,         // 物理伤害造成
-    _magicDmgDealt: 0,        // 魔法伤害造成
-    _trueDmgDealt: 0,         // 真实伤害造成
+    _physDmgDealt: 0, _magicDmgDealt: 0, _trueDmgDealt: 0,
+    _physDmgTaken: 0, _magicDmgTaken: 0, _trueDmgTaken: 0,
     _summon: null,            // 缩头乌龟随从
     _summonElId: null,        // 随从卡片DOM id
     _storedEnergy: 0,         // 龟壳储能值
@@ -2102,7 +2101,7 @@ function addLog(html, cls='') {
 }
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
-function applyRawDmg(source, target, amount, isPierce, _skipLink) {
+function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
@@ -2110,13 +2109,19 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink) {
   // Only host determines death — guest waits for sync
   const isGuest = gameMode === 'pvp-online' && onlineSide === 'right';
   if (target.hp <= 0 && !isGuest) target.alive = false;
-  // Real-time tracking for custom skills (doDamage tracks its own)
+  // Real-time tracking by damage type
   if (source && source._dmgDealt !== undefined) {
     source._dmgDealt += amount;
-    if (isPierce) source._pierceDmgDealt += amount;
-    else source._normalDmgDealt += amount;
+    if (dmgType === 'magic') source._magicDmgDealt = (source._magicDmgDealt||0) + amount;
+    else if (dmgType === 'true' || isPierce) source._trueDmgDealt = (source._trueDmgDealt||0) + amount;
+    else source._physDmgDealt = (source._physDmgDealt||0) + amount;
   }
-  if (target._dmgTaken !== undefined) target._dmgTaken += amount;
+  if (target._dmgTaken !== undefined) {
+    target._dmgTaken += amount;
+    if (dmgType === 'magic') target._magicDmgTaken = (target._magicDmgTaken||0) + amount;
+    else if (dmgType === 'true' || isPierce) target._trueDmgTaken = (target._trueDmgTaken||0) + amount;
+    else target._physDmgTaken = (target._physDmgTaken||0) + amount;
+  }
   updateDmgStats();
   // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner
   if (!_skipLink && target._inkLink && target._inkLink.partner && target._inkLink.partner.alive && amount > 0) {

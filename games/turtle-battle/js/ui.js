@@ -944,20 +944,29 @@ function updateDmgStats() {
   }
 
   function takenRow(f, max) {
-    const val = f._dmgTaken || 0;
-    const pct = val / max * 100;
+    const total = f._dmgTaken || 0;
+    const phys = f._physDmgTaken || 0;
+    const magic = f._magicDmgTaken || 0;
+    const trueDmg = f._trueDmgTaken || 0;
+    const physPct = total > 0 ? phys / max * 100 : 0;
+    const magicPct = total > 0 ? magic / max * 100 : 0;
+    const truePct = total > 0 ? trueDmg / max * 100 : 0;
     const side = f.side === 'left' ? 'ds-left' : 'ds-right';
     const dead = f.alive ? '' : 'ds-dead';
     return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val">${val}</div></div>
-      <div class="ds-bar-wrap"><div class="ds-bar ds-bar-taken" style="width:${pct}%"></div></div>
+      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val"><span class="ds-normal">${phys}</span>+<span class="ds-magic">${magic}</span>+<span class="ds-true">${trueDmg}</span></div></div>
+      <div class="ds-bar-wrap">
+        <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
+        <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>
+        <div class="ds-bar ds-bar-true" style="width:${truePct}%;left:${physPct+magicPct}%"></div>
+      </div>
     </div>`;
   }
 
   body.innerHTML =
     `<div class="ds-section-title">⚔造成 <span class="ds-legend"><span class="ds-normal">物</span>+<span class="ds-magic">魔</span>+<span class="ds-true">真</span></span></div>` +
     byDealt.map(f => dealtRow(f, maxDealt)).join('') +
-    `<div class="ds-section-title ds-section-gap">🛡承受</div>` +
+    `<div class="ds-section-title ds-section-gap">🛡承受 <span class="ds-legend"><span class="ds-normal">物</span>+<span class="ds-magic">魔</span>+<span class="ds-true">真</span></span></div>` +
     byTaken.map(f => takenRow(f, maxTaken)).join('');
 }
 
@@ -987,7 +996,7 @@ function showPassivePopup(e, fIdx) {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div>
       <div class="passive-popup-brief" id="passiveBrief">${briefText}</div>
       <div class="passive-popup-detail" id="passiveDetail" style="display:none">${descRendered}</div>
-      <span class="passive-detail-toggle" onclick="togglePassiveDetail()">详细 ▾</span>`;
+      <span class="passive-detail-toggle" onclick="togglePassiveDetail(event)">详细 ▾</span>`;
   } else {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div><div class="passive-popup-desc">${descRendered}</div>`;
   }
@@ -1000,7 +1009,8 @@ function showPassivePopup(e, fIdx) {
   // Close on next click anywhere
   setTimeout(() => document.addEventListener('click', closePassivePopup, { once: true }), 10);
 }
-function togglePassiveDetail() {
+function togglePassiveDetail(e) {
+  if (e) { e.stopPropagation(); e.preventDefault(); }
   const brief = document.getElementById('passiveBrief');
   const detail = document.getElementById('passiveDetail');
   const toggle = document.querySelector('.passive-detail-toggle');
@@ -1009,6 +1019,8 @@ function togglePassiveDetail() {
   brief.style.display = showing ? 'block' : 'none';
   detail.style.display = showing ? 'none' : 'block';
   toggle.textContent = showing ? '详细 ▾' : '简略 ▴';
+  // Re-register close listener so it doesn't fire from this click
+  setTimeout(() => document.addEventListener('click', closePassivePopup, { once: true }), 10);
 }
 function closePassivePopup() {
   document.getElementById('passivePopup').style.display = 'none';
