@@ -1949,7 +1949,7 @@ async function doBambooChargeAttack(attacker, target) {
   // ── 蓄力停顿 ──
   spawnFloatingNum(fElId, '🎋蓄力...', 'passive-num', 0, -20);
   try { sfxBambooCharge(); } catch(e) {}
-  await sleep(600);
+  await sleep(1000);
 
   // ── 打出强化普攻（魔法伤害，受魔抗减免） ──
   const rawDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
