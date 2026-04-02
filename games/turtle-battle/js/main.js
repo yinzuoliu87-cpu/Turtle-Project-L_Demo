@@ -392,7 +392,7 @@ function startBattle(seed) {
       if (enemies.length) {
         const target = enemies[Math.floor(Math.random() * enemies.length)];
         const dmg = Math.round(f.maxHp * f.passive.bombardPct / 100);
-        applyRawDmg(f, target, dmg, true);
+        applyRawDmg(f, target, dmg, true, false, 'true');
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'pierce-dmg', 0, 0);
         updateHpBar(target, tElId);

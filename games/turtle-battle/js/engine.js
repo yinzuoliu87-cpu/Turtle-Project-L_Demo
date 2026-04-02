@@ -199,7 +199,7 @@ async function beginTurn() {
         const eDef = Math.max(0, target.def - (f.armorPen || 0));
         const defRed = eDef / (eDef + DEF_CONSTANT);
         const finalDmg = Math.max(1, Math.round(dmg * (1 - defRed)));
-        applyRawDmg(f, target, finalDmg);
+        applyRawDmg(f, target, finalDmg, false, false, 'physical');
         totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
@@ -1577,7 +1577,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     renderStatusIcons(target);
     if (target._shockStacks >= attacker.passive.stackMax) {
       const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
-      applyRawDmg(attacker, target, sDmg);
+      applyRawDmg(attacker, target, sDmg, false, false, 'true');
       target._shockStacks = 0;
       spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', 300, 0);
     }
@@ -2077,7 +2077,7 @@ async function processLightningStorm() {
     const target = enemies[Math.floor(Math.random() * enemies.length)];
     const shockDmg = Math.round(f.atk * f.passive.shockScale);
     // Pierce damage through applyRawDmg
-    applyRawDmg(f, target, shockDmg, true);
+    applyRawDmg(f, target, shockDmg, true, false, 'true');
     const eElId = getFighterElId(target);
     spawnFloatingNum(eElId, `⚡${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);
