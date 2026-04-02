@@ -17,18 +17,21 @@ function createFighter(petId, side) {
   const hp  = Math.round(b.hp  * m);
   const atk = Math.round(b.atk * m);
   const def = Math.round(b.def * m);
+  const mr  = Math.round((b.mr !== undefined ? b.mr : b.def) * m);
   const spd = Math.round(b.spd * m);
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
     maxHp:hp, hp:hp, shield:0,
-    baseAtk:atk, baseDef:def, baseSpd:spd,
-    atk, def, spd,
+    baseAtk:atk, baseDef:def, baseMr:mr, baseSpd:spd,
+    atk, def, mr, spd,
     // Initial snapshot (never modified, for UI color comparison)
-    _initHp:hp, _initAtk:atk, _initDef:def, _initCrit: b.crit || 0.08, _initArmorPen:0, _initLifesteal:0,
+    _initHp:hp, _initAtk:atk, _initDef:def, _initMr:mr, _initCrit: b.crit || 0.08, _initArmorPen:0, _initMagicPen:0, _initLifesteal:0,
     crit: b.crit || 0.08,
     armorPen: 0,
-    armorPenPct: 0,  // 百分比穿甲：无视目标X%防御
+    armorPenPct: 0,  // 百分比护甲穿透
+    magicPen: 0,
+    magicPenPct: 0,  // 百分比魔抗穿透
     passive: b.passive || null,
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
     alive:true,
@@ -48,8 +51,9 @@ function createFighter(petId, side) {
     _deathProcessed: false,
     _dmgDealt: 0,            // 伤害统计：总造成
     _dmgTaken: 0,            // 伤害统计：总承受
-    _pierceDmgDealt: 0,      // 穿透伤害造成
-    _normalDmgDealt: 0,      // 普通伤害造成
+    _physDmgDealt: 0,         // 物理伤害造成
+    _magicDmgDealt: 0,        // 魔法伤害造成
+    _trueDmgDealt: 0,         // 真实伤害造成
     _summon: null,            // 缩头乌龟随从
     _summonElId: null,        // 随从卡片DOM id
     _storedEnergy: 0,         // 龟壳储能值
@@ -536,13 +540,16 @@ async function processBuffs() {
       if (checkBattleEnd()) return;
       continue;
     }
-    // Phoenix burn DoT (0.3×ATK + 5%maxHP per turn) — blocked by shields
+    // Burn DoT (magic damage — reduced by MR, blocked by shields)
     const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
     for (const pb of pBurns) {
-      const burnDmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+      const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+      // Reduce by MR since burn is magic damage
+      const mrRed = f.mr / (f.mr + DEF_CONSTANT);
+      const burnDmg = Math.max(1, Math.round(rawBurn * (1 - mrRed)));
       const { hpLoss, shieldAbs } = applyRawDmg(null, f, burnDmg, false, true);
       if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
-      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'dot-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
+      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
       hadTick = true;
@@ -654,18 +661,18 @@ function recalcStats() {
     // Reset to base
     f.atk = f.baseAtk;
     f.def = f.baseDef;
+    f.mr  = f.baseMr || f.baseDef;
+    // Diamond structure: amplify armor/mr buffs for all allies
+    const team = f.side === 'left' ? leftTeam : rightTeam;
+    const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
+    const defAmp = diamond ? 1 + diamond.passive.defBuffAmp / 100 : 1;
     // Apply debuffs & buffs
     for (const b of f.buffs) {
       if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
       if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
-      if (b.type === 'defUp') {
-        // Diamond structure: amplify def buffs for self AND all allies on same team
-        let amp = 1;
-        const team = f.side === 'left' ? leftTeam : rightTeam;
-        const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
-        if (diamond) amp = 1 + diamond.passive.defBuffAmp / 100;
-        f.def += Math.round(b.value * amp);
-      }
+      if (b.type === 'mrDown')  f.mr  = Math.round(f.mr  * (1 - b.value / 100));
+      if (b.type === 'defUp')   f.def += Math.round(b.value * defAmp);
+      if (b.type === 'mrUp')    f.mr  += Math.round(b.value * defAmp);
       if (b.type === 'atkUp')   f.atk += b.value;
       // Dice fate crit buff
       if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
@@ -1114,8 +1121,8 @@ function buildStateSync() {
     activeSide,
     fighters: allFighters.map(f => ({
       hp: f.hp, maxHp: f.maxHp, shield: f.shield,
-      atk: f.atk, def: f.def, baseAtk: f.baseAtk, baseDef: f.baseDef,
-      alive: f.alive, crit: f.crit, armorPen: f.armorPen, armorPenPct: f.armorPenPct,
+      atk: f.atk, def: f.def, mr: f.mr, baseAtk: f.baseAtk, baseDef: f.baseDef, baseMr: f.baseMr,
+      alive: f.alive, crit: f.crit, armorPen: f.armorPen, armorPenPct: f.armorPenPct, magicPen: f.magicPen, magicPenPct: f.magicPenPct,
       _deathProcessed: f._deathProcessed, _isMech: f._isMech,
       _inkStacks: f._inkStacks, _shockStacks: f._shockStacks,
       _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
@@ -1134,9 +1141,9 @@ function applyStateSync(state) {
     if (!allFighters[i]) return;
     const f = allFighters[i];
     f.hp = sf.hp; f.maxHp = sf.maxHp; f.shield = sf.shield;
-    f.atk = sf.atk; f.def = sf.def; f.baseAtk = sf.baseAtk; f.baseDef = sf.baseDef;
+    f.atk = sf.atk; f.def = sf.def; f.mr = sf.mr; f.baseAtk = sf.baseAtk; f.baseDef = sf.baseDef; f.baseMr = sf.baseMr;
     f.alive = sf.alive; f.crit = sf.crit;
-    f.armorPen = sf.armorPen; f.armorPenPct = sf.armorPenPct;
+    f.armorPen = sf.armorPen; f.armorPenPct = sf.armorPenPct; f.magicPen = sf.magicPen || 0; f.magicPenPct = sf.magicPenPct || 0;
     f._deathProcessed = sf._deathProcessed; f._isMech = sf._isMech;
     f._inkStacks = sf._inkStacks; f._shockStacks = sf._shockStacks;
     f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
@@ -1196,82 +1203,86 @@ async function doDamage(attacker, target, skill) {
     const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0) + overflowCritDmg) : 1;
     if (isCrit) totalCrits++;
 
-    // DEF reduction: DEF/(DEF+40), attacker's armorPen/armorPenPct reduces effective DEF
-    const effectiveDef = calcEffDef(attacker, target);
-    const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
+    // Determine damage type: physical (default), magic, true
+    const dmgType = skill.dmgType || 'physical';
 
-    // Normal damage = basePower (minus pierce portion) × crit, reduced by DEF
-    const normalBase = Math.max(0, basePower - (skill.pierce || 0));
-    let normalDmg = Math.max(1, Math.round(normalBase * critMult * (1 - defReduction)));
+    // Defense reduction based on damage type
+    const effectiveDef = calcEffDef(attacker, target, dmgType);
+    const defReduction = dmgType === 'true' ? 0 : effectiveDef / (effectiveDef + DEF_CONSTANT);
+
+    // Main damage = basePower (minus true damage flat) × crit, reduced by armor/mr
+    let trueFlat = skill.trueDmg || skill.pierce || 0;
+    if (skill.trueDmgScale || skill.pierceScale) trueFlat += Math.round(attacker.atk * (skill.trueDmgScale || skill.pierceScale));
+    const mainBase = Math.max(0, basePower - (skill.trueDmg || skill.pierce || 0));
+    let mainDmg = Math.max(1, Math.round(mainBase * critMult * (1 - defReduction)));
+
     // Passive: bonusDmgAbove60
     if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
-      normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
+      mainDmg = Math.round(mainDmg * (1 + attacker.passive.pct / 100));
     }
-    // Passive: frostAura bonus damage vs specific targets
+    // Passive: frostAura bonus vs specific targets
     if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
-      normalDmg = Math.round(normalDmg * (1 + attacker.passive.bonusDmgPct / 100));
+      mainDmg = Math.round(mainDmg * (1 + attacker.passive.bonusDmgPct / 100));
     }
     // Passive: basicTurtle — bonus damage based on target rarity
     if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
       const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
-      if (bonusPct > 0) normalDmg = Math.round(normalDmg * (1 + bonusPct / 100));
+      if (bonusPct > 0) mainDmg = Math.round(mainDmg * (1 + bonusPct / 100));
     }
-    // Fear: attacker with fear debuff deals less normal damage to the source
-    const fearBuff = attacker.buffs.find(b => b.type === 'fear' && allFighters[b.sourceId] === target);
-    if (fearBuff) {
-      normalDmg = Math.round(normalDmg * (1 - fearBuff.value / 100));
+    // Fear: reduces physical/magic damage (not true)
+    if (dmgType !== 'true') {
+      const fearBuff = attacker.buffs.find(b => b.type === 'fear' && allFighters[b.sourceId] === target);
+      if (fearBuff) mainDmg = Math.round(mainDmg * (1 - fearBuff.value / 100));
     }
-    // Gambler pierce convert: X% of normal damage becomes pierce
+    // Gambler convert: X% of main damage → true damage
     const pcBuff = attacker.buffs.find(b => b.type === 'gamblerPierceConvert');
-    let convertedPierce = 0;
-    if (pcBuff) {
-      convertedPierce = Math.round(normalDmg * pcBuff.value / 100);
-      normalDmg -= convertedPierce;
-    }
-    // Diamond structure: flat damage reduction per hit (not pierce)
-    if (target.passive && target.passive.type === 'diamondStructure') {
+    let convertedTrue = 0;
+    if (pcBuff) { convertedTrue = Math.round(mainDmg * pcBuff.value / 100); mainDmg -= convertedTrue; }
+    // Diamond structure: flat reduction per hit (physical + magic, not true)
+    if (dmgType !== 'true' && target.passive && target.passive.type === 'diamondStructure') {
       const flatReduce = Math.round(target.def * target.passive.flatReductionPct / 100);
-      normalDmg = Math.max(1, normalDmg - flatReduce);
+      mainDmg = Math.max(1, mainDmg - flatReduce);
     }
-    let normalPart = normalDmg;
-    // Pierce damage: ignores DEF entirely, but hits shield
-    let pierceFlat = skill.pierce || 0;
-    if (skill.pierceScale) pierceFlat += Math.round(attacker.atk * skill.pierceScale);
-    let piercePart = Math.round(pierceFlat * critMult) + convertedPierce;
-    // Ink mark amplification: +5% per stack
+    let mainPart = mainDmg;
+    // True damage portion: ignores all defenses, but hits shield
+    let truePart = Math.round(trueFlat * critMult) + convertedTrue;
+    // Ink mark amplification
     if (target._inkStacks > 0) {
       const inkAmp = 1 + target._inkStacks * 0.05;
-      normalPart = Math.round(normalPart * inkAmp);
-      piercePart = Math.round(piercePart * inkAmp);
+      mainPart = Math.round(mainPart * inkAmp);
+      truePart = Math.round(truePart * inkAmp);
     }
-    const totalHit = normalPart + piercePart;
+    const totalHit = mainPart + truePart;
 
-    // Damage absorption: bubbleShield → shield → HP
-    // Track normal vs pierce separately: suppress applyRawDmg auto-tracking, do it manually
-    const { hpLoss, shieldAbs } = applyRawDmg(null, target, totalHit); // null source = skip auto tracking
-    attacker._normalDmgDealt += normalPart;
-    attacker._pierceDmgDealt += piercePart;
+    // Damage absorption
+    const { hpLoss, shieldAbs } = applyRawDmg(null, target, totalHit);
+    // Track by type
+    if (dmgType === 'magic') attacker._magicDmgDealt = (attacker._magicDmgDealt||0) + mainPart;
+    else if (dmgType === 'true') attacker._trueDmgDealt = (attacker._trueDmgDealt||0) + mainPart;
+    else attacker._physDmgDealt = (attacker._physDmgDealt||0) + mainPart;
+    if (truePart > 0) attacker._trueDmgDealt = (attacker._trueDmgDealt||0) + truePart;
     attacker._dmgDealt += totalHit;
-    // target._dmgTaken already tracked by applyRawDmg via target check
     updateDmgStats();
 
-    totalDirect += normalPart;
-    totalPierce += piercePart;
+    totalDirect += mainPart;
+    totalPierce += truePart;
     totalShieldDmg += shieldAbs;
 
-    // Floating numbers — direction based on attacker side
+    // Floating number classes by damage type
+    const mainCls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
+    const trueCls = isCrit ? 'crit-true' : 'true-dmg';
     const yOff = (i % 4) * 32;
     if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff, { atkSide: attacker.side, amount: shieldAbs });
-    if (hpLoss > 0 && piercePart > 0) {
-      const normalHp = Math.min(normalPart, hpLoss);
-      const pierceHp = hpLoss - normalHp;
-      if (normalHp > 0) spawnFloatingNum(tElId, `-${normalHp}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, { atkSide: attacker.side, amount: normalHp });
-      if (pierceHp > 0) spawnFloatingNum(tElId, `-${pierceHp}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: pierceHp });
+    if (hpLoss > 0 && truePart > 0) {
+      const mainHp = Math.min(mainPart, hpLoss);
+      const trueHp = hpLoss - mainHp;
+      if (mainHp > 0) spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, yOff, { atkSide: attacker.side, amount: mainHp });
+      if (trueHp > 0) spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, yOff, { atkSide: attacker.side, amount: trueHp });
     } else if (hpLoss > 0) {
-      spawnFloatingNum(tElId, `-${hpLoss}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, { atkSide: attacker.side, amount: hpLoss });
+      spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, yOff, { atkSide: attacker.side, amount: hpLoss });
     }
-    if (piercePart > 0 && shieldAbs >= totalHit) {
-      spawnFloatingNum(tElId, `-${piercePart}`, 'pierce-dmg', 0, yOff, { atkSide: attacker.side, amount: piercePart });
+    if (truePart > 0 && shieldAbs >= totalHit) {
+      spawnFloatingNum(tElId, `-${truePart}`, trueCls, 0, yOff, { atkSide: attacker.side, amount: truePart });
     }
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
@@ -1361,11 +1372,24 @@ function applySkillDebuffs(skill, target, attacker) {
   if (skill.dot)     debuffs.push({ type:'dot',     value:skill.dot.dmg,     turns:skill.dot.turns, sourceSide: attacker ? attacker.side : null });
   if (skill.atkDown) debuffs.push({ type:'atkDown', value:skill.atkDown.pct, turns:skill.atkDown.turns });
   if (skill.defDown) debuffs.push({ type:'defDown', value:skill.defDown.pct, turns:skill.defDown.turns });
+  if (skill.mrDown)  debuffs.push({ type:'mrDown',  value:skill.mrDown.pct,  turns:skill.mrDown.turns });
 
-  // PhoenixBurn from skill (e.g. rainbow storm)
-  if (skill.phoenixBurn && target.alive) {
+  // Unified burn: 0.3*ATK + 3*maxHP, magic damage, 4 turns, no stack (refresh)
+  if (skill.burn && target.alive && attacker) {
+    const burnVal = Math.round(attacker.atk * 0.3);
+    const burnHp = 3;
+    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
+    if (existing) { existing.turns = 4; existing.value = Math.max(existing.value, burnVal); }
+    else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:4, sourceSide: attacker.side, dmgType:'magic' });
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
+    addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧4回合（魔法伤害）</span>`);
+    renderStatusIcons(target);
+  }
+  // Legacy phoenixBurn support (will migrate to burn:true)
+  if (skill.phoenixBurn && !skill.burn && target.alive) {
     const burnVal = (skill.phoenixBurn.atkPct && attacker) ? Math.round(attacker.atk * skill.phoenixBurn.atkPct / 100) : 0;
-    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns, sourceSide: attacker ? attacker.side : null });
+    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns, sourceSide: attacker ? attacker.side : null, dmgType:'magic' });
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
     addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧 ${skill.phoenixBurn.turns}回合</span>`);
@@ -1384,7 +1408,7 @@ function applySkillDebuffs(skill, target, attacker) {
     }
     // Floating indicator
     const tElId = getFighterElId(target);
-    const labels = { dot:'🔥灼烧', atkDown:'⬇️攻击', defDown:'⬇️防御' };
+    const labels = { dot:'🔥灼烧', atkDown:'⬇️攻击', defDown:'⬇️护甲', mrDown:'⬇️魔抗' };
     spawnFloatingNum(tElId, labels[d.type], 'debuff-label', 200, -10);
     addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">${labels[d.type]} ${finalTurns}回合</span>`);
   }
@@ -1737,7 +1761,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     }
     // SFX based on type
     const sfxMap = {
-      'direct-dmg': sfxHit, 'crit-dmg': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
+      'direct-dmg': sfxHit, 'magic-dmg': sfxHit, 'true-dmg': sfxPierce,
+      'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
       'pierce-dmg': sfxPierce, 'shield-dmg': sfxShieldBreak,
       'shield-num': sfxShield, 'heal-num': sfxHeal,
       'dot-dmg': sfxFire, 'counter-dmg': sfxCounter,

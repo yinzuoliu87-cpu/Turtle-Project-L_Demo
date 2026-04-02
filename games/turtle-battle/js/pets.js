@@ -13,9 +13,19 @@
    穿甲: 固定穿甲(armorPen)无视X点防御 + 百分比穿甲(armorPenPct)无视X%防御  */
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
 const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
-// 计算有效防御：先扣百分比穿甲，再扣固定穿甲
-function calcEffDef(atk, tgt) {
+// 计算有效护甲：先扣百分比穿透，再扣固定穿透
+function calcEffArmor(atk, tgt) {
   return Math.max(0, tgt.def * (1 - (atk.armorPenPct || 0)) - (atk.armorPen || 0));
+}
+// 计算有效魔抗
+function calcEffMr(atk, tgt) {
+  return Math.max(0, tgt.mr * (1 - (atk.magicPenPct || 0)) - (atk.magicPen || 0));
+}
+// 根据伤害类型获取有效防御
+function calcEffDef(atk, tgt, dmgType) {
+  if (dmgType === 'magic') return calcEffMr(atk, tgt);
+  if (dmgType === 'true') return 0;
+  return calcEffArmor(atk, tgt); // physical or default
 }
 /* Buff/Debuff effects on skills:
    dot:     { dmg, turns }       — 持续伤害(每回合开始)

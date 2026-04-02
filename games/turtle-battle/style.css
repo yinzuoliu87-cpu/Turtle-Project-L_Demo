@@ -232,21 +232,27 @@ body{
   text-shadow:0 2px 8px rgba(0,0,0,.7);
   will-change:transform,opacity;
 }
-/* Direct damage — RED */
+/* Physical damage — RED */
 .floating-num.direct-dmg{color:#ff4444;font-size:22px}
-/* Pierce damage — PURPLE (bypass shield) */
-.floating-num.pierce-dmg{color:#d06bff;font-size:20px}
-/* Shield absorbed — GREY/WHITE dim */
+/* Magic damage — BLUE */
+.floating-num.magic-dmg{color:#4dabf7;font-size:22px}
+/* True damage — LIGHT GOLD */
+.floating-num.true-dmg{color:#ffe066;font-size:22px}
+/* Legacy pierce — map to true */
+.floating-num.pierce-dmg{color:#ffe066;font-size:20px}
+/* Shield absorbed — GREY */
 .floating-num.shield-dmg{color:#aaa;font-size:16px}
 /* Heal — GREEN */
 .floating-num.heal-num{color:#06d6a0;font-size:24px}
-/* Shield gain — WHITE bright */
+/* Shield gain — WHITE */
 .floating-num.shield-num{color:#fff;font-size:22px}
-/* Crit damage — ORANGE GOLD */
+/* Crit variants — same color + icon */
 .floating-num.crit-dmg{color:#ff4444;font-size:26px}
-.floating-num.crit-pierce{color:#d06bff;font-size:24px}
+.floating-num.crit-magic{color:#4dabf7;font-size:26px}
+.floating-num.crit-true{color:#ffe066;font-size:26px}
+.floating-num.crit-pierce{color:#ffe066;font-size:24px}
 .floating-num.crit-label{color:#ffd700;font-size:14px;font-weight:900}
-.floating-num.crit-dmg::before,.floating-num.crit-pierce::before{
+.floating-num.crit-dmg::before,.floating-num.crit-magic::before,.floating-num.crit-true::before,.floating-num.crit-pierce::before{
   content:'';display:inline-block;width:20px;height:20px;
   background:url('assets/crit-dmg-icon.png') center/contain no-repeat;
   vertical-align:middle;margin-right:1px;
@@ -459,7 +465,9 @@ body{
 .skill-info{font-size:11px;color:var(--fg2)}
 /* LoL-style color-coded values */
 .val-normal{color:#ff6b6b;font-weight:700}
-.val-pierce{color:#d06bff;font-weight:700}
+.val-magic{color:#4dabf7;font-weight:700}
+.val-true{color:#ffe066;font-weight:700}
+.val-pierce{color:#ffe066;font-weight:700}
 .val-shield{color:rgba(255,255,255,.9);font-weight:700}
 .val-heal{color:#06d6a0;font-weight:700}
 .val-buff{color:#7dffb3;font-weight:700}

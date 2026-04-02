@@ -104,6 +104,7 @@ function updateFighterStats(f, elId) {
   const fIdx = allFighters.indexOf(f);
   const sc = (cur, init) => cur > init ? 'stat-up' : cur < init ? 'stat-down' : '';
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
+  const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
   const rawCrit = (f.crit || 0);
   const overflowCrit = Math.max(0, rawCrit - 1.0);
   const overflowMult = (f.passive && f.passive.overflowMult) || 1.5;
@@ -119,7 +120,8 @@ function updateFighterStats(f, elId) {
   const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
   const briefStats =
     `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击力${f.atk}</span>` +
-    `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.png')}防御${f.def}(受到伤害-${defPct}%)</span>` +
+    `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲${f.def}(物伤-${defPct}%)</span>` +
+    `<span class="${sc(f.mr||0, f._initMr||0)}">🔮魔抗${f.mr||f.def}(魔伤-${mrPct}%)</span>` +
     passiveIcon +
     `<span class="stats-toggle" onclick="toggleFighterStats(event,${fIdx})">${wasExpanded?'▴':'▾'}</span>`;
 
@@ -127,7 +129,8 @@ function updateFighterStats(f, elId) {
     `<div class="stats-detail" id="statsDetail${fIdx}" style="display:${wasExpanded?'flex':'none'}">` +
     `<span class="${sc(critPct, Math.round(f._initCrit*100))}">${ic('crit-icon.png')}暴击 ${critPct}%</span>` +
     `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-dmg-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
-    `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen}</span>` +
+    `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}护甲穿透 ${f.armorPen}</span>` +
+    `<span class="${sc(f.magicPen||0, f._initMagicPen||0)}">🔮魔抗穿透 ${f.magicPen||0}</span>` +
     `<span class="${sc(lifesteal, f._initLifesteal)}">${ic('lifesteal-icon.png')}吸血 ${lifesteal}%</span>` +
     `<span class="${dodgePct > 0 ? 'stat-up' : ''}">${ic('dodge-icon.png')}闪避 ${dodgePct}%</span>` +
     `</div>`;
@@ -369,13 +372,13 @@ function renderStatusIcons(f) {
 //   Expressions: 1.4*ATK, 0.5*ATK+2*DEF, HP*0.2, ATK*0.15*hits
 //   Conditionals not needed — just don't include optional lines
 //
-const _colorMap = { N:'val-normal', P:'val-pierce', S:'val-shield', H:'val-heal', B:'val-buff', D:'val-def' };
+const _colorMap = { N:'val-normal', P:'val-pierce', S:'val-shield', H:'val-heal', B:'val-buff', D:'val-def', M:'val-magic', T:'val-true' };
 
 function renderSkillTemplate(template, f, s) {
   if (!template) return '';
   // Build variable context
   const vars = {
-    ATK: f.atk, DEF: f.def, HP: f.maxHp, hits: s.hits || 1,
+    ATK: f.atk, DEF: f.def, MR: f.mr || f.def, HP: f.maxHp, hits: s.hits || 1,
     power: s.power || 0, pierce: s.pierce || 0, cd: s.cd || 0,
     atkScale: s.atkScale || 0, defScale: s.defScale || 0, dmgScale: s.dmgScale || 0,
     hpPct: s.hpPct || 0, arrowScale: s.arrowScale || 0,
@@ -420,7 +423,7 @@ function renderSkillTemplate(template, f, s) {
     defBuffAmp: s.defBuffAmp || (f.passive && f.passive.defBuffAmp) || 0,
   };
 
-  let result = template.replace(/\{([NPHSBD]):([^}]+)\}|\{([^}]+)\}/g, (match, color, expr, plainExpr) => {
+  let result = template.replace(/\{([NPHSBDMT]):([^}]+)\}|\{([^}]+)\}/g, (match, color, expr, plainExpr) => {
     const e = expr || plainExpr;
     const val = evalSkillExpr(e, vars);
     if (color && _colorMap[color]) {
