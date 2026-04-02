@@ -701,8 +701,10 @@ let pendingSkillIdx = null;
 let currentActingFighter = null; // the turtle currently acting (set by showActionPanel)
 
 function pickSkill(idx) {
+  if (animating || battleOver) return; // prevent double-click
   try { sfxClick(); } catch(e) {}
   const f = currentActingFighter;
+  if (!f) return;
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
@@ -744,7 +746,9 @@ function showTargetSelect(targets) {
 }
 
 function selectTarget(fi) {
+  if (animating || battleOver) return;
   const f = currentActingFighter;
+  if (!f) return;
   const skill = f.skills[pendingSkillIdx];
   executePlayerAction(f, skill, allFighters[fi]);
 }
@@ -752,6 +756,9 @@ function cancelTarget() { document.getElementById('targetSelect').style.display=
 
 function executePlayerAction(f, skill, target) {
   document.getElementById('targetSelect').style.display = 'none';
+  // Hide action panel immediately to prevent double-click
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
   const action = { attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId: target ? allFighters.indexOf(target) : -1, aoe:!!skill.aoe };
   if (gameMode === 'pvp-online') {
     if (onlineSide === 'left') {
