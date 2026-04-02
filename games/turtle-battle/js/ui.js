@@ -402,7 +402,7 @@ function renderStatusIcons(f) {
   }
   // Bamboo charge indicator with glow animation (hide after fired)
   if (f._bambooCharged && !f._bambooFired) {
-    box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击">🎋充能</span>`;
+    box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击"><img src="assets/bamboo-charge-icon.png" class="stat-icon">充能</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
