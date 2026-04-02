@@ -258,9 +258,9 @@ body{
 /* Magic damage — BLUE */
 .floating-num.magic-dmg{color:#4dabf7;font-size:22px}
 /* True damage — LIGHT GOLD */
-.floating-num.true-dmg{color:#ffe066;font-size:22px}
+.floating-num.true-dmg{color:#ffffff;font-size:22px}
 /* Legacy pierce — map to true */
-.floating-num.pierce-dmg{color:#ffe066;font-size:20px}
+.floating-num.pierce-dmg{color:#ffffff;font-size:20px}
 /* Shield absorbed — GREY */
 .floating-num.shield-dmg{color:#aaa;font-size:16px}
 /* Heal — GREEN */
@@ -270,8 +270,8 @@ body{
 /* Crit variants — same color + icon */
 .floating-num.crit-dmg{color:#ff4444;font-size:26px}
 .floating-num.crit-magic{color:#4dabf7;font-size:26px}
-.floating-num.crit-true{color:#ffe066;font-size:26px}
-.floating-num.crit-pierce{color:#ffe066;font-size:24px}
+.floating-num.crit-true{color:#ffffff;font-size:26px}
+.floating-num.crit-pierce{color:#ffffff;font-size:24px}
 .floating-num.crit-label{color:#ffd700;font-size:14px;font-weight:900}
 .floating-num.crit-dmg::before,.floating-num.crit-magic::before,.floating-num.crit-true::before,.floating-num.crit-pierce::before{
   content:'';display:inline-block;width:20px;height:20px;
@@ -481,12 +481,12 @@ body{
 .ds-bar{height:100%;border-radius:3px;transition:width .4s ease;min-width:0;position:absolute;top:0}
 .ds-bar-normal{background:rgba(255,68,68,.6);left:0}
 .ds-bar-magic{background:rgba(77,171,247,.6)}
-.ds-bar-true{background:rgba(255,224,102,.6)}
+.ds-bar-true{background:rgba(255,255,255,.6)}
 .ds-bar-pierce{background:rgba(255,224,102,.7)}
 .ds-bar-taken{background:linear-gradient(90deg,rgba(88,166,255,.7),rgba(88,166,255,.35));left:0}
 .ds-normal{color:#ff6b6b;font-size:10px}
 .ds-magic{color:#4dabf7;font-size:10px}
-.ds-true{color:#ffe066;font-size:10px}
+.ds-true{color:#ffffff;font-size:10px}
 .ds-pierce{color:#ffe066;font-size:10px}
 .ds-legend{float:right;font-size:10px;font-weight:400}
 .ds-section-title{font-size:11px;font-weight:700;color:var(--fg2);padding:6px 0 3px;border-bottom:1px solid rgba(255,255,255,.06)}
@@ -525,8 +525,8 @@ body{
 /* LoL-style color-coded values */
 .val-normal{color:#ff6b6b;font-weight:700}
 .val-magic{color:#4dabf7;font-weight:700}
-.val-true{color:#ffe066;font-weight:700}
-.val-pierce{color:#ffe066;font-weight:700}
+.val-true{color:#ffffff;font-weight:700;text-shadow:0 0 4px rgba(255,255,255,.5)}
+.val-pierce{color:#ffffff;font-weight:700;text-shadow:0 0 4px rgba(255,255,255,.5)}
 .val-shield{color:rgba(255,255,255,.9);font-weight:700}
 .val-heal{color:#06d6a0;font-weight:700}
 .val-buff{color:#7dffb3;font-weight:700}

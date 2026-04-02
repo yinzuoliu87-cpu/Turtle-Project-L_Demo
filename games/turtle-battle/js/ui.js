@@ -923,38 +923,18 @@ function updateDmgStats() {
   const maxDealt = Math.max(1, ...byDealt.map(f => f._dmgDealt));
   const maxTaken = Math.max(1, ...byTaken.map(f => f._dmgTaken));
 
-  function dealtRow(f, max) {
-    const total = f._dmgDealt || 0;
-    const phys = f._physDmgDealt || 0;
-    const magic = f._magicDmgDealt || 0;
-    const trueDmg = f._trueDmgDealt || 0;
+  function dmgRow(f, max, isDealt) {
+    const total = isDealt ? (f._dmgDealt||0) : (f._dmgTaken||0);
+    const phys = isDealt ? (f._physDmgDealt||0) : (f._physDmgTaken||0);
+    const magic = isDealt ? (f._magicDmgDealt||0) : (f._magicDmgTaken||0);
+    const trueDmg = isDealt ? (f._trueDmgDealt||0) : (f._trueDmgTaken||0);
     const physPct = total > 0 ? phys / max * 100 : 0;
     const magicPct = total > 0 ? magic / max * 100 : 0;
     const truePct = total > 0 ? trueDmg / max * 100 : 0;
     const side = f.side === 'left' ? 'ds-left' : 'ds-right';
     const dead = f.alive ? '' : 'ds-dead';
     return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val"><span class="ds-normal">${phys}</span>+<span class="ds-magic">${magic}</span>+<span class="ds-true">${trueDmg}</span></div></div>
-      <div class="ds-bar-wrap">
-        <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
-        <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>
-        <div class="ds-bar ds-bar-true" style="width:${truePct}%;left:${physPct+magicPct}%"></div>
-      </div>
-    </div>`;
-  }
-
-  function takenRow(f, max) {
-    const total = f._dmgTaken || 0;
-    const phys = f._physDmgTaken || 0;
-    const magic = f._magicDmgTaken || 0;
-    const trueDmg = f._trueDmgTaken || 0;
-    const physPct = total > 0 ? phys / max * 100 : 0;
-    const magicPct = total > 0 ? magic / max * 100 : 0;
-    const truePct = total > 0 ? trueDmg / max * 100 : 0;
-    const side = f.side === 'left' ? 'ds-left' : 'ds-right';
-    const dead = f.alive ? '' : 'ds-dead';
-    return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val"><span class="ds-normal">${phys}</span>+<span class="ds-magic">${magic}</span>+<span class="ds-true">${trueDmg}</span></div></div>
+      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val">${total}</div></div>
       <div class="ds-bar-wrap">
         <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
         <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>
@@ -964,10 +944,10 @@ function updateDmgStats() {
   }
 
   body.innerHTML =
-    `<div class="ds-section-title">⚔造成 <span class="ds-legend"><span class="ds-normal">物</span>+<span class="ds-magic">魔</span>+<span class="ds-true">真</span></span></div>` +
-    byDealt.map(f => dealtRow(f, maxDealt)).join('') +
-    `<div class="ds-section-title ds-section-gap">🛡承受 <span class="ds-legend"><span class="ds-normal">物</span>+<span class="ds-magic">魔</span>+<span class="ds-true">真</span></span></div>` +
-    byTaken.map(f => takenRow(f, maxTaken)).join('');
+    `<div class="ds-section-title"><img src="assets/atk-icon.png" class="stat-icon">造成总伤害</div>` +
+    byDealt.map(f => dmgRow(f, maxDealt, true)).join('') +
+    `<div class="ds-section-title ds-section-gap">🛡承受总伤害</div>` +
+    byTaken.map(f => dmgRow(f, maxTaken, false)).join('');
 }
 
 function toggleDmgStats() {
