@@ -195,30 +195,47 @@ function updateHpBar(f, elId) {
   }
   const oldPct = delayBar._pct || hpPct;
   if (hpPct < oldPct) {
-    // HP dropped — delay bar stays at old position, then shrinks
+    // HP dropped — delay bar stays at old width (deep red), then shrinks
     delayBar.style.width = oldPct + '%';
-    delayBar.style.background = '#ff6b6b';
-    delayBar.style.opacity = '0.6';
-    delayBar.style.transition = 'width 0.8s ease-out 0.3s, opacity 0.8s ease-out 0.3s';
+    delayBar.style.background = 'linear-gradient(180deg, #cc3333 0%, #991111 100%)';
+    delayBar.style.opacity = '0.8';
+    delayBar.style.transition = 'none';
     requestAnimationFrame(() => {
+      delayBar.style.transition = 'width 0.7s ease-out 0.4s, opacity 0.7s ease-out 0.4s';
       delayBar.style.width = hpPct + '%';
       delayBar.style.opacity = '0';
     });
   } else if (hpPct > oldPct) {
-    // HP gained — delay bar flashes heal color
+    // HP gained — delay bar flashes bright heal green
     delayBar.style.width = hpPct + '%';
-    delayBar.style.background = '#06d6a0';
-    delayBar.style.opacity = '0.5';
+    delayBar.style.background = 'linear-gradient(180deg, #66ffaa 0%, #06d6a0 100%)';
+    delayBar.style.opacity = '0.6';
     delayBar.style.transition = 'none';
     requestAnimationFrame(() => {
-      delayBar.style.transition = 'opacity 0.6s ease-out 0.2s';
+      delayBar.style.transition = 'opacity 0.5s ease-out 0.15s';
       delayBar.style.opacity = '0';
     });
   }
   delayBar._pct = hpPct;
 
   fill.style.width = hpPct + '%';
-  fill.style.background = (f.hp/f.maxHp) > 0.5 ? '#06d6a0' : (f.hp/f.maxHp) > 0.25 ? '#ffd93d' : '#ff6b6b';
+  // Pixel-style gradient based on HP ratio
+  const hpRatio = f.hp / f.maxHp;
+  if (hpRatio > 0.5) {
+    fill.style.background = 'linear-gradient(180deg, #2ee89a 0%, #06d6a0 40%, #049a74 100%)';
+  } else if (hpRatio > 0.25) {
+    fill.style.background = 'linear-gradient(180deg, #ffe066 0%, #ffd93d 40%, #cc9a00 100%)';
+  } else {
+    fill.style.background = 'linear-gradient(180deg, #ff6b6b 0%, #e03131 40%, #a01010 100%)';
+  }
+  // Hit flash: briefly brighten on damage
+  if (hpPct < oldPct) {
+    fill.classList.add('hp-flash');
+    setTimeout(() => {
+      fill.style.transition = 'filter 0.2s ease-out';
+      fill.classList.remove('hp-flash');
+    }, 80);
+  }
 
   // Shield = white bar after HP
   const shieldPct = f.shield / barMax * 100;
