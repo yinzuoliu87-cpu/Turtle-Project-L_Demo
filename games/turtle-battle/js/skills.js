@@ -1926,6 +1926,15 @@ function spawnBambooOrb(fromElId, toElId) {
     orb.style.top = (y - 11) + 'px';
     orb.style.transform = `scale(${scale})`;
     orb.style.opacity = t > 0.85 ? (1 - t) / 0.15 : 1;
+    // Trail particles every ~40ms
+    if (t > 0.05 && Math.random() < 0.5) {
+      const p = document.createElement('div');
+      p.className = 'bamboo-trail';
+      p.style.left = (x - 3 + (Math.random()-0.5)*8) + 'px';
+      p.style.top = (y - 3 + (Math.random()-0.5)*8) + 'px';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 350);
+    }
     if (t < 1) requestAnimationFrame(tick);
     else orb.remove();
   }
