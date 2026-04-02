@@ -420,7 +420,7 @@ function renderSkillTemplate(template, f, s) {
     defBuffAmp: s.defBuffAmp || (f.passive && f.passive.defBuffAmp) || 0,
   };
 
-  let result = template.replace(/\{([NPHSB]):([^}]+)\}|\{([^}]+)\}/g, (match, color, expr, plainExpr) => {
+  let result = template.replace(/\{([NPHSBD]):([^}]+)\}|\{([^}]+)\}/g, (match, color, expr, plainExpr) => {
     const e = expr || plainExpr;
     const val = evalSkillExpr(e, vars);
     if (color && _colorMap[color]) {
