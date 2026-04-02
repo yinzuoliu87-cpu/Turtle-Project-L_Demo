@@ -219,14 +219,12 @@ function updateHpBar(f, elId) {
   delayBar._pct = hpPct;
 
   fill.style.width = hpPct + '%';
-  // Two-tone: top half light, bottom half dark, hard edge
-  const hpRatio = f.hp / f.maxHp;
-  if (hpRatio > 0.5) {
-    fill.style.background = 'linear-gradient(180deg, #3deb9e 50%, #089e6b 50%)';
-  } else if (hpRatio > 0.25) {
-    fill.style.background = 'linear-gradient(180deg, #ffe566 50%, #c49500 50%)';
+  // Two-tone with slight blend: ally=green, enemy=purple
+  const isAlly = (gameMode === 'pve' && f.side === 'left') || (gameMode === 'pvp-online' && f.side === onlineSide) || (!gameMode);
+  if (isAlly) {
+    fill.style.background = 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)';
   } else {
-    fill.style.background = 'linear-gradient(180deg, #ff6b6b 50%, #a82020 50%)';
+    fill.style.background = 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
   }
   // Hit flash: briefly brighten on damage
   if (hpPct < oldPct) {
