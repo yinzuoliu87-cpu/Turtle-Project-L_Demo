@@ -77,8 +77,8 @@ const ALL_PETS = [
     ]},
   { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, mr:11, spd:12, crit:0.25,
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
-    passive:{ type:'bambooCharge', atkPct:85, selfHpPct:10, healSelfHpPct:7, hpGainAtkPct:35,
-              desc:'每隔1回合充能🎋，充能回合技能释放后追加一发强化普攻：造成 {P:ATK*0.85+HP*0.1} 真实伤害(85%ATK+10%最大HP)，回复 {H:HP*0.07} HP(7%最大HP)，并永久增加 {H:ATK*0.35} 最大生命值(35%ATK)' },
+    passive:{ type:'bambooCharge', atkPct:85, selfHpPct:12, healSelfHpPct:8, hpGainAtkPct:45, chargeDmgType:'magic',
+              desc:'每隔1回合充能🎋，充能回合技能释放后追加一发强化普攻：造成 {M:ATK*0.85+HP*0.12} 魔法伤害(85%ATK+12%最大HP)，回复 {H:HP*0.08} HP(8%最大HP)，并永久增加 {H:ATK*0.45} 最大生命值(45%ATK)' },
     skills:[
       { name:'一叶刃', type:'bambooLeaf', hits:3, power:0, pierce:0, cd:0, atkScale:0.21, selfHpPct:6,
         brief:'竹叶龟甩出3片叶刃，每段{N:0.21*ATK}+6%最大HP物理伤害',

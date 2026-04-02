@@ -333,8 +333,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         if (bEnemies.length) {
           const bTarget = (target && target.alive && target.side !== f.side) ? target : bEnemies.sort((a,b) => a.hp - b.hp)[0];
           const bp = f.passive;
-          const pierceDmg = Math.round(f.atk * bp.atkPct / 100) + Math.round(f.maxHp * bp.selfHpPct / 100);
-          applyRawDmg(f, bTarget, pierceDmg, true);
+          const rawDmg = Math.round(f.atk * bp.atkPct / 100) + Math.round(f.maxHp * bp.selfHpPct / 100);
+          const effMr = calcEffDef(f, bTarget, 'magic');
+          const mrRed = effMr / (effMr + DEF_CONSTANT);
+          const magicDmg = Math.max(1, Math.round(rawDmg * (1 - mrRed)));
+          applyRawDmg(f, bTarget, magicDmg);
           const healAmt = Math.round(f.maxHp * bp.healSelfHpPct / 100);
           f.hp = Math.min(f.maxHp, f.hp + healAmt);
           const hpGain = Math.round(f.atk * bp.hpGainAtkPct / 100);

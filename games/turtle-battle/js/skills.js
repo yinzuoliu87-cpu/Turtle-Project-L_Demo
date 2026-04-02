@@ -1951,15 +1951,19 @@ async function doBambooChargeAttack(attacker, target) {
   try { sfxBambooCharge(); } catch(e) {}
   await sleep(600);
 
-  // ── 打出强化普攻 ──
-  const pierceDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
-  applyRawDmg(attacker, target, pierceDmg, true);
+  // ── 打出强化普攻（魔法伤害，受魔抗减免） ──
+  const rawDmg = Math.round(attacker.atk * p.atkPct / 100) + Math.round(attacker.maxHp * p.selfHpPct / 100);
+  const effMr = calcEffDef(attacker, target, 'magic');
+  const mrRed = effMr / (effMr + DEF_CONSTANT);
+  const {isCrit, critMult} = calcCrit(attacker);
+  const magicDmg = Math.max(1, Math.round(rawDmg * critMult * (1 - mrRed)));
+  applyRawDmg(attacker, target, magicDmg);
   try { sfxBambooHit(); } catch(e) {}
   spawnFloatingNum(tElId, '🎋充能!', 'crit-label', 0, -20);
-  spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
-  await triggerOnHitEffects(attacker, target, pierceDmg);
+  await triggerOnHitEffects(attacker, target, magicDmg);
   updateHpBar(target, tElId);
   // ── 打中同时绿球飞出 ──
   spawnBambooOrb(tElId, fElId);
@@ -1983,7 +1987,7 @@ async function doBambooChargeAttack(attacker, target) {
   attacker._bambooFired = true;
   renderStatusIcons(attacker);
 
-  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}真实</span> <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-magic">${magicDmg}魔法</span>${isCrit?' <span class="log-crit">暴击</span>':''} <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
   await sleep(400);
 }
 
