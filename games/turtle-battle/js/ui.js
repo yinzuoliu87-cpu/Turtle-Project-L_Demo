@@ -219,14 +219,14 @@ function updateHpBar(f, elId) {
   delayBar._pct = hpPct;
 
   fill.style.width = hpPct + '%';
-  // Pixel-style: top half light, bottom half dark
+  // Two-tone: top half light, bottom half dark, hard edge
   const hpRatio = f.hp / f.maxHp;
   if (hpRatio > 0.5) {
-    fill.style.background = 'linear-gradient(180deg, #3deb9e 0%, #3deb9e 45%, #06a06a 55%, #06a06a 100%)';
+    fill.style.background = 'linear-gradient(180deg, #3deb9e 50%, #089e6b 50%)';
   } else if (hpRatio > 0.25) {
-    fill.style.background = 'linear-gradient(180deg, #ffe566 0%, #ffe566 45%, #c49500 55%, #c49500 100%)';
+    fill.style.background = 'linear-gradient(180deg, #ffe566 50%, #c49500 50%)';
   } else {
-    fill.style.background = 'linear-gradient(180deg, #ff6b6b 0%, #ff6b6b 45%, #a82020 55%, #a82020 100%)';
+    fill.style.background = 'linear-gradient(180deg, #ff6b6b 50%, #a82020 50%)';
   }
   // Hit flash: briefly brighten on damage
   if (hpPct < oldPct) {
