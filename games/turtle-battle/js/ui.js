@@ -121,7 +121,7 @@ function updateFighterStats(f, elId) {
   const briefStats =
     `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击力${f.atk}</span>` +
     `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲${f.def}(物伤-${defPct}%)</span>` +
-    `<span class="${sc(f.mr||0, f._initMr||0)}">🔮魔抗${f.mr||f.def}(魔伤-${mrPct}%)</span>` +
+    `<span class="${sc(f.mr||0, f._initMr||0)}">${ic('mr-icon.png')}魔抗${f.mr||f.def}(魔伤-${mrPct}%)</span>` +
     passiveIcon +
     `<span class="stats-toggle" onclick="toggleFighterStats(event,${fIdx})">${wasExpanded?'▴':'▾'}</span>`;
 
@@ -130,7 +130,7 @@ function updateFighterStats(f, elId) {
     `<span class="${sc(critPct, Math.round(f._initCrit*100))}">${ic('crit-icon.png')}暴击 ${critPct}%</span>` +
     `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-dmg-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
     `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}护甲穿透 ${f.armorPen}</span>` +
-    `<span class="${sc(f.magicPen||0, f._initMagicPen||0)}">🔮魔抗穿透 ${f.magicPen||0}</span>` +
+    `<span class="${sc(f.magicPen||0, f._initMagicPen||0)}">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</span>` +
     `<span class="${sc(lifesteal, f._initLifesteal)}">${ic('lifesteal-icon.png')}吸血 ${lifesteal}%</span>` +
     `<span class="${dodgePct > 0 ? 'stat-up' : ''}">${ic('dodge-icon.png')}闪避 ${dodgePct}%</span>` +
     `</div>`;
