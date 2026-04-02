@@ -1990,13 +1990,20 @@ function checkDeaths(attacker) {
 }
 
 function checkBattleEnd() {
+  // Guest: never end battle locally — host sends result via sync
+  if (gameMode === 'pvp-online' && onlineSide === 'right') return false;
   // Don't end battle if a mech transform is pending
   if (allFighters.some(f => f._pendingMech)) return false;
   const lA = leftTeam.some(f=>f.alive), rA = rightTeam.some(f=>f.alive);
   if (!lA || !rA) {
     battleOver = true;
-    unseedBattleRng(); // restore Math.random
+    unseedBattleRng();
     document.getElementById('actionPanel').classList.remove('show');
+    // Host: notify guest of battle end
+    if (gameMode === 'pvp-online' && onlineSide === 'left') {
+      sendOnline({ type:'sync', state: buildStateSync() });
+      sendOnline({ type:'battle-end', leftWon: lA });
+    }
     setTimeout(() => showResult(lA), 1200);
     return true;
   }
@@ -2099,7 +2106,9 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink) {
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
   target.hp = Math.max(0, target.hp - rem);
-  if (target.hp <= 0) target.alive = false;
+  // Only host determines death — guest waits for sync
+  const isGuest = gameMode === 'pvp-online' && onlineSide === 'right';
+  if (target.hp <= 0 && !isGuest) target.alive = false;
   // Real-time tracking for custom skills (doDamage tracks its own)
   if (source && source._dmgDealt !== undefined) {
     source._dmgDealt += amount;

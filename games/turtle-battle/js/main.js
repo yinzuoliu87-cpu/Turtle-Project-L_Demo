@@ -249,6 +249,15 @@ function handleOnlineMessage(msg) {
       // Guest receives state sync from host → patch state
       if (onlineSide === 'right') applyStateSync(msg.state);
       break;
+    case 'battle-end':
+      // Guest receives battle end from host
+      if (onlineSide === 'right') {
+        battleOver = true;
+        unseedBattleRng();
+        document.getElementById('actionPanel').classList.remove('show');
+        setTimeout(() => showResult(msg.leftWon), 1200);
+      }
+      break;
   }
 }
 
