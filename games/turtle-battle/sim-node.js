@@ -210,8 +210,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'phoenixBurnDot').forEach(pb => {
-        const dmg = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-        applyRawDmg(null, f, dmg, false, true); // burn goes through shields
+        const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+        const mrRed = (f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT);
+        const burnDmg = Math.max(1, Math.round(rawBurn * (1 - mrRed)));
+        applyRawDmg(null, f, burnDmg, false, true);
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'hot').forEach(h => { f.hp = Math.min(f.maxHp, f.hp + h.value); });
@@ -354,7 +356,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
             const dc = ff._drones.length; ff._drones = []; ff._isMech = true;
             ff.hp = ff.passive.mechHpPer * dc; ff.maxHp = ff.hp;
             ff.baseAtk = ff.passive.mechAtkPer * dc; ff.atk = ff.baseAtk;
-            ff.baseDef = 0; ff.def = 0; ff.alive = true; ff.buffs = [];
+            ff.baseDef = 0; ff.def = 0; ff.baseMr = 0; ff.mr = 0; ff.alive = true; ff.buffs = [];
             ff.passive = { type:'mechBody', droneCount:dc };
             ff.skills = [{ name: '机甲攻击', type: 'mechAttack', hits: 1, power: 0, pierce: 0, cd: 0, cdLeft: 0, atkScale: 1.5 }];
             return;
