@@ -137,8 +137,8 @@ const ALL_PETS = [
         brief:'双头龟对全体敌方造成{N:0.85*ATK}普通伤害+11%目标最大HP',
         detail:'双头龟对全体敌方造成 85%×(攻击力={ATK}) = {N:0.85*ATK} + 11%目标最大HP 普通伤害。\n冷却{cd}回合。' },
       { name:'切换近战', type:'twoHeadSwitch', hits:1, power:0, pierce:0, cd:4, switchTo:'melee',
-        brief:'切换近战：+{H:ATK*1.5}HP +{D:ATK*0.15}防 -{N:ATK*0.3}攻，获得{S:ATK*1.0}护盾',
-        detail:'双头龟切换为近战形态。\n最大HP +150%×ATK = {H:ATK*1.5}（当前HP按比例缩放）\n防御 +15%×ATK = {D:ATK*0.15}\n攻击 -30%×ATK = -{N:ATK*0.3}\n获得 100%×ATK = {S:ATK*1.0} 护盾\n冷却{cd}回合。' },
+        brief:'切换近战：+{H:ATK*1.5}HP +{D:ATK*0.25}防 -{N:ATK*0.3}攻，获得{S:ATK*1.1}护盾',
+        detail:'双头龟切换为近战形态。\n生命值增加 {H:ATK*1.5}（150%攻击力）\n防御增加 {D:ATK*0.25}（25%攻击力）\n攻击降低 {N:ATK*0.3}（30%攻击力）\n获得 {S:ATK*1.1} 护盾（110%攻击力）\n冷却{cd}回合。' },
     ],
     // 近战技能组（切换后替换）
     meleeSkills:[
@@ -149,8 +149,8 @@ const ALL_PETS = [
         brief:'双头龟造成{N:0.5*ATK}+6%目标HP普通伤害，回复16%已损生命值',
         detail:'双头龟对单体造成 50%×(攻击力={ATK}) = {N:0.5*ATK} + 6%目标最大HP 普通伤害。\n回复自身 16%已损生命值。\n冷却{cd}回合。' },
       { name:'切换远程', type:'twoHeadSwitch', hits:1, power:0, pierce:0, cd:4, switchTo:'ranged', atkScale:1.4, defReductionScale:0.1, defReductionTurns:4,
-        brief:'切换远程并打出{N:1.4*ATK}普通伤害，减目标{D:ATK*0.1}防御4回合',
-        detail:'双头龟切换为远程形态，属性还原。\n变形时打出 140%×(攻击力={ATK}) = {N:1.4*ATK} 普通伤害。\n减少目标 10%×ATK = {D:ATK*0.1} 防御值 4回合。\n冷却{cd}回合。' },
+        brief:'切换远程并打出{N:ATK*1.4}普通伤害，减目标{D:ATK*0.1}防御4回合',
+        detail:'双头龟切换为远程形态，还原所有属性。\n对目标造成 {N:ATK*1.4} 普通伤害（140%攻击力）\n减少目标 {D:ATK*0.1} 防御4回合。\n冷却{cd}回合。' },
     ],
   },
   { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',    rarity:'B',   hp:300,  atk:42,  def:9,  spd:14, crit:0.25,
