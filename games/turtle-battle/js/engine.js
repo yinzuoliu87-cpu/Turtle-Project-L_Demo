@@ -58,6 +58,10 @@ function createFighter(petId, side) {
     _auraReflect: 0,          // 龟壳觉醒反伤
     _bambooCharged: false,    // 竹叶龟竹编充能状态
     _bambooCounter: 0,       // 竹叶龟充能计数器
+    _hunterKills: 0,         // 猎人龟斩杀计数
+    _hunterStolenAtk: 0,     // 猎人龟累计吸收攻击
+    _hunterStolenDef: 0,     // 猎人龟累计吸收防御
+    _hunterStolenHp: 0,      // 猎人龟累计吸收HP
     _diamondCollideCount: {},  // 钻石龟碰撞计数 {fighterIdx: count}
     _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
     _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
@@ -1904,6 +1908,10 @@ function checkDeaths(attacker) {
         const sDef = Math.round(f.baseDef * attacker.passive.stealPct / 100);
         const sHp  = Math.round(f.maxHp   * attacker.passive.stealPct / 100);
         attacker.baseAtk += sAtk; attacker.baseDef += sDef; attacker.maxHp += sHp; attacker.hp += sHp;
+        attacker._hunterKills = (attacker._hunterKills || 0) + 1;
+        attacker._hunterStolenAtk = (attacker._hunterStolenAtk || 0) + sAtk;
+        attacker._hunterStolenDef = (attacker._hunterStolenDef || 0) + sDef;
+        attacker._hunterStolenHp = (attacker._hunterStolenHp || 0) + sHp;
         if (attacker.passive.lifesteal) attacker._lifestealPct = (attacker._lifestealPct || 0) + attacker.passive.lifesteal;
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `+${sAtk}攻+${sDef}防+${sHp}HP`, 'passive-num', 300, 0);
@@ -1974,6 +1982,10 @@ async function processHunterKill() {
         const sDef = Math.round(e.baseDef * f.passive.stealPct / 100);
         const sHp  = Math.round(e.maxHp   * f.passive.stealPct / 100);
         f.baseAtk += sAtk; f.baseDef += sDef; f.maxHp += sHp; f.hp += sHp;
+        f._hunterKills = (f._hunterKills || 0) + 1;
+        f._hunterStolenAtk = (f._hunterStolenAtk || 0) + sAtk;
+        f._hunterStolenDef = (f._hunterStolenDef || 0) + sDef;
+        f._hunterStolenHp = (f._hunterStolenHp || 0) + sHp;
         // Lifesteal: stacks with each kill
         if (f.passive.lifesteal) {
           f._lifestealPct = (f._lifestealPct || 0) + f.passive.lifesteal;

@@ -127,7 +127,7 @@ const ALL_PETS = [
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
               desc:'双头龟可在远程和近战形态间切换。\n基础属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为远程形态，切换近战时：\n生命值增加 {H:ATK*1.5}（150%攻击力）\n防御增加 {D:ATK*0.25}（25%攻击力）\n攻击降低 {N:ATK*0.3}（30%攻击力）\n获得 {S:ATK*1.1} 护盾（110%攻击力）\n\n切换远程时还原所有属性，并对目标造成140%ATK伤害+减防。',
-              descMelee:'双头龟可在远程和近战形态间切换。\n当前属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为近战形态，切换远程时：\n还原生命值（按比例缩放）\n还原防御和攻击至原始值\n对目标造成 {N:ATK*1.4} 普通伤害（140%ATK）\n减少目标 {D:ATK*0.1} 防御4回合' },
+              descMelee:'双头龟可在远程和近战形态间切换。\n当前属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为近战形态，切换远程时：\n生命值还原为远程形态（当前HP按比例缩放）\n攻击还原为 {N:ATK+ATK*0.3}（当前{N:ATK}+恢复{N:ATK*0.3}）\n防御还原为 {D:DEF-ATK*0.25}（当前{D:DEF}-失去{D:ATK*0.25}）\n对目标造成 {N:ATK*1.4} 普通伤害（140%ATK）\n减少目标 {D:ATK*0.1} 防御4回合' },
     // 远程技能组（默认）
     skills:[
       { name:'魔法波', type:'twoHeadMagicWave', hits:4, power:0, pierce:0, cd:0, atkScale:0.4,
@@ -242,7 +242,7 @@ const ALL_PETS = [
     ]},
   { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',    rarity:'A',   hp:320,  atk:42,  def:12, spd:14, crit:0.25,
     img:'../../assets/pets/猎人龟v1.png', sprite:{frames:15,frameW:500,frameH:500,duration:1500},
-    passive:{ type:'hunterKill', hpThresh:18, stealPct:20, lifesteal:10, desc:'任意攻击后猎杀HP<18%敌人，获取20%属性+10%吸血' },
+    passive:{ type:'hunterKill', hpThresh:18, stealPct:20, lifesteal:10, desc:'每次行动后检查，HP低于18%的敌人直接斩杀。\n斩杀或击杀敌人时，获取对方20%基础属性（攻击/防御/HP）并叠加10%生命偷取。\n\n已斩杀 {B:hunterKills} 只敌方单位\n累计获得：攻击+{N:hunterStolenAtk} 防御+{D:hunterStolenDef} HP+{H:hunterStolenHp} 吸血{B:lifesteal}%' },
     skills:[
       { name:'射箭',     type:'hunterShot', hits:3, power:0, pierce:0, cd:0, atkScale:0.5, execThresh:40, execCrit:40, execCritDmg:20,
         brief:'猎人龟打击3段，共{N:0.5*ATK*3}普通伤害，对低生命敌人获得额外暴击率和爆伤',
