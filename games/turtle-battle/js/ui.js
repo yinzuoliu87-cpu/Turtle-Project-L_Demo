@@ -185,16 +185,21 @@ function updateHpBar(f, elId) {
   const hpPct = Math.max(0, f.hp / barMax * 100);
   const fill = card.querySelector('.hp-fill');
 
-  // Delay bar: shows trailing effect on HP loss / heal / shield change
+  // Delay bar: shows trailing effect on ACTUAL HP loss / heal only
   let delayBar = card.querySelector('.hp-delay');
   if (!delayBar) {
     delayBar = document.createElement('div');
     delayBar.className = 'hp-delay';
     card.querySelector('.hp-bar').insertBefore(delayBar, fill);
     delayBar._pct = hpPct;
+    delayBar._hp = f.hp;
   }
   const oldPct = delayBar._pct || hpPct;
-  if (hpPct < oldPct) {
+  const oldHp = delayBar._hp !== undefined ? delayBar._hp : f.hp;
+  const hpActuallyDropped = f.hp < oldHp;
+  const hpActuallyGained = f.hp > oldHp;
+  delayBar._hp = f.hp;
+  if (hpActuallyDropped) {
     // HP dropped — delay bar holds briefly then smoothly shrinks
     delayBar.style.width = oldPct + '%';
     delayBar.style.background = 'linear-gradient(180deg, #ee5555 40%, #aa2222 60%)';
@@ -205,7 +210,7 @@ function updateHpBar(f, elId) {
       delayBar.style.width = hpPct + '%';
       delayBar.style.opacity = '0';
     }));
-  } else if (hpPct > oldPct) {
+  } else if (hpActuallyGained) {
     // HP gained — brief green flash
     delayBar.style.width = hpPct + '%';
     delayBar.style.background = 'linear-gradient(180deg, #66ffaa 40%, #06d6a0 60%)';
@@ -226,8 +231,8 @@ function updateHpBar(f, elId) {
   } else {
     fill.style.background = 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
   }
-  // Hit flash: briefly brighten on damage
-  if (hpPct < oldPct) {
+  // Hit flash: briefly brighten on actual HP damage
+  if (hpActuallyDropped) {
     fill.classList.add('hp-flash');
     setTimeout(() => {
       fill.style.transition = 'width .15s ease-out, filter 0.15s ease-out';
