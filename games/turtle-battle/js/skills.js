@@ -49,11 +49,11 @@ async function doGamblerDraw(caster, _skill) {
     caster._extraCritDmgPerm = (caster._extraCritDmgPerm || 0) + 0.15;
     caster.buffs.push({ type:'gamblerPierceConvert', value:20, turns:3 });
     spawnFloatingNum(fElId, `🃏强化牌`, 'crit-label', 0, -20);
-    spawnFloatingNum(fElId, `+ATK+暴击+爆伤+穿透`, 'passive-num', 200, 0);
+    spawnFloatingNum(fElId, `+ATK+暴击+爆伤+转真实`, 'passive-num', 200, 0);
     recalcStats();
     renderStatusIcons(caster);
     updateFighterStats(caster, fElId);
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转穿透 3回合</span>`);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转真实 3回合</span>`);
   }
   await sleep(1000);
 }
@@ -102,7 +102,7 @@ async function doGamblerBet(attacker, target, skill) {
     // Multi-hit passive (boosted to 60% for this skill)
     await tryGamblerMultiHit(attacker, target, tElId);
   }
-  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>（每段含${piercePer}穿透）`);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>（每段含${piercePer}真实）`);
 
   // Remove temporary multi-hit bonus after this skill
   attacker._multiBonus = Math.max(0, (attacker._multiBonus || 0) - skill.multiBonus);
@@ -212,7 +212,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
       spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
       await triggerOnHitEffects(caster, target, dmg);
       updateHpBar(target, tElId);
-      addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${dmg}普通伤害</span>`);
+      addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${dmg}物理伤害</span>`);
       // Def reduction
       if (skill.defReductionScale) {
         const defRedVal = Math.round(caster.atk * skill.defReductionScale);
@@ -651,8 +651,8 @@ async function doIceSpike(attacker, target, skill) {
 
   // Log
   const parts = [];
-  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
-  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}物理</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}真实</span>`);
   if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
   addLog(`${attacker.emoji}${attacker.name} <b>冰锥</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}`);
 
@@ -694,7 +694,7 @@ async function doIceFrost(attacker, skill) {
     if (eEl) { eEl.classList.remove('hit-shake'); }
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体：<span class="log-pierce">${totalDmg}穿透伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体：<span class="log-pierce">${totalDmg}真实伤害</span>`);
 }
 
 // ── ANGEL TURTLE SKILLS ───────────────────────────────────
@@ -797,8 +797,8 @@ async function doAngelEquality(attacker, target, skill) {
 
   // Log
   const parts = [];
-  parts.push(`<span class="log-direct">普通${Math.round(attacker.atk * skill.normalScale)}</span>`);
-  parts.push(`<span class="log-pierce">穿透${Math.round(attacker.atk * skill.pierceScale)}</span>`);
+  parts.push(`<span class="log-direct">魔法${Math.round(attacker.atk * skill.normalScale)}</span>`);
+  parts.push(`<span class="log-pierce">真实${Math.round(attacker.atk * skill.pierceScale)}</span>`);
   if (skill._judgeTotal > 0) parts.push(`<span class="log-passive">⚖裁决${skill._judgeTotal}</span>`);
   if (isCrit) parts.push(`<span class="log-crit">暴击</span>`);
   addLog(`${attacker.emoji}${attacker.name} <b>平等</b> → ${target.emoji}${target.name}：${parts.join(' + ')}${isHighRarity ? ' <span class="log-crit">[克制S级以上]</span>' : ''}`);
@@ -872,7 +872,7 @@ async function doFortuneAllIn(attacker, target, skill) {
     if (tEl) tEl.classList.remove('hit-shake');
   }
   updateHpBar(target, tElId);
-  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalNormal}普通</span> + <span class="log-pierce">${totalPierce}穿透</span>（${coins}枚金币）`);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalNormal}物理</span> + <span class="log-pierce">${totalPierce}真实</span>（${coins}枚金币）`);
   await sleep(600);
 }
 
@@ -986,7 +986,7 @@ function checkStarBurst(f, target) {
   applyRawDmg(f, target, finalBurst, true);
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `⭐${finalBurst}`, 'pierce-dmg', 200, -20);
-  addLog(`${f.emoji}${f.name} <span class="log-passive">⭐星能爆发！</span>${target.emoji}${target.name} ${finalBurst} <span class="log-pierce">穿透伤害</span>`);
+  addLog(`${f.emoji}${f.name} <span class="log-passive">⭐星能爆发！</span>${target.emoji}${target.name} ${finalBurst} <span class="log-pierce">真实伤害</span>`);
   try { sfxExplosion(); } catch(e) {}
   return finalBurst;
 }
@@ -1024,7 +1024,7 @@ async function doStarBeam(attacker, target, skill) {
     await sleep(200);
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>星光射线</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}普通伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>星光射线</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}魔法伤害</span>`);
 
   // Check star burst after all hits
   if (target.alive) checkStarBurst(attacker, target);
@@ -1045,7 +1045,7 @@ async function doStarWormhole(attacker, target, skill) {
   });
   spawnFloatingNum(tElId, '🌀虫洞', 'debuff-label', 0, 0);
   renderStatusIcons(target);
-  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">穿透+${skill.pierceBonusPct}% 普伤+${skill.normalBonusPct}% ${skill.duration}回合</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% 魔伤+${skill.normalBonusPct}% ${skill.duration}回合</span>`);
   await sleep(800);
 }
 
@@ -1087,7 +1087,7 @@ async function doStarMeteor(attacker, skill) {
   }
   recalcStats();
   renderStatusIcons(attacker);
-  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}普通</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}穿透(每人)</span>` : ''} + 防御-${skill.defDown.pct}%`);
+  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}魔法</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}真实(每人)</span>` : ''} + 防御-${skill.defDown.pct}%`);
   await sleep(800);
 }
 
@@ -1215,7 +1215,7 @@ async function doNinjaShuriken(attacker, target, skill) {
     const pierceDmg = Math.round(baseDmg * critMult);
     applyRawDmg(attacker, target, pierceDmg);
     spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0);
-    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}穿透</span>`);
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}真实</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
     const effectiveDef = calcEffDef(attacker, target);
@@ -1325,7 +1325,7 @@ async function doHunterBarrage(attacker, skill) {
     await sleep(280);
     if (tEl) tEl.classList.remove('hit-shake');
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭：<span class="log-pierce">${totalDmg}穿透</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''}`);
+  addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> ${skill.hits}根箭：<span class="log-pierce">${totalDmg}真实</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''}`);
 }
 
 async function doHunterStealth(attacker, target, skill) {
@@ -1454,8 +1454,8 @@ async function doShellStrike(attacker, target, skill) {
 
   // Log
   const parts = [];
-  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}伤害</span>`);
-  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}物理</span>`);
+  if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}真实</span>`);
   if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
   const splashNote = skill.splashPct > 0 ? ` (每段溅射${skill.splashPct}%)` : '';
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}${splashNote}`);
@@ -1634,7 +1634,7 @@ async function doLineSketch(attacker, target, skill) {
     if (tEl) tEl.classList.remove('hit-shake');
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>素描</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}普通伤害</span>（墨迹${target._inkStacks}层）`);
+  addLog(`${attacker.emoji}${attacker.name} <b>素描</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}物理伤害</span>（墨迹${target._inkStacks}层）`);
 }
 
 async function doLineLink(attacker, target, skill) {
@@ -1679,9 +1679,9 @@ async function doLineLink(attacker, target, skill) {
     renderStatusIcons(target);
     renderStatusIcons(second);
 
-    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b>：连接${target.emoji}${target.name}与${second.emoji}${second.name} ${skill.duration}回合（伤害传递${skill.transferPct}%穿透）`);
+    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b>：连接${target.emoji}${target.name}与${second.emoji}${second.name} ${skill.duration}回合（伤害传递${skill.transferPct}%真实）`);
   } else {
-    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg1}普通伤害</span>+墨迹（无第二目标，无法建立连接）`);
+    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg1}物理伤害</span>+墨迹（无第二目标，无法建立连接）`);
   }
   await sleep(800);
 }
@@ -1720,7 +1720,7 @@ async function doLineFinish(attacker, target, skill) {
   renderStatusIcons(target);
   // If linked partner, also clear partner's stacks? No — only clear targeted stacks.
 
-  addLog(`${attacker.emoji}${attacker.name} <b>画龙点睛</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}普通</span> + <span class="log-pierce">${pierceDmg}穿透</span>（${stacks}层墨迹引爆）`);
+  addLog(`${attacker.emoji}${attacker.name} <b>画龙点睛</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}物理</span> + <span class="log-pierce">${pierceDmg}真实</span>（${stacks}层墨迹引爆）`);
   await sleep(800);
 }
 
@@ -1750,7 +1750,7 @@ async function doGhostTouch(attacker, target, skill) {
   await sleep(700);
   if (tEl) tEl.classList.remove('hit-shake');
 
-  addLog(`${attacker.emoji}${attacker.name} <b>幽魂触碰</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}普通</span> + <span class="log-pierce">${pierceDmg}穿透</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>幽魂触碰</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}物理</span> + <span class="log-pierce">${pierceDmg}真实</span>`);
 }
 
 async function doGhostPhase(caster, skill) {
@@ -1799,7 +1799,7 @@ async function doGhostStorm(attacker, target, skill) {
     renderStatusIcons(target);
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>灵魂风暴</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-pierce">${totalPierce}穿透</span> + 诅咒${skill.dotTurns}回合`);
+  addLog(`${attacker.emoji}${attacker.name} <b>灵魂风暴</b> ${skill.hits}段 → ${target.emoji}${target.name}：<span class="log-pierce">${totalPierce}真实</span> + 诅咒${skill.dotTurns}回合`);
 }
 
 // ── ICE SHIELD (寒冰龟) ─────────────────────────────────
@@ -1964,7 +1964,7 @@ async function doBambooChargeAttack(attacker, target) {
   attacker._bambooFired = true;
   renderStatusIcons(attacker);
 
-  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}穿透</span> <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-pierce">${pierceDmg}真实</span> <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
   await sleep(400);
 }
 
@@ -2083,7 +2083,7 @@ async function doDiceAllIn(attacker, skill) {
       updateHpBar(attacker, fElId);
     }
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${totalDmg}穿透</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + 10%吸血`);
+  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${totalDmg}真实</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + 10%吸血`);
   await sleep(500);
 }
 

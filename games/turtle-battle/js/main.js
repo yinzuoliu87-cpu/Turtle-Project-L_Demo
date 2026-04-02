@@ -387,7 +387,7 @@ function startBattle(seed) {
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'pierce-dmg', 0, 0);
         updateHpBar(target, tElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}穿透伤害</span>`);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);
       }
     }
     // Summon ally: create a random C/B/A turtle as summon

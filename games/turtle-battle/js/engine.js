@@ -213,7 +213,7 @@ async function beginTurn() {
         if (tEl) tEl.classList.remove('hit-shake');
       }
       if (droneCount > 0) {
-        addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}伤害</span>`);
+        addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
       }
     }
     // Passive: auraAwaken — awaken at turn N with full stat boost
@@ -357,7 +357,7 @@ async function beginTurn() {
         const tElId = getFighterElId(t);
         spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', 0, 0);
         updateHpBar(t, tElId);
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">⚡电击${t.emoji}${t.name} ${sDmg}穿透</span>`);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">⚡电击${t.emoji}${t.name} ${sDmg}真实</span>`);
       }
     }
   }
@@ -1032,10 +1032,10 @@ async function executeAction(action) {
       ff.emoji = '🤖';
       ff.img = null;
       ff.buffs = [];
-      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n防御力 = 0，暴击率 = 25%\n每回合自动攻击血量最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 普通伤害。` };
+      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n防御力 = 0，暴击率 = 25%\n每回合自动攻击血量最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
-        brief:'机甲自动攻击血量最低的敌人，造成{N:1.5*ATK}普通伤害',
-        detail:'机甲自动锁定血量最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 普通伤害。' }];
+        brief:'机甲自动攻击血量最低的敌人，造成{N:1.5*ATK}物理伤害',
+        detail:'机甲自动锁定血量最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) {
         el.classList.remove('dead');
@@ -1328,7 +1328,7 @@ async function doDamage(attacker, target, skill) {
       const aElId = getFighterElId(attacker);
       spawnFloatingNum(aElId, `-${counterDmg}`, 'counter-dmg', 0, 0);
       updateHpBar(attacker, aElId);
-      addLog(`${target.emoji}${target.name} <span class="log-passive">反击！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${counterDmg}伤害</span>`);
+      addLog(`${target.emoji}${target.name} <span class="log-passive">反击！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${counterDmg}物理</span>`);
       if (attacker.hp <= 0) attacker.alive = false;
     }
   }
@@ -1337,8 +1337,8 @@ async function doDamage(attacker, target, skill) {
   const h = hits > 1 ? ` ${hits}段` : '';
   const parts = [];
   if (totalShieldDmg > 0) parts.push(`<span class="log-shield-dmg">${totalShieldDmg}护盾</span>`);
-  if (totalDirect > 0)    parts.push(`<span class="log-direct">${totalDirect}伤害</span>`);
-  if (totalPierce > 0)    parts.push(`<span class="log-pierce">${totalPierce}穿透</span>`);
+  if (totalDirect > 0)    parts.push(`<span class="log-direct">${totalDirect}物理</span>`);
+  if (totalPierce > 0)    parts.push(`<span class="log-pierce">${totalPierce}真实</span>`);
   if (totalCrits > 0)     parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b>${h} → ${target.emoji}${target.name}：${parts.join(' + ')}`);
 
@@ -1653,7 +1653,7 @@ async function doGamblerCards(attacker, target, skill) {
     await sleep(200);
     await tryGamblerMultiHit(attacker, target, tElId);
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>卡牌射击</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>卡牌射击</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}物理</span>`);
 }
 
 // ── FLOATING NUMBERS — persistent 2.5s ────────────────────
@@ -1887,7 +1887,7 @@ function checkDeaths(attacker) {
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
         updateHpBar(attacker, aElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">死亡爆炸！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${dmg}伤害</span>`);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">死亡爆炸！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${dmg}物理</span>`);
         if (attacker.hp <= 0) { attacker.alive = false; }
       }
 
@@ -1900,7 +1900,7 @@ function checkDeaths(attacker) {
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
         updateHpBar(attacker, aElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">钩锁！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-pierce">${dmg}穿透伤害</span>`);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">钩锁！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-pierce">${dmg}真实伤害</span>`);
         if (attacker.hp <= 0) { attacker.alive = false; }
       }
 
@@ -2055,7 +2055,7 @@ async function processLightningStorm() {
     const eElId = getFighterElId(target);
     spawnFloatingNum(eElId, `⚡${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);
-    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce">⚡电击${target.emoji}${target.name} ${shockDmg}穿透</span>`);
+    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce">⚡电击${target.emoji}${target.name} ${shockDmg}真实</span>`);
     // Trigger on-hit effects (shock stack, trap, reflect, etc.)
     await triggerOnHitEffects(f, target, shockDmg);
     checkDeaths(f);
