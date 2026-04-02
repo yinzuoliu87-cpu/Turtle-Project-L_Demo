@@ -395,7 +395,7 @@ nav{position:sticky;top:0;z-index:300;height:52px;
 .sb-stat-streak{color:#059669;}
 
 /* ── Pet Scene ── */
-.sb-pet-scene{display:block;position:relative;height:180px;overflow:hidden;cursor:pointer;text-decoration:none;color:inherit;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-pet-scene{display:block;position:relative;height:180px;overflow:hidden;cursor:pointer;text-decoration:none;color:inherit;}
 .sb-pet-scene:hover .sb-pet-enter{opacity:1;}
 .sb-pet-sky{position:absolute;inset:0;background:url('assets/petbg.png') center bottom/cover no-repeat;}
 .sb-pet-cloud{position:absolute;border-radius:50px;background:rgba(255,255,255,.06);}
@@ -421,12 +421,12 @@ nav{position:sticky;top:0;z-index:300;height:52px;
 .sb-pet-badges{position:absolute;top:10px;left:10px;z-index:10;display:flex;gap:6px;}
 .sb-pet-badge{background:rgba(255,255,255,.7);backdrop-filter:blur(4px);border:1px solid rgba(255,255,255,.4);border-radius:6px;padding:2px 6px;font-size:9px;font-weight:600;color:#475569;}
 /* ── Pet Info Bar (above scene) ── */
-.sb-pet-info-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-bottom:1px solid rgba(255,255,255,.08);}
+.sb-pet-info-bar{display:flex;align-items:center;justify-content:space-between;padding:8px 12px;border-top:1px solid rgba(255,255,255,.08);}
 .sb-pet-coins{font-family:'Fredoka';font-size:13px;font-weight:700;color:#ffd93d;}
 .sb-pet-stamina{display:flex;align-items:center;gap:4px;font-size:10px;font-weight:700;color:rgba(255,255,255,.6);}
 .sb-stamina-bar{width:36px;height:4px;background:rgba(255,255,255,.15);border-radius:2px;overflow:hidden;}
 .sb-stamina-fill{height:100%;background:linear-gradient(90deg,#34d399,#2dd4bf);border-radius:2px;transition:width .5s;}
-[data-theme="light"] .sb-pet-info-bar{border-bottom-color:rgba(26,24,37,.08);}
+[data-theme="light"] .sb-pet-info-bar{border-top-color:rgba(26,24,37,.08);}
 [data-theme="light"] .sb-pet-coins{color:#b8860b;}
 [data-theme="light"] .sb-pet-stamina{color:rgba(26,24,37,.5);}
 [data-theme="light"] .sb-stamina-bar{background:rgba(26,24,37,.1);}
@@ -471,7 +471,7 @@ nav{position:sticky;top:0;z-index:300;height:52px;
 [data-theme="light"] .sb-pet-ground{background:linear-gradient(180deg,rgba(16,185,129,.35),rgba(16,185,129,.5));}
 [data-theme="light"] .sb-grass-edge{fill:rgba(16,185,129,.5);}
 [data-theme="light"] .sb-tuft div{background:rgba(16,185,129,.5);}
-[data-theme="light"] .sb-pet-scene{border-bottom-color:rgba(26,24,37,.08);}
+[data-theme="light"] .sb-pet-scene{}
 [data-theme="light"] .sb-nav{border-bottom-color:rgba(26,24,37,.08);}
 [data-theme="light"] .sb-nav-hd{color:var(--muted);}
 [data-theme="light"] .sb-nav .nt{color:var(--ink);}
