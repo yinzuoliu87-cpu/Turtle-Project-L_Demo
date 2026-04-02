@@ -425,10 +425,14 @@ body{
 .ds-bar-wrap{height:8px;background:rgba(255,255,255,.05);border-radius:3px;overflow:hidden;position:relative}
 .ds-bar{height:100%;border-radius:3px;transition:width .4s ease;min-width:0;position:absolute;top:0}
 .ds-bar-normal{background:rgba(255,68,68,.6);left:0}
-.ds-bar-pierce{background:rgba(208,107,255,.7)}
+.ds-bar-magic{background:rgba(77,171,247,.6)}
+.ds-bar-true{background:rgba(255,224,102,.6)}
+.ds-bar-pierce{background:rgba(255,224,102,.7)}
 .ds-bar-taken{background:linear-gradient(90deg,rgba(88,166,255,.7),rgba(88,166,255,.35));left:0}
 .ds-normal{color:#ff6b6b;font-size:10px}
-.ds-pierce{color:#d06bff;font-size:10px}
+.ds-magic{color:#4dabf7;font-size:10px}
+.ds-true{color:#ffe066;font-size:10px}
+.ds-pierce{color:#ffe066;font-size:10px}
 .ds-legend{float:right;font-size:10px;font-weight:400}
 .ds-section-title{font-size:11px;font-weight:700;color:var(--fg2);padding:6px 0 3px;border-bottom:1px solid rgba(255,255,255,.06)}
 .ds-section-gap{margin-top:8px}

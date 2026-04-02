@@ -46,7 +46,7 @@ const ALL_PETS = [
   //   shieldOnHit      — 受击时获得X护盾(每回合1次)
   //   healOnKill       — 击杀时恢复X%最大HP
   //   counterAttack    — X%概率反击(造成基础攻击50%伤害)
-  { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:39,  def:13, spd:10, crit:0.25,
+  { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:39,  def:13, mr:11, spd:10, crit:0.25,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     passive:{ type:'basicTurtle', bonusMap:{C:20,B:23,A:26,S:29,SS:32,SSS:34},
               desc:'攻击时按目标稀有度增伤：C+20% B+23% A+26% S+29% SS+32% SSS+34%' },
@@ -61,7 +61,7 @@ const ALL_PETS = [
         brief:'小龟发射10段共{N:2.9*ATK}普通伤害随机分布敌方',
         detail:'小龟对敌方发射10段攻击，随机分布。\n共 290%×(攻击力={ATK}) = {N:2.9*ATK} 普通伤害。\n冷却{cd}回合。' },
     ]},
-  { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:35,  def:18, spd:6, crit:0.25,
+  { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:35,  def:18, mr:15, spd:6, crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'stoneWall', defGain:2, maxDef:16, reflectBase:10, reflectPerDef:1, desc:'每回合+2防御(上限+16)；受伤反弹 (10%+1%×防御={DEF}) = {N:10+DEF}% 伤害' },
     skills:[
@@ -75,7 +75,7 @@ const ALL_PETS = [
         brief:'石头龟为友方提升防御{B:DEF*0.2}点（{defUpPctVal}%），持续{defUpPctTurns}回合',
         detail:'石头龟为友方单体目标提升防御 {defUpPctVal}% = {B:DEF*0.2}点，持续{defUpPctTurns}回合。\n冷却{cd}回合。' },
     ]},
-  { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, spd:12, crit:0.25,
+  { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, mr:11, spd:12, crit:0.25,
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
     passive:{ type:'bambooCharge', atkPct:85, selfHpPct:10, healSelfHpPct:7, hpGainAtkPct:35,
               desc:'每隔1回合充能🎋，充能回合技能释放后追加一发强化普攻：造成 {P:ATK*0.85+HP*0.1} 穿透伤害(85%ATK+10%最大HP)，回复 {H:HP*0.07} HP(7%最大HP)，并永久增加 {H:ATK*0.35} 最大生命值(35%ATK)' },
@@ -88,7 +88,7 @@ const ALL_PETS = [
         detail:'竹叶龟回复 10%×(最大HP={HP}) = {H:HP*0.1} HP。\n为存活队友施加 12%×(最大HP={HP}) = {S:HP*0.12} 护盾，持续3回合。\n如果没有存活队友，改为回复 15%×(最大HP={HP}) = {H:HP*0.15} HP。\n冷却{cd}回合。' },
     ]},
   // B级
-  { id:'angel',     name:'天使龟',   emoji:'😇🐢',    rarity:'B',   hp:330,  atk:40,  def:13, spd:11, crit:0.25,
+  { id:'angel',     name:'天使龟',   emoji:'😇🐢',    rarity:'B',   hp:330,  atk:40,  def:13, mr:16, spd:11, crit:0.25,
     img:'../../assets/pets/天使龟v1.png', sprite:{frames:8,frameW:248,frameH:200,duration:800},
     passive:{ type:'judgement', hpPct:9, desc:'每段攻击附带目标当前9%HP普通伤害' },
     skills:[
@@ -103,7 +103,7 @@ const ALL_PETS = [
         brief:'天使龟造成{N:0.6*ATK}普通+{P:0.6*ATK}穿透，S级以上必暴击并回复总伤10%HP',
         detail:'天使龟对单体造成 60%×(攻击力={ATK}) = {N:0.6*ATK} 普通伤害 + 60%×(攻击力={ATK}) = {P:0.6*ATK} 穿透伤害。\n如果目标为S级或以上：必定暴击，回复总伤害的10%HP。\n冷却{cd}回合。' },
     ]},
-  { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:370,  atk:38,  def:16, spd:9, crit:0.25,
+  { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:370,  atk:38,  def:16, mr:17, spd:9, crit:0.25,
     img:'../../assets/pets/寒冰龟.png',
     passive:{ type:'frostAura', atkDownPct:20, atkDownTurns:6,
               bonusTargets:['lava','phoenix'], bonusDmgPct:35,
@@ -119,7 +119,7 @@ const ALL_PETS = [
         brief:'寒冰龟对全体敌方造成{P:1.2*ATK}穿透伤害',
         detail:'寒冰龟释放冰霜，对全体敌方造成 120%×(攻击力={ATK}) = {P:1.2*ATK} 穿透伤害。\n冷却{cd}回合。' },
     ]},
-  { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:310,  atk:46,  def:9,  spd:15, crit:0.25,
+  { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:310,  atk:46,  def:9,  mr:7, spd:15, crit:0.25,
     img:'../../assets/pets/忍者龟.png',
     passive:{ type:'ninjaInstinct', critBonus:45, critDmgBonus:20, armorPen:8, desc:'+45%暴击+20%爆伤+8穿甲' },
     skills:[
@@ -133,7 +133,7 @@ const ALL_PETS = [
         brief:'忍者龟对全体敌方造成{N:atkScale*ATK}普通伤害，施加25%破甲3回合',
         detail:'忍者龟对全体敌方造成 110%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。\n施加 25% 破甲（防御削减）3回合。\n冷却{cd}回合。' },
     ]},
-  { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:293,  atk:49,  def:11, spd:7, crit:0.25,
+  { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:293,  atk:49,  def:11, mr:12, spd:7, crit:0.25,
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
               desc:'双头龟可在远程和近战形态间切换。\n基础属性：HP={H:HP} ATK={N:ATK} DEF={D:DEF}\n\n当前为远程形态，切换近战时：\n生命值增加 {H:ATK*1.5}（150%攻击力）\n防御增加 {D:ATK*0.25}（25%攻击力）\n攻击降低 {N:ATK*0.3}（30%攻击力）\n获得 {S:ATK*1.1} 护盾（110%攻击力）\n\n切换远程时还原所有属性，并对目标造成140%ATK伤害+减防。',
@@ -163,7 +163,7 @@ const ALL_PETS = [
         detail:'双头龟切换为远程形态，还原所有属性。\n对目标造成 {N:ATK*1.4} 普通伤害（140%攻击力）\n减少目标 {D:ATK*0.1} 防御4回合。\n冷却{cd}回合。' },
     ],
   },
-  { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',    rarity:'B',   hp:300,  atk:42,  def:9,  spd:14, crit:0.25,
+  { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',    rarity:'B',   hp:300,  atk:42,  def:9,  mr:11, spd:14, crit:0.25,
     img:'../../assets/pets/幽灵龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
     passive:{ type:'ghostCurse', hpPct:10, turns:3, desc:'死亡时诅咒全体敌人3回合，每回合受到10%目标最大HP的穿透持续伤害' },
     skills:[
@@ -177,7 +177,7 @@ const ALL_PETS = [
         brief:'对单体5段穿透共{P:0.35*ATK*5}，附加诅咒3回合（每回合{D:0.1*ATK}）',
         detail:'幽灵龟对单体目标释放灵魂风暴。\n每段造成 {P:0.35*ATK} 纯穿透伤害（35%攻击力）。\n5段共 {P:0.35*ATK*5} 穿透伤害。\n附加诅咒3回合：每回合 {D:0.1*ATK} 持续伤害（10%攻击力）。\n冷却{cd}回合。' },
     ]},
-  { id:'diamond',   name:'钻石龟',   emoji:'💎🐢',    rarity:'B',   hp:350,  atk:35,  def:20, spd:8, crit:0.25,
+  { id:'diamond',   name:'钻石龟',   emoji:'💎🐢',    rarity:'B',   hp:350,  atk:35,  def:20, mr:17, spd:8, crit:0.25,
     img:'../../assets/pets/钻石龟.png',
     passive:{ type:'diamondStructure', defBuffAmp:50, flatReductionPct:15,
               desc:'所有防御加成（自己和友军）额外+{defBuffAmp}%；每段受伤减少 15%×(防御={DEF}) = {N:DEF*0.15} 固定值（穿透除外）' },
@@ -192,7 +192,7 @@ const ALL_PETS = [
         brief:'钻石龟撞击敌方，造成{N:0.8*ATK}+{N:2.1*DEF}+{N:HP*0.12}普通伤害，被撞2次眩晕1回合',
         detail:'钻石龟全身撞击单体，造成 80%×(攻击力={ATK}) = {N:0.8*ATK} + 210%×(防御={DEF}) = {N:2.1*DEF} + 12%×(最大HP={HP}) = {N:HP*0.12} 普通伤害。\n同一目标累计被碰撞{stunAfter}次→眩晕1回合（跳过行动，被动仍生效）。\n冷却{cd}回合。' },
     ]},
-  { id:'fortune',   name:'财神龟',   emoji:'🧧🐢',    rarity:'B',   hp:330,  atk:38,  def:13, spd:10, crit:0.25,
+  { id:'fortune',   name:'财神龟',   emoji:'🧧🐢',    rarity:'B',   hp:330,  atk:38,  def:13, mr:13, spd:10, crit:0.25,
     img:'../../assets/pets/财神龟v1.png', sprite:{frames:18,frameW:500,frameH:500,duration:1800},
     passive:{ type:'fortuneGold', desc:'每回合获得3~8金币，单位阵亡+9金币' },
     skills:[
@@ -206,7 +206,7 @@ const ALL_PETS = [
         brief:'财神龟消耗全部金币（当前{goldCoins}枚），每枚造成{N:ATK*0.2}普通+{P:ATK*0.2}穿透伤害（一场限一次）',
         detail:'财神龟消耗全部金币(当前{goldCoins}枚)，每枚造成1段混合伤害：\n20%×(攻击力={ATK}) = {N:ATK*0.2} 普通 + 20%×(攻击力={ATK}) = {P:ATK*0.2} 穿透。\n⚠ 一场只能使用一次。' },
     ]},
-  { id:'dice',      name:'骰子龟',   emoji:'🎲🐢',    rarity:'B',   hp:320,  atk:40,  def:11, spd:11, crit:0.25,
+  { id:'dice',      name:'骰子龟',   emoji:'🎲🐢',    rarity:'B',   hp:320,  atk:40,  def:11, mr:10, spd:11, crit:0.25,
     img:'../../assets/pets/骰子龟v1.png',
     passive:{ type:'gamblerBlood', maxCritAtLoss:30, maxCritGain:50, overflowMult:1.5,
               desc:'基于已损HP获得暴击率(损30%HP→+50%暴击)，溢出每1%→1.5%爆伤' },
@@ -222,7 +222,7 @@ const ALL_PETS = [
         detail:'骰子龟掷出命运骰子。\n获得随机 40%~130% 暴击率提升，持续{duration}回合。\n暴击率超过100%的部分，每1%转为1.5%暴击伤害。\n冷却{cd}回合。' },
     ]},
   // A级
-  { id:'rainbow',   name:'彩虹龟',   emoji:'🌈🐢',    rarity:'A',   hp:340,  atk:40,  def:14, spd:12, crit:0.25,
+  { id:'rainbow',   name:'彩虹龟',   emoji:'🌈🐢',    rarity:'A',   hp:340,  atk:40,  def:14, mr:16, spd:12, crit:0.25,
     img:'../../assets/pets/彩虹龟.png',
     passive:{ type:'rainbowPrism', atkPct:15, defPct:15, healPct:7, desc:'每回合随机为全体友方附加增益1回合：红+{atkPct}%ATK / 蓝+{defPct}%DEF / 绿回复{healPct}%最大HP' },
     skills:[
@@ -236,7 +236,7 @@ const ALL_PETS = [
         brief:'彩虹龟对全体敌人释放4段风暴，每段{N:0.2*ATK}普通+{P:0.1*ATK}穿透，减防20%+灼烧3回合',
         detail:'彩虹龟对全体敌人释放七色风暴。\n每段造成 20%×(攻击力={ATK}) = {N:0.2*ATK} 普通 + 10%×ATK = {P:0.1*ATK} 穿透 × 4段。\n附加减防20%持续3回合。\n附加灼烧3回合（每回合30%ATK+5%最大HP）。\n冷却{cd}回合。' },
     ]},
-  { id:'gambler',   name:'赌神龟',   emoji:'🃏🐢',    rarity:'A',   hp:310,  atk:44,  def:10, spd:13, crit:0.25,
+  { id:'gambler',   name:'赌神龟',   emoji:'🃏🐢',    rarity:'A',   hp:310,  atk:44,  def:10, mr:10, spd:13, crit:0.25,
     img:'../../assets/pets/赌神龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
     passive:{ type:'gamblerMultiHit', chance:40, dmgScale:0.6, desc:'每段攻击40%概率触发额外 60%×(攻击力={ATK}) = {N:ATK*0.6} 打击（可连锁，递减）' },
     skills:[
@@ -250,7 +250,7 @@ const ALL_PETS = [
         brief:'赌神龟消耗50%当前HP化为6段强化攻击，多重打击概率提升至60%（需HP>50%）',
         detail:'赌神龟消耗当前50%HP，化为对单体目标的6段强化攻击。\n消耗的HP均分为每段穿透伤害加成。多重打击概率从40%提升至60%。\n需HP>50%才能使用。冷却{cd}回合。' },
     ]},
-  { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',    rarity:'A',   hp:320,  atk:41,  def:12, spd:14, crit:0.25,
+  { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',    rarity:'A',   hp:320,  atk:41,  def:12, mr:10, spd:14, crit:0.25,
     img:'../../assets/pets/猎人龟v1.png', sprite:{frames:15,frameW:500,frameH:500,duration:1500},
     passive:{ type:'hunterKill', hpThresh:18, stealPct:20, lifesteal:10, desc:'每次行动后检查，HP低于18%的敌人直接斩杀。\n斩杀或击杀敌人时，获取对方20%基础属性（攻击/防御/HP）并叠加10%生命偷取。\n\n已斩杀 {B:hunterKills} 只敌方单位\n累计获得：攻击+{N:hunterStolenAtk} 防御+{D:hunterStolenDef} HP+{H:hunterStolenHp} 吸血{B:lifesteal}%' },
     skills:[
@@ -264,7 +264,7 @@ const ALL_PETS = [
         brief:'猎人龟射一箭造成{N:dmgScale*ATK}普通伤害，获得{B:dodgePct}%闪避{dodgeTurns}回合和{S:shieldScale*ATK}护盾',
         detail:'猎人龟对单体目标射一箭，造成 90%×(攻击力={ATK}) = {N:dmgScale*ATK} 普通伤害。\n随后获得 {B:dodgePct}% 闪避率 {dodgeTurns}回合，以及 110%×(攻击力={ATK}) = {S:shieldScale*ATK} 护盾。\n冷却{cd}回合。' },
     ]},
-  { id:'pirate',    name:'海盗龟',   emoji:'🏴‍☠️🐢',  rarity:'A',   hp:350,  atk:39,  def:14, spd:11, crit:0.25,
+  { id:'pirate',    name:'海盗龟',   emoji:'🏴‍☠️🐢',  rarity:'A',   hp:350,  atk:39,  def:14, mr:12, spd:11, crit:0.25,
     img:'../../assets/pets/海盗龟.png',
     passive:{ type:'pirateBarrage', bombardPct:25, deathHookPct:25,
               desc:'开局轰击随机敌人 25%×(最大HP={HP}) = {P:HP*0.25} 穿透；死亡时钩锁击杀者 {P:HP*0.25} 穿透' },
@@ -279,7 +279,7 @@ const ALL_PETS = [
         brief:'海盗龟喝朗姆酒，持续回复43HP/回合共4回合，防御+5点3回合',
         detail:'海盗龟喝朗姆酒，持续回复 43HP/回合 4回合（可叠加），并提升防御 +5点 持续3回合。\n冷却{cd}回合。' },
     ]},
-  { id:'candy',     name:'糖果龟',   emoji:'🍬🐢',    rarity:'A',   hp:340,  atk:38,  def:14, spd:11, crit:0.25,
+  { id:'candy',     name:'糖果龟',   emoji:'🍬🐢',    rarity:'A',   hp:340,  atk:38,  def:14, mr:15, spd:11, crit:0.25,
     img:'../../assets/pets/糖果龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'candySteal', stealTurn:3, stealPct:23, desc:'登场3回合后，偷取随机敌人23%最大生命值加给自己（敌人最大HP和当前HP同步减少）' },
     skills:[
@@ -293,7 +293,7 @@ const ALL_PETS = [
         brief:'糖果龟发射8段糖衣炮弹，每段{N:0.35*ATK}普通+{P:0.1*ATK}穿透，减防15%',
         detail:'糖果龟对单体发射8段糖衣炮弹。\n每段造成 35%×(攻击力={ATK}) = {N:0.35*ATK} 普通 + 10%×(攻击力={ATK}) = {P:0.1*ATK} 穿透。\n共 {N:0.35*ATK*8} 普通 + {P:0.1*ATK*8} 穿透。\n附加减防15%持续2回合。\n冷却{cd}回合。' },
     ]},
-  { id:'bubble',    name:'泡泡龟',   emoji:'🫧🐢',    rarity:'A',   hp:330,  atk:37,  def:17, spd:13, crit:0.25,
+  { id:'bubble',    name:'泡泡龟',   emoji:'🫧🐢',    rarity:'A',   hp:330,  atk:37,  def:17, mr:18, spd:13, crit:0.25,
     img:'../../assets/pets/气泡龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
     passive:{ type:'bubbleStore', pct:60, healPct:70, desc:'受伤储存60%为泡泡值，每回合回复储存值70%' },
     skills:[
@@ -307,7 +307,7 @@ const ALL_PETS = [
         brief:'泡泡龟标记敌方{duration}回合，友方攻击被标记目标获得伤害{bindPct}%的永久护盾',
         detail:'泡泡龟标记敌方单体{duration}回合。\n友方攻击被标记目标时，获得造成伤害×{bindPct}%的 {S:永久护盾}。\n冷却{cd}回合。' },
     ]},
-  { id:'line',      name:'线条龟',   emoji:'✏️🐢',    rarity:'A',   hp:300,  atk:44,  def:9,  spd:15, crit:0.25,
+  { id:'line',      name:'线条龟',   emoji:'✏️🐢',    rarity:'A',   hp:300,  atk:44,  def:9,  mr:10, spd:15, crit:0.25,
     img:'../../assets/pets/线条龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'inkMark', pctPerStack:5, maxStacks:5, desc:'攻击叠墨迹（上限{maxStacks}层），每层使目标受到所有伤害+{pctPerStack}%，满层+{S:pctPerStack*maxStacks}%' },
     skills:[
@@ -321,7 +321,7 @@ const ALL_PETS = [
         brief:'线条龟引爆目标墨迹，基础{N:0.6*ATK}普伤 + 每层墨迹{P:0.4*ATK}穿透',
         detail:'线条龟完成最后一笔，引爆目标所有墨迹。\n基础造成 60%×(攻击力={ATK}) = {N:0.6*ATK} 普通伤害。\n每层墨迹额外造成 40%×(攻击力={ATK}) = {P:0.4*ATK} 穿透伤害。\n满5层引爆：{N:0.6*ATK} 普通 + {P:0.4*ATK*5} 穿透。\n引爆后清除目标所有墨迹。\n冷却{cd}回合。' },
     ]},
-  { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:310,  atk:43,  def:9,  spd:17, crit:0.25,
+  { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:310,  atk:43,  def:9,  mr:12, spd:17, crit:0.25,
     img:'../../assets/pets/闪电龟.png',
     passive:{ type:'lightningStorm', shockScale:0.9, stackMax:8, desc:'每回合电击随机敌人 90%×(攻击力={ATK}) = {P:ATK*0.9} 穿透；造成伤害叠电击层，满8层触发 {P:ATK*0.9} 穿透' },
     skills:[
@@ -336,7 +336,7 @@ const ALL_PETS = [
         detail:'释放{hits}次闪电，随机分布到敌方。\n每次造成 11%×(攻击力={ATK}) = {N:arrowScale*ATK} 普通伤害。每次命中叠1层电击。\n冷却{cd}回合。' },
     ]},
   // S级
-  { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:340,  atk:42,  def:14, spd:13, crit:0.25,
+  { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:340,  atk:42,  def:14, mr:16, spd:13, crit:0.25,
     img:'../../assets/pets/凤凰龟.png',
     passive:{ type:'phoenixRebirth', revivePct:25, desc:'首次死亡时以 25%×(最大HP={HP}) = {H:HP*0.25} HP复活' },
     skills:[
@@ -350,7 +350,7 @@ const ALL_PETS = [
         brief:'凤凰龟破坏{shieldBreak}%护盾，造成{N:atkScale*ATK}普通伤害，施加攻防各-{atkDownPct}%持续{atkDownTurns}回合',
         detail:'凤凰龟对单体目标施放烫伤。\n先破坏目标 {shieldBreak}% 的护盾值，再造成 70%×(攻击力={ATK}) = {N:atkScale*ATK} 普通伤害。\n施加攻击 -{atkDownPct}% 和防御 -{defDownPct}% 持续{atkDownTurns}回合。\n冷却{cd}回合。' },
     ]},
-  { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',    rarity:'S',   hp:380,  atk:38,  def:18, spd:7, crit:0.25,
+  { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',    rarity:'S',   hp:380,  atk:38,  def:18, mr:16, spd:7, crit:0.25,
     img:'../../assets/pets/熔岩龟.png',
     passive:{ type:'counterAttack', pct:30, desc:'30%概率反击' },
     skills:[
@@ -364,7 +364,7 @@ const ALL_PETS = [
         brief:'熔岩龟对全体敌方每人喷发5段，每段{N:0.14*ATK}普通+{P:0.07*ATK}穿透，施加灼烧3回合',
         detail:'熔岩龟对全体敌方每人喷发5段。\n每段造成 14%×(攻击力={ATK}) = {N:0.14*ATK} 普通 + 7%×ATK = {P:0.07*ATK} 穿透。\n施加灼烧3回合（每回合15%ATK+3%HP）。\n冷却{cd}回合。' },
     ]},
-  { id:'cyber',     name:'赛博龟',   emoji:'🤖🐢',    rarity:'S',   hp:330,  atk:43,  def:13, spd:15, crit:0.25,
+  { id:'cyber',     name:'赛博龟',   emoji:'🤖🐢',    rarity:'S',   hp:330,  atk:43,  def:13, mr:12, spd:15, crit:0.25,
     img:'../../assets/pets/赛博龟.png',
     passive:{ type:'cyberDrone', droneScale:0.13, droneMaxAge:5, maxDrones:10, mechHpPer:30, mechAtkPer:5,
               desc:'每回合生成1个浮游炮（当前拥有 {B:droneCount} 个，最多拥有10个浮游炮）。\n每个浮游炮每回合对随机敌人造成 {N:ATK*0.13} 普通伤害（13%×攻击力）。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲，机甲具有：\n生命值 = 30 × 浮游炮数量（当前{B:droneCount}个）= {H:mechHp}\n攻击力 = 5 × 浮游炮数量（当前{B:droneCount}个）= {N:mechAtk}\n防御力 = 0，暴击率 = 25%\n机甲每回合自动攻击血量最低的敌人，造成150%×机甲攻击力 = {N:mechAtk*1.5} 普通伤害。' },
@@ -379,7 +379,7 @@ const ALL_PETS = [
         brief:'赛博龟立即部署1个浮游炮（每回合{N:ATK*0.13}普通伤害，上限10）',
         detail:'赛博龟立即生成1个浮游炮。\n每个浮游炮每回合对随机敌人造成 13%×(攻击力={ATK}) = {N:ATK*0.13} 普通伤害。\n最多持有10个。冷却2回合。' },
     ]},
-  { id:'crystal',   name:'水晶龟',   emoji:'🔮🐢',    rarity:'S',   hp:350,  atk:40,  def:19, spd:11, crit:0.25,
+  { id:'crystal',   name:'水晶龟',   emoji:'🔮🐢',    rarity:'S',   hp:350,  atk:40,  def:19, mr:21, spd:11, crit:0.25,
     img:'../../assets/pets/水晶龟v1.png', sprite:{frames:11,frameW:500,frameH:500,duration:1100},
     passive:{ type:'shieldOnHit', amount:22, desc:'受击时获得22护盾(每回合1次)' },
     skills:[
@@ -393,7 +393,7 @@ const ALL_PETS = [
         brief:'水晶龟释放7段碎晶，每段{N:0.16*ATK}普通+{P:0.09*ATK}穿透，附加灼烧3回合',
         detail:'水晶龟释放7段碎晶风暴。\n每段造成 16%×ATK = {N:0.16*ATK} 普通 + 9%×ATK = {P:0.09*ATK} 穿透。\n共 {N:0.16*ATK*7} 普通 + {P:0.09*ATK*7} 穿透。\n附加灼烧3回合（每回合15%ATK+3%HP）。\n冷却{cd}回合。' },
     ]},
-  { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:360,  atk:39,  def:19, spd:10, crit:0.25,
+  { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:360,  atk:39,  def:19, mr:18, spd:10, crit:0.25,
     img:'../../assets/pets/宝箱龟v1.png', sprite:{frames:11,frameW:300,frameH:200,duration:1100},
     passive:{ type:'healOnKill', pct:35, desc:'击杀时恢复35%最大HP' },
     skills:[
@@ -407,7 +407,7 @@ const ALL_PETS = [
         brief:'宝箱龟飞射6段财宝，每段{N:0.22*ATK}普通+{P:0.13*ATK}穿透，减攻{atkDown.pct}%',
         detail:'宝箱龟飞射6段财宝。\n每段造成 22%×ATK = {N:0.22*ATK} 普通 + 13%×ATK = {P:0.13*ATK} 穿透。\n共 {N:0.22*ATK*6} 普通 + {P:0.13*ATK*6} 穿透。\n附加减攻{atkDown.pct}%持续{atkDown.turns}回合。\n冷却{cd}回合。' },
     ]},
-  { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:320,  atk:44,  def:12, spd:16, crit:0.25,
+  { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:320,  atk:44,  def:12, mr:14, spd:16, crit:0.25,
     img:'../../assets/pets/星际龟v1.png', sprite:{frames:12,frameW:500,frameH:500,duration:1200},
     passive:{ type:'starEnergy', chargeRate:80, maxChargePct:50,
               desc:'造成伤害积累星能（伤害的80%），上限 {B:HP*0.5}（50%最大HP），满能时下次攻击附加等量{P:穿透爆发}' },
@@ -423,7 +423,7 @@ const ALL_PETS = [
         detail:'星际龟对全体敌方造成 100%×(攻击力={ATK}) = {N:ATK} 普通伤害。\n附加当前星能50%的穿透伤害（每人全额，不消耗星能）。\n施加防御-20% 3回合。\n冷却4回合。' },
     ]},
   // SS级
-  { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:380,  atk:35,  def:22, spd:5, crit:0.25,
+  { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:380,  atk:35,  def:22, mr:21, spd:5, crit:0.25,
     img:'../../assets/pets/缩头乌龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'summonAlly', hpPct:40, maxRarity:'A',
               desc:'开局召唤一只A级以下龟(40%HP，属性/被动正常)，攻击后随从自动出招' },
@@ -438,7 +438,7 @@ const ALL_PETS = [
         brief:'缩头乌龟命令随从出击，随从释放2次随机技能',
         detail:'缩头乌龟命令随从立即释放一个随机可用技能。\n回合结束后随从再自动释放一个（共2次出手）。\n如果随从已阵亡则无效。冷却{cd}回合。' },
     ]},
-  { id:'headless',  name:'无头龟',   emoji:'💀🐢',    rarity:'SS',  hp:340,  atk:46,  def:10, spd:14, crit:0.25,
+  { id:'headless',  name:'无头龟',   emoji:'💀🐢',    rarity:'SS',  hp:340,  atk:46,  def:10, mr:8, spd:14, crit:0.25,
     img:'../../assets/pets/无头龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
     passive:{ type:'deathExplode', pct:60, desc:'死亡时对击杀者造成 60%×(最大HP={HP}) = {N:HP*0.6} 伤害' },
     skills:[
@@ -453,7 +453,7 @@ const ALL_PETS = [
         detail:'无头龟窃取敌方单体目标的随机一个可用技能并立即以无头龟的属性释放。\n冷却{cd}回合。' },
     ]},
   // SSS级
-  { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:360,  atk:42,  def:18, spd:12, crit:0.25,
+  { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:360,  atk:42,  def:18, mr:18, spd:12, crit:0.25,
     img:'../../assets/pets/龟壳v1.png', sprite:{frames:20,frameW:500,frameH:500,duration:2000},
     passive:{ type:'auraAwaken',
               awakenTurn:4,

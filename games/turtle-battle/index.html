@@ -113,19 +113,31 @@
       </div>
       <div class="help-item">
         <img src="assets/def-icon.png" class="help-icon" style="width:20px;height:20px">
-        <div><b>防御力 (DEF)</b><br>减伤% = DEF÷(DEF+40)，递减收益。穿透伤害无视防御</div>
+        <div><b>护甲</b><br>减少受到的物理伤害。减伤% = 护甲÷(护甲+40)</div>
+      </div>
+      <div class="help-item">
+        <img src="assets/mr-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>魔抗</b><br>减少受到的魔法伤害。减伤% = 魔抗÷(魔抗+40)</div>
       </div>
       <div class="help-item">
         <img src="assets/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px">
-        <div><b>穿甲</b><br>无视目标等量防御值。百分比穿甲无视目标对应比例防御</div>
+        <div><b>护甲穿透</b><br>无视目标等量护甲值</div>
+      </div>
+      <div class="help-item">
+        <img src="assets/magic-pen-icon.png" class="help-icon" style="width:20px;height:20px">
+        <div><b>魔法穿透</b><br>无视目标等量魔抗值</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#ff4444">■</span>
-        <div><b>普通伤害（红色）</b><br>受防御减免。数字越大字号越大</div>
+        <div><b>物理伤害（红色）</b><br>受护甲减免</div>
       </div>
       <div class="help-item">
-        <span class="help-icon help-color" style="color:#d06bff">■</span>
-        <div><b>穿透伤害（紫色）</b><br>无视防御，但会被护盾吸收</div>
+        <span class="help-icon help-color" style="color:#4dabf7">■</span>
+        <div><b>魔法伤害（蓝色）</b><br>受魔抗减免</div>
+      </div>
+      <div class="help-item">
+        <span class="help-icon help-color" style="color:#ffe066">■</span>
+        <div><b>真实伤害（浅金色）</b><br>无视护甲和魔抗，但会被护盾吸收</div>
       </div>
       <div class="help-item">
         <span class="help-icon help-color" style="color:#fff">■</span>
@@ -153,11 +165,11 @@
       </div>
       <div class="help-item">
         <span class="help-icon" style="color:#ff6600">🔥</span>
-        <div><b>灼烧 / 持续伤害</b><br>每回合开始自动扣血，会被护盾吸收</div>
+        <div><b>灼烧 / 持续伤害</b><br>统一：0.3×ATK+3×HP 魔法伤害，4回合，被魔抗减免，被护盾吸收，不叠加只刷新</div>
       </div>
       <div class="help-item">
         <span class="help-icon">⬇️</span>
-        <div><b>减益效果</b><br>减攻/减防：降低百分比，持续若干回合。眩晕：跳过1回合行动</div>
+        <div><b>减益效果</b><br>减攻/减护甲/减魔抗：降低百分比，持续若干回合。眩晕：跳过1回合行动</div>
       </div>
       <div class="help-item">
         <span class="help-icon">⭐</span>
@@ -165,7 +177,7 @@
       </div>
       <div class="help-item">
         <span class="help-icon">📊</span>
-        <div><b>伤害公式</b><br>普通伤害 = 基础值 × 暴击倍率 × (1 - 减伤%)<br>穿透伤害 = 基础值 × 暴击倍率（无视防御）<br>伤害顺序：先打泡泡盾 → 护盾 → 生命值</div>
+        <div><b>伤害公式</b><br>物理伤害 = 基础值 × 暴击倍率 × (1 - 护甲减伤%)<br>魔法伤害 = 基础值 × 暴击倍率 × (1 - 魔抗减伤%)<br>真实伤害 = 基础值 × 暴击倍率（无视护甲和魔抗）<br>伤害顺序：先打泡泡盾 → 护盾 → 生命值</div>
       </div>
       <div class="help-item">
         <span class="help-icon">🎮</span>

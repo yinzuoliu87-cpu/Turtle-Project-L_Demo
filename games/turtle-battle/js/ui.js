@@ -859,17 +859,20 @@ function updateDmgStats() {
 
   function dealtRow(f, max) {
     const total = f._dmgDealt || 0;
-    const normal = f._normalDmgDealt || 0;
-    const pierce = f._pierceDmgDealt || 0;
-    const normalPct = total > 0 ? normal / max * 100 : 0;
-    const piercePct = total > 0 ? pierce / max * 100 : 0;
+    const phys = f._physDmgDealt || 0;
+    const magic = f._magicDmgDealt || 0;
+    const trueDmg = f._trueDmgDealt || 0;
+    const physPct = total > 0 ? phys / max * 100 : 0;
+    const magicPct = total > 0 ? magic / max * 100 : 0;
+    const truePct = total > 0 ? trueDmg / max * 100 : 0;
     const side = f.side === 'left' ? 'ds-left' : 'ds-right';
     const dead = f.alive ? '' : 'ds-dead';
     return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val"><span class="ds-normal">${normal}</span>+<span class="ds-pierce">${pierce}</span></div></div>
+      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val"><span class="ds-normal">${phys}</span>+<span class="ds-magic">${magic}</span>+<span class="ds-true">${trueDmg}</span></div></div>
       <div class="ds-bar-wrap">
-        <div class="ds-bar ds-bar-normal" style="width:${normalPct}%"></div>
-        <div class="ds-bar ds-bar-pierce" style="width:${piercePct}%;left:${normalPct}%"></div>
+        <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
+        <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>
+        <div class="ds-bar ds-bar-true" style="width:${truePct}%;left:${physPct+magicPct}%"></div>
       </div>
     </div>`;
   }
@@ -886,7 +889,7 @@ function updateDmgStats() {
   }
 
   body.innerHTML =
-    `<div class="ds-section-title">⚔造成 <span class="ds-legend"><span class="ds-normal">普</span>+<span class="ds-pierce">穿</span></span></div>` +
+    `<div class="ds-section-title">⚔造成 <span class="ds-legend"><span class="ds-normal">物</span>+<span class="ds-magic">魔</span>+<span class="ds-true">真</span></span></div>` +
     byDealt.map(f => dealtRow(f, maxDealt)).join('') +
     `<div class="ds-section-title ds-section-gap">🛡承受</div>` +
     byTaken.map(f => takenRow(f, maxTaken)).join('');
