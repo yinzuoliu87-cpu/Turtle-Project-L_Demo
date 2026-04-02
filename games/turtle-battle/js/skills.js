@@ -1913,10 +1913,10 @@ function spawnBambooOrb(fromElId, toElId) {
     let t = Math.min(1, (now - start) / duration);
     // Ease: slow start, fast middle, slow end
     const ease = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-    // Linear interpolation for x
+    // Position along path
     const x = sx + (ex - sx) * ease;
-    // Parabolic arc for y: -4*arcH*t*(t-1) peaks at t=0.5
-    const arc = -4 * arcH * t * (t - 1);
+    // Parabolic arc using ease for symmetric curve
+    const arc = -4 * arcH * ease * (ease - 1);
     const y = sy + (ey - sy) * ease - arc;
     // Scale: burst at start, grow in middle, shrink at end
     const burstScale = t < 0.08 ? 2.0 - (t / 0.08) * 0.8 : 1;
