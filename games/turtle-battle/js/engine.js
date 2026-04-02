@@ -62,6 +62,7 @@ function createFighter(petId, side) {
     _auraReflect: 0,          // 龟壳觉醒反伤
     _bambooCharged: false,    // 竹叶龟竹编充能状态
     _bambooCounter: 0,       // 竹叶龟充能计数器
+    _bambooGainedHp: 0,      // 竹叶龟被动累计获得HP
     _hunterKills: 0,         // 猎人龟斩杀计数
     _hunterStolenAtk: 0,     // 猎人龟累计吸收攻击
     _hunterStolenDef: 0,     // 猎人龟累计吸收防御

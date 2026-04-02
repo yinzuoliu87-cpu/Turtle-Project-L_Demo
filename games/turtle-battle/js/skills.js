@@ -1977,6 +1977,7 @@ async function doBambooChargeAttack(attacker, target) {
   const hpGain = Math.round(attacker.atk * p.hpGainAtkPct / 100);
   const before = attacker.hp;
   attacker.maxHp += hpGain;
+  attacker._bambooGainedHp = (attacker._bambooGainedHp || 0) + hpGain;
   attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt + hpGain);
   const actualHeal = Math.round(attacker.hp - before);
   spawnFloatingNum(fElId, `+${actualHeal}`, 'heal-num', 0, 0);

@@ -178,7 +178,8 @@ body{
 /* ── PASSIVE DETAIL POPUP ── */
 .passive-popup{position:fixed;z-index:300;background:var(--bg);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;max-width:280px;font-size:12px;line-height:1.6;box-shadow:0 8px 30px rgba(0,0,0,.5);color:var(--fg);animation:fadeUp .15s ease}
 .passive-popup-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.passive-popup-desc{color:var(--fg2)}
+.passive-popup-desc,.passive-popup-brief,.passive-popup-detail{color:var(--fg2)}
+.passive-detail-toggle{color:#4dabf7;cursor:pointer;font-size:12px;display:block;margin-top:6px}
 
 /* ── PET SPRITE / IMAGE (matches pet center) ── */
 .sprite-wrap{display:inline-block;overflow:hidden}

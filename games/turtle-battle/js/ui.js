@@ -455,6 +455,7 @@ function renderSkillTemplate(template, f, s) {
     mechHp: (f._drones ? f._drones.length : (f.passive && f.passive.droneCount) || 0) * (f.passive && f.passive.mechHpPer || 30),
     mechAtk: (f._drones ? f._drones.length : (f.passive && f.passive.droneCount) || 0) * (f.passive && f.passive.mechAtkPer || 5),
     crit: f.crit || 0.25,
+    bambooGainedHp: f._bambooGainedHp || 0,
     hunterKills: f._hunterKills || 0,
     hunterStolenAtk: f._hunterStolenAtk || 0,
     hunterStolenDef: f._hunterStolenDef || 0,
@@ -979,7 +980,16 @@ function showPassivePopup(e, fIdx) {
   // Render passive desc — use descMelee if in melee form
   const descText = (f._twoHeadForm === 'melee' && f.passive.descMelee) ? f.passive.descMelee : f.passive.desc;
   const descRendered = renderSkillTemplate(descText, f, f.passive);
-  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
+  // Brief/detail support for passives
+  const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
+  if (briefText) {
+    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div>
+      <div class="passive-popup-brief">${briefText}</div>
+      <div class="passive-popup-detail" style="display:none">${descRendered}</div>
+      <span class="passive-detail-toggle" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.previousElementSibling.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.previousElementSibling.style.display==='none'?'详细 ▾':'简略 ▴'">详细 ▾</span>`;
+  } else {
+    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
+  }
   popup.style.display = 'block';
   // Position near click
   const x = Math.min(e.clientX, window.innerWidth - 290);
