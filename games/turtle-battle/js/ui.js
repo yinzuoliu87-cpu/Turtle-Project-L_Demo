@@ -280,7 +280,7 @@ function updateHpBar(f, elId) {
     card.querySelector('.hp-bar').appendChild(tickContainer);
   }
   let ticksHtml = '';
-  const tickStep = 25;
+  const tickStep = 20;
   for (let v = tickStep; v < barMax; v += tickStep) {
     const pct = v / barMax * 100;
     if (pct >= 99.5) break;
