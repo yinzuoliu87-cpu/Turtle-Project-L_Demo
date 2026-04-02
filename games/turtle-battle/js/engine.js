@@ -1307,17 +1307,19 @@ async function doDamage(attacker, target, skill) {
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
     await triggerOnHitEffects(attacker, target, totalHit);
 
-    // Passive: judgement — extra damage based on target's current HP
+    // Passive: judgement — extra magic damage based on target's current HP
     if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
       const judgePct = attacker.passive.hpPct / 100;
       const judgeRaw = Math.round(target.hp * judgePct);
-      // Apply as normal damage (reduced by DEF)
-      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
-      const judgeResult = applyRawDmg(attacker, target, judgeReduced, false);
+      // Apply as magic damage (reduced by MR)
+      const effMr = calcEffDef(attacker, target, 'magic');
+      const mrReduction = effMr / (effMr + DEF_CONSTANT);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - mrReduction) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalDirect += judgeReduced;
-      // Track for angelEquality heal
       if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
-      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, yOff);
+      // Blue number above the main hit (yOff - 20 to sit above)
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: judgeReduced });
       updateHpBar(target, tElId);
       await sleep(200);
     }

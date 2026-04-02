@@ -631,13 +631,15 @@ async function doIceSpike(attacker, target, skill) {
 
     await triggerOnHitEffects(attacker, target, dmg);
 
-    // Judgement passive
+    // Judgement passive — magic damage reduced by MR
     if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
       const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
-      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
-      applyRawDmg(attacker, target, judgeReduced, false, false, 'physical');
+      const jMr = calcEffDef(attacker, target, 'magic');
+      const jMrRed = jMr / (jMr + DEF_CONSTANT);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - jMrRed) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalNormal += judgeReduced;
-      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, yOff);
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff - 20, {atkSide: attacker.side, amount: judgeReduced});
       updateHpBar(target, tElId);
     }
 
@@ -703,13 +705,15 @@ async function doAngelBless(caster, target, skill) {
   const defGain = Math.round(caster.atk * skill.defBoostScale);
   target.shield += shieldAmt;
   target.buffs.push({ type:'defUp', value:defGain, turns:skill.defBoostTurns });
+  target.buffs.push({ type:'mrUp', value:defGain, turns:skill.defBoostTurns });
   recalcStats();
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
-  spawnFloatingNum(tElId, `+${defGain}防`, 'passive-num', 300, 0);
+  spawnFloatingNum(tElId, `+${defGain}护甲&魔抗`, 'passive-num', 300, 0);
   updateHpBar(target, tElId);
+  updateFighterStats(target, tElId);
   renderStatusIcons(target);
-  addLog(`${caster.emoji}${caster.name} <b>祝福</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span>(${skill.shieldTurns}回合) + <span class="log-passive">防御+${defGain}</span>(${skill.defBoostTurns}回合)`);
+  addLog(`${caster.emoji}${caster.name} <b>祝福</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span>(${skill.shieldTurns}回合) + <span class="log-passive">护甲&魔抗+${defGain}</span>(${skill.defBoostTurns}回合)`);
   await sleep(1000);
 }
 
@@ -748,14 +752,16 @@ async function doAngelEquality(attacker, target, skill) {
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, normalDmg);
 
-  // Judgement passive on hit 1
+  // Judgement passive on hit 1 — magic damage
   if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
     const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
-    const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
-    applyRawDmg(attacker, target, judgeReduced, false, false, 'physical');
+    const jMr = calcEffDef(attacker, target, 'magic');
+    const jMrRed = jMr / (jMr + DEF_CONSTANT);
+    const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - jMrRed) * critMult));
+    applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
     totalDmgDealt += judgeReduced;
     skill._judgeTotal += judgeReduced;
-    spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 0);
+    spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, -20, {atkSide: attacker.side, amount: judgeReduced});
     updateHpBar(target, tElId);
   }
 
@@ -777,14 +783,16 @@ async function doAngelEquality(attacker, target, skill) {
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, pierceDmg);
 
-    // Judgement passive on hit 2
+    // Judgement passive on hit 2 — magic damage
     if (attacker.passive && attacker.passive.type === 'judgement' && target.alive) {
       const judgeRaw = Math.round(target.hp * attacker.passive.hpPct / 100);
-      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - defReduction) * critMult));
-      applyRawDmg(attacker, target, judgeReduced, false, false, 'physical');
+      const jMr2 = calcEffDef(attacker, target, 'magic');
+      const jMrRed2 = jMr2 / (jMr2 + DEF_CONSTANT);
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - jMrRed2) * critMult));
+      applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalDmgDealt += judgeReduced;
       skill._judgeTotal += judgeReduced;
-      spawnFloatingNum(tElId, `⚖${judgeReduced}`, 'passive-num', 400, 24);
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 4, {atkSide: attacker.side, amount: judgeReduced});
       updateHpBar(target, tElId);
     }
 
