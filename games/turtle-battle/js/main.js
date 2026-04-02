@@ -278,7 +278,10 @@ function renderPetGrid() {
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
-        <span>HP${p.hp}</span><span>ATK${p.atk}</span><span>DEF${p.def}</span>
+        <span><img src="assets/hp-icon.png" class="stat-icon">${p.hp}</span>
+        <span><img src="assets/atk-icon.png" class="stat-icon">${p.atk}</span>
+        <span><img src="assets/def-icon.png" class="stat-icon">${p.def}</span>
+        <span><img src="assets/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
       </div>
     </div>`).join('');
 }
