@@ -982,13 +982,14 @@ function showPassivePopup(e, fIdx) {
   const descRendered = renderSkillTemplate(descText, f, f.passive);
   // Brief/detail support for passives
   const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
+  const passiveName = f.passive.name || '被动';
   if (briefText) {
-    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div>
+    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div>
       <div class="passive-popup-brief">${briefText}</div>
       <div class="passive-popup-detail" style="display:none">${descRendered}</div>
       <span class="passive-detail-toggle" onclick="this.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.previousElementSibling.previousElementSibling.style.display=this.previousElementSibling.style.display==='none'?'block':'none';this.textContent=this.previousElementSibling.style.display==='none'?'详细 ▾':'简略 ▴'">详细 ▾</span>`;
   } else {
-    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
+    popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div><div class="passive-popup-desc">${descRendered}</div>`;
   }
   popup.style.display = 'block';
   // Position near click
