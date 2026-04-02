@@ -184,6 +184,39 @@ function updateHpBar(f, elId) {
   const barMax = Math.max(f.maxHp, totalEff); // expand bar if shields overflow
   const hpPct = Math.max(0, f.hp / barMax * 100);
   const fill = card.querySelector('.hp-fill');
+
+  // Delay bar: shows trailing effect on HP loss / heal / shield change
+  let delayBar = card.querySelector('.hp-delay');
+  if (!delayBar) {
+    delayBar = document.createElement('div');
+    delayBar.className = 'hp-delay';
+    card.querySelector('.hp-bar').insertBefore(delayBar, fill);
+    delayBar._pct = hpPct;
+  }
+  const oldPct = delayBar._pct || hpPct;
+  if (hpPct < oldPct) {
+    // HP dropped — delay bar stays at old position, then shrinks
+    delayBar.style.width = oldPct + '%';
+    delayBar.style.background = '#ff6b6b';
+    delayBar.style.opacity = '0.6';
+    delayBar.style.transition = 'width 0.8s ease-out 0.3s, opacity 0.8s ease-out 0.3s';
+    requestAnimationFrame(() => {
+      delayBar.style.width = hpPct + '%';
+      delayBar.style.opacity = '0';
+    });
+  } else if (hpPct > oldPct) {
+    // HP gained — delay bar flashes heal color
+    delayBar.style.width = hpPct + '%';
+    delayBar.style.background = '#06d6a0';
+    delayBar.style.opacity = '0.5';
+    delayBar.style.transition = 'none';
+    requestAnimationFrame(() => {
+      delayBar.style.transition = 'opacity 0.6s ease-out 0.2s';
+      delayBar.style.opacity = '0';
+    });
+  }
+  delayBar._pct = hpPct;
+
   fill.style.width = hpPct + '%';
   fill.style.background = (f.hp/f.maxHp) > 0.5 ? '#06d6a0' : (f.hp/f.maxHp) > 0.25 ? '#ffd93d' : '#ff6b6b';
 
