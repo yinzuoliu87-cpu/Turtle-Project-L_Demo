@@ -212,8 +212,8 @@ body{
 .bubble-shield-fill{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(76,201,240,.4),rgba(76,201,240,.6),rgba(76,201,240,.4));background-size:200% 100%;animation:bubbleShimmer 2s ease-in-out infinite;transition:width .35s ease,left .35s ease;pointer-events:none;z-index:3}
 @keyframes bubbleShimmer{0%,100%{background-position:0 0}50%{background-position:100% 0}}
 .hp-ticks{position:absolute;left:0;top:0;width:100%;height:100%;pointer-events:none;z-index:4}
-.hp-tick{position:absolute;top:0;width:1px;height:50%;background:rgba(0,0,0,.25)}
-.hp-tick-major{top:0;width:1.5px;height:50%;background:rgba(0,0,0,.5)}
+.hp-tick{position:absolute;top:0;width:1px;height:50%;background:rgba(0,0,0,.2)}
+.hp-tick-major{top:0;width:2px;height:100%;background:rgba(0,0,0,.45)}
 .stat-icon{width:14px;height:14px;vertical-align:middle;margin-right:1px;object-fit:contain}
 .hp-text{font-size:11px;color:var(--fg2);text-align:center}
 .hp-line{color:var(--fg2)}
