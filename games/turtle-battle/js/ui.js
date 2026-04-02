@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'🎋', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'🏴‍☠️', mechBody:'🤖', candySteal:'🍬'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'⚖️', frostAura:'❄️', basicTurtle:'🐢', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'🏴‍☠️', mechBody:'🤖', candySteal:'🍬'
 };
 
 function updateFighterStats(f, elId) {
@@ -113,7 +113,9 @@ function updateFighterStats(f, elId) {
   const lifesteal = f._lifestealPct || 0;
   const dodge = f.buffs ? f.buffs.find(b => b.type === 'dodge') : null;
   const dodgePct = dodge ? dodge.value : 0;
-  const passiveIcon = f.passive ? `<span class="passive-icon" onclick="showPassivePopup(event,${fIdx})">${PASSIVE_ICONS[f.passive.type]||'⭐'}</span>` : '';
+  const _pi = PASSIVE_ICONS[f.passive?.type] || '⭐';
+  const _piHtml = _pi.endsWith('.png') ? `<img src="assets/${_pi}" class="stat-icon">` : _pi;
+  const passiveIcon = f.passive ? `<span class="passive-icon" onclick="showPassivePopup(event,${fIdx})">${_piHtml}</span>` : '';
   // Preserve detail expand state
   const wasExpanded = document.getElementById('statsDetail'+fIdx)?.style.display === 'flex';
 
@@ -972,11 +974,12 @@ function showPassivePopup(e, fIdx) {
   const f = allFighters[fIdx];
   if (!f || !f.passive) return;
   const popup = document.getElementById('passivePopup');
-  const icon = PASSIVE_ICONS[f.passive.type] || '⭐';
+  const iconRaw = PASSIVE_ICONS[f.passive.type] || '⭐';
+  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
   // Render passive desc — use descMelee if in melee form
   const descText = (f._twoHeadForm === 'melee' && f.passive.descMelee) ? f.passive.descMelee : f.passive.desc;
   const descRendered = renderSkillTemplate(descText, f, f.passive);
-  popup.innerHTML = `<div class="passive-popup-title">${icon} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
+  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — 被动</div><div class="passive-popup-desc">${descRendered}</div>`;
   popup.style.display = 'block';
   // Position near click
   const x = Math.min(e.clientX, window.innerWidth - 290);
