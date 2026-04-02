@@ -1895,6 +1895,14 @@ function spawnBambooOrb(fromElId, toElId) {
   const dist = Math.sqrt((ex-sx)**2 + (ey-sy)**2);
   const arcH = Math.max(60, dist * 0.4);
 
+  // Burst flash at spawn point
+  const flash = document.createElement('div');
+  flash.className = 'bamboo-burst';
+  flash.style.left = (sx - 25) + 'px';
+  flash.style.top = (sy - 25) + 'px';
+  document.body.appendChild(flash);
+  setTimeout(() => flash.remove(), 400);
+
   const orb = document.createElement('div');
   orb.className = 'bamboo-orb';
   document.body.appendChild(orb);
@@ -1910,8 +1918,10 @@ function spawnBambooOrb(fromElId, toElId) {
     // Parabolic arc for y: -4*arcH*t*(t-1) peaks at t=0.5
     const arc = -4 * arcH * t * (t - 1);
     const y = sy + (ey - sy) * ease - arc;
-    // Scale: grow in middle, shrink at end
-    const scale = 1 + 0.5 * Math.sin(t * Math.PI);
+    // Scale: burst at start, grow in middle, shrink at end
+    const burstScale = t < 0.08 ? 2.0 - (t / 0.08) * 0.8 : 1;
+    const arcScale = 1 + 0.5 * Math.sin(t * Math.PI);
+    const scale = t < 0.08 ? burstScale : arcScale;
     orb.style.left = (x - 11) + 'px';
     orb.style.top = (y - 11) + 'px';
     orb.style.transform = `scale(${scale})`;
