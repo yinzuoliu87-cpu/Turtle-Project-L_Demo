@@ -220,7 +220,7 @@ function updateHpBar(f, elId) {
 
   fill.style.width = hpPct + '%';
   // Two-tone with slight blend: ally=green, enemy=purple
-  const isAlly = (gameMode === 'pve' && f.side === 'left') || (gameMode === 'pvp-online' && f.side === onlineSide) || (!gameMode);
+  const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
   if (isAlly) {
     fill.style.background = 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)';
   } else {

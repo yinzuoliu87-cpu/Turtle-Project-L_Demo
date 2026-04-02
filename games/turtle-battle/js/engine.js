@@ -1134,6 +1134,12 @@ function buildStateSync() {
       _inkStacks: f._inkStacks, _shockStacks: f._shockStacks,
       _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
       _dmgDealt: f._dmgDealt, _dmgTaken: f._dmgTaken,
+      _physDmgDealt: f._physDmgDealt, _magicDmgDealt: f._magicDmgDealt, _trueDmgDealt: f._trueDmgDealt,
+      _bambooCharged: f._bambooCharged, _bambooCounter: f._bambooCounter,
+      _hunterKills: f._hunterKills, _lifestealPct: f._lifestealPct || 0,
+      _drones: f._drones ? f._drones.length : 0,
+      bubbleStore: f.bubbleStore, bubbleShieldVal: f.bubbleShieldVal, bubbleShieldTurns: f.bubbleShieldTurns,
+      name: f.name, emoji: f.emoji,
       buffs: f.buffs.map(b => ({...b})),
       skills: f.skills.map(s => ({ cdLeft: s.cdLeft })),
     })),
@@ -1155,6 +1161,12 @@ function applyStateSync(state) {
     f._inkStacks = sf._inkStacks; f._shockStacks = sf._shockStacks;
     f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
     f._dmgDealt = sf._dmgDealt; f._dmgTaken = sf._dmgTaken;
+    f._physDmgDealt = sf._physDmgDealt; f._magicDmgDealt = sf._magicDmgDealt; f._trueDmgDealt = sf._trueDmgDealt;
+    f._bambooCharged = sf._bambooCharged; f._bambooCounter = sf._bambooCounter;
+    f._hunterKills = sf._hunterKills; f._lifestealPct = sf._lifestealPct || 0;
+    f.bubbleStore = sf.bubbleStore; f.bubbleShieldVal = sf.bubbleShieldVal; f.bubbleShieldTurns = sf.bubbleShieldTurns;
+    if (sf.name) f.name = sf.name;
+    if (sf.emoji) f.emoji = sf.emoji;
     f.buffs = sf.buffs;
     sf.skills.forEach((ss, si) => { if (f.skills[si]) f.skills[si].cdLeft = ss.cdLeft; });
     // Re-render
