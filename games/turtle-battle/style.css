@@ -516,7 +516,7 @@ body{
 .skill-card.disabled .skill-main{cursor:not-allowed;pointer-events:none}
 .skill-header{font-size:13px;font-weight:700;margin-bottom:4px}
 .skill-body-brief,.skill-body-detail{font-size:11px;color:var(--fg2);line-height:1.6}
-.skill-body-detail{color:var(--fg);line-height:1.7}
+.skill-body-detail{line-height:1.7}
 .skill-cd-info{font-size:10px;color:var(--fg2);opacity:.7}
 .skill-toggle{text-align:right;margin-top:4px}
 .skill-toggle-btn{font-size:10px;color:var(--accent);cursor:pointer;opacity:.7;transition:.15s}
