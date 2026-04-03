@@ -96,6 +96,7 @@ async function doGamblerBet(attacker, target, skill) {
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
+    await triggerOnHitEffects(attacker, target, total);
     await sleep(500);
     tEl.classList.remove('hit-shake');
     await sleep(100);
