@@ -13,12 +13,11 @@ function unseedBattleRng() { Math.random = _origMathRandom; }
 // ── FIGHTER FACTORY ───────────────────────────────────────
 function createFighter(petId, side) {
   const b = ALL_PETS.find(p => p.id === petId);
-  const m = RARITY_MULT[b.rarity] || 1;  // +3% per rarity tier
-  const hp  = Math.round(b.hp  * m);
-  const atk = Math.round(b.atk * m);
-  const def = Math.round(b.def * m);
-  const mr  = Math.round((b.mr !== undefined ? b.mr : b.def) * m);
-  const spd = Math.round(b.spd * m);
+  const hp  = b.hp;
+  const atk = b.atk;
+  const def = b.def;
+  const mr  = b.mr !== undefined ? b.mr : b.def;
+  const spd = b.spd;
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
