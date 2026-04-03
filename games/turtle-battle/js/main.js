@@ -284,10 +284,11 @@ function renderPetGrid() {
     if (p.passive) {
       const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
       const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="stat-icon">` : iconRaw;
-      passiveHtml = `<span class="pet-passive-icon" data-passive-id="${p.id}">${iconH}</span>`;
+      passiveHtml = `<span class="pet-passive-icon" onclick="event.stopPropagation();showPetPassive(event,'${p.id}')">${iconH}</span>`;
     }
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
-         style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}">
+         style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
+         onclick="togglePet('${p.id}')">
       <div class="pet-avatar">${buildPetImgHTML(p, 56)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
@@ -299,21 +300,6 @@ function renderPetGrid() {
       </div>
     </div>`;
   }).join('');
-  // Event delegation: passive icon clicks and pet card clicks (bind once)
-  if (!grid._delegated) {
-    grid._delegated = true;
-    grid.addEventListener('click', e => {
-      const icon = e.target.closest('.pet-passive-icon');
-      if (icon) {
-        e.stopPropagation();
-        e.preventDefault();
-        showPetPassive(e, icon.dataset.passiveId);
-        return;
-      }
-      const card = e.target.closest('.pet-card');
-      if (card) togglePet(card.dataset.id);
-    });
-  }
 }
 
 function togglePet(id) {
