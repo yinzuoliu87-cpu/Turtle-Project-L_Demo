@@ -93,9 +93,9 @@ const ALL_PETS = [
     img:'../../assets/pets/天使龟v1.png', sprite:{frames:8,frameW:248,frameH:200,duration:800},
     passive:{ type:'judgement', name:'审判', hpPct:9, desc:'每段攻击附带目标当前9%HP的魔法伤害' },
     skills:[
-      { name:'裁决', type:'physical', dmgType:'magic', hits:4, power:0, pierce:0, cd:0, atkScale:0.3,
-        brief:'天使龟对单体敌人裁决4段，共造成 {M:0.3*ATK*4} 魔法伤害',
-        detail:'天使龟对单体打击4段，每段 30%×(攻击力={ATK}) = {M:0.3*ATK} 魔法伤害，共 120%×(攻击力={ATK}) = {M:0.3*ATK*4}。' },
+      { name:'裁决', type:'physical', hits:4, power:0, pierce:0, cd:0, atkScale:0.3,
+        brief:'天使龟对单体敌人裁决4段，共造成 {N:0.3*ATK*4} 物理伤害',
+        detail:'天使龟对单体打击4段，每段 30%×(攻击力={ATK}) = {N:0.3*ATK} 物理伤害，共 120%×(攻击力={ATK}) = {N:0.3*ATK*4} 物理伤害。' },
       { name:'祝福', type:'angelBless', dmgType:'magic', hits:1, power:0, pierce:0, cd:4, shieldScale:1.2, shieldTurns:4, defBoostScale:0.12, defBoostTurns:4,
         brief:'天使龟选择一名友方单位，使其获得持续{shieldTurns}回合的{S:1.2*ATK}护盾值 + 持续{defBoostTurns}回合的{D:0.12*ATK}点<span class="val-def">护甲</span>与<span class="val-magic">魔抗</span>提升',
         detail:'天使龟选择友方单体，施加 120%×(攻击力={ATK}) = {S:1.2*ATK} 护盾，持续{shieldTurns}回合。\n同时增加<span class="val-def">护甲</span>与<span class="val-magic">魔抗</span> 12%×(攻击力={ATK}) = {D:0.12*ATK}点，持续{defBoostTurns}回合。\n冷却{cd}回合。' },
