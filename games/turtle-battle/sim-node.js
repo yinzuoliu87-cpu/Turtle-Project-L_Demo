@@ -269,7 +269,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       if (healS && allies.some(a => a.hp / a.maxHp < 0.35)) skill = healS;
       else if (shieldS && allies.some(a => a.shield < 20)) skill = shieldS;
       else if (selfS.length && Math.random() < 0.3) skill = selfS[Math.floor(Math.random() * selfS.length)];
-      else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
+      else if (dmgS.length) {
+        // Prioritize highest CD skill (big moves) ~80% of the time
+        dmgS.sort((a, b) => (b.cd || 0) - (a.cd || 0));
+        skill = (dmgS[0].cd > 0 && Math.random() < 0.8) ? dmgS[0] : dmgS[Math.floor(Math.random() * dmgS.length)];
+      } else skill = ready[0];
       if (!skill) continue;
 
       // Chest turtle AI: use chestCount when HP < 60%
