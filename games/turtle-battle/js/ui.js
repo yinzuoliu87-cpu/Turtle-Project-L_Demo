@@ -496,10 +496,12 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)物理(?!伤害|<)/g, '<span class="val-normal">物理</span>');
   result = result.replace(/(?<!\">)魔法(?!伤害|<)/g, '<span class="val-magic">魔法</span>');
   result = result.replace(/防御力加成/g, '<span class="val-def">防御力加成</span>');
-  // Auto-color stat keywords: 攻击力, 护甲, 魔抗
+  // Auto-color stat keywords
   result = result.replace(/(?<!\">)攻击力(?!<)/g, '<span class="val-normal">攻击力</span>');
   result = result.replace(/(?<!\">)护甲(?!<)/g, '<span class="val-def">护甲</span>');
   result = result.replace(/(?<!\">)魔抗(?!<)/g, '<span class="val-magic">魔抗</span>');
+  result = result.replace(/(?<!\">)最大生命值(?!<)/g, '<span class="val-heal">最大生命值</span>');
+  result = result.replace(/(?<!\">)最大HP(?!<)/g, '<span class="val-heal">最大HP</span>');
   return result;
 }
 

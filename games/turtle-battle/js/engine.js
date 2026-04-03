@@ -1486,6 +1486,17 @@ async function doHeal(caster, target, skill) {
     recalcStats();
     renderStatusIcons(target);
   }
+  // MrUpPct buff (percentage-based)
+  if (skill.mrUpPct) {
+    const val = Math.round((target.baseMr || target.baseDef) * skill.mrUpPct.pct / 100);
+    const existing = target.buffs.find(b => b.type === 'mrUp');
+    if (existing) { existing.value += val; existing.turns = Math.max(existing.turns, skill.mrUpPct.turns); }
+    else target.buffs.push({ type:'mrUp', value:val, turns:skill.mrUpPct.turns });
+    spawnFloatingNum(getFighterElId(target), `+${val}魔抗`, 'passive-num', 400, 0);
+    logParts.push(`<span class="log-passive">魔抗+${skill.mrUpPct.pct}%(+${val}) ${skill.mrUpPct.turns}回合</span>`);
+    recalcStats();
+    renderStatusIcons(target);
+  }
   // SelfAtkUpPct (e.g. cyber turtle 增益)
   if (skill.selfAtkUpPct) {
     const atkGain = Math.round(caster.baseAtk * skill.selfAtkUpPct.pct / 100);
