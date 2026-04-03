@@ -116,7 +116,7 @@ const ALL_PETS = [
       { name:'冰锥', type:'iceSpike', hits:6, power:0, pierce:0, cd:0, totalScale:1.4,
         brief:'寒冰龟发射6段冰锥，交替造成物理伤害和魔法伤害，共 {N:1.4*ATK*0.5} 物理伤害和 {M:1.4*ATK*0.5} 魔法伤害',
         detail:'寒冰龟对单体发射6段冰锥，奇数段造成 23%×(攻击力={ATK}) = {N:1.4*ATK/6} 物理伤害，偶数段造成 23%×(攻击力={ATK}) = {M:1.4*ATK/6} 魔法伤害。\n共 70%×(攻击力={ATK}) = {N:1.4*ATK*0.5} 物理伤害 + 70%×(攻击力={ATK}) = {M:1.4*ATK*0.5} 魔法伤害。' },
-      { name:'冰盾', type:'iceShield', hits:1, power:0, pierce:0, cd:3, selfScale:1.4, allyScale:0.8,
+      { name:'冰盾', type:'iceShield', hits:1, power:0, pierce:0, cd:2, selfScale:1.4, allyScale:0.8,
         brief:'寒冰龟自身获得{S:1.4*ATK}永久护盾，友方获得{S:0.8*ATK}永久护盾',
         detail:'寒冰龟为自身施加 140%×(攻击力={ATK}) = {S:1.4*ATK} 永久护盾。\n为友方施加 80%×(攻击力={ATK}) = {S:0.8*ATK} 永久护盾。\n冷却{cd}回合。' },
       { name:'冰霜', type:'iceFrost', dmgType:'magic', hits:10, power:0, pierce:0, cd:4, atkScale:0.14, mrDown:{pct:25,turns:4},
