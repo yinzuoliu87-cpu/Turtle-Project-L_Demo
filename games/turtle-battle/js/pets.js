@@ -49,7 +49,7 @@ const ALL_PETS = [
   { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:320,  atk:39,  def:13, mr:11, spd:10, crit:0.25,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     passive:{ type:'basicTurtle', name:'不屈', bonusMap:{C:20,B:23,A:26,S:29,SS:32,SSS:34},
-              desc:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度获得增伤：\nC <span class="val-atk">+20%</span>　B <span class="val-atk">+23%</span>　A <span class="val-atk">+26%</span>\nS <span class="val-atk">+29%</span>　SS <span class="val-atk">+32%</span>　SSS <span class="val-atk">+34%</span>' },
+              desc:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度获得增伤：\n<span style="color:#06d6a0">C</span> <span class="val-atk">+20%</span>　<span style="color:#4cc9f0">B</span> <span class="val-atk">+23%</span>　<span style="color:#3a9abf">A</span> <span class="val-atk">+26%</span>\n<span style="color:#c77dff">S</span> <span class="val-atk">+29%</span>　<span style="color:#ffd93d">SS</span> <span class="val-atk">+32%</span>　<span style="color:#ff6b6b">SSS</span> <span class="val-atk">+34%</span>' },
     skills:[
       { name:'攻击', type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.7, selfAtkUpPct:{pct:20, turns:2},
         brief:'小龟攻击2段，共{N:0.7*ATK*2}物理伤害，自身攻击+20% 2回合',
