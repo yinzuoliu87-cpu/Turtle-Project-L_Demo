@@ -327,7 +327,9 @@ const ALL_PETS = [
     ]},
   { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:310,  atk:43,  def:9,  mr:12, spd:17, crit:0.25,
     img:'../../assets/pets/闪电龟.png',
-    passive:{ type:'lightningStorm', shockScale:0.9, stackMax:8, desc:'每回合电击随机敌人 90%×(攻击力={ATK}) = {P:ATK*0.9} 真实；造成伤害叠电击层，满8层触发 {P:ATK*0.9} 真实' },
+    passive:{ type:'lightningStorm', name:'雷电', shockScale:0.9, stackMax:8,
+              brief:'每回合电击随机敌人 {T:ATK*0.9} 真实伤害；攻击叠电击层，满8层引爆 {T:ATK*0.9} 真实伤害',
+              desc:'闪电龟周身环绕雷电之力。\n\n每回合自动电击随机敌人，造成（90%×攻击力({ATK}) = {T:ATK*0.9}）真实伤害。\n\n每段攻击命中敌人叠加1层电击标记，满{stackMax}层时引爆雷暴，\n造成（90%×攻击力({ATK}) = {T:ATK*0.9}）真实伤害并清零层数。' },
     skills:[
       { name:'闪电打击', type:'lightningStrike', dmgType:'magic', hits:5, power:0, pierce:0, cd:0, atkScale:0.23, splashPct:25,
         brief:'闪电龟打击5段，共{N:0.23*ATK*5}魔法伤害，每段溅射{splashPct}%到次目标',

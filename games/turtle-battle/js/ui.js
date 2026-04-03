@@ -473,6 +473,7 @@ function renderSkillTemplate(template, f, s) {
     totalScale: s.totalScale || 0, shieldTurns: s.shieldTurns || 0,
     defBoostTurns: s.defBoostTurns || 0, stunAfter: s.stunAfter || 0,
     transferPct: s.transferPct || 0,
+    stackMax: s.stackMax || (f.passive && f.passive.stackMax) || 0,
     maxStacks: s.maxStacks || (f.passive && f.passive.maxStacks) || 0,
     pctPerStack: s.pctPerStack || (f.passive && f.passive.pctPerStack) || 0,
     atkPct: s.atkPct || (f.passive && f.passive.atkPct) || 0,
