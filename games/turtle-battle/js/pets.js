@@ -307,9 +307,9 @@ const ALL_PETS = [
     ]},
   { id:'bubble',    name:'泡泡龟',   emoji:'🫧🐢',    rarity:'A',   hp:350,  atk:39,  def:18, mr:19, spd:14, crit:0.25,
     img:'../../assets/pets/气泡龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
-    passive:{ type:'bubbleStore', name:'泡沫', pct:60, healPct:70,
-              brief:'受伤储存 <span class="val-atk">60%</span> 为泡泡值，每回合回复储存值的 <span class="val-heal">70%</span>',
-              desc:'泡泡龟受到的伤害储存 <span class="val-atk">60%</span> 为泡泡值。\n每回合回复泡泡值的 <span class="val-heal">70%</span> 生命值，然后清空泡泡值。\n受伤越多，回复越多。' },
+    passive:{ type:'bubbleStore', name:'泡沫', pct:35, healPct:60,
+              brief:'受伤储存 <span class="val-atk">35%</span> 为泡泡值，每回合回复储存值的 <span class="val-heal">60%</span>',
+              desc:'泡泡龟受到的伤害储存 <span class="val-atk">35%</span> 为泡泡值。\n每回合回复泡泡值的 <span class="val-heal">60%</span> 生命值，然后清空泡泡值。\n受伤越多，回复越多。' },
     skills:[
       { name:'泡泡盾',   type:'bubbleShield', hits:1, power:0, pierce:0, cd:3, atkScale:2.1, duration:3, burstScale:2.0,
         brief:'泡泡龟为友方施加（{S:2.1*ATK}）泡泡护盾3回合，到期爆炸造成（{M:2.0*ATK}）魔法伤害',
