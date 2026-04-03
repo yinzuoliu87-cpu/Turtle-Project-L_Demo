@@ -2023,6 +2023,18 @@ function checkDeaths(attacker) {
         spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
         updateHpBar(f, elId);
         addLog(`${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`);
+        // Apply burn + healReduce to all enemies on rebirth
+        const rebirthEnemies = allFighters.filter(e => e.alive && e.side !== f.side);
+        for (const e of rebirthEnemies) {
+          applySkillDebuffs({ burn: true }, e, f);
+          const existing = e.buffs.find(b => b.type === 'healReduce');
+          if (existing) { existing.turns = 3; }
+          else { e.buffs.push({ type: 'healReduce', value: 50, turns: 3 }); }
+          const eElId = getFighterElId(e);
+          spawnFloatingNum(eElId, '🔥灼烧+☠️削减', 'debuff-label', 300, -10);
+          renderStatusIcons(e);
+        }
+        addLog(`${f.emoji}${f.name} 涅槃之火灼烧全体敌人！`);
         try { sfxRebirth(); } catch(e) {}
         return; // skip death processing
       }

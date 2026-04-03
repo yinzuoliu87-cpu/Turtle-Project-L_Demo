@@ -361,7 +361,18 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           if (ff.passive && ff.passive.type === 'phoenixRebirth' && !ff._rebirthUsed) {
             ff._rebirthUsed = true;
             ff.hp = Math.round(ff.maxHp * ff.passive.revivePct / 100);
-            ff.alive = true; return;
+            ff.alive = true;
+            // Burn + healReduce all enemies on rebirth
+            const rEnemies = allFighters.filter(e => e.alive && e.side !== ff.side);
+            for (const e of rEnemies) {
+              const burnVal = Math.round(ff.atk * 0.4);
+              const existing = e.buffs.find(b => b.type === 'phoenixBurnDot');
+              if (existing) { existing.turns = 4; existing.value = Math.max(existing.value, burnVal); }
+              else e.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:8, turns:4, sourceSide:ff.side, sourceIdx:allFighters.indexOf(ff), dmgType:'magic' });
+              const hr = e.buffs.find(b => b.type === 'healReduce');
+              if (hr) { hr.turns = 3; } else e.buffs.push({ type:'healReduce', value:50, turns:3 });
+            }
+            return;
           }
           if (hasChestEquip(ff, 'phoenix') && !ff._chestReviveUsed) {
             ff._chestReviveUsed = true;
