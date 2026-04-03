@@ -369,7 +369,7 @@ function renderStatusIcons(f) {
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动">💫眩晕</span>`;
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
-    if (b.type === 'healReduce') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合">☠️-${b.value}%治疗${b.turns}</span>`;
+    if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合">☠️-${b.value}%治疗${b.turns}</span>`;
     return '';
   }).join('');
   // Star energy indicator
@@ -537,6 +537,7 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)魔抗(?!<)/g, '<span class="val-magic">魔抗</span>');
   result = result.replace(/(?<!\">)最大生命值(?!<)/g, '<span class="val-heal">最大生命值</span>');
   result = result.replace(/(?<!\">)最大HP(?!<)/g, '<span class="val-heal">最大HP</span>');
+  result = result.replace(/(?<!\">)治疗削减(?!<)/g, '<span style="color:#6b8e23">治疗削减</span>');
   return result;
 }
 
