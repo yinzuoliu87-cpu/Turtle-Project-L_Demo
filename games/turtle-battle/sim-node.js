@@ -284,7 +284,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
       // Target selection
       let target;
-      if (SELF_TYPES.includes(skill.type)) {
+      if (SELF_TYPES.includes(skill.type) || skill.selfCast) {
         target = f;
       } else if (ALLY_TYPES.includes(skill.type)) {
         target = allies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
