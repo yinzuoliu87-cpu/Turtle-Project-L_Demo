@@ -331,6 +331,7 @@ async function beginTurn() {
       }
       recalcStats();
       for (const a of allies) updateFighterStats(a, getFighterElId(a));
+      renderStatusIcons(f);
       await sleep(500);
     }
   }

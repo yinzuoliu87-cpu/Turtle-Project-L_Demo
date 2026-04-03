@@ -406,6 +406,14 @@ function renderStatusIcons(f) {
   if (f._bambooCharged && !f._bambooFired) {
     box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击"><img src="assets/bamboo-charge-icon.png" class="stat-icon">充能</span>`;
   }
+  // Rainbow prism color indicator
+  if (f._prismColor !== undefined && f.passive && f.passive.type === 'rainbowPrism') {
+    const prismLabels = ['🔴红光','🔵蓝光','🟢绿光'];
+    const prismColors = ['#ff6b6b','#4dabf7','#06d6a0'];
+    const prismTips = ['攻击力+15%，光束额外真实伤害','护甲+15%魔抗+15%，光束获得护盾','回复7%HP，光束回复生命'];
+    const c = f._prismColor;
+    box.innerHTML += `<span style="color:${prismColors[c]};background:${prismColors[c]}22;padding:1px 5px;border-radius:6px;font-weight:700" title="${prismTips[c]}">${prismLabels[c]}</span>`;
+  }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
 }
