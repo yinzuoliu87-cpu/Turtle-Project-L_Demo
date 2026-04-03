@@ -602,31 +602,29 @@ async function doIceSpike(attacker, target, skill) {
     const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
     if (isCrit) totalCrits++;
 
-    const isNormal = (i % 2 === 0); // odd hits (1,3,5) = index 0,2,4 = normal; even hits (2,4,6) = index 1,3,5 = pierce
+    const isPhysical = (i % 2 === 0); // index 0,2,4 = physical; index 1,3,5 = magic
     const raw = Math.round(perHit);
     let dmg;
     const yOff = (i % 4) * 32;
 
-    if (isNormal) {
+    if (isPhysical) {
       dmg = Math.max(1, Math.round(raw * critMult * (1 - defReduction)));
-      // Frost bonus vs fire targets
       if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
         dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
       }
       applyRawDmg(attacker, target, dmg, false, false, 'physical');
       totalNormal += dmg;
-
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
     } else {
-      dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
-      // Frost bonus vs fire targets (pierce portion)
+      const effMr = calcEffDef(attacker, target, 'magic');
+      const mrRed = effMr / (effMr + DEF_CONSTANT);
+      dmg = Math.max(1, Math.round(raw * critMult * (1 - mrRed)));
       if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
         dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
       }
-      applyRawDmg(attacker, target, dmg, true, false, 'true');
+      applyRawDmg(attacker, target, dmg, false, false, 'magic');
       totalPierce += dmg;
-  
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
     }
 
     await triggerOnHitEffects(attacker, target, dmg);
