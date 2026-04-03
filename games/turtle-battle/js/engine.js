@@ -1562,7 +1562,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   }
   // StoneWall reflect
   if (target.passive && target.passive.type === 'stoneWall' && attacker.alive) {
-    const reflectPct = target.passive.reflectBase + target.passive.reflectPerDef * target.def;
+    const reflectPct = target.passive.reflectBase + target.passive.reflectPerDef * target.def + (target.passive.reflectPerMr || 0) * (target.mr || target.def);
     const reflectDmg = Math.round(dmg * reflectPct / 100);
     if (reflectDmg > 0) {
       applyRawDmg(null, attacker, reflectDmg);

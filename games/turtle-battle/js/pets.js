@@ -63,7 +63,9 @@ const ALL_PETS = [
     ]},
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:35,  def:18, mr:15, spd:6, crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
-    passive:{ type:'stoneWall', defGain:2, maxDef:16, reflectBase:10, reflectPerDef:1, desc:'每回合+2防御(上限+16)；受伤反弹 (10%+1%×防御={DEF}) = {N:10+DEF}% 伤害' },
+    passive:{ type:'stoneWall', name:'坚壁', defGain:2, maxDef:16, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
+              brief:'每回合永久 <span class="val-def">护甲</span><span class="val-atk">+2</span>（上限<span class="val-atk">+16</span>）；受伤反弹 (5% + 1%×<span class="val-def">护甲</span> + 0.5%×<span class="val-magic">魔抗</span>) 伤害',
+              desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+2</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skills:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.25, defScale:1,
         brief:'石头龟打击2段，共{N:0.25*ATK*2}+{D:1*DEF*2}物理伤害（攻击力+防御力加成）',

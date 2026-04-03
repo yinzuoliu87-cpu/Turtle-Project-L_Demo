@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'🪨', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'pirate-plunder-icon.png', mechBody:'🤖', candySteal:'🍬'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'stone-wall-icon.png', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'⚡', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'pirate-plunder-icon.png', mechBody:'🤖', candySteal:'🍬'
 };
 
 function updateFighterStats(f, elId) {
@@ -456,6 +456,7 @@ function renderSkillTemplate(template, f, s) {
     mechAtk: (f._drones ? f._drones.length : (f.passive && f.passive.droneCount) || 0) * (f.passive && f.passive.mechAtkPer || 5),
     crit: f.crit || 0.25,
     bambooGainedHp: f._bambooGainedHp || 0,
+    stoneDefGained: f._stoneDefGained || 0,
     hunterKills: f._hunterKills || 0,
     hunterStolenAtk: f._hunterStolenAtk || 0,
     hunterStolenDef: f._hunterStolenDef || 0,
