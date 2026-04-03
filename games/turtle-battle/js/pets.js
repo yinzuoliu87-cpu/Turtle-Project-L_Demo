@@ -102,7 +102,7 @@ const ALL_PETS = [
       { name:'平等', type:'angelEquality', dmgType:'magic', hits:2, power:0, pierce:0, cd:5, normalScale:0.6, pierceScale:0.6,
         antiHighRarity:['S','SS'], forceCrit:true, healPctOfDmg:10,
         brief:'天使龟对单体打击两段，分别造成 {M:0.6*ATK} 魔法伤害和 {T:0.6*ATK} 真实伤害，如果目标是S级及以上则两段攻击必定暴击并回复造成伤害的10%<span class="val-heal">生命值</span>',
-        detail:'天使龟对单体打击两段：\n第一段造成 60%×(攻击力={ATK}) = {M:0.6*ATK} 魔法伤害（受魔抗减免）\n第二段造成 60%×(攻击力={ATK}) = {T:0.6*ATK} 真实伤害（无视护甲和魔抗）\n\n如果目标为S级及以上：两段必定暴击，回复总伤害的10%<span class="val-heal">生命值</span>。\n冷却{cd}回合。' },
+        detail:'天使龟对单体打击两段：\n第一段造成 60%×(攻击力={ATK}) = {M:0.6*ATK} 魔法伤害\n第二段造成 60%×(攻击力={ATK}) = {T:0.6*ATK} 真实伤害\n\n如果目标为S级及以上，则两段打击必定暴击，并回复总伤害的10%<span class="val-heal">生命值</span>。\n冷却{cd}回合。' },
     ]},
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:370,  atk:38,  def:16, mr:17, spd:9, crit:0.25,
     img:'../../assets/pets/寒冰龟.png',
