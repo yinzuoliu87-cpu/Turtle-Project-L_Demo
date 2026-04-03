@@ -798,7 +798,7 @@ async function executeAction(action) {
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
-  if (action.aoe) {
+  if (action.aoe && skill.type !== 'pirateCannonBarrage') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
@@ -926,6 +926,8 @@ async function executeAction(action) {
     await sleep(800);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
+  } else if (skill.type === 'pirateCannonBarrage') {
+    await doPirateCannonBarrage(f, skill);
   } else if (skill.type === 'phoenixBurn') {
     const target = allFighters[action.targetId];
     await doPhoenixBurn(f, target, skill);

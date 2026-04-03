@@ -386,19 +386,7 @@ function startBattle(seed) {
       recalcStats();
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${f.passive.atkDownPct}% ${f.passive.atkDownTurns}回合</span>`);
     }
-    // Pirate barrage: opening bombardment on random enemy
-    if (f.passive && f.passive.type === 'pirateBarrage') {
-      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-      if (enemies.length) {
-        const target = enemies[Math.floor(Math.random() * enemies.length)];
-        const dmg = Math.round(f.maxHp * f.passive.bombardPct / 100);
-        applyRawDmg(f, target, dmg, true, false, 'true');
-        const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'pierce-dmg', 0, 0);
-        updateHpBar(target, tElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);
-      }
-    }
+    // (Pirate barrage moved to after renderFighters for visual effect)
     // Summon ally: create a random C/B/A turtle as summon
     if (f.passive && f.passive.type === 'summonAlly') {
       const teamIds = allFighters.map(t => t.id);
@@ -454,9 +442,31 @@ function startBattle(seed) {
   // Snapshot was already set in createFighter with raw values
   renderFighters();
   updateDmgStats();
-  // Delay if pirate bombardment happened so player can see it
-  const hasPirate = allFighters.some(f => f.passive && f.passive.type === 'pirateBarrage');
-  setTimeout(() => beginTurn(), hasPirate ? 3000 : 0);
+
+  // Pirate barrage: opening bombardment (after render so player sees it)
+  const pirates = allFighters.filter(f => f.alive && f.passive && f.passive.type === 'pirateBarrage');
+  if (pirates.length) {
+    setTimeout(async () => {
+      for (const f of pirates) {
+        const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+        if (!enemies.length) continue;
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const dmg = Math.round(f.maxHp * f.passive.bombardPct / 100);
+        applyRawDmg(f, target, dmg, true, false, 'true');
+        const tElId = getFighterElId(target);
+        const tEl = document.getElementById(tElId);
+        if (tEl) tEl.classList.add('hit-shake');
+        spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'true-dmg', 0, 0, { atkSide: f.side, amount: dmg });
+        updateHpBar(target, tElId);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);
+        await sleep(800);
+        if (tEl) tEl.classList.remove('hit-shake');
+      }
+      setTimeout(() => beginTurn(), 1500);
+    }, 4000);
+  } else {
+    beginTurn();
+  }
 }
 
 
