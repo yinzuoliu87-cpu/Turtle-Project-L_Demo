@@ -2331,7 +2331,7 @@ async function doChestSmash(attacker, target, skill) {
 async function doChestCount(caster, skill) {
   const fElId = getFighterElId(caster);
   // Scaling: +12% per 100 treasure
-  const treasureBonus = 1 + Math.floor((caster._chestTreasure || 0) / 100) * 0.12;
+  const treasureBonus = 1 + Math.floor((caster._chestTreasure || 0) / 100) * 0.14;
   // Heal
   const healAmt = Math.round(caster.maxHp * skill.healPct / 100 * treasureBonus);
   const before = caster.hp;
