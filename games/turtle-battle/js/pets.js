@@ -231,9 +231,9 @@ const ALL_PETS = [
     passive:{ type:'rainbowPrism', name:'棱镜', atkPct:15, defPct:15, healPct:7,
               desc:'彩虹龟的棱镜每回合折射出随机光芒，为全体友方附加增益1回合：\n🔴红光：攻击力 <span class="val-atk">+15%</span>\n🔵蓝光：护甲 <span class="val-atk">+15%</span> + 魔抗 <span class="val-atk">+15%</span>\n🟢绿光：回复 <span class="val-heal">7%</span> 最大生命值\n\n首回合不会抽到绿光。' },
     skills:[
-      { name:'七彩光束', type:'magic', dmgType:'magic', hits:2, power:0, pierce:0, cd:0, atkScale:0.7,
-        brief:'彩虹龟射出光束2段，共 {M:0.7*ATK*2} 魔法伤害',
-        detail:'彩虹龟射出七彩光束，对单体打击2段。\n每段造成（70%×攻击力({ATK}) = {M:0.7*ATK}）魔法伤害。\n共（140%×攻击力({ATK}) = {M:0.7*ATK*2}）魔法伤害。' },
+      { name:'七彩光束', type:'magic', dmgType:'magic', hits:2, power:0, pierce:0, cd:0, atkScale:0.7, prismBonus:true,
+        brief:'彩虹龟射出光束2段，共 {M:0.7*ATK*2} 魔法伤害，根据当前棱镜颜色附加效果',
+        detail:'彩虹龟射出七彩光束，对单体打击2段。\n每段造成（70%×攻击力({ATK}) = {M:0.7*ATK}）魔法伤害。\n共（140%×攻击力({ATK}) = {M:0.7*ATK*2}）魔法伤害。\n\n根据当前回合棱镜颜色附加效果：\n🔴红光：额外造成20%总伤害的真实伤害\n🔵蓝光：自身获得（20%×攻击力({ATK}) = {S:0.2*ATK}）护盾\n🟢绿光：回复自身 <span class="val-heal">5%</span> 最大生命值' },
       { name:'棱镜护盾', type:'shield', hits:1, power:0, pierce:0, cd:3, shieldAtkScale:0.5, aoeAlly:true,
         brief:'彩虹龟为全体友方施加 {S:0.5*ATK} 护盾',
         detail:'彩虹龟用棱镜之光保护全体友方。\n每人获得（50%×攻击力({ATK}) = {S:0.5*ATK}）护盾。\n冷却{cd}回合。' },

@@ -298,6 +298,7 @@ async function beginTurn() {
       // First turn: only red or blue (green heal is useless at full HP)
       const maxRoll = (turnNum <= 1) ? 2 : 3;
       const roll = Math.floor(Math.random() * maxRoll);
+      f._prismColor = roll; // 0=red, 1=blue, 2=green
       if (roll === 0) {
         // Red: ATK up
         for (const a of allies) {
@@ -1356,6 +1357,36 @@ async function doDamage(attacker, target, skill) {
 
     // Passive: gamblerMultiHit
     await tryGamblerMultiHit(attacker, target, tElId);
+  }
+
+  // Rainbow prism bonus: skill with prismBonus gains extra effect based on current color
+  if (skill.prismBonus && attacker._prismColor !== undefined && attacker.alive) {
+    const fElId = getFighterElId(attacker);
+    if (attacker._prismColor === 0 && target.alive) {
+      // Red: bonus 20% damage as true
+      const bonus = Math.round(totalDirect * 0.2);
+      if (bonus > 0) {
+        applyRawDmg(attacker, target, bonus, false, false, 'true');
+        spawnFloatingNum(tElId, `-${bonus}🔴`, 'true-dmg', 100, 0, { atkSide: attacker.side, amount: bonus });
+        updateHpBar(target, tElId);
+      }
+    } else if (attacker._prismColor === 1) {
+      // Blue: gain small shield (20% ATK)
+      const shieldAmt = Math.round(attacker.atk * 0.2);
+      attacker.shield += shieldAmt;
+      spawnFloatingNum(fElId, `+${shieldAmt}🛡🔵`, 'shield-num', 100, 0);
+      updateHpBar(attacker, fElId);
+    } else if (attacker._prismColor === 2) {
+      // Green: heal 5% maxHP
+      const heal = Math.round(attacker.maxHp * 0.05);
+      const before = attacker.hp;
+      attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
+      const actual = Math.round(attacker.hp - before);
+      if (actual > 0) {
+        spawnFloatingNum(fElId, `+${actual}🟢`, 'heal-num', 100, 0);
+        updateHpBar(attacker, fElId);
+      }
+    }
   }
 
   // Apply debuffs from skill (only if target still alive)
