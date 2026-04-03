@@ -154,7 +154,10 @@ async function beginTurn() {
     if (f.passive.type === 'turnScaleAtk') {
       const gain = Math.round(f.baseAtk * f.passive.pct / 100);
       f.baseAtk += gain;
-      spawnFloatingNum(getFighterElId(f), `+${gain}攻`, 'passive-num', 0, 0);
+      recalcStats();
+      const elId = getFighterElId(f);
+      updateFighterStats(f, elId);
+      spawnFloatingNum(elId, `+${gain}攻`, 'passive-num', 0, 0);
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">攻击+${gain}</span>`);
     }
     if (f.passive.type === 'turnScaleHp') {
@@ -162,9 +165,10 @@ async function beginTurn() {
       f.maxHp += gain;
       f.hp += gain;
       const elId = getFighterElId(f);
-      spawnFloatingNum(elId, `+${gain}HP`, 'passive-num', 0, 0);
       updateHpBar(f, elId);
+      updateFighterStats(f, elId);
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">最大HP+${gain}</span>`);
+      spawnFloatingNum(elId, `+${gain}HP`, 'passive-num', 0, 0);
     }
     if (f.passive.type === 'stoneWall') {
       // Permanent def gain per turn, capped
@@ -242,8 +246,10 @@ async function beginTurn() {
       f.armorPenPct += f.passive.armorPenPct / 100;
       // Visual + log
       spawnFloatingNum(elId, '🐚气场觉醒!', 'crit-label', 0, -20);
+      recalcStats();
       spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}防 +${hpGain}HP`, 'passive-num', 0, 10);
       updateHpBar(f, elId);
+      updateFighterStats(f, elId);
       addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
     // Passive: bambooCharge — charge every other turn, only consume on actual skill use
@@ -319,6 +325,7 @@ async function beginTurn() {
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🟢绿光！全体友方回复${f.passive.healPct}%最大HP</span>`);
       }
       recalcStats();
+      for (const a of allies) updateFighterStats(a, getFighterElId(a));
       await sleep(500);
     }
   }
