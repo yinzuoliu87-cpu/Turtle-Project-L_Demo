@@ -496,6 +496,10 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)物理(?!伤害|<)/g, '<span class="val-normal">物理</span>');
   result = result.replace(/(?<!\">)魔法(?!伤害|<)/g, '<span class="val-magic">魔法</span>');
   result = result.replace(/防御力加成/g, '<span class="val-def">防御力加成</span>');
+  // Auto-color stat keywords: 攻击力, 护甲, 魔抗
+  result = result.replace(/(?<!\">)攻击力(?!<)/g, '<span class="val-atk">攻击力</span>');
+  result = result.replace(/(?<!\">)护甲(?!<)/g, '<span class="val-def">护甲</span>');
+  result = result.replace(/(?<!\">)魔抗(?!<)/g, '<span class="val-magic">魔抗</span>');
   return result;
 }
 

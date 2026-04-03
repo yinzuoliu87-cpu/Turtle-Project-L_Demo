@@ -284,7 +284,7 @@ function renderPetGrid() {
     if (p.passive) {
       const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
       const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="stat-icon">` : iconRaw;
-      passiveHtml = `<span class="pet-passive-icon" onclick="event.stopPropagation();showPetPassive(event,'${p.id}')">${iconH}</span>`;
+      passiveHtml = `<span class="pet-passive-icon" data-passive-id="${p.id}">${iconH}</span>`;
     }
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
@@ -300,6 +300,14 @@ function renderPetGrid() {
       </div>
     </div>`;
   }).join('');
+  // Bind passive icon clicks via event delegation
+  grid.querySelectorAll('.pet-passive-icon').forEach(icon => {
+    icon.addEventListener('click', e => {
+      e.stopPropagation();
+      e.preventDefault();
+      showPetPassive(e, icon.dataset.passiveId);
+    });
+  });
 }
 
 function togglePet(id) {
