@@ -1137,6 +1137,7 @@ function buildStateSync() {
       _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
       _dmgDealt: f._dmgDealt, _dmgTaken: f._dmgTaken,
       _physDmgDealt: f._physDmgDealt, _magicDmgDealt: f._magicDmgDealt, _trueDmgDealt: f._trueDmgDealt,
+      _physDmgTaken: f._physDmgTaken, _magicDmgTaken: f._magicDmgTaken, _trueDmgTaken: f._trueDmgTaken,
       _bambooCharged: f._bambooCharged, _bambooCounter: f._bambooCounter,
       _hunterKills: f._hunterKills, _lifestealPct: f._lifestealPct || 0,
       _drones: f._drones ? f._drones.length : 0,
@@ -1164,6 +1165,7 @@ function applyStateSync(state) {
     f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
     f._dmgDealt = sf._dmgDealt; f._dmgTaken = sf._dmgTaken;
     f._physDmgDealt = sf._physDmgDealt; f._magicDmgDealt = sf._magicDmgDealt; f._trueDmgDealt = sf._trueDmgDealt;
+    f._physDmgTaken = sf._physDmgTaken; f._magicDmgTaken = sf._magicDmgTaken; f._trueDmgTaken = sf._trueDmgTaken;
     f._bambooCharged = sf._bambooCharged; f._bambooCounter = sf._bambooCounter;
     f._hunterKills = sf._hunterKills; f._lifestealPct = sf._lifestealPct || 0;
     f.bubbleStore = sf.bubbleStore; f.bubbleShieldVal = sf.bubbleShieldVal; f.bubbleShieldTurns = sf.bubbleShieldTurns;
@@ -1397,25 +1399,16 @@ function applySkillDebuffs(skill, target, attacker) {
   if (skill.defDown) debuffs.push({ type:'defDown', value:skill.defDown.pct, turns:skill.defDown.turns });
   if (skill.mrDown)  debuffs.push({ type:'mrDown',  value:skill.mrDown.pct,  turns:skill.mrDown.turns });
 
-  // Unified burn: 0.3*ATK + 3*maxHP, magic damage, 4 turns, no stack (refresh)
+  // Unified burn: 0.4*ATK + 8%maxHP, magic damage, 4 turns, no stack (refresh)
   if (skill.burn && target.alive && attacker) {
-    const burnVal = Math.round(attacker.atk * 0.3);
-    const burnHp = 3;
+    const burnVal = Math.round(attacker.atk * 0.4);
+    const burnHp = 8;
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
     if (existing) { existing.turns = 4; existing.value = Math.max(existing.value, burnVal); }
     else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:4, sourceSide: attacker.side, dmgType:'magic' });
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
     addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧4回合（魔法伤害）</span>`);
-    renderStatusIcons(target);
-  }
-  // Legacy phoenixBurn support (will migrate to burn:true)
-  if (skill.phoenixBurn && !skill.burn && target.alive) {
-    const burnVal = (skill.phoenixBurn.atkPct && attacker) ? Math.round(attacker.atk * skill.phoenixBurn.atkPct / 100) : 0;
-    target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:skill.phoenixBurn.hpPct || 5, turns:skill.phoenixBurn.turns, sourceSide: attacker ? attacker.side : null, dmgType:'magic' });
-    const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
-    addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧 ${skill.phoenixBurn.turns}回合</span>`);
     renderStatusIcons(target);
   }
 

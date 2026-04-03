@@ -1137,19 +1137,21 @@ async function doPhoenixBurn(attacker, target, skill) {
   await sleep(450);
   tEl.classList.remove('hit-shake');
 
-  // Apply phoenix burn DoT — same caster's burn only refreshes duration, not stack
+  // Apply unified burn DoT — 0.4*ATK + 8%maxHP magic, 4 turns, no stack (refresh)
   if (target.alive) {
-    const casterId = allFighters.indexOf(attacker);
-    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot' && b.casterId === casterId);
+    const burnVal = Math.round(attacker.atk * 0.4);
+    const burnHp = 8;
+    const burnTurns = 4;
+    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
     if (existing) {
-      existing.turns = skill.burnTurns; // refresh only
-      spawnFloatingNum(tElId, `🔥刷新${skill.burnTurns}回合`, 'debuff-label', 200, 0);
-      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧刷新至${skill.burnTurns}回合</span>`);
+      existing.turns = burnTurns;
+      existing.value = Math.max(existing.value, burnVal);
+      spawnFloatingNum(tElId, `🔥刷新${burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧刷新至${burnTurns}回合</span>`);
     } else {
-      const dotDmg = Math.round(attacker.atk * skill.burnAtkScale);
-      target.buffs.push({ type:'phoenixBurnDot', value:dotDmg, hpPct:skill.burnHpPct, turns:skill.burnTurns, casterId });
-      spawnFloatingNum(tElId, `🔥灼烧${skill.burnTurns}回合`, 'debuff-label', 200, 0);
-      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧${skill.burnTurns}回合</span>`);
+      target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:burnTurns, sourceSide:attacker.side, dmgType:'magic' });
+      spawnFloatingNum(tElId, `🔥灼烧${burnTurns}回合`, 'debuff-label', 200, 0);
+      addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧${burnTurns}回合</span>`);
     }
     renderStatusIcons(target);
   }
