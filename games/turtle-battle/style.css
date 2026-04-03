@@ -85,9 +85,9 @@ body{
 .pet-emoji{font-size:40px;margin-bottom:6px}
 .pet-name{font-size:16px;font-weight:600}
 .pet-avatar{display:flex;justify-content:center;align-items:center;min-height:80px;margin-bottom:6px;position:relative}
-.pet-passive-icon{position:absolute;top:-6px;right:-6px;font-size:16px;cursor:pointer;background:var(--bg);border-radius:50%;width:30px;height:30px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px rgba(0,0,0,.5);z-index:10;touch-action:manipulation}
-.pet-passive-icon img.stat-icon{width:22px;height:22px}
-.pet-rarity{font-size:12px;font-weight:700;position:absolute;top:6px;left:8px}
+.pet-passive-icon{position:absolute;top:-8px;right:-8px;font-size:24px;cursor:pointer;background:var(--bg);border-radius:50%;width:42px;height:42px;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px rgba(0,0,0,.5);z-index:10;touch-action:manipulation}
+.pet-passive-icon img.stat-icon{width:32px;height:32px}
+.pet-rarity{font-size:18px;font-weight:700;position:absolute;top:4px;left:8px;text-shadow:0 0 6px rgba(0,0,0,.5)}
 .pet-stats-mini{display:flex;gap:6px;justify-content:center;font-size:13px;color:var(--fg2);margin-top:6px}
 .pet-stats-mini .stat-icon{width:16px;height:16px}
 .select-actions{display:flex;gap:12px;justify-content:center}
