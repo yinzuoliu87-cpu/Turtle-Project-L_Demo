@@ -295,7 +295,9 @@ async function beginTurn() {
     // Passive: rainbowPrism — random team buff each turn
     if (f.passive.type === 'rainbowPrism') {
       const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
-      const roll = Math.floor(Math.random() * 3);
+      // First turn: only red or blue (green heal is useless at full HP)
+      const maxRoll = (turnNum <= 1) ? 2 : 3;
+      const roll = Math.floor(Math.random() * maxRoll);
       if (roll === 0) {
         // Red: ATK up
         for (const a of allies) {
@@ -305,13 +307,15 @@ async function beginTurn() {
         }
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔴红光！全体友方攻击+${f.passive.atkPct}% 1回合</span>`);
       } else if (roll === 1) {
-        // Blue: DEF up
+        // Blue: DEF + MR up
         for (const a of allies) {
-          const gain = Math.round(a.baseDef * f.passive.defPct / 100);
-          a.buffs.push({ type:'defUp', value:gain, turns:2 });
-          spawnFloatingNum(getFighterElId(a), `+${gain}防🔵`, 'passive-num', 0, 0);
+          const defGain = Math.round(a.baseDef * f.passive.defPct / 100);
+          const mrGain = Math.round((a.baseMr || a.baseDef) * f.passive.defPct / 100);
+          a.buffs.push({ type:'defUp', value:defGain, turns:2 });
+          a.buffs.push({ type:'mrUp', value:mrGain, turns:2 });
+          spawnFloatingNum(getFighterElId(a), `+${defGain}甲+${mrGain}抗🔵`, 'passive-num', 0, 0);
         }
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔵蓝光！全体友方防御+${f.passive.defPct}% 1回合</span>`);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔵蓝光！全体友方护甲+${f.passive.defPct}% 魔抗+${f.passive.defPct}% 1回合</span>`);
       } else {
         // Green: heal
         for (const a of allies) {

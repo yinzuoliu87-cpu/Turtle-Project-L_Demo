@@ -157,9 +157,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       }
       if (p.type === 'rainbowPrism') {
         const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
-        const roll = Math.floor(Math.random() * 3);
+        const maxRoll = (turnNum <= 1) ? 2 : 3;
+        const roll = Math.floor(Math.random() * maxRoll);
         if (roll === 0) { for (const a of allies) { a.buffs.push({ type:'atkUp', value:Math.round(a.baseAtk * p.atkPct / 100), turns:2 }); } }
-        else if (roll === 1) { for (const a of allies) { a.buffs.push({ type:'defUp', value:Math.round(a.baseDef * p.defPct / 100), turns:2 }); } }
+        else if (roll === 1) { for (const a of allies) { a.buffs.push({ type:'defUp', value:Math.round(a.baseDef * p.defPct / 100), turns:2 }); a.buffs.push({ type:'mrUp', value:Math.round((a.baseMr||a.baseDef) * p.defPct / 100), turns:2 }); } }
         else { for (const a of allies) { a.hp = Math.min(a.maxHp, a.hp + Math.round(a.maxHp * p.healPct / 100)); } }
         recalcStats();
       }
