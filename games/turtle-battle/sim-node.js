@@ -255,7 +255,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         'lightningBuff','iceShield'];
       const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
       const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
-        'starMeteor','diceAllIn','pirateCannonBarrage'];
+        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm'];
 
       const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
       const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield');

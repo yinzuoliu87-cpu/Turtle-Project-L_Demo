@@ -237,7 +237,7 @@ const ALL_PETS = [
       { name:'棱镜护盾', type:'shield', hits:1, power:0, pierce:0, cd:3, shieldAtkScale:0.5, aoeAlly:true,
         brief:'彩虹龟为全体友方施加 {S:0.5*ATK} 护盾',
         detail:'彩虹龟用棱镜之光保护全体友方。\n每人获得（50%×攻击力({ATK}) = {S:0.5*ATK}）护盾。\n冷却{cd}回合。' },
-      { name:'全色风暴', type:'magic', dmgType:'magic', hits:4, power:0, pierce:0, cd:4, aoe:true, atkScale:0.2, pierceScale:0.1, defDown:{pct:20,turns:3}, burn:true,
+      { name:'全色风暴', type:'rainbowStorm', dmgType:'magic', hits:4, power:0, pierce:0, cd:4, aoe:true, atkScale:0.2, pierceScale:0.1, defDown:{pct:20,turns:3}, burn:true,
         brief:'彩虹龟对全体敌人4段，每段 {M:0.2*ATK} 魔法+{T:0.1*ATK} 真实，施加 <span class="val-atk">-20%护甲</span> + 灼烧4回合',
         detail:'彩虹龟对全体敌人释放七色风暴，共4段。\n每段造成（20%×攻击力({ATK}) = {M:0.2*ATK}）魔法伤害 +（10%×攻击力({ATK}) = {T:0.1*ATK}）真实伤害。\n对所有命中目标施加 <span class="val-atk">-20%</span> 护甲削减效果，持续3回合。\n附加灼烧4回合（每回合40%攻击力+8%最大生命值，魔法伤害）。\n冷却{cd}回合。' },
     ]},
