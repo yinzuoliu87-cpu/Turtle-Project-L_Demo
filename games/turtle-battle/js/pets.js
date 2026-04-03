@@ -69,7 +69,7 @@ const ALL_PETS = [
     skills:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.7, mrScale:0.4,
         brief:'石头龟打击2段，共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害',
-        detail:'石头龟对单体目标打击2段，每段造成 35%×攻击力({ATK}) = {N:0.35*ATK} + 70%×护甲({DEF}) = {D:0.7*DEF} + 40%×魔抗({MR}) = {M:0.4*MR} 物理伤害。\n共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害。' },
+        detail:'石头龟对单体目标打击2段，每段造成（35%×攻击力({ATK}) = {N:0.35*ATK}）+（70%×护甲({DEF}) = {D:0.7*DEF}）+（40%×魔抗({MR}) = {M:0.4*MR}）物理伤害。\n共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害。' },
       { name:'岩石护甲', type:'shield', hits:1, power:0, shield:0, cd:3, aoeAlly:true, shieldFlat:14, shieldHpPct:10, shieldDuration:3,
         brief:'石头龟为全体友军施加{S:14+HP*0.1}护盾，持续3回合',
         detail:'石头龟为全体友军施加护盾，14 + 10%×最大生命值({HP}) = {S:14+HP*0.1} 护盾，持续3回合。\n冷却{cd}回合。' },
