@@ -969,8 +969,9 @@ async function doLightningBarrage(attacker, skill) {
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
-    await sleep(100);
+    await sleep(280);
     tEl.classList.remove('hit-shake');
+    await sleep(70);
   }
   addLog(`${attacker.emoji}${attacker.name} <b>雷暴</b> ${skill.hits}次随机闪电，每次 <span class="log-direct">${perHitDmg}伤害</span>`);
 }
