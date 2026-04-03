@@ -288,7 +288,7 @@ function renderPetGrid() {
     }
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
-         onclick="togglePet('${p.id}')">
+         onclick="togglePet(event,'${p.id}')">
       <div class="pet-avatar">${buildPetImgHTML(p, 56)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
@@ -302,7 +302,8 @@ function renderPetGrid() {
   }).join('');
 }
 
-function togglePet(id) {
+function togglePet(e, id) {
+  if (e && e.target && e.target.closest('.pet-passive-icon')) return;
   const idx = selectedIds.indexOf(id);
   if (idx >= 0) selectedIds.splice(idx,1);
   else { if (selectedIds.length >= 2) return showToast('最多选2只'); selectedIds.push(id); }
