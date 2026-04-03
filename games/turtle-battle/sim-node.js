@@ -272,6 +272,12 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
       if (!skill) continue;
 
+      // Chest turtle AI: use chestCount when HP < 60%
+      if (f.passive && f.passive.type === 'chestTreasure') {
+        const countS = ready.find(s => s.type === 'chestCount');
+        if (countS && f.hp / f.maxHp < 0.6) skill = countS;
+      }
+
       // Two-head AI: switch forms based on HP
       if (f.passive && f.passive.type === 'twoHeadDual') {
         const switchS = ready.find(s => s.type === 'twoHeadSwitch');
