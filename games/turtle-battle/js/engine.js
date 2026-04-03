@@ -786,6 +786,8 @@ async function executeAction(action) {
   animating = true;
   const f = allFighters[action.attackerId];
   if (!f) { console.error('executeAction: fighter not found', action); animating=false; return; }
+  // Set currentActingFighter so floating numbers know attack direction (also for online guest)
+  currentActingFighter = f;
   // Track this fighter as acted (needed for online: opponent actions come via network)
   actedThisSide.add(action.attackerId);
   const skill = f.skills[action.skillIdx];
