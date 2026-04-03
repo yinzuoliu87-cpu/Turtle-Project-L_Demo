@@ -179,10 +179,11 @@ body{
 .passive-icon{cursor:pointer;font-size:14px;background:none !important}
 
 /* ── PASSIVE DETAIL POPUP ── */
-.passive-popup{position:fixed;z-index:300;background:var(--bg);border:1px solid rgba(255,255,255,.15);border-radius:10px;padding:12px 14px;max-width:320px;font-size:12px;line-height:1.6;box-shadow:0 8px 30px rgba(0,0,0,.5);color:var(--fg);animation:fadeUp .15s ease;max-height:70vh;overflow-y:auto}
-.passive-popup-title{font-weight:700;font-size:13px;margin-bottom:4px;display:flex;align-items:center;gap:6px}
-.passive-popup-desc,.passive-popup-brief,.passive-popup-detail{color:var(--fg2)}
-.passive-detail-toggle{color:#4dabf7;cursor:pointer;font-size:12px;display:block;margin-top:6px}
+.passive-popup{position:fixed;z-index:300;background:var(--bg);border:1px solid rgba(255,255,255,.15);border-radius:12px;padding:16px 18px;max-width:360px;font-size:14px;line-height:1.7;box-shadow:0 8px 30px rgba(0,0,0,.5);color:var(--fg);animation:fadeUp .15s ease;max-height:70vh;overflow-y:auto}
+.passive-popup-title{font-weight:700;font-size:16px;margin-bottom:6px;display:flex;align-items:center;gap:8px}
+.passive-popup-icon{width:36px;height:36px;vertical-align:middle}
+.passive-popup-desc,.passive-popup-brief,.passive-popup-detail{color:var(--fg2);font-size:13px}
+.passive-detail-toggle{color:#4dabf7;cursor:pointer;font-size:13px;display:block;margin-top:8px}
 
 /* ── PET SPRITE / IMAGE (matches pet center) ── */
 .sprite-wrap{display:inline-block;overflow:hidden}

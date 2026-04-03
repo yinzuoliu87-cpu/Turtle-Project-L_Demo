@@ -318,7 +318,7 @@ function showPetPassive(e, petId) {
   if (!p || !p.passive) return;
   // Use the same battle popup system
   const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
-  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
+  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="passive-popup-icon">` : iconRaw;
   const passiveName = p.passive.name || '被动';
   const descText = p.passive.brief || p.passive.desc || '';
   const fakeFighter = { atk:p.atk, def:p.def, mr:p.mr||p.def, maxHp:p.hp, hp:p.hp, crit:p.crit||0.25, buffs:[], _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0, passive:p.passive };

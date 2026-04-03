@@ -1056,7 +1056,7 @@ function showPassivePopup(e, fIdx) {
   if (!f || !f.passive) return;
   const popup = document.getElementById('passivePopup');
   const iconRaw = PASSIVE_ICONS[f.passive.type] || '⭐';
-  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
+  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="passive-popup-icon">` : iconRaw;
   // Render passive desc — use descMelee if in melee form
   const descText = (f._twoHeadForm === 'melee' && f.passive.descMelee) ? f.passive.descMelee : f.passive.desc;
   const descRendered = renderSkillTemplate(descText, f, f.passive);
