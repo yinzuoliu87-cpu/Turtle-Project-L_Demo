@@ -574,9 +574,10 @@ function buildSkillBrief(f, s) {
   let result;
   if (s.brief === '_chestSmashBrief_') {
     let total = Math.round(f.atk * s.atkScale);
-    if (hasChestEquip(f, 'rock')) total += Math.round(f.def * 0.5) + Math.round((f.mr||f.def) * 0.5);
+    if (hasChestEquip(f, 'rock')) total += Math.round(f.def * 0.7) + Math.round((f.mr||f.def) * 0.7);
     const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
-    result = `宝箱龟砸击敌方，造成（<span class="val-normal">${total}</span>）${dmgType}`;
+    const hits = s.hits || 4;
+    result = `宝箱龟砸击敌方${hits}段，共（<span class="val-normal">${total}</span>）${dmgType}`;
   } else {
     result = s.brief ? renderSkillTemplate(s.brief, f, s) : colorDmgKeywords(autoGenerateBrief(f, s));
   }
@@ -594,19 +595,21 @@ function buildSkillDetailDesc(f, s) {
   return result;
 }
 function buildChestSmashDetail(f, s) {
-  const atkDmg = Math.round(f.atk * s.atkScale);
-  let lines = `宝箱龟对单体砸击，造成（${Math.round(s.atkScale*100)}%×<span class="val-normal">攻击力</span>(${f.atk}) = <span class="val-normal">${atkDmg}</span>）`;
-  let total = atkDmg;
+  const hits = s.hits || 4;
+  const totalBase = Math.round(f.atk * s.atkScale);
+  let totalAll = totalBase;
+  let lines = `宝箱龟对单体砸击${hits}段。\n总基础伤害：（${Math.round(s.atkScale*100)}%×<span class="val-normal">攻击力</span>(${f.atk}) = <span class="val-normal">${totalBase}</span>）`;
   if (hasChestEquip(f, 'rock')) {
     const defDmg = Math.round(f.def * 0.7);
     const mrDmg = Math.round((f.mr||f.def) * 0.7);
-    lines += `+（50%×<span class="val-def">护甲</span>(${f.def}) = <span class="val-def">${defDmg}</span>）+（50%×<span class="val-magic">魔抗</span>(${f.mr||f.def}) = <span class="val-magic">${mrDmg}</span>）`;
-    total += defDmg + mrDmg;
+    lines += `+（70%×<span class="val-def">护甲</span>(${f.def}) = <span class="val-def">${defDmg}</span>）+（70%×<span class="val-magic">魔抗</span>(${f.mr||f.def}) = <span class="val-magic">${mrDmg}</span>）`;
+    totalAll += defDmg + mrDmg;
   }
   const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
   lines += ` ${dmgType}。`;
-  if (hasChestEquip(f, 'rock')) lines += `<br>共 <span class="val-normal">${total}</span> ${dmgType}。`;
-  return lines;
+  const perHit = Math.round(totalAll / hits);
+  lines += `\n每段 <span class="val-normal">${perHit}</span>，共 <span class="val-normal">${totalAll}</span> ${dmgType}。`;
+  return lines.replace(/\n/g, '<br>');
 }
 function getChestEquipBonusText(f, s) {
   if (!f._chestEquips || !f._chestEquips.length) return '';

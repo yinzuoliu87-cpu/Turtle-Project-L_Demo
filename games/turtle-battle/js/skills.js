@@ -2254,36 +2254,44 @@ async function doDiceFate(caster, skill) {
 // ── CHEST TURTLE (宝箱龟) NEW SKILLS ──────────────────────
 async function doChestSmash(attacker, target, skill) {
   const tElId = getFighterElId(target);
-  const {isCrit, critMult} = calcCrit(attacker);
-  let basePower = Math.round(attacker.atk * skill.atkScale);
-  // Rock equip: +50% DEF + 50% MR
-  if (hasChestEquip(attacker, 'rock')) {
-    basePower += Math.round(attacker.def * 0.7) + Math.round((attacker.mr || attacker.def) * 0.7);
-  }
+  const hits = skill.hits || 4;
   const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
-  const effDef = calcEffDef(attacker, target, dmgType);
-  const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);
-  const dmg = Math.max(1, Math.round(basePower * critMult * (1 - defRed)));
-  applyRawDmg(attacker, target, dmg, false, false, dmgType);
-  const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-  spawnFloatingNum(tElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
-  await triggerOnHitEffects(attacker, target, dmg);
-  const tEl = document.getElementById(tElId);
-  if (tEl) tEl.classList.add('hit-shake');
-  updateHpBar(target, tElId);
-  await sleep(500);
-  if (tEl) tEl.classList.remove('hit-shake');
+  let totalBasePower = Math.round(attacker.atk * skill.atkScale);
+  if (hasChestEquip(attacker, 'rock')) {
+    totalBasePower += Math.round(attacker.def * 0.7) + Math.round((attacker.mr || attacker.def) * 0.7);
+  }
+  const perHitBase = Math.round(totalBasePower / hits);
+  let totalDmg = 0;
+
+  for (let i = 0; i < hits; i++) {
+    if (!target.alive) break;
+    const {isCrit, critMult} = calcCrit(attacker);
+    const effDef = calcEffDef(attacker, target, dmgType);
+    const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(perHitBase * critMult * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg, false, false, dmgType);
+    totalDmg += dmg;
+    const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
+    spawnFloatingNum(tElId, `-${dmg}`, cls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: dmg });
+    await triggerOnHitEffects(attacker, target, dmg);
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    updateHpBar(target, tElId);
+    await sleep(400);
+    if (tEl) tEl.classList.remove('hit-shake');
+  }
   // Track hit targets for post-skill effects (fire/poison)
   attacker._chestHitTargets = [target];
-  // Chain equip: splash 25% to secondary target
-  if (hasChestEquip(attacker, 'chain') && target.alive) {
-    const enemies = getAliveEnemiesWithSummons(attacker.side).filter(e => e !== target);
+  // Chain equip: splash 25% of total damage to secondary target
+  if (hasChestEquip(attacker, 'chain')) {
+    const enemies = getAliveEnemiesWithSummons(attacker.side).filter(e => e !== target && e.alive);
     if (enemies.length) {
       const secondary = enemies[Math.floor(Math.random() * enemies.length)];
-      const chainDmg = Math.max(1, Math.round(dmg * 0.25));
+      const chainDmg = Math.max(1, Math.round(totalDmg * 0.25));
       applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
       const sElId = getFighterElId(secondary);
-      spawnFloatingNum(sElId, `-${chainDmg}🔗`, cls, 100, 0, { atkSide: attacker.side, amount: chainDmg });
+      const chainCls = dmgType === 'true' ? 'true-dmg' : 'direct-dmg';
+      spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 100, 0, { atkSide: attacker.side, amount: chainDmg });
       updateHpBar(secondary, sElId);
       await triggerOnHitEffects(attacker, secondary, chainDmg);
       attacker._chestHitTargets.push(secondary);
@@ -2325,7 +2333,7 @@ async function doChestSmash(attacker, target, skill) {
       renderStatusIcons(t);
     }
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>宝箱砸击</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>宝箱砸击</b> ${hits}段 → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>`);
 }
 
 async function doChestCount(caster, skill) {
