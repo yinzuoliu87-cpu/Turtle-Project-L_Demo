@@ -415,7 +415,7 @@ const ALL_PETS = [
                   { id:'rum',    icon:'equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">3%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:3 },
                   { id:'dice',   icon:'gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
                   { id:'chain',  icon:'equip-chain-icon.png', name:'锁链',   desc:'「宝箱砸击」连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
-                  { id:'rock',   icon:'equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」额外加成50%<span class="val-def">护甲</span>+50%<span class="val-magic">魔抗</span>', stat:'rock', pct:50 },
+                  { id:'rock',   icon:'equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成50%<span class="val-def">护甲</span>+50%<span class="val-magic">魔抗</span>', stat:'rock', pct:50 },
                 ],
                 // 进阶池 (tier 2-3)
                 [
@@ -438,7 +438,7 @@ const ALL_PETS = [
     skills:[
       { name:'宝箱砸击', type:'chestSmash', hits:1, power:0, pierce:0, cd:0, atkScale:1.4,
         brief:'宝箱龟砸击敌方，造成（{N:1.4*ATK}）物理伤害',
-        detail:'宝箱龟对单体砸击，造成（140%×攻击力({ATK}) = {N:1.4*ATK}）物理伤害。\n装备「石头」后额外加成50%护甲+50%魔抗。\n装备「铁链」后对次要目标造成25%连锁伤害。' },
+        detail:'宝箱龟对单体砸击，造成（140%×攻击力({ATK}) = {N:1.4*ATK}）物理伤害。' },
       { name:'清点财宝', type:'chestCount', hits:1, power:0, pierce:0, cd:4, healPct:15, shieldAtkScale:0.4,
         brief:'宝箱龟回复 {H:HP*0.15} HP + {S:0.4*ATK} 护盾，每100点财宝值强度+12%',
         detail:'宝箱龟清点财宝，回复（15%×最大生命值({HP}) = {H:HP*0.15}）HP。\n获得（40%×攻击力({ATK}) = {S:0.4*ATK}）护盾。\n每拥有100点财宝值，技能强度增加 <span class="val-atk">12%</span>。\n冷却{cd}回合。' },

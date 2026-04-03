@@ -585,7 +585,7 @@ function getChestEquipBonusText(f, s) {
   const lines = [];
   if (s.type === 'chestSmash') {
     if (hasChestEquip(f, 'chain')) lines.push('🔗锁链：对次要目标造成25%连锁伤害');
-    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：额外加成50%护甲+50%魔抗');
+    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：伤害额外加成50%护甲+50%魔抗');
   }
   if (s.type === 'chestSmash' || s.type === 'chestStorm') {
     if (hasChestEquip(f, 'fire')) lines.push('🔥火石：命中目标施加灼烧');
