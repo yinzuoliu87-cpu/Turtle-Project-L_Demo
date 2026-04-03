@@ -171,7 +171,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
     // Switch skills
     caster._rangedSkills = caster.skills;
     const pet = ALL_PETS.find(p => p.id === caster.id);
-    caster.skills = (pet && pet.meleeSkills) ? pet.meleeSkills.map(s => ({...s, cdLeft:0})) : caster.skills;
+    caster.skills = (pet && pet.meleeSkills) ? pet.meleeSkills.map(s => ({...s, cdLeft: s.type === 'twoHeadSwitch' ? skill.cd : 0})) : caster.skills;
     caster._twoHeadForm = 'melee';
     caster.name = '双头龟(近战)';
     updateHpBar(caster, fElId);
