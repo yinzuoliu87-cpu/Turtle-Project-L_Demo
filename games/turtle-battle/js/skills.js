@@ -2136,7 +2136,7 @@ async function doDiamondFortify(caster, skill) {
 async function doDiamondCollide(attacker, target, skill) {
   const tElId = getFighterElId(target);
   const {isCrit, critMult} = calcCrit(attacker);
-  const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.def * skill.defScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.def * skill.defScale) + Math.round((attacker.mr || attacker.def) * (skill.mrScale || 0)) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
   const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
@@ -2152,7 +2152,7 @@ async function doDiamondCollide(attacker, target, skill) {
   attacker._diamondCollideCount[tIdx] = (attacker._diamondCollideCount[tIdx] || 0) + 1;
   if (attacker._diamondCollideCount[tIdx] >= skill.stunAfter && target.alive) {
     attacker._diamondCollideCount[tIdx] = 0;
-    target.buffs.push({ type:'stun', value:1, turns:2 }); // +1 for processBuffs tick
+    target.buffs.push({ type:'stun', value:1, turns:2, appliedTurn:turnNum });
     spawnFloatingNum(tElId, '💫眩晕!', 'crit-label', 0, -20);
     renderStatusIcons(target);
     addLog(`${target.emoji}${target.name} 被撞晕了！<span class="log-debuff">眩晕1回合</span>`);

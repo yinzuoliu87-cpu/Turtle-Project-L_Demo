@@ -435,8 +435,8 @@ async function nextSideAction() {
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
-  // Check for stunned fighters — auto-skip them
-  const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun'));
+  // Check for stunned fighters — auto-skip them (ignore stuns applied this turn)
+  const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun' && b.appliedTurn !== turnNum));
   if (stunned.length > 0) {
     for (const sf of stunned) {
       actedThisSide.add(allFighters.indexOf(sf));
