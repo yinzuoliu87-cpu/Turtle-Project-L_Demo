@@ -435,11 +435,15 @@ async function nextSideAction() {
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
-  // Check for stunned fighters — auto-skip them (ignore stuns applied this turn)
-  const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun' && b.appliedTurn !== turnNum));
+  // Check for stunned fighters — auto-skip them (only once per stun)
+  const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun') && !f._stunUsed);
   if (stunned.length > 0) {
     for (const sf of stunned) {
       actedThisSide.add(allFighters.indexOf(sf));
+      sf._stunUsed = true; // mark consumed, won't double-skip
+      // Remove stun buff immediately after consuming
+      sf.buffs = sf.buffs.filter(b => b.type !== 'stun');
+      renderStatusIcons(sf);
       const sfElId = getFighterElId(sf);
       spawnFloatingNum(sfElId, '💫眩晕跳过', 'debuff-label', 0, 0);
       addLog(`${sf.emoji}${sf.name} 眩晕中，跳过行动！`);
