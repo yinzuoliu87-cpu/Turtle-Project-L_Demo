@@ -1054,7 +1054,8 @@ function showPassivePopup(e, fIdx) {
       return html;
     };
     const pools = f.passive.pools;
-    let detailHtml = `宝箱龟将造成伤害的100%充能为财宝进度，根据进度 ${th.join('/')} 随机获得基础，进阶和传说装备。`;
+    const thDisplay = th.map((v, i) => i < tier ? `<span class="val-atk">${v}</span>` : `${v}`).join('/');
+    let detailHtml = `宝箱龟将造成伤害的100%充能为财宝进度，根据进度 ${thDisplay} 随机获得基础，进阶和传说装备。`;
     detailHtml += `<br>当前：<span class="val-atk">${treasure}</span>`;
     if (nextThresh) detailHtml += ` / ${nextThresh}（下一件：${poolNames[tier]}装备）`;
     else detailHtml += '（已满）';
