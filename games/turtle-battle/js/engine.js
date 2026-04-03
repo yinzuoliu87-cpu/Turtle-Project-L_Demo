@@ -2254,7 +2254,7 @@ async function processHunterKill() {
           setTimeout(() => flash.remove(), 400);
         } catch(err) {}
 
-        spawnFloatingNum(eElId, '🏹猎杀!', 'crit-label', 0, -20);
+        spawnFloatingNum(eElId, '<img src="assets/hunter-kill-icon.png" style="width:24px;height:24px;vertical-align:middle">猎杀!', 'crit-label', 0, -20);
         e.hp = 0; e.alive = false; e._deathProcessed = true;
         const deadEl = document.getElementById(eElId);
         if (deadEl) { deadEl.classList.add('hit-shake'); setTimeout(() => deadEl.classList.add('dead'), 300); }
