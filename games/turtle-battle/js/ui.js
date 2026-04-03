@@ -406,6 +406,10 @@ function renderStatusIcons(f) {
   if (f._bambooCharged && !f._bambooFired) {
     box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击"><img src="assets/bamboo-charge-icon.png" class="stat-icon">充能</span>`;
   }
+  // Diamond collide stacks indicator
+  if (f._collideStacks > 0) {
+    box.innerHTML += `<span style="color:#b8d4e3;background:rgba(184,212,227,.15);padding:1px 5px;border-radius:6px" title="碰撞${f._collideStacks}/2，满2次眩晕">💎${f._collideStacks}/2</span>`;
+  }
   // Rainbow prism color indicator
   if (f._prismColor !== undefined && f.passive && f.passive.type === 'rainbowPrism') {
     const prismLabels = ['🔴红光','🔵蓝光','🟢绿光'];

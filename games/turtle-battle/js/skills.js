@@ -2152,13 +2152,16 @@ async function doDiamondCollide(attacker, target, skill) {
   attacker._diamondCollideCount[tIdx] = (attacker._diamondCollideCount[tIdx] || 0) + 1;
   if (attacker._diamondCollideCount[tIdx] >= skill.stunAfter && target.alive) {
     attacker._diamondCollideCount[tIdx] = 0;
-    // Stun skips 1 action opportunity. turns:2 so it survives 1 processBuffs tick.
-    // _stunUsed flag prevents double-skip if target hasn't acted yet this round.
+    target._collideStacks = 0;
     target.buffs.push({ type:'stun', value:1, turns:2 });
     target._stunUsed = false;
     spawnFloatingNum(tElId, '💫眩晕!', 'crit-label', 0, -20);
     renderStatusIcons(target);
     addLog(`${target.emoji}${target.name} 被撞晕了！<span class="log-debuff">眩晕1回合</span>`);
+  } else {
+    target._collideStacks = attacker._diamondCollideCount[tIdx];
+    spawnFloatingNum(tElId, `💎碰撞${target._collideStacks}/${skill.stunAfter}`, 'debuff-label', 200, -20);
+    renderStatusIcons(target);
   }
   await sleep(700);
   if (tEl) tEl.classList.remove('hit-shake');
