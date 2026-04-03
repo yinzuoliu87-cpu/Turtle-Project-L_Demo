@@ -1042,17 +1042,21 @@ function showPassivePopup(e, fIdx) {
     if (nextThresh) briefLines += ` / ${nextThresh}（下一件：${poolNames[tier]}）`;
     else briefLines += '（已满）';
     briefText = briefLines;
-    // Detail: show equipped items
-    let detailHtml = descRendered;
-    if (f._chestEquips && f._chestEquips.length > 0) {
-      detailHtml += '<br><br><b>已获得装备：</b>';
-      for (const eq of f._chestEquips) {
-        const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:16px;height:16px;vertical-align:middle">` : eq.icon;
-        detailHtml += `<br>${eIcon} <span style="color:#c77dff">${eq.name}</span>：${eq.desc}`;
-      }
-    } else {
-      detailHtml += '<br><br><span style="color:var(--fg2)">尚未获得装备</span>';
-    }
+    // Detail: show all equipment pools with owned highlighted
+    const owned = (f._chestEquips || []).map(e => e.id);
+    const renderPool = (label, pool, thIdx) => {
+      let html = `<br><b>${label}</b>（${th[thIdx]}点）：`;
+      html += pool.map(eq => {
+        const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle">` : eq.icon;
+        if (owned.includes(eq.id)) return `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
+        return `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}</span>`;
+      }).join('');
+      return html;
+    };
+    const pools = f.passive.pools;
+    let detailHtml = `基础池（第1-2件）：` + renderPool('第1件', pools[0], 0) + renderPool('第2件', pools[0], 1);
+    detailHtml += `<br><br>进阶池（第3-4件）：` + renderPool('第3件', pools[1], 2) + renderPool('第4件', pools[1], 3);
+    detailHtml += `<br><br>传说池（第5件）：` + renderPool('第5件', pools[2], 4);
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div>
       <div class="passive-popup-brief" id="passiveBrief">${briefText}</div>
       <div class="passive-popup-detail" id="passiveDetail" style="display:none">${detailHtml}</div>
