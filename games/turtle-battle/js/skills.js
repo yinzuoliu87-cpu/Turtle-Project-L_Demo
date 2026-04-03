@@ -666,6 +666,22 @@ async function doIceFrost(attacker, skill) {
   const perHit = Math.round(attacker.atk * skill.atkScale);
   let totalDmg = 0;
 
+  // Apply mrDown FIRST before damage
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    if (skill.mrDown) {
+      const eElId = getFighterElId(enemy);
+      const existing = enemy.buffs.find(b => b.type === 'mrDown');
+      if (existing) { existing.value = Math.max(existing.value, skill.mrDown.pct); existing.turns = Math.max(existing.turns, skill.mrDown.turns); }
+      else enemy.buffs.push({ type:'mrDown', value:skill.mrDown.pct, turns:skill.mrDown.turns });
+      spawnFloatingNum(eElId, `⬇️魔抗-${skill.mrDown.pct}%`, 'debuff-label', 0, -10);
+      renderStatusIcons(enemy);
+    }
+  }
+  recalcStats();
+  await sleep(500);
+
+  // Then deal damage (with reduced MR)
   for (const enemy of enemies) {
     if (!enemy.alive) continue;
     let enemyTotal = 0;
@@ -689,19 +705,10 @@ async function doIceFrost(attacker, skill) {
     const eEl = document.getElementById(eElId);
     if (eEl) { eEl.classList.add('hit-shake'); }
     updateHpBar(enemy, eElId);
-    // Apply mrDown debuff
-    if (skill.mrDown && enemy.alive) {
-      const existing = enemy.buffs.find(b => b.type === 'mrDown');
-      if (existing) { existing.value = Math.max(existing.value, skill.mrDown.pct); existing.turns = Math.max(existing.turns, skill.mrDown.turns); }
-      else enemy.buffs.push({ type:'mrDown', value:skill.mrDown.pct, turns:skill.mrDown.turns });
-      spawnFloatingNum(eElId, '⬇️魔抗', 'debuff-label', 200, -10);
-      renderStatusIcons(enemy);
-    }
     await sleep(400);
     if (eEl) { eEl.classList.remove('hit-shake'); }
   }
-  recalcStats();
-  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体${hits}段：<span class="log-magic">${totalDmg}魔法伤害</span> + ⬇️魔抗20%`);
+  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> ⬇️魔抗-${skill.mrDown.pct}% + 全体${hits}段：<span class="log-magic">${totalDmg}魔法伤害</span>`);
 }
 
 // ── ANGEL TURTLE SKILLS ───────────────────────────────────
