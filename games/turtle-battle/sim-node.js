@@ -376,7 +376,8 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           }
           if (hasChestEquip(ff, 'phoenix') && !ff._chestReviveUsed) {
             ff._chestReviveUsed = true;
-            ff.hp = Math.round(ff.maxHp * 0.55);
+            const rvPct = (ff._chestEquips && ff._chestEquips.find(e => e.id === 'phoenix') || {}).pct || 25;
+            ff.hp = Math.round(ff.maxHp * rvPct / 100);
             ff.alive = true; return;
           }
           if (ff.passive && ff.passive.type === 'cyberDrone' && ff._drones && ff._drones.length > 0 && !ff._isMech) {
