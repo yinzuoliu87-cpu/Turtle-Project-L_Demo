@@ -1052,11 +1052,9 @@ function showPassivePopup(e, fIdx) {
         const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle">` : eq.icon;
         html += `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
       }
-      if (unownedInPool.length) {
-        html += `<br><span style="color:var(--fg2);font-size:11px">` + unownedInPool.map(eq => {
-          const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:12px;height:12px;vertical-align:middle">` : eq.icon;
-          return `${eIcon}${eq.name}`;
-        }).join(' ') + `</span>`;
+      for (const eq of unownedInPool) {
+        const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle;opacity:.5">` : eq.icon;
+        html += `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}：${eq.desc}</span>`;
       }
       return html;
     };
