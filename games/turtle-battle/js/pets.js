@@ -346,7 +346,7 @@ const ALL_PETS = [
         detail:'闪电龟释放20次闪电，随机分布到敌方目标。\n每次造成（11%×攻击力({ATK}) = {M:0.11*ATK}）魔法伤害。\n每次命中叠加1层电击标记。\n冷却{cd}回合。' },
     ]},
   // S级
-  { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:371,  atk:46,  def:15, mr:17, spd:14, crit:0.25,
+  { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:330,  atk:42,  def:12, mr:15, spd:14, crit:0.25,
     img:'../../assets/pets/凤凰龟.png',
     passive:{ type:'phoenixRebirth', name:'涅槃', revivePct:55,
               brief:'凤凰龟首次死亡时浴火重生，以 {H:HP*0.55} HP复活，并对全体敌人施加<span style="color:#ff6600">灼烧</span>与治疗削减',
