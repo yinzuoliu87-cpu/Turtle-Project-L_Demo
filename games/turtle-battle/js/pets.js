@@ -106,9 +106,10 @@ const ALL_PETS = [
     ]},
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:370,  atk:38,  def:16, mr:17, spd:9, crit:0.25,
     img:'../../assets/pets/寒冰龟.png',
-    passive:{ type:'frostAura', atkDownPct:20, atkDownTurns:6,
+    passive:{ type:'frostAura', name:'冰寒', atkDownPct:20, atkDownTurns:6,
               bonusTargets:['lava','phoenix'], bonusDmgPct:35,
-              desc:'登场敌方全体ATK-15%持续6回合，对熔岩龟/凤凰龟+35%伤害' },
+              brief:'登场时减少敌方全体20%攻击力6回合，对熔岩龟/凤凰龟+35%伤害',
+              desc:'寒冰龟登场时，敌方全体单位被减少20%攻击力，持续6回合。\n寒冰龟对熔岩龟/凤凰龟造成额外35%伤害。' },
     skills:[
       { name:'冰锥', type:'iceSpike', hits:6, power:0, pierce:0, cd:0, totalScale:1.4,
         brief:'寒冰龟发射6段冰锥，物理/真实交替，共{N:1.4*ATK}混合伤害',
