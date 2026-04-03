@@ -2126,24 +2126,26 @@ function checkDeaths(attacker) {
         addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">击杀回血${heal}HP</span>`);
       }
 
-      // Passive: hunterKill — killer steals stats on kill (any kill, not just execute)
-      if (attacker && attacker.alive && attacker.passive && attacker.passive.type === 'hunterKill') {
-        const sAtk = Math.round(f.baseAtk * attacker.passive.stealPct / 100);
-        const sDef = Math.round(f.baseDef * attacker.passive.stealPct / 100);
-        const sMr  = Math.round((f.baseMr || f.baseDef) * attacker.passive.stealPct / 100);
-        const sHp  = Math.round(f.maxHp   * attacker.passive.stealPct / 100);
-        attacker.baseAtk += sAtk; attacker.baseDef += sDef; attacker.baseMr = (attacker.baseMr || attacker.baseDef) + sMr; attacker.maxHp += sHp; attacker.hp += sHp;
-        attacker._hunterKills = (attacker._hunterKills || 0) + 1;
-        attacker._hunterStolenAtk = (attacker._hunterStolenAtk || 0) + sAtk;
-        attacker._hunterStolenDef = (attacker._hunterStolenDef || 0) + sDef;
-        attacker._hunterStolenMr = (attacker._hunterStolenMr || 0) + sMr;
-        attacker._hunterStolenHp = (attacker._hunterStolenHp || 0) + sHp;
-        if (attacker.passive.lifesteal) attacker._lifestealPct = (attacker._lifestealPct || 0) + attacker.passive.lifesteal;
-        const aElId = getFighterElId(attacker);
-        spawnFloatingNum(aElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
-        updateHpBar(attacker, aElId);
+      // Passive: hunterKill — any allied hunter steals stats when enemy dies
+      const hunters = allFighters.filter(h => h.alive && h.side !== f.side && h.passive && h.passive.type === 'hunterKill');
+      for (const hunter of hunters) {
+        const sAtk = Math.round(f.baseAtk * hunter.passive.stealPct / 100);
+        const sDef = Math.round(f.baseDef * hunter.passive.stealPct / 100);
+        const sMr  = Math.round((f.baseMr || f.baseDef) * hunter.passive.stealPct / 100);
+        const sHp  = Math.round(f.maxHp   * hunter.passive.stealPct / 100);
+        hunter.baseAtk += sAtk; hunter.baseDef += sDef; hunter.baseMr = (hunter.baseMr || hunter.baseDef) + sMr; hunter.maxHp += sHp; hunter.hp += sHp;
+        hunter._hunterKills = (hunter._hunterKills || 0) + 1;
+        hunter._hunterStolenAtk = (hunter._hunterStolenAtk || 0) + sAtk;
+        hunter._hunterStolenDef = (hunter._hunterStolenDef || 0) + sDef;
+        hunter._hunterStolenMr = (hunter._hunterStolenMr || 0) + sMr;
+        hunter._hunterStolenHp = (hunter._hunterStolenHp || 0) + sHp;
+        if (hunter.passive.lifesteal) hunter._lifestealPct = (hunter._lifestealPct || 0) + hunter.passive.lifesteal;
+        const hElId = getFighterElId(hunter);
+        spawnFloatingNum(hElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
+        updateHpBar(hunter, hElId);
         recalcStats();
-        addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">🏹击杀吸收 攻+${sAtk} 甲+${sDef} 抗+${sMr} HP+${sHp}</span>`);
+        updateFighterStats(hunter, hElId);
+        addLog(`${hunter.emoji}${hunter.name} 被动：<span class="log-passive">🏹猎杀吸收 攻+${sAtk} 甲+${sDef} 抗+${sMr} HP+${sHp}</span>`);
       }
 
       // Fortune gold: all alive fortune turtles gain 8 coins on any death
