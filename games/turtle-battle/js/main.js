@@ -329,10 +329,11 @@ function showPetPassive(e, petId) {
     popup = document.createElement('div');
     popup.id = 'selectPassivePopup';
     popup.className = 'passive-popup';
-    popup.style.cssText = 'display:none;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%)';
+    popup.style.cssText = 'display:none;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%);animation:none';
     document.body.appendChild(popup);
   }
   popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div><div style="text-align:center;margin-top:8px;font-size:11px;color:var(--fg2);cursor:pointer" onclick="this.parentElement.style.display='none'">点击关闭</div>`;
+  popup.style.animation = 'none';
   popup.style.display = 'block';
 }
 
