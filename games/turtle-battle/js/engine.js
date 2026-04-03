@@ -1708,11 +1708,12 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const y0 = -(15 + (yOffset || 0));
 
     if (isDmg) {
-      // ── DAMAGE: jump away from attacker, arc down, fade ──
-      // Auto-detect: if target is on right side of screen, attacker is left → jump right
+      // ── DAMAGE: jump away from attacker ──
       let dir = 1;
       if (opts && opts.atkSide) {
         dir = opts.atkSide === 'left' ? 1 : -1;
+      } else if (typeof currentActingFighter !== 'undefined' && currentActingFighter) {
+        dir = currentActingFighter.side === 'left' ? 1 : -1;
       } else {
         try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
       }
