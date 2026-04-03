@@ -273,7 +273,7 @@ async function beginTurn() {
     }
     // Chest turtle: rum HoT (3% maxHP per turn)
     if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
-      const heal = Math.round(f.maxHp * 0.03);
+      const heal = Math.round(f.maxHp * 0.06);
       const before = f.hp;
       f.hp = Math.min(f.maxHp, f.hp + heal);
       const actual = Math.round(f.hp - before);
@@ -1075,7 +1075,7 @@ async function executeAction(action) {
       try { sfxRebirth(); } catch(e) {}
       await sleep(300);
       // Revive
-      ff.hp = Math.round(ff.maxHp * 0.15);
+      ff.hp = Math.round(ff.maxHp * 0.55);
       ff.alive = true;
       ff._deathProcessed = false;
       if (el) el.classList.remove('dead');
@@ -1083,7 +1083,7 @@ async function executeAction(action) {
       renderStatusIcons(ff);
       spawnFloatingNum(elId, '🐦凤凰重生!', 'crit-label', 0, -25);
       spawnFloatingNum(elId, `+${ff.hp}HP`, 'heal-num', 200, 0);
-      addLog(`${ff.emoji}${ff.name} <span class="log-passive">🐦凤凰雕像！以15%HP重生！</span>`);
+      addLog(`${ff.emoji}${ff.name} <span class="log-passive">🐦凤凰雕像！以55%HP重生！</span>`);
       await sleep(800);
     }
   }
@@ -2304,7 +2304,7 @@ function applyChestEquip(f, equip) {
   if (equip.stat === 'defMr') { f.baseDef += Math.round(f.baseDef * equip.pct / 100); f.baseMr = (f.baseMr||f.baseDef) + Math.round((f.baseMr||f.baseDef) * equip.pct / 100); if (equip.bonusHp) { f.maxHp += equip.bonusHp; f.hp += equip.bonusHp; } }
   if (equip.stat === 'crit') { f.crit += equip.pct / 100; }
   if (equip.stat === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + equip.pct; }
-  if (equip.stat === 'crown') { f.baseAtk += Math.round(f.baseAtk * 25 / 100); f.crit += 0.4; f._extraCritDmgPerm = (f._extraCritDmgPerm || 0) + 0.2; f._lifestealPct = (f._lifestealPct || 0) + 6; }
+  if (equip.stat === 'crown') { f.baseAtk += Math.round(f.baseAtk * 40 / 100); f.crit += 0.4; f._extraCritDmgPerm = (f._extraCritDmgPerm || 0) + 0.25; f._lifestealPct = (f._lifestealPct || 0) + 15; }
   recalcStats();
 }
 

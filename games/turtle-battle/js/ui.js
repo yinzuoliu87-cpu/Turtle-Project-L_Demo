@@ -598,8 +598,8 @@ function buildChestSmashDetail(f, s) {
   let lines = `宝箱龟对单体砸击，造成（${Math.round(s.atkScale*100)}%×<span class="val-normal">攻击力</span>(${f.atk}) = <span class="val-normal">${atkDmg}</span>）`;
   let total = atkDmg;
   if (hasChestEquip(f, 'rock')) {
-    const defDmg = Math.round(f.def * 0.5);
-    const mrDmg = Math.round((f.mr||f.def) * 0.5);
+    const defDmg = Math.round(f.def * 0.7);
+    const mrDmg = Math.round((f.mr||f.def) * 0.7);
     lines += `+（50%×<span class="val-def">护甲</span>(${f.def}) = <span class="val-def">${defDmg}</span>）+（50%×<span class="val-magic">魔抗</span>(${f.mr||f.def}) = <span class="val-magic">${mrDmg}</span>）`;
     total += defDmg + mrDmg;
   }
@@ -613,7 +613,7 @@ function getChestEquipBonusText(f, s) {
   const lines = [];
   if (s.type === 'chestSmash') {
     if (hasChestEquip(f, 'chain')) lines.push('🔗锁链：对次要目标造成25%连锁伤害');
-    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：伤害额外加成50%护甲+50%魔抗');
+    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：伤害额外加成70%护甲+70%魔抗');
   }
   if (s.type === 'chestSmash' || s.type === 'chestStorm') {
     if (hasChestEquip(f, 'fire')) lines.push('🔥火石：命中目标施加灼烧');

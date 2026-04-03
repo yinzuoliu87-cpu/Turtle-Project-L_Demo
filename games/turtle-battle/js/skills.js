@@ -2258,7 +2258,7 @@ async function doChestSmash(attacker, target, skill) {
   let basePower = Math.round(attacker.atk * skill.atkScale);
   // Rock equip: +50% DEF + 50% MR
   if (hasChestEquip(attacker, 'rock')) {
-    basePower += Math.round(attacker.def * 0.5) + Math.round((attacker.mr || attacker.def) * 0.5);
+    basePower += Math.round(attacker.def * 0.7) + Math.round((attacker.mr || attacker.def) * 0.7);
   }
   const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
   const effDef = calcEffDef(attacker, target, dmgType);

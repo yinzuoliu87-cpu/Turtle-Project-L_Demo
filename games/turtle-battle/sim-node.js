@@ -175,7 +175,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       }
       // Chest turtle rum HoT
       if (p.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
-        f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.03));
+        f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.06));
       }
       if (p.type === 'candySteal' && turnNum === p.stealTurn) {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
@@ -365,7 +365,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           }
           if (hasChestEquip(ff, 'phoenix') && !ff._chestReviveUsed) {
             ff._chestReviveUsed = true;
-            ff.hp = Math.round(ff.maxHp * 0.15);
+            ff.hp = Math.round(ff.maxHp * 0.55);
             ff.alive = true; return;
           }
           if (ff.passive && ff.passive.type === 'cyberDrone' && ff._drones && ff._drones.length > 0 && !ff._isMech) {

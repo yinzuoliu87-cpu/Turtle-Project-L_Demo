@@ -412,25 +412,25 @@ const ALL_PETS = [
               pools:[
                 // 基础池 (tier 0-1)
                 [
-                  { id:'blade',  icon:'equip-blade-icon.png', name:'锋利短刃',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+10%</span>', stat:'atk', pct:10 },
-                  { id:'shield', icon:'equip-shield-icon.png', name:'坚固木盾',   desc:'<span class="val-def">护甲</span>/<span class="val-magic">魔抗</span> <span class="val-atk">+15%</span>', stat:'defMr', pct:15 },
-                  { id:'rum',    icon:'equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">3%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:3 },
+                  { id:'blade',  icon:'equip-blade-icon.png', name:'锋利短刃',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+25%</span>', stat:'atk', pct:25 },
+                  { id:'shield', icon:'equip-shield-icon.png', name:'坚固木盾',   desc:'<span class="val-def">护甲</span>/<span class="val-magic">魔抗</span> <span class="val-atk">+20%</span>', stat:'defMr', pct:20 },
+                  { id:'rum',    icon:'equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">6%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:6 },
                   { id:'dice',   icon:'gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
                   { id:'chain',  icon:'equip-chain-icon.png', name:'锁链',   desc:'「宝箱砸击」连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
-                  { id:'rock',   icon:'equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成50%<span class="val-def">护甲</span>+50%<span class="val-magic">魔抗</span>', stat:'rock', pct:50 },
+                  { id:'rock',   icon:'equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成70%<span class="val-def">护甲</span>+70%<span class="val-magic">魔抗</span>', stat:'rock', pct:70 },
                 ],
                 // 进阶池 (tier 2-3)
                 [
-                  { id:'sword',  icon:'equip-sword-icon.png', name:'精钢长剑',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+30%</span>', stat:'atk', pct:30 },
-                  { id:'vamp',   icon:'equip-vamp-icon.png', name:'嗜血之刃', desc:'<span class="val-heal">生命偷取</span> <span class="val-heal">+12%</span>', stat:'lifesteal', pct:12 },
+                  { id:'sword',  icon:'equip-sword-icon.png', name:'精钢长剑',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+45%</span>', stat:'atk', pct:45 },
+                  { id:'vamp',   icon:'equip-vamp-icon.png', name:'嗜血之刃', desc:'<span class="val-heal">生命偷取</span> <span class="val-heal">+25%</span>', stat:'lifesteal', pct:25 },
                   { id:'fire',   icon:'equip-fire-icon.png', name:'灼热火石',   desc:'造成伤害后对被命中目标施加<span style="color:#ff6600">灼烧</span>', stat:'burn' },
                   { id:'gem',    icon:'equip-gem-icon.png', name:'宝石铠甲', desc:'<span class="val-def">护甲</span>/<span class="val-magic">魔抗</span> <span class="val-atk">+25%</span>，<span class="val-heal">最大生命值</span> <span class="val-heal">+60</span>', stat:'defMr', pct:25, bonusHp:60 },
                   { id:'poison', icon:'equip-poison-icon.png', name:'淬毒箭矢',   desc:'造成伤害后对被命中目标施加治疗削减3回合（<span class="val-atk">-50%</span>）', stat:'healReduce' },
-                  { id:'phoenix',icon:'equip-phoenix-icon.png', name:'凤凰龟雕像',desc:'首次死亡时以 <span class="val-heal">15%</span> <span class="val-heal">最大生命值</span>重生', stat:'revive', pct:15 },
+                  { id:'phoenix',icon:'equip-phoenix-icon.png', name:'凤凰龟雕像',desc:'首次死亡时以 <span class="val-heal">55%</span> <span class="val-heal">最大生命值</span>重生', stat:'revive', pct:55 },
                 ],
                 // 传说池 (tier 4)
                 [
-                  { id:'crown',  icon:'equip-crown-icon.png', name:'王者之冠',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+25%</span>，暴击 <span class="val-atk">+40%</span>，<span class="val-atk">爆伤</span> <span class="val-atk">+20%</span>，<span class="val-heal">生命偷取</span> <span class="val-heal">+6%</span>', stat:'crown' },
+                  { id:'crown',  icon:'equip-crown-icon.png', name:'王者之冠',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+40%</span>，暴击 <span class="val-atk">+40%</span>，<span class="val-atk">爆伤</span> <span class="val-atk">+25%</span>，<span class="val-heal">生命偷取</span> <span class="val-heal">+15%</span>', stat:'crown' },
                   { id:'thunder',icon:'lightning-storm-icon.png', name:'闪电龟的雷刃',   desc:'「宝箱砸击」和「财宝风暴」命中叠金闪电层，满8层引爆100%ATK <span class="val-true">真实伤害</span>', stat:'thunder' },
                   { id:'star',   icon:'equip-star-icon.png', name:'星际龟的星辉',   desc:'所有伤害转为 <span class="val-true">真实伤害</span>', stat:'trueDmg' },
                 ],
