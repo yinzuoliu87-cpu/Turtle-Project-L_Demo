@@ -2119,15 +2119,17 @@ async function doDiamondFortify(caster, skill) {
   const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
   caster.shield += shieldAmt;
   spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
-  // Def buff: 20%ATK (diamondStructure passive will amplify in recalcStats)
+  // Def + MR buff: 20%ATK each (diamondStructure passive will amplify in recalcStats)
   const defGain = Math.round(caster.atk * skill.defUpAtkPct / 100);
+  const mrGain = Math.round(caster.atk * (skill.mrUpAtkPct || 0) / 100);
   caster.buffs.push({ type:'defUp', value:defGain, turns:skill.defUpTurns + 1 });
+  if (mrGain > 0) caster.buffs.push({ type:'mrUp', value:mrGain, turns:skill.defUpTurns + 1 });
   recalcStats();
-  spawnFloatingNum(fElId, `+${defGain}防`, 'passive-num', 200, 0);
+  spawnFloatingNum(fElId, `+${defGain}甲+${mrGain}抗`, 'passive-num', 200, 0);
   updateHpBar(caster, fElId);
   renderStatusIcons(caster);
   updateFighterStats(caster, fElId);
-  addLog(`${caster.emoji}${caster.name} <b>坚不可摧</b>：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${defGain}防御 ${skill.defUpTurns}回合</span>`);
+  addLog(`${caster.emoji}${caster.name} <b>坚不可摧</b>：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${defGain}护甲 +${mrGain}魔抗 ${skill.defUpTurns}回合</span>`);
   await sleep(800);
 }
 
