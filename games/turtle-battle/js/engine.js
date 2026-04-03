@@ -2204,9 +2204,19 @@ async function processHunterKill() {
         const eElId = getFighterElId(e);
         const fElAnim = getFighterElId(f);
 
-        // Phase 1: hunter icon on target
-        spawnFloatingNum(eElId, '<img src="assets/hunter-kill-icon.png" style="width:120px;height:120px">', 'crit-label', 0, -50);
-        await sleep(400);
+        // Phase 1: big hunter icon overlay on target
+        try {
+          const targetEl = document.getElementById(eElId);
+          const rect = targetEl ? targetEl.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
+          const icon = document.createElement('img');
+          icon.src = 'assets/hunter-kill-icon.png';
+          icon.style.cssText = `position:fixed;width:120px;height:120px;z-index:9999;pointer-events:none;left:${rect.left+rect.width/2-60}px;top:${rect.top+rect.height/2-60}px;opacity:0.9;transition:opacity 0.3s,transform 0.3s;transform:scale(0.3)`;
+          document.body.appendChild(icon);
+          requestAnimationFrame(() => { icon.style.transform = 'scale(1)'; icon.style.opacity = '1'; });
+          setTimeout(() => { icon.style.opacity = '0'; icon.style.transform = 'scale(1.5)'; }, 600);
+          setTimeout(() => icon.remove(), 1000);
+        } catch(err) {}
+        await sleep(700);
 
         // Phase 2: arrow particles fly from hunter to target
         try {
