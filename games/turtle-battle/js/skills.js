@@ -2251,6 +2251,184 @@ async function doDiceFate(caster, skill) {
 }
 
 // ── CHEST TURTLE (宝箱龟) ───────────────────────────────
+// ── CHEST TURTLE (宝箱龟) NEW SKILLS ──────────────────────
+async function doChestSmash(attacker, target, skill) {
+  const tElId = getFighterElId(target);
+  const {isCrit, critMult} = calcCrit(attacker);
+  let basePower = Math.round(attacker.atk * skill.atkScale);
+  // Rock equip: +50% DEF + 50% MR
+  if (hasChestEquip(attacker, 'rock')) {
+    basePower += Math.round(attacker.def * 0.5) + Math.round((attacker.mr || attacker.def) * 0.5);
+  }
+  const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
+  const effDef = calcEffDef(attacker, target, dmgType);
+  const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(basePower * critMult * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg, false, false, dmgType);
+  const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
+  spawnFloatingNum(tElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+  // Track hit targets for post-skill effects (fire/poison)
+  attacker._chestHitTargets = [target];
+  // Chain equip: splash 25% to secondary target
+  if (hasChestEquip(attacker, 'chain') && target.alive) {
+    const enemies = getAliveEnemiesWithSummons(attacker.side).filter(e => e !== target);
+    if (enemies.length) {
+      const secondary = enemies[Math.floor(Math.random() * enemies.length)];
+      const chainDmg = Math.max(1, Math.round(dmg * 0.25));
+      applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
+      const sElId = getFighterElId(secondary);
+      spawnFloatingNum(sElId, `-${chainDmg}🔗`, cls, 100, 0, { atkSide: attacker.side, amount: chainDmg });
+      updateHpBar(secondary, sElId);
+      await triggerOnHitEffects(attacker, secondary, chainDmg);
+      attacker._chestHitTargets.push(secondary);
+      await sleep(300);
+    }
+  }
+  // Thunder equip: stack gold lightning on hit targets
+  if (hasChestEquip(attacker, 'thunder')) {
+    for (const t of attacker._chestHitTargets) {
+      if (!t.alive) continue;
+      t._goldLightning = (t._goldLightning || 0) + 1;
+      const teElId = getFighterElId(t);
+      spawnFloatingNum(teElId, `⚡${t._goldLightning}/8`, 'passive-num', 300, 10);
+      if (t._goldLightning >= 8) {
+        t._goldLightning = 0;
+        const thunderDmg = Math.round(attacker.atk * 1.0);
+        applyRawDmg(attacker, t, thunderDmg, false, false, 'true');
+        spawnFloatingNum(teElId, `-${thunderDmg}⚡`, 'true-dmg', 350, 0, { atkSide: attacker.side, amount: thunderDmg });
+        updateHpBar(t, teElId);
+      }
+      renderStatusIcons(t);
+    }
+  }
+  // Post-skill: fire stone burn
+  if (hasChestEquip(attacker, 'fire')) {
+    for (const t of attacker._chestHitTargets) {
+      if (!t.alive) continue;
+      applySkillDebuffs({ burn: true }, t, attacker);
+    }
+  }
+  // Post-skill: poison arrow heal reduce
+  if (hasChestEquip(attacker, 'poison')) {
+    for (const t of attacker._chestHitTargets) {
+      if (!t.alive) continue;
+      const existing = t.buffs.find(b => b.type === 'healReduce');
+      if (existing) { existing.turns = 3; }
+      else { t.buffs.push({ type: 'healReduce', value: 50, turns: 3 }); }
+      spawnFloatingNum(getFighterElId(t), '☠️治疗削减', 'debuff-label', 400, -10);
+      renderStatusIcons(t);
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>宝箱砸击</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+}
+
+async function doChestCount(caster, skill) {
+  const fElId = getFighterElId(caster);
+  // Scaling: +12% per 100 treasure
+  const treasureBonus = 1 + Math.floor((caster._chestTreasure || 0) / 100) * 0.12;
+  // Heal
+  const healAmt = Math.round(caster.maxHp * skill.healPct / 100 * treasureBonus);
+  const before = caster.hp;
+  // Check healReduce
+  const healRedBuff = caster.buffs.find(b => b.type === 'healReduce');
+  const healMult = healRedBuff ? (1 - healRedBuff.value / 100) : 1;
+  const finalHeal = Math.round(healAmt * healMult);
+  caster.hp = Math.min(caster.maxHp, caster.hp + finalHeal);
+  const actual = Math.round(caster.hp - before);
+  if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
+  // Shield
+  const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale * treasureBonus);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  updateHpBar(caster, fElId);
+  const bonusPct = Math.round((treasureBonus - 1) * 100);
+  addLog(`${caster.emoji}${caster.name} <b>清点财宝</b>：<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>${bonusPct > 0 ? ` (财宝加成+${bonusPct}%)` : ''}`);
+  await sleep(800);
+}
+
+async function doChestStorm(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  if (!enemies.length) return;
+  const hits = skill.hits || 6;
+  const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
+  const trueType = 'true';
+  let totalAll = 0;
+  attacker._chestHitTargets = [...enemies.filter(e => e.alive)];
+
+  for (let i = 0; i < hits; i++) {
+    if (battleOver) break;
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
+      const {isCrit, critMult} = calcCrit(attacker);
+      // Physical portion
+      const physBase = Math.round(attacker.atk * skill.atkScale);
+      const effDef = calcEffDef(attacker, enemy, dmgType);
+      const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);
+      const physDmg = Math.max(1, Math.round(physBase * critMult * (1 - defRed)));
+      // True portion
+      const trueDmg = Math.round(attacker.atk * (skill.pierceScale || 0) * critMult);
+      const eElId = getFighterElId(enemy);
+      applyRawDmg(attacker, enemy, physDmg, false, false, dmgType);
+      if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, trueType);
+      totalAll += physDmg + trueDmg;
+      const physCls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
+      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: physDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
+      await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
+      updateHpBar(enemy, eElId);
+      const eEl = document.getElementById(eElId);
+      if (eEl) eEl.classList.add('hit-shake');
+    }
+    await sleep(350);
+    for (const enemy of enemies) {
+      const eEl = document.getElementById(getFighterElId(enemy));
+      if (eEl) eEl.classList.remove('hit-shake');
+    }
+  }
+  // Thunder equip: stack per hit
+  if (hasChestEquip(attacker, 'thunder')) {
+    for (const t of enemies) {
+      if (!t.alive) continue;
+      t._goldLightning = (t._goldLightning || 0) + hits;
+      const teElId = getFighterElId(t);
+      while (t._goldLightning >= 8) {
+        t._goldLightning -= 8;
+        const thunderDmg = Math.round(attacker.atk * 1.0);
+        applyRawDmg(attacker, t, thunderDmg, false, false, 'true');
+        spawnFloatingNum(teElId, `-${thunderDmg}⚡`, 'true-dmg', 350, 0, { atkSide: attacker.side, amount: thunderDmg });
+        updateHpBar(t, teElId);
+      }
+      if (t._goldLightning > 0) spawnFloatingNum(teElId, `⚡${t._goldLightning}/8`, 'passive-num', 300, 10);
+      renderStatusIcons(t);
+    }
+  }
+  // Post-skill: fire stone burn
+  if (hasChestEquip(attacker, 'fire')) {
+    for (const t of enemies) {
+      if (t.alive) applySkillDebuffs({ burn: true }, t, attacker);
+    }
+  }
+  // Post-skill: poison arrow
+  if (hasChestEquip(attacker, 'poison')) {
+    for (const t of enemies) {
+      if (!t.alive) continue;
+      const existing = t.buffs.find(b => b.type === 'healReduce');
+      if (existing) { existing.turns = 3; }
+      else { t.buffs.push({ type: 'healReduce', value: 50, turns: 3 }); }
+      spawnFloatingNum(getFighterElId(t), '☠️治疗削减', 'debuff-label', 400, -10);
+      renderStatusIcons(t);
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>财宝风暴</b> ${hits}段全体：共 <span class="log-direct">${totalAll}伤害</span>`);
+}
+
+// (Legacy chest open — kept for summon compatibility)
 async function doChestOpen(caster, skill) {
   const fElId = getFighterElId(caster);
   // Heal 25% maxHP

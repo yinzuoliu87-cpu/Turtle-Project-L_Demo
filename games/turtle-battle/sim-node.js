@@ -173,6 +173,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           applyRawDmg(f, t, sDmg, true);
         }
       }
+      // Chest turtle rum HoT
+      if (p.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
+        f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.03));
+      }
       if (p.type === 'candySteal' && turnNum === p.stealTurn) {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         if (enemies.length) {
@@ -251,11 +255,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       if (!ready.length) continue;
 
       const SELF_TYPES = ['fortuneDice','phoenixShield','gamblerDraw','hidingDefend','hidingCommand',
-        'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','bambooHeal',
+        'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','chestCount','bambooHeal',
         'lightningBuff','iceShield'];
       const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
       const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
-        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm'];
+        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm','chestStorm'];
 
       const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
       const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield');
@@ -357,6 +361,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           if (ff.passive && ff.passive.type === 'phoenixRebirth' && !ff._rebirthUsed) {
             ff._rebirthUsed = true;
             ff.hp = Math.round(ff.maxHp * ff.passive.revivePct / 100);
+            ff.alive = true; return;
+          }
+          if (hasChestEquip(ff, 'phoenix') && !ff._chestReviveUsed) {
+            ff._chestReviveUsed = true;
+            ff.hp = Math.round(ff.maxHp * 0.15);
             ff.alive = true; return;
           }
           if (ff.passive && ff.passive.type === 'cyberDrone' && ff._drones && ff._drones.length > 0 && !ff._isMech) {

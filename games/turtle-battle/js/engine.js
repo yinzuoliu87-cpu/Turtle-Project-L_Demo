@@ -69,6 +69,11 @@ function createFighter(petId, side) {
     _diamondCollideCount: {},  // 钻石龟碰撞计数 {fighterIdx: count}
     _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
     _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
+    _chestTreasure: 0,        // 宝箱龟财宝值
+    _chestEquips: [],         // 宝箱龟已装备列表 [{id,icon,name,desc,stat,...}]
+    _chestTier: 0,            // 宝箱龟当前装备层数
+    _goldLightning: 0,        // 宝箱龟雷刃金闪电层数
+    _collideStacks: 0,        // 钻石龟碰撞标记(被标记方)
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
 }
@@ -266,6 +271,18 @@ async function beginTurn() {
         }
       }
       // If still charged from last turn (didn't fire — stunned etc), keep it
+    }
+    // Chest turtle: rum HoT (3% maxHP per turn)
+    if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
+      const heal = Math.round(f.maxHp * 0.03);
+      const before = f.hp;
+      f.hp = Math.min(f.maxHp, f.hp + heal);
+      const actual = Math.round(f.hp - before);
+      if (actual > 0) {
+        const elId = getFighterElId(f);
+        spawnFloatingNum(elId, `+${actual}🍺`, 'heal-num', 0, 0);
+        updateHpBar(f, elId);
+      }
     }
     // Passive: candySteal — steal 18% maxHP from random enemy at turn 5
     if (f.passive.type === 'candySteal' && turnNum === f.passive.stealTurn) {
@@ -593,9 +610,7 @@ async function processBuffs() {
     // HOT heal (stackable — each hot ticks independently)
     const hots = f.buffs.filter(b => b.type === 'hot');
     for (const h of hots) {
-      const before = f.hp;
-      f.hp = Math.min(f.maxHp, f.hp + h.value);
-      const actual = Math.round(f.hp - before);
+      const actual = applyHeal(f, h.value);
       if (actual > 0) {
         spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
         updateHpBar(f, elId);
@@ -731,7 +746,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -819,7 +834,7 @@ async function executeAction(action) {
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
-  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm') {
+  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
@@ -947,6 +962,13 @@ async function executeAction(action) {
     await sleep(800);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
+  } else if (skill.type === 'chestSmash') {
+    const target = allFighters[action.targetId];
+    await doChestSmash(f, target, skill);
+  } else if (skill.type === 'chestCount') {
+    await doChestCount(f, skill);
+  } else if (skill.type === 'chestStorm') {
+    await doChestStorm(f, skill);
   } else if (skill.type === 'pirateCannonBarrage') {
     await doPirateCannonBarrage(f, skill);
   } else if (skill.type === 'rainbowStorm') {
@@ -1660,9 +1682,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Lifesteal
   if (attacker._lifestealPct && attacker.alive && dmg > 0) {
     const healAmt = Math.round(dmg * attacker._lifestealPct / 100);
-    const before = attacker.hp;
-    attacker.hp = Math.min(attacker.maxHp, attacker.hp + healAmt);
-    const actual = Math.round(attacker.hp - before);
+    const actual = applyHeal(attacker, healAmt);
     if (actual > 0) {
       spawnFloatingNum(getFighterElId(attacker), `+${actual}吸血`, 'heal-num', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
@@ -1918,7 +1938,7 @@ function aiAction(f) {
 
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='iceShield') target = f; // self-cast
+  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='chestCount' || skill.type==='iceShield') target = f; // self-cast
   else if (skill.type==='angelBless' || skill.type==='bubbleShield' || skill.type==='ninjaTrap' || skill.type==='bubbleBind') {
     // Ally-target skills: pick weakest ally (bubbleBind targets enemy but is listed in isAlly wrongly — fix here)
     if (skill.type==='bubbleBind') target = enemies.sort((a,b)=>a.hp-b.hp)[0]; // bubbleBind marks enemy
@@ -1946,6 +1966,19 @@ function checkDeaths(attacker) {
         addLog(`${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`);
         try { sfxRebirth(); } catch(e) {}
         return; // skip death processing
+      }
+
+      // Chest phoenix equip: revive once at 15% HP
+      if (hasChestEquip(f, 'phoenix') && !f._chestReviveUsed) {
+        f._chestReviveUsed = true;
+        f.hp = Math.round(f.maxHp * 0.15);
+        f.alive = true;
+        const elId = getFighterElId(f);
+        spawnFloatingNum(elId, '🐦重生!', 'crit-label', 0, -25);
+        spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
+        updateHpBar(f, elId);
+        addLog(`${f.emoji}${f.name} <span class="log-passive">🐦凤凰雕像！以15%HP重生！</span>`);
+        return;
       }
 
       // CyberDrone: transform drones into mech
@@ -2175,9 +2208,60 @@ function addLog(html, cls='') {
   log.appendChild(e);
   log.scrollTop = log.scrollHeight;
 }
+// ── HEAL REDUCE HELPER ────────────────────────────────────
+function applyHeal(target, amount) {
+  const healRedBuff = target.buffs ? target.buffs.find(b => b.type === 'healReduce') : null;
+  if (healRedBuff) amount = Math.round(amount * (1 - healRedBuff.value / 100));
+  const before = target.hp;
+  target.hp = Math.min(target.maxHp, target.hp + amount);
+  return Math.round(target.hp - before);
+}
+
+// ── CHEST TURTLE EQUIPMENT SYSTEM ──────────────────────────
+function checkChestEquipDraw(f) {
+  if (!f.passive || f.passive.type !== 'chestTreasure') return;
+  const thresholds = f.passive.thresholds;
+  const pools = f.passive.pools;
+  while (f._chestTier < thresholds.length && f._chestTreasure >= thresholds[f._chestTier]) {
+    const poolIdx = f._chestTier < 2 ? 0 : f._chestTier < 4 ? 1 : 2;
+    const pool = pools[poolIdx];
+    const owned = f._chestEquips.map(e => e.id);
+    const available = pool.filter(e => !owned.includes(e.id));
+    if (!available.length) { f._chestTier++; continue; }
+    const drawn = available[Math.floor(Math.random() * available.length)];
+    f._chestEquips.push({...drawn});
+    f._chestTier++;
+    // Apply immediate stat effects
+    applyChestEquip(f, drawn);
+    // Visual feedback
+    const elId = getFighterElId(f);
+    const iconH = drawn.icon.endsWith && drawn.icon.endsWith('.png') ? `<img src="assets/${drawn.icon}" style="width:16px;height:16px;vertical-align:middle">` : drawn.icon;
+    spawnFloatingNum(elId, `${iconH}${drawn.name}!`, 'crit-label', 0, -30);
+    addLog(`${f.emoji}${f.name} 开启宝箱！获得 <span class="log-passive">${iconH}${drawn.name}</span>：${drawn.desc}`);
+    renderStatusIcons(f);
+    updateFighterStats(f, elId);
+    updateHpBar(f, elId);
+  }
+}
+
+function applyChestEquip(f, equip) {
+  if (equip.stat === 'atk') { f.baseAtk += Math.round(f.baseAtk * equip.pct / 100); }
+  if (equip.stat === 'defMr') { f.baseDef += Math.round(f.baseDef * equip.pct / 100); f.baseMr = (f.baseMr||f.baseDef) + Math.round((f.baseMr||f.baseDef) * equip.pct / 100); if (equip.bonusHp) { f.maxHp += equip.bonusHp; f.hp += equip.bonusHp; } }
+  if (equip.stat === 'crit') { f.crit += equip.pct / 100; }
+  if (equip.stat === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + equip.pct; }
+  if (equip.stat === 'crown') { f.baseAtk += Math.round(f.baseAtk * 25 / 100); f.crit += 0.4; f._extraCritDmgPerm = (f._extraCritDmgPerm || 0) + 0.2; f._lifestealPct = (f._lifestealPct || 0) + 6; }
+  recalcStats();
+}
+
+function hasChestEquip(f, equipId) {
+  return f._chestEquips && f._chestEquips.some(e => e.id === equipId);
+}
+
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
 function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
+  // Star equip: convert all damage to true
+  if (source && hasChestEquip(source, 'star') && dmgType && dmgType !== 'true') dmgType = 'true';
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
@@ -2197,6 +2281,11 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     if (dmgType === 'magic') target._magicDmgTaken = (target._magicDmgTaken||0) + amount;
     else if (dmgType === 'true' || isPierce) target._trueDmgTaken = (target._trueDmgTaken||0) + amount;
     else target._physDmgTaken = (target._physDmgTaken||0) + amount;
+  }
+  // Chest turtle: accumulate treasure value from damage dealt
+  if (source && source.passive && source.passive.type === 'chestTreasure' && amount > 0) {
+    source._chestTreasure = (source._chestTreasure || 0) + amount;
+    checkChestEquipDraw(source);
   }
   updateDmgStats();
   // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner

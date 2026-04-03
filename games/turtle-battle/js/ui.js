@@ -369,6 +369,7 @@ function renderStatusIcons(f) {
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动">💫眩晕</span>`;
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
+    if (b.type === 'healReduce') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合">☠️-${b.value}%治疗${b.turns}</span>`;
     return '';
   }).join('');
   // Star energy indicator
@@ -417,6 +418,26 @@ function renderStatusIcons(f) {
     const prismTips = ['攻击力+15%，光束额外真实伤害','护甲+15%魔抗+15%，光束获得护盾','回复7%HP，光束回复生命'];
     const c = f._prismColor;
     box.innerHTML += `<span style="color:${prismColors[c]};background:${prismColors[c]}22;padding:1px 5px;border-radius:6px;font-weight:700" title="${prismTips[c]}">${prismLabels[c]}</span>`;
+  }
+  // Chest treasure progress + equipped items
+  if (f.passive && f.passive.type === 'chestTreasure') {
+    const treasure = f._chestTreasure || 0;
+    const tier = f._chestTier || 0;
+    const thresholds = f.passive.thresholds;
+    const nextThresh = tier < thresholds.length ? thresholds[tier] : null;
+    const progressText = nextThresh ? `${treasure}/${nextThresh}` : `${treasure}(满)`;
+    box.innerHTML += `<span style="color:#ffd93d;background:rgba(255,217,61,.15);padding:1px 5px;border-radius:6px" title="财宝值${treasure}，已装备${tier}件">💰${progressText}</span>`;
+    if (f._chestEquips && f._chestEquips.length > 0) {
+      const equipIcons = f._chestEquips.map(e => {
+        const ih = e.icon.endsWith && e.icon.endsWith('.png') ? `<img src="assets/${e.icon}" style="width:14px;height:14px;vertical-align:middle">` : e.icon;
+        return `<span title="${e.name}：${e.desc.replace(/<[^>]+>/g,'')}">${ih}</span>`;
+      }).join('');
+      box.innerHTML += `<span style="padding:1px 3px">${equipIcons}</span>`;
+    }
+  }
+  // Gold lightning stacks (from chest thunder equip)
+  if (f._goldLightning > 0) {
+    box.innerHTML += `<span style="color:#ffd700;background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}/8</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
