@@ -412,10 +412,10 @@ const ALL_PETS = [
                 [
                   { id:'blade',  icon:'🗡', name:'锋利短刃',   desc:'攻击力 <span class="val-atk">+10%</span>', stat:'atk', pct:10 },
                   { id:'shield', icon:'🛡', name:'坚固木盾',   desc:'护甲/魔抗 <span class="val-atk">+15%</span>', stat:'defMr', pct:15 },
-                  { id:'rum',    icon:'pirate-plunder-icon.png', name:'海盗小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">3%</span> 最大生命值', stat:'hot', pct:3 },
-                  { id:'dice',   icon:'gambler-blood-icon.png', name:'赌徒的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
+                  { id:'rum',    icon:'pirate-plunder-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">3%</span> 最大生命值', stat:'hot', pct:3 },
+                  { id:'dice',   icon:'gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
                   { id:'chain',  icon:'🔗', name:'锁链',   desc:'技能1连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
-                  { id:'rock',   icon:'🪨', name:'石头龟的石头',   desc:'技能1额外加成50%护甲+50%魔抗', stat:'rock', pct:50 },
+                  { id:'rock',   icon:'🪨', name:'神奇石头',   desc:'技能1额外加成50%护甲+50%魔抗', stat:'rock', pct:50 },
                 ],
                 // 进阶池 (tier 2-3)
                 [
