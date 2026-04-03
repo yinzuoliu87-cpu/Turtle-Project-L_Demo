@@ -1038,8 +1038,8 @@ function showPassivePopup(e, fIdx) {
     const th = f.passive.thresholds;
     const nextThresh = tier < th.length ? th[tier] : null;
     const poolNames = ['基础池','基础池','进阶池','进阶池','传说池'];
-    let briefLines = `宝箱龟将造成伤害的100%充能为财宝进度。当前：<span class="val-atk">${treasure}</span>`;
-    if (nextThresh) briefLines += ` / ${nextThresh}（下一件：${poolNames[tier]}）`;
+    let briefLines = `宝箱龟将造成伤害的100%充能为财宝进度，根据进度获得基础，进阶和传说装备。\n当前：<span class="val-atk">${treasure}</span>`;
+    if (nextThresh) briefLines += ` / ${nextThresh}（下一件：${poolNames[tier]}装备）`;
     else briefLines += '（已满）';
     briefText = briefLines;
     // Detail: show all equipment pools with owned highlighted
