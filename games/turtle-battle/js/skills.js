@@ -2203,25 +2203,24 @@ async function doDiceAttack(attacker, target, skill) {
 async function doDiceAllIn(attacker, skill) {
   const fElId = getFighterElId(attacker);
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-  const basePierce = Math.round(attacker.atk * skill.atkScale);
+  const baseRaw = Math.round(attacker.atk * skill.atkScale);
+  const dmgType = skill.dmgType || 'physical';
   let totalDmg = 0, totalCrits = 0;
   spawnFloatingNum(fElId, '🎲孤注一掷!', 'crit-label', 0, -20);
   for (const e of enemies) {
     if (!e.alive) continue;
-    // Crit check per target
-    let effectiveCrit = attacker.crit;
-    let overflowCritDmg = 0;
-    if (effectiveCrit > 1.0) { overflowCritDmg = (effectiveCrit - 1.0) * (attacker.passive?.overflowMult || 1.5); effectiveCrit = 1.0; }
-    const isCrit = Math.random() < effectiveCrit;
-    const critMult = isCrit ? (1.5 + (attacker._extraCritDmgPerm || 0) + overflowCritDmg) : 1;
+    const {isCrit, critMult} = calcCrit(attacker);
     if (isCrit) totalCrits++;
-    const pierceDmg = Math.max(1, Math.round(basePierce * critMult));
-    applyRawDmg(attacker, e, pierceDmg, true, false, 'true');
-    totalDmg += pierceDmg;
+    const effDef = calcEffDef(attacker, e, dmgType);
+    const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseRaw * critMult * (1 - defRed)));
+    applyRawDmg(attacker, e, dmg, false, false, dmgType);
+    totalDmg += dmg;
     const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${pierceDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
+    const cls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
+    spawnFloatingNum(eElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
     updateHpBar(e, eElId);
-    await triggerOnHitEffects(attacker, e, pierceDmg);
+    await triggerOnHitEffects(attacker, e, dmg);
     await sleep(300);
   }
   // Lifesteal
