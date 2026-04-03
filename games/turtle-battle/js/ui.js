@@ -1049,14 +1049,18 @@ function showPassivePopup(e, fIdx) {
       html += pool.map(eq => {
         const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle">` : eq.icon;
         if (owned.includes(eq.id)) return `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
-        return `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}</span>`;
+        return `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}：${eq.desc}</span>`;
       }).join('');
       return html;
     };
     const pools = f.passive.pools;
-    let detailHtml = renderPool(`基础池（第1-2件，${th[0]}/${th[1]}点）：`, pools[0]);
-    detailHtml += `<br>` + renderPool(`进阶池（第3-4件，${th[2]}/${th[3]}点）：`, pools[1]);
-    detailHtml += `<br>` + renderPool(`传说池（第5件，${th[4]}点）：`, pools[2]);
+    let detailHtml = `宝箱龟将造成伤害的100%充能为财宝进度，根据进度 ${th.join('/')} 随机获得基础，进阶和传说装备。`;
+    detailHtml += `<br>当前：<span class="val-atk">${treasure}</span>`;
+    if (nextThresh) detailHtml += ` / ${nextThresh}（下一件：${poolNames[tier]}装备）`;
+    else detailHtml += '（已满）';
+    detailHtml += `<br>` + renderPool(`基础池（第1-2件）：`, pools[0]);
+    detailHtml += `<br>` + renderPool(`进阶池（第3-4件）：`, pools[1]);
+    detailHtml += `<br>` + renderPool(`传说池（第5件）：`, pools[2]);
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div>
       <div class="passive-popup-brief" id="passiveBrief">${briefText}</div>
       <div class="passive-popup-detail" id="passiveDetail" style="display:none">${detailHtml}</div>
