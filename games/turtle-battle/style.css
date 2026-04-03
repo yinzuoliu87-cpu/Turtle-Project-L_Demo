@@ -169,8 +169,8 @@ body{
 .fighter-stats{font-size:10px;color:var(--fg2);margin-bottom:4px}
 .stats-brief{display:flex;gap:4px;justify-content:center;align-items:center;flex-wrap:wrap}
 .stats-brief span{padding:1px 4px;background:rgba(255,255,255,.04);border-radius:4px}
-.stats-brief .stat-down{color:#ff6b6b;background:rgba(255,107,107,.12)}
-.stats-brief .stat-up{color:#06d6a0;background:rgba(6,214,160,.15)}
+.stats-brief .stat-down,.stats-detail .stat-down{color:#ff6b6b;background:rgba(255,107,107,.12)}
+.stats-brief .stat-up,.stats-detail .stat-up{color:#06d6a0;background:rgba(6,214,160,.15)}
 .stats-toggle{cursor:pointer;color:var(--accent);background:none !important;font-size:11px;opacity:.6}
 .stats-toggle:hover{opacity:1}
 .stats-detail{display:flex;gap:4px;justify-content:center;flex-wrap:wrap;margin-top:3px;padding-top:3px;border-top:1px solid rgba(255,255,255,.06)}

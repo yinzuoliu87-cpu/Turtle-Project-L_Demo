@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'stone-wall-icon.png', hunterKill:'🏹', ninjaInstinct:'🥷', phoenixRebirth:'🔥', lightningStorm:'lightning-storm-icon.png', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'pirate-plunder-icon.png', mechBody:'🤖', candySteal:'🍬'
+  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'🫧', stoneWall:'stone-wall-icon.png', hunterKill:'🏹', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'🔥', lightningStorm:'lightning-storm-icon.png', fortuneGold:'🪙', twoHeadVitality:'🐢', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'🌈', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'💎', gamblerBlood:'🎲', pirateBarrage:'pirate-plunder-icon.png', mechBody:'🤖', candySteal:'🍬'
 };
 
 function updateFighterStats(f, elId) {
