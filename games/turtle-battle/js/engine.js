@@ -2204,8 +2204,8 @@ async function processHunterKill() {
         const eElId = getFighterElId(e);
         const fElAnim = getFighterElId(f);
 
-        // Phase 1: crosshair on target
-        spawnFloatingNum(eElId, '🎯', 'crit-label', 0, -30);
+        // Phase 1: hunter icon on target
+        spawnFloatingNum(eElId, '<img src="assets/hunter-kill-icon.png" style="width:120px;height:120px">', 'crit-label', 0, -50);
         await sleep(400);
 
         // Phase 2: arrow particles fly from hunter to target
