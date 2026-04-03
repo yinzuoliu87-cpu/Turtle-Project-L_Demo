@@ -1048,7 +1048,7 @@ function showPassivePopup(e, fIdx) {
       let html = `<br><b>${label}</b>`;
       html += pool.map(eq => {
         const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle">` : eq.icon;
-        if (owned.includes(eq.id)) return `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
+        if (owned.includes(eq.id)) return `<br>${eIcon} <span style="color:#c77dff">${eq.name}</span>：${eq.desc}`;
         return `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}：${eq.desc}</span>`;
       }).join('');
       return html;

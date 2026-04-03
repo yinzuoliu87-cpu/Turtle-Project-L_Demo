@@ -421,7 +421,7 @@ const ALL_PETS = [
                 [
                   { id:'sword',  icon:'⚔️', name:'精钢长剑',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+30%</span>', stat:'atk', pct:30 },
                   { id:'vamp',   icon:'💉', name:'嗜血之刃', desc:'<span class="val-heal">生命偷取</span> <span class="val-heal">+12%</span>', stat:'lifesteal', pct:12 },
-                  { id:'fire',   icon:'🔥', name:'灼热火石',   desc:'造成伤害后对被命中目标施加灼烧', stat:'burn' },
+                  { id:'fire',   icon:'🔥', name:'灼热火石',   desc:'造成伤害后对被命中目标施加<span style="color:#ff6600">灼烧</span>', stat:'burn' },
                   { id:'gem',    icon:'💎', name:'宝石铠甲', desc:'<span class="val-def">护甲</span>/<span class="val-magic">魔抗</span> <span class="val-atk">+25%</span>，<span class="val-heal">最大生命值</span> <span class="val-heal">+60</span>', stat:'defMr', pct:25, bonusHp:60 },
                   { id:'poison', icon:'☠️', name:'淬毒箭矢',   desc:'造成伤害后对被命中目标施加治疗削减3回合（<span class="val-atk">-50%</span>）', stat:'healReduce' },
                   { id:'phoenix',icon:'🐦', name:'凤凰龟雕像',desc:'首次死亡时以 <span class="val-heal">15%</span> <span class="val-heal">最大生命值</span>重生', stat:'revive', pct:15 },
