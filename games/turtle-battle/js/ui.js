@@ -1045,12 +1045,19 @@ function showPassivePopup(e, fIdx) {
     // Detail: show all equipment pools with owned highlighted
     const owned = (f._chestEquips || []).map(e => e.id);
     const renderPool = (label, pool) => {
+      const ownedInPool = pool.filter(eq => owned.includes(eq.id));
+      const unownedInPool = pool.filter(eq => !owned.includes(eq.id));
       let html = `<br><b>${label}</b>`;
-      html += pool.map(eq => {
+      for (const eq of ownedInPool) {
         const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle">` : eq.icon;
-        if (owned.includes(eq.id)) return `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
-        return `<br><span style="color:var(--fg2)">${eIcon} ${eq.name}：${eq.desc}</span>`;
-      }).join('');
+        html += `<br><span style="color:#c77dff">${eIcon} ${eq.name}：${eq.desc}</span>`;
+      }
+      if (unownedInPool.length) {
+        html += `<br><span style="color:var(--fg2);font-size:11px">` + unownedInPool.map(eq => {
+          const eIcon = eq.icon.endsWith && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:12px;height:12px;vertical-align:middle">` : eq.icon;
+          return `${eIcon}${eq.name}`;
+        }).join(' ') + `</span>`;
+      }
       return html;
     };
     const pools = f.passive.pools;
