@@ -437,8 +437,8 @@ const ALL_PETS = [
               desc:'宝箱龟会根据造成的伤害获得财宝进度，从战利品池中获得各种强力装备。\n\n造成伤害积累财宝值，达到阈值时随机抽取装备：\n第1-2件：基础池（短刃/木盾/朗姆酒/血筛子/铁链/石头）\n第3-4件：进阶池（长剑/吸血刀/火石/宝石甲/毒箭/凤凰雕像）\n第5件：传说池（王冠/雷刃/星辉）\n\n阈值：80 / 180 / 300 / 450 / 650' },
     skills:[
       { name:'宝箱砸击', type:'chestSmash', hits:1, power:0, pierce:0, cd:0, atkScale:1.4,
-        brief:'宝箱龟砸击敌方，造成（{N:1.4*ATK}）物理伤害',
-        detail:'宝箱龟对单体砸击，造成（140%×攻击力({ATK}) = {N:1.4*ATK}）物理伤害。' },
+        brief:'_chestSmashBrief_',
+        detail:'_chestSmashDetail_' },
       { name:'清点财宝', type:'chestCount', hits:1, power:0, pierce:0, cd:4, healPct:15, shieldAtkScale:0.4,
         brief:'宝箱龟回复 {H:HP*0.15} HP + {S:0.4*ATK} 护盾，每100点财宝值强度+12%',
         detail:'宝箱龟清点财宝，回复（15%×最大生命值({HP}) = {H:HP*0.15}）HP。\n获得（40%×攻击力({ATK}) = {S:0.4*ATK}）护盾。\n每拥有100点财宝值，技能强度增加 <span class="val-atk">12%</span>。\n冷却{cd}回合。' },
