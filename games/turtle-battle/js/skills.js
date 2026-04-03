@@ -1250,7 +1250,7 @@ async function doPhoenixBurn(attacker, target, skill) {
   tEl.classList.remove('hit-shake');
 
   // Apply unified burn DoT — 0.4*ATK + 8%maxHP magic, 4 turns, no stack (refresh)
-  if (target.alive) {
+  if (target.alive && !(target.passive && target.passive.burnImmune)) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const burnHp = 8;
     const burnTurns = 4;

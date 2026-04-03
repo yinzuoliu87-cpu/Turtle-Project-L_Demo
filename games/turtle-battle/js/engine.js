@@ -1538,7 +1538,7 @@ function applySkillDebuffs(skill, target, attacker) {
   if (skill.mrDown)  debuffs.push({ type:'mrDown',  value:skill.mrDown.pct,  turns:skill.mrDown.turns });
 
   // Unified burn: 0.4*ATK + 8%maxHP, magic damage, 4 turns, no stack (refresh)
-  if (skill.burn && target.alive && attacker) {
+  if (skill.burn && target.alive && attacker && !(target.passive && target.passive.burnImmune)) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const burnHp = 8;
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');

@@ -108,9 +108,10 @@ const ALL_PETS = [
     ]},
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:381,  atk:39,  def:16, mr:18, spd:9, crit:0.25,
     img:'../../assets/pets/寒冰龟.png',
-    passive:{ type:'frostAura', name:'冰寒', atkDownPct:20, atkDownTurns:6,
+    passive:{ type:'frostAura', name:'冰寒', atkDownPct:20, atkDownTurns:6, burnImmune:true,
               bonusTargets:['lava','phoenix'], bonusDmgPct:35,
-              desc:'寒冰龟登场时，敌方全体单位被减少20%攻击力，持续6回合。\n寒冰龟对熔岩龟/凤凰龟造成额外35%伤害。' },
+              brief:'开局敌方全体攻击力 <span class="val-atk">-20%</span> 6回合。免疫<span style="color:#ff6600">灼烧</span>。对火系龟额外 <span class="val-atk">+35%</span> 伤害',
+              desc:'寒冰龟登场时，敌方全体攻击力 <span class="val-atk">-20%</span>，持续6回合。\n寒冰龟免疫<span style="color:#ff6600">灼烧</span>效果。\n对熔岩龟/凤凰龟造成额外 <span class="val-atk">+35%</span> 伤害。' },
     skills:[
       { name:'冰锥', type:'iceSpike', hits:6, power:0, pierce:0, cd:0, totalScale:1.4,
         brief:'寒冰龟发射6段冰锥，交替造成物理伤害和魔法伤害，共 {N:1.4*ATK*0.5} 物理伤害和 {M:1.4*ATK*0.5} 魔法伤害',
