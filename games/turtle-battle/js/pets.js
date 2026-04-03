@@ -57,7 +57,7 @@ const ALL_PETS = [
       { name:'龟盾', type:'turtleShieldBash', hits:1, power:0, pierce:0, cd:2, atkScale:1.2, shieldFromDmgPct:80,
         brief:'小龟造成{N:1.2*ATK}物理伤害，获得80%伤害值的永久护盾',
         detail:'小龟对单体造成 120%×(攻击力={ATK}) = {N:1.2*ATK} 物理伤害。\n获得造成伤害80%的永久护盾。\n冷却{cd}回合。' },
-      { name:'打击', type:'basicBarrage', hits:10, power:0, pierce:0, cd:5, atkScale:2.9,
+      { name:'打击', type:'basicBarrage', hits:10, power:0, pierce:0, cd:4, atkScale:2.9,
         brief:'小龟发射10段共{N:2.9*ATK}物理伤害随机分布敌方',
         detail:'小龟对敌方发射10段攻击，随机分布。\n共 290%×(攻击力={ATK}) = {N:2.9*ATK} 物理伤害。\n冷却{cd}回合。' },
     ]},
