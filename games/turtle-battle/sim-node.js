@@ -272,6 +272,15 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       else skill = dmgS.length ? dmgS[Math.floor(Math.random() * dmgS.length)] : ready[0];
       if (!skill) continue;
 
+      // Two-head AI: switch forms based on HP
+      if (f.passive && f.passive.type === 'twoHeadDual') {
+        const switchS = ready.find(s => s.type === 'twoHeadSwitch');
+        if (switchS) {
+          if (f._twoHeadForm !== 'melee' && f.hp / f.maxHp < 0.55) skill = switchS; // low HP → go melee for shield/HP
+          else if (f._twoHeadForm === 'melee' && f.hp / f.maxHp > 0.7) skill = switchS; // healthy in melee → switch back for damage
+        }
+      }
+
       // Fortune AI: use fortuneAllIn if can kill or enough coins
       const allInS = ready.find(s => s.type === 'fortuneAllIn');
       if (allInS && f._goldCoins > 0) {
