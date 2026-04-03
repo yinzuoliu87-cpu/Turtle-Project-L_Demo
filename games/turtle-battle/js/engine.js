@@ -1028,6 +1028,66 @@ async function executeAction(action) {
 
   checkDeaths(f);
 
+  // Process pending chest phoenix revive (animated)
+  for (const ff of allFighters) {
+    if (ff._pendingChestRevive) {
+      ff._pendingChestRevive = false;
+      const elId = getFighterElId(ff);
+      const el = document.getElementById(elId);
+      // Show death briefly
+      ff.hp = 0; ff.alive = false;
+      if (el) el.classList.add('dead');
+      updateHpBar(ff, elId);
+      addLog(`${ff.emoji}${ff.name} 被击败...凤凰雕像开始发光！`);
+      await sleep(800);
+      // Fire particles converging
+      try {
+        const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
+        for (let i = 0; i < 8; i++) {
+          const p = document.createElement('div');
+          p.className = 'mech-drone-particle';
+          p.style.background = '#ff9f43';
+          p.style.boxShadow = '0 0 8px #ff6600';
+          const angle = (i / 8) * Math.PI * 2;
+          const dist = 60 + Math.random() * 40;
+          p.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px';
+          p.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px';
+          document.body.appendChild(p);
+          requestAnimationFrame(() => {
+            p.style.transition = `all ${0.4 + i*0.05}s ease-in`;
+            p.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px';
+            p.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px';
+            p.style.opacity = '0';
+            p.style.transform = 'scale(0.3)';
+          });
+          setTimeout(() => p.remove(), 1500);
+        }
+      } catch(e) {}
+      await sleep(800);
+      // Flash
+      try {
+        const flash = document.createElement('div');
+        flash.className = 'mech-transform-flash';
+        flash.style.background = 'rgba(255,159,67,.4)';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 500);
+      } catch(e) {}
+      try { sfxRebirth(); } catch(e) {}
+      await sleep(300);
+      // Revive
+      ff.hp = Math.round(ff.maxHp * 0.15);
+      ff.alive = true;
+      ff._deathProcessed = false;
+      if (el) el.classList.remove('dead');
+      updateHpBar(ff, elId);
+      renderStatusIcons(ff);
+      spawnFloatingNum(elId, '🐦凤凰重生!', 'crit-label', 0, -25);
+      spawnFloatingNum(elId, `+${ff.hp}HP`, 'heal-num', 200, 0);
+      addLog(`${ff.emoji}${ff.name} <span class="log-passive">🐦凤凰雕像！以15%HP重生！</span>`);
+      await sleep(800);
+    }
+  }
+
   // Process pending mech transforms (async with dramatic pause)
   for (const ff of allFighters) {
     if (ff._pendingMech) {
@@ -1967,16 +2027,12 @@ function checkDeaths(attacker) {
         return; // skip death processing
       }
 
-      // Chest phoenix equip: revive once at 15% HP
+      // Chest phoenix equip: mark for pending revive (animated in executeAction)
       if (hasChestEquip(f, 'phoenix') && !f._chestReviveUsed) {
         f._chestReviveUsed = true;
-        f.hp = Math.round(f.maxHp * 0.15);
-        f.alive = true;
-        const elId = getFighterElId(f);
-        spawnFloatingNum(elId, '🐦重生!', 'crit-label', 0, -25);
-        spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">🐦凤凰雕像！以15%HP重生！</span>`);
+        f._pendingChestRevive = true;
+        f.alive = true; // keep alive so checkBattleEnd doesn't trigger
+        f.hp = 1;
         return;
       }
 
