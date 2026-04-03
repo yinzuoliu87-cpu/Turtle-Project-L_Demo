@@ -325,28 +325,40 @@ function togglePet(id) {
   document.getElementById('btnConfirmTeam').disabled = selectedIds.length !== 2;
 }
 
+let _petPassiveOpen = false;
 function showPetPassive(e, petId) {
-  console.log('showPetPassive called', petId);
+  const popup = document.getElementById('passivePopup');
+  // Toggle off if already showing
+  if (_petPassiveOpen) {
+    popup.style.display = 'none';
+    popup.style.transform = '';
+    _petPassiveOpen = false;
+    return;
+  }
   const p = ALL_PETS.find(x => x.id === petId);
-  if (!p || !p.passive) { console.log('no passive found'); return; }
+  if (!p || !p.passive) return;
   const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
   const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
   const passiveName = p.passive.name || '被动';
   const descText = p.passive.brief || p.passive.desc || '';
   const fakeFighter = { atk:p.atk, def:p.def, mr:p.mr||p.def, maxHp:p.hp, hp:p.hp, crit:p.crit||0.25, buffs:[], _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0, passive:p.passive };
   const rendered = renderSkillTemplate(descText, fakeFighter, p.passive);
-  const popup = document.getElementById('passivePopup');
   popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>`;
-  // Center on screen for reliable mobile display
   popup.style.display = 'block';
   popup.style.left = '50%';
   popup.style.top = '40%';
   popup.style.transform = 'translate(-50%, -50%)';
+  _petPassiveOpen = true;
+  // Close on next click outside
   setTimeout(() => {
-    const close = () => { popup.style.display = 'none'; popup.style.transform = ''; };
-    document.addEventListener('click', close, { once: true });
-    document.addEventListener('touchend', close, { once: true });
-  }, 200);
+    document.addEventListener('click', function _close(ev) {
+      if (ev.target.closest('.pet-passive-icon')) return; // ignore icon clicks
+      popup.style.display = 'none';
+      popup.style.transform = '';
+      _petPassiveOpen = false;
+      document.removeEventListener('click', _close);
+    });
+  }, 300);
 }
 
 function updateSlots() {
