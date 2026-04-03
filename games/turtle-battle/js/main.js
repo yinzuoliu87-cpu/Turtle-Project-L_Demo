@@ -289,7 +289,7 @@ function renderPetGrid() {
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
          onclick="togglePet(event,'${p.id}')">
-      <div class="pet-avatar">${buildPetImgHTML(p, 72)}${passiveHtml}</div>
+      <div class="pet-avatar">${buildPetImgHTML(p, 96)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
