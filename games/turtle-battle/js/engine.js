@@ -1705,7 +1705,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     parent.appendChild(num);
 
     // Determine animation type
-    const isDmg = (cls.includes('dmg') || cls.includes('pierce')) && cls !== 'shield-dmg';
+    const isDmg = (cls.includes('dmg') || cls.includes('pierce') || cls.includes('crit-magic') || cls.includes('crit-true')) && cls !== 'shield-dmg';
     const ox = (Math.random() - 0.5) * 8;
     const y0 = -(15 + (yOffset || 0));
 
