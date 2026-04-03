@@ -67,9 +67,9 @@ const ALL_PETS = [
               brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+2</span>（上限<span class="val-atk">+16</span>）；受伤反弹 <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害',
               desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+2</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skills:[
-      { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.25, defScale:1,
-        brief:'石头龟打击2段，共{N:0.25*ATK*2}+{D:1*DEF*2}物理伤害（攻击力+防御力加成）',
-        detail:'石头龟对单体目标打击2段，每段造成 25%×(攻击力={ATK}) = {N:0.25*ATK} + 100%×(防御={DEF}) = {D:1*DEF} 物理伤害，共 {N:0.25*ATK*2}+{D:1*DEF*2} 物理伤害。' },
+      { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.7, mrScale:0.4,
+        brief:'石头龟打击2段，共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害',
+        detail:'石头龟对单体目标打击2段，每段造成 35%×(攻击力={ATK}) = {N:0.35*ATK} + 70%×(<span class="val-def">护甲</span>={DEF}) = {D:0.7*DEF} + 40%×(<span class="val-magic">魔抗</span>={MR}) = {M:0.4*MR} 物理伤害。\n共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害。' },
       { name:'岩石护甲', type:'shield', hits:1, power:0, shield:0, cd:3, aoeAlly:true, shieldFlat:14, shieldHpPct:10, shieldDuration:3,
         brief:'石头龟为全体友军施加{S:14+HP*0.1}护盾，持续3回合',
         detail:'石头龟为全体友军施加护盾，14 + 10%×(最大HP={HP}) = {S:14+HP*0.1} 护盾，持续3回合。\n冷却{cd}回合。' },

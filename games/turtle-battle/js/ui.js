@@ -436,7 +436,7 @@ function renderSkillTemplate(template, f, s) {
     ATK: f.atk, DEF: f.def, MR: f.mr || f.def, HP: f.maxHp, hits: s.hits || 1,
     power: s.power || 0, pierce: s.pierce || 0, cd: s.cd || 0,
     atkScale: s.atkScale || 0, defScale: s.defScale || 0, dmgScale: s.dmgScale || 0,
-    hpPct: s.hpPct || 0, arrowScale: s.arrowScale || 0,
+    hpPct: s.hpPct || 0, mrScale: s.mrScale || 0, arrowScale: s.arrowScale || 0,
     shieldScale: s.shieldScale || 0, trapScale: s.trapScale || 0,
     burstScale: s.burstScale || 0, counterScale: s.counterScale || 0,
     shieldHpPct: s.shieldHpPct || 0, shieldDuration: s.shieldDuration || 0,

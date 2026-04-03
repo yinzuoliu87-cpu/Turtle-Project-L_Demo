@@ -320,6 +320,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
           let bp = skill.power || 0;
           if (skill.atkScale) bp += Math.round(f.atk * skill.atkScale);
           if (skill.defScale) bp += Math.round(f.def * skill.defScale);
+          if (skill.mrScale) bp += Math.round((f.mr || f.def) * skill.mrScale);
           if (skill.hpPct) bp += Math.round(target.maxHp * skill.hpPct / 100);
           const ed = Math.max(0, target.def - (f.armorPen || 0));
           const dr = ed / (ed + DEF_CONSTANT);

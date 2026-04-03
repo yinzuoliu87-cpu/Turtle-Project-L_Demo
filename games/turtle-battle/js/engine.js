@@ -1209,6 +1209,7 @@ async function doDamage(attacker, target, skill) {
     let basePower = skill.power;
     if (skill.atkScale) basePower += Math.round(attacker.atk * skill.atkScale);
     if (skill.defScale) basePower += Math.round(attacker.def * skill.defScale);
+    if (skill.mrScale) basePower += Math.round((attacker.mr || attacker.def) * skill.mrScale);
     if (skill.hpPct) basePower += Math.round(target.maxHp * skill.hpPct / 100);
     if (skill.selfHpPct) basePower += Math.round(attacker.maxHp * skill.selfHpPct / 100);
     if (skill.random) basePower = Math.round(basePower * (0.5 + Math.random() * 1.5));
