@@ -348,9 +348,9 @@ const ALL_PETS = [
   // S级
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:330,  atk:42,  def:12, mr:15, spd:14, crit:0.25,
     img:'../../assets/pets/凤凰龟.png',
-    passive:{ type:'phoenixRebirth', name:'涅槃', revivePct:55,
-              brief:'凤凰龟首次死亡时浴火重生，以 {H:HP*0.55} HP复活，并对全体敌人施加<span style="color:#ff6600">灼烧</span>与治疗削减',
-              desc:'凤凰龟拥有涅槃之力。\n\n首次死亡时浴火重生，以（55%×最大生命值({HP}) = {H:HP*0.55}）HP复活。\n复活后保留所有增益和减益效果。\n并对全体敌人施加<span style="color:#ff6600">灼烧</span>4回合与治疗削减3回合（<span class="val-atk">-50%</span>）。' },
+    passive:{ type:'phoenixRebirth', name:'涅槃', revivePct:25,
+              brief:'凤凰龟首次死亡时浴火重生，以 {H:HP*0.25} HP复活，并对全体敌人施加<span style="color:#ff6600">灼烧</span>与治疗削减',
+              desc:'凤凰龟拥有涅槃之力。\n\n首次死亡时浴火重生，以（25%×最大生命值({HP}) = {H:HP*0.25}）HP复活。\n复活后保留所有增益和减益效果。\n并对全体敌人施加<span style="color:#ff6600">灼烧</span>4回合与治疗削减3回合（<span class="val-atk">-50%</span>）。' },
     skills:[
       { name:'灼烧',   type:'phoenixBurn', dmgType:'magic', hits:1, power:0, pierce:0, cd:0, atkScale:0.9,
         brief:'凤凰龟造成（{M:0.9*ATK}）魔法伤害，施加<span style="color:#ff6600">灼烧</span>4回合',
@@ -408,7 +408,7 @@ const ALL_PETS = [
   { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:345,  atk:40,  def:16, mr:14, spd:10, crit:0.25,
     img:'../../assets/pets/宝箱龟v1.png', sprite:{frames:11,frameW:300,frameH:200,duration:1100},
     passive:{ type:'chestTreasure', name:'藏宝图',
-              thresholds:[80, 180, 300, 450, 650],
+              thresholds:[50, 120, 220, 350, 500],
               pools:[
                 // 基础池 (tier 0-1)
                 [
