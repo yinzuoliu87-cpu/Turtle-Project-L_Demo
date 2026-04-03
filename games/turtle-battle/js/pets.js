@@ -403,7 +403,7 @@ const ALL_PETS = [
         brief:'水晶龟释放7段碎晶，每段{N:0.16*ATK}魔法+{P:0.09*ATK}真实，附加灼烧4回合',
         detail:'水晶龟释放7段碎晶风暴。\n每段造成 16%×ATK = {N:0.16*ATK} 魔法 + 9%×ATK = {P:0.09*ATK} 真实。\n共 {N:0.16*ATK*7} 魔法 + {P:0.09*ATK*7} 真实。\n附加灼烧4回合（每回合40%ATK+8%最大HP魔法伤害）。\n冷却{cd}回合。' },
     ]},
-  { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:360,  atk:39,  def:19, mr:18, spd:10, crit:0.25,
+  { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:320,  atk:40,  def:16, mr:13, spd:10, crit:0.25,
     img:'../../assets/pets/宝箱龟v1.png', sprite:{frames:11,frameW:300,frameH:200,duration:1100},
     passive:{ type:'chestTreasure', name:'藏宝图',
               thresholds:[80, 180, 300, 450, 650],
