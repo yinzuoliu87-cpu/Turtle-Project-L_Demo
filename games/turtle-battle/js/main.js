@@ -448,6 +448,10 @@ function startBattle(seed) {
   if (pirates.length) {
     setTimeout(async () => {
       for (const f of pirates) {
+        const fElId = getFighterElId(f);
+        // Show passive trigger on pirate
+        spawnFloatingNum(fElId, '🏴‍☠️掠夺！', 'debuff-label', 0, -10);
+        await sleep(1000);
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         if (!enemies.length) continue;
         const target = enemies[Math.floor(Math.random() * enemies.length)];
@@ -456,9 +460,9 @@ function startBattle(seed) {
         const tElId = getFighterElId(target);
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
-        spawnFloatingNum(tElId, `-${dmg}🏴‍☠️`, 'true-dmg', 0, 0, { atkSide: f.side, amount: dmg });
+        spawnFloatingNum(tElId, `-${dmg}`, 'true-dmg', 0, 0, { atkSide: f.side, amount: dmg });
         updateHpBar(target, tElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);
+        addLog(`${f.emoji}${f.name} 被动「掠夺」：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);
         await sleep(800);
         if (tEl) tEl.classList.remove('hit-shake');
       }
