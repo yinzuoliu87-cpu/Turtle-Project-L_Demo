@@ -124,7 +124,8 @@ const ALL_PETS = [
     ]},
   { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:310,  atk:46,  def:9,  mr:7, spd:15, crit:0.25,
     img:'../../assets/pets/忍者龟.png',
-    passive:{ type:'ninjaInstinct', critBonus:45, critDmgBonus:20, armorPen:8, desc:'+45%暴击+20%爆伤+8穿甲' },
+    passive:{ type:'ninjaInstinct', name:'忍术', critBonus:45, critDmgBonus:20, armorPen:8,
+              desc:'忍者龟天生忍术精通。开局永久获得：暴击率 <span class="val-atk">+45%</span>，暴击伤害 <span class="val-atk">+20%</span>，护甲穿透 <span class="val-atk">+8</span>' },
     skills:[
       { name:'飞镖',     type:'ninjaShuriken', hits:1, power:0, pierce:0, cd:0, atkScale:1.5,
         brief:'忍者龟投掷飞镖造成{N:1.5*ATK}物理伤害，暴击时转为真实伤害',
