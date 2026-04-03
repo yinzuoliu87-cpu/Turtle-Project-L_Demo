@@ -279,11 +279,17 @@ function renderPetGrid() {
   } catch(e) {}
   const pets = owned ? ALL_PETS.filter(p => owned.includes(p.id)) : ALL_PETS;
 
-  grid.innerHTML = pets.map(p => `
-    <div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
+  grid.innerHTML = pets.map(p => {
+    let passiveHtml = '';
+    if (p.passive) {
+      const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
+      const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="stat-icon">` : iconRaw;
+      passiveHtml = `<span class="pet-passive-icon" onclick="event.stopPropagation();showPetPassive(event,'${p.id}')">${iconH}</span>`;
+    }
+    return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
          onclick="togglePet('${p.id}')">
-      <div class="pet-avatar">${buildPetImgHTML(p, 56)}</div>
+      <div class="pet-avatar">${buildPetImgHTML(p, 56)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
@@ -292,7 +298,8 @@ function renderPetGrid() {
         <span><img src="assets/def-icon.png" class="stat-icon">${p.def}</span>
         <span><img src="assets/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
       </div>
-    </div>`).join('');
+    </div>`;
+  }).join('');
 }
 
 function togglePet(id) {
@@ -302,6 +309,26 @@ function togglePet(id) {
   renderPetGrid();
   updateSlots();
   document.getElementById('btnConfirmTeam').disabled = selectedIds.length !== 2;
+}
+
+function showPetPassive(e, petId) {
+  const p = ALL_PETS.find(x => x.id === petId);
+  if (!p || !p.passive) return;
+  const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
+  const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
+  const passiveName = p.passive.name || '被动';
+  const descText = p.passive.brief || p.passive.desc || '';
+  // Create a fake fighter from pet base stats for template rendering
+  const fakeFighter = { atk:p.atk, def:p.def, mr:p.mr||p.def, maxHp:p.hp, hp:p.hp, crit:p.crit||0.25, buffs:[], _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, passive:p.passive };
+  const rendered = renderSkillTemplate(descText, fakeFighter, p.passive);
+  const popup = document.getElementById('passivePopup');
+  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>`;
+  popup.style.display = 'block';
+  const x = Math.min(e.clientX, window.innerWidth - 290);
+  const y = Math.min(e.clientY + 10, window.innerHeight - 120);
+  popup.style.left = x + 'px';
+  popup.style.top = y + 'px';
+  setTimeout(() => document.addEventListener('click', closePassivePopup, { once: true }), 10);
 }
 
 function updateSlots() {
