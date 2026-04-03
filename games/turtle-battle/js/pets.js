@@ -218,8 +218,8 @@ const ALL_PETS = [
               desc:'骰子龟的赌徒之血在危机中觉醒。\n\n基于已损生命值获得暴击率加成：\n损失30%生命值时达到满额 <span class="val-atk">+50%</span> 暴击率。\n暴击率超过100%的部分，每1%转为 <span class="val-atk">1.5%</span> 暴击伤害。\n\n当前暴击率：<span class="val-atk">{N:crit*100}%</span>' },
     skills:[
       { name:'骰子攻击', type:'diceAttack', hits:3, power:0, pierce:0, cd:0, atkScale:0.9, critBonusMult:55,
-        brief:'骰子龟掷3颗骰子，共（{N:0.9*ATK+crit*55}）物理伤害，暴击率越高伤害越高',
-        detail:'骰子龟对单体掷出3颗骰子，均分为3段，每段独立判定暴击。\n总基础伤害 =（90%×攻击力({ATK}) = {N:0.9*ATK}）+（55×暴击率({N:crit*100}%) = {N:crit*55}）= {N:0.9*ATK+crit*55} 物理伤害。' },
+        brief:'骰子龟掷3颗骰子，每段（{N:0.3*ATK+crit*55/3}），共（{N:0.9*ATK+crit*55}）物理伤害',
+        detail:'骰子龟对单体掷出3颗骰子，共3段。\n每段造成（30%×攻击力({ATK}) = {N:0.3*ATK}）+（暴击率加成 = {N:crit*55/3}）= {N:0.3*ATK+crit*55/3} 物理伤害。\n共（{N:0.9*ATK+crit*55}）物理伤害。' },
       { name:'孤注一掷', type:'diceAllIn', dmgType:'true', hits:1, power:0, pierce:0, cd:3, atkScale:1.1, lifestealPct:10,
         brief:'骰子龟对全体敌方造成（{T:1.1*ATK}）真实伤害，附带 <span class="val-heal">10%</span> 生命偷取',
         detail:'骰子龟拼命一搏，对每个敌方造成（110%×攻击力({ATK}) = {T:1.1*ATK}）真实伤害。\n本次攻击附带 <span class="val-heal">10%</span> 生命偷取，基于造成的总伤害回复。\n冷却{cd}回合。' },
