@@ -187,9 +187,9 @@ const ALL_PETS = [
               brief:'全队护甲/魔抗加成额外 <span class="val-atk">+50%</span>；每段受伤固定减免 {D:DEF*0.15}（真实伤害除外）',
               desc:'钻石龟的结构强化全队防御体系。\n\n全队所有护甲和魔抗加成效果额外放大 <span class="val-atk">+50%</span>\n\n每段受到伤害时固定减免（15%×护甲({DEF}) = {D:DEF*0.15}）伤害\n真实伤害不受此减免影响。' },
     skills:[
-      { name:'钻石切割', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.7, defScale:1.2,
-        brief:'钻石龟切割敌方，造成（{N:0.7*ATK}+{D:1.2*DEF}）物理伤害',
-        detail:'钻石龟对单体切割，造成（70%×攻击力({ATK}) = {N:0.7*ATK}）+（120%×护甲({DEF}) = {D:1.2*DEF}）物理伤害。\n护甲越高伤害越高。' },
+      { name:'钻石切割', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.7, defScale:0.6, mrScale:0.6,
+        brief:'钻石龟切割敌方，造成（{N:0.7*ATK}+{D:0.6*DEF}+{M:0.6*MR}）物理伤害',
+        detail:'钻石龟对单体切割，造成（70%×攻击力({ATK}) = {N:0.7*ATK}）+（60%×护甲({DEF}) = {D:0.6*DEF}）+（60%×魔抗({MR}) = {M:0.6*MR}）物理伤害。\n防御属性越高伤害越高。' },
       { name:'坚不可摧', type:'diamondFortify', hits:1, power:0, pierce:0, cd:3, shieldHpPct:22, shieldTurns:3, defUpAtkPct:20, defUpTurns:3,
         brief:'钻石龟获得 {S:HP*0.22} 护盾3回合 + 护甲 {D:ATK*0.3} 3回合（含被动放大）',
         detail:'钻石龟凝聚钻石结构自我强化。\n获得（22%×最大生命值({HP}) = {S:HP*0.22}）护盾，持续3回合。\n提升护甲（20%×攻击力({ATK}) = {D:ATK*0.2}），经被动放大50%后实际获得 {D:ATK*0.3}，持续3回合。\n冷却{cd}回合。' },
