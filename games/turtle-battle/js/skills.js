@@ -681,13 +681,11 @@ async function doIceFrost(attacker, skill) {
   recalcStats();
   await sleep(500);
 
-  // Then deal damage (with reduced MR)
-  for (const enemy of enemies) {
-    if (!enemy.alive) continue;
-    let enemyTotal = 0;
-    const eElId = getFighterElId(enemy);
-    for (let h = 0; h < hits; h++) {
-      if (!enemy.alive) break;
+  // Then deal damage simultaneously to all enemies, one tick at a time
+  for (let h = 0; h < hits; h++) {
+    if (battleOver) break;
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
       let dmg = perHit;
       if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(enemy.id)) {
         dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
@@ -697,16 +695,19 @@ async function doIceFrost(attacker, skill) {
       const mrRed = effMr / (effMr + DEF_CONSTANT);
       dmg = Math.max(1, Math.round(dmg * critMult * (1 - mrRed)));
       applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
-      enemyTotal += dmg;
-      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (h % 4) * 28, {atkSide: attacker.side, amount: dmg});
+      totalDmg += dmg;
+      const eElId = getFighterElId(enemy);
+      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (h % 3) * 28, {atkSide: attacker.side, amount: dmg});
       await triggerOnHitEffects(attacker, enemy, dmg);
+      const eEl = document.getElementById(eElId);
+      if (eEl) eEl.classList.add('hit-shake');
+      updateHpBar(enemy, eElId);
     }
-    totalDmg += enemyTotal;
-    const eEl = document.getElementById(eElId);
-    if (eEl) { eEl.classList.add('hit-shake'); }
-    updateHpBar(enemy, eElId);
-    await sleep(400);
-    if (eEl) { eEl.classList.remove('hit-shake'); }
+    await sleep(350);
+    for (const enemy of enemies) {
+      const eEl = document.getElementById(getFighterElId(enemy));
+      if (eEl) eEl.classList.remove('hit-shake');
+    }
   }
   addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> ⬇️魔抗-${skill.mrDown.pct}% + 全体${hits}段：<span class="log-magic">${totalDmg}魔法伤害</span>`);
 }
