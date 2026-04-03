@@ -414,8 +414,8 @@ const ALL_PETS = [
                   { id:'shield', icon:'🛡', name:'坚固木盾',   desc:'护甲/魔抗 <span class="val-atk">+15%</span>', stat:'defMr', pct:15 },
                   { id:'rum',    icon:'pirate-plunder-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">3%</span> 最大生命值', stat:'hot', pct:3 },
                   { id:'dice',   icon:'gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
-                  { id:'chain',  icon:'🔗', name:'锁链',   desc:'技能1连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
-                  { id:'rock',   icon:'🪨', name:'神奇石头',   desc:'技能1额外加成50%护甲+50%魔抗', stat:'rock', pct:50 },
+                  { id:'chain',  icon:'🔗', name:'锁链',   desc:'「宝箱砸击」连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
+                  { id:'rock',   icon:'🪨', name:'神奇石头',   desc:'「宝箱砸击」额外加成50%护甲+50%魔抗', stat:'rock', pct:50 },
                 ],
                 // 进阶池 (tier 2-3)
                 [
@@ -429,7 +429,7 @@ const ALL_PETS = [
                 // 传说池 (tier 4)
                 [
                   { id:'crown',  icon:'👑', name:'王者之冠',   desc:'攻击力 <span class="val-atk">+25%</span>，暴击 <span class="val-atk">+40%</span>，爆伤 <span class="val-atk">+20%</span>，生命偷取 <span class="val-heal">+6%</span>', stat:'crown' },
-                  { id:'thunder',icon:'⚡', name:'闪电龟的雷刃',   desc:'技能1和3命中叠金闪电层，满8层引爆100%ATK真实伤害', stat:'thunder' },
+                  { id:'thunder',icon:'⚡', name:'闪电龟的雷刃',   desc:'「宝箱砸击」和「财宝风暴」命中叠金闪电层，满8层引爆100%ATK真实伤害', stat:'thunder' },
                   { id:'star',   icon:'🌟', name:'星际龟的星辉',   desc:'所有伤害转为真实伤害', stat:'trueDmg' },
                 ],
               ],

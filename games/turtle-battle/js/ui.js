@@ -584,13 +584,13 @@ function getChestEquipBonusText(f, s) {
   if (!f._chestEquips || !f._chestEquips.length) return '';
   const lines = [];
   if (s.type === 'chestSmash') {
-    if (hasChestEquip(f, 'chain')) lines.push('🔗铁链：对次要目标造成25%连锁伤害');
-    if (hasChestEquip(f, 'rock')) lines.push('🪨石头：额外加成50%护甲+50%魔抗');
+    if (hasChestEquip(f, 'chain')) lines.push('🔗锁链：对次要目标造成25%连锁伤害');
+    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：额外加成50%护甲+50%魔抗');
   }
   if (s.type === 'chestSmash' || s.type === 'chestStorm') {
     if (hasChestEquip(f, 'fire')) lines.push('🔥火石：命中目标施加灼烧');
     if (hasChestEquip(f, 'poison')) lines.push('☠️毒箭：命中目标施加治疗削减3回合');
-    if (hasChestEquip(f, 'thunder')) lines.push('⚡雷刃：命中叠金闪电层，满8层引爆100%ATK真实伤害');
+    if (hasChestEquip(f, 'thunder')) lines.push('⚡闪电龟的雷刃：命中叠金闪电层，满8层引爆100%ATK真实伤害');
     if (hasChestEquip(f, 'star')) lines.push('🌟星辉：所有伤害转为真实伤害');
   }
   if (!lines.length) return '';
