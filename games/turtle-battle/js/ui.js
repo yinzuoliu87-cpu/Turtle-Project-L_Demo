@@ -494,6 +494,7 @@ function renderSkillTemplate(template, f, s) {
     hunterStolenAtk: f._hunterStolenAtk || 0,
     hunterStolenDef: f._hunterStolenDef || 0,
     hunterStolenHp: f._hunterStolenHp || 0,
+    hunterStolenMr: f._hunterStolenMr || 0,
     lifesteal: f._lifestealPct || 0,
     armorBreakPct: s.armorBreak ? s.armorBreak.pct : 0, armorBreakTurns: s.armorBreak ? s.armorBreak.turns : 0,
     atkDownPct: s.atkDown ? s.atkDown.pct : 0, atkDownTurns: s.atkDown ? s.atkDown.turns : 0,

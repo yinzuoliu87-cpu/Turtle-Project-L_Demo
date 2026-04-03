@@ -2130,18 +2130,20 @@ function checkDeaths(attacker) {
       if (attacker && attacker.alive && attacker.passive && attacker.passive.type === 'hunterKill') {
         const sAtk = Math.round(f.baseAtk * attacker.passive.stealPct / 100);
         const sDef = Math.round(f.baseDef * attacker.passive.stealPct / 100);
+        const sMr  = Math.round((f.baseMr || f.baseDef) * attacker.passive.stealPct / 100);
         const sHp  = Math.round(f.maxHp   * attacker.passive.stealPct / 100);
-        attacker.baseAtk += sAtk; attacker.baseDef += sDef; attacker.maxHp += sHp; attacker.hp += sHp;
+        attacker.baseAtk += sAtk; attacker.baseDef += sDef; attacker.baseMr = (attacker.baseMr || attacker.baseDef) + sMr; attacker.maxHp += sHp; attacker.hp += sHp;
         attacker._hunterKills = (attacker._hunterKills || 0) + 1;
         attacker._hunterStolenAtk = (attacker._hunterStolenAtk || 0) + sAtk;
         attacker._hunterStolenDef = (attacker._hunterStolenDef || 0) + sDef;
+        attacker._hunterStolenMr = (attacker._hunterStolenMr || 0) + sMr;
         attacker._hunterStolenHp = (attacker._hunterStolenHp || 0) + sHp;
         if (attacker.passive.lifesteal) attacker._lifestealPct = (attacker._lifestealPct || 0) + attacker.passive.lifesteal;
         const aElId = getFighterElId(attacker);
-        spawnFloatingNum(aElId, `+${sAtk}攻+${sDef}防+${sHp}HP`, 'passive-num', 300, 0);
+        spawnFloatingNum(aElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
         updateHpBar(attacker, aElId);
         recalcStats();
-        addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">🏹击杀吸收 攻+${sAtk} 防+${sDef} HP+${sHp}</span>`);
+        addLog(`${attacker.emoji}${attacker.name} 被动：<span class="log-passive">🏹击杀吸收 攻+${sAtk} 甲+${sDef} 抗+${sMr} HP+${sHp}</span>`);
       }
 
       // Fortune gold: all alive fortune turtles gain 8 coins on any death
@@ -2198,35 +2200,79 @@ async function processHunterKill() {
     const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
     for (const e of enemies) {
       if (e.hp / e.maxHp < f.passive.hpThresh / 100) {
-        // Execute!
+        // Execute with animation!
         const eElId = getFighterElId(e);
-        spawnFloatingNum(eElId, '猎杀!', 'crit-label', 0, -20);
-        spawnFloatingNum(eElId, '-99999', 'pierce-dmg', 100, 0);
+        const fElAnim = getFighterElId(f);
+
+        // Phase 1: crosshair on target
+        spawnFloatingNum(eElId, '🎯', 'crit-label', 0, -30);
+        await sleep(400);
+
+        // Phase 2: arrow particles fly from hunter to target
+        try {
+          const fromEl = document.getElementById(fElAnim);
+          const toEl = document.getElementById(eElId);
+          if (fromEl && toEl) {
+            const fromRect = fromEl.getBoundingClientRect();
+            const toRect = toEl.getBoundingClientRect();
+            for (let i = 0; i < 5; i++) {
+              const arrow = document.createElement('div');
+              arrow.className = 'mech-drone-particle';
+              arrow.style.background = '#ff6b6b';
+              arrow.style.boxShadow = '0 0 6px #ff0000';
+              arrow.style.left = (fromRect.left + fromRect.width/2) + 'px';
+              arrow.style.top = (fromRect.top + fromRect.height/2 + (i-2)*8) + 'px';
+              document.body.appendChild(arrow);
+              requestAnimationFrame(() => {
+                arrow.style.transition = `all ${0.3 + i*0.05}s ease-in`;
+                arrow.style.left = (toRect.left + toRect.width/2 - 6) + 'px';
+                arrow.style.top = (toRect.top + toRect.height/2 - 6) + 'px';
+                arrow.style.opacity = '0';
+              });
+              setTimeout(() => arrow.remove(), 1000);
+            }
+          }
+        } catch(err) {}
+        await sleep(500);
+
+        // Phase 3: red flash + kill
+        try {
+          const flash = document.createElement('div');
+          flash.className = 'mech-transform-flash';
+          flash.style.background = 'rgba(255,50,50,.3)';
+          document.body.appendChild(flash);
+          setTimeout(() => flash.remove(), 400);
+        } catch(err) {}
+
+        spawnFloatingNum(eElId, '🏹猎杀!', 'crit-label', 0, -20);
         e.hp = 0; e.alive = false; e._deathProcessed = true;
         const deadEl = document.getElementById(eElId);
-        if (deadEl) deadEl.classList.add('dead');
+        if (deadEl) { deadEl.classList.add('hit-shake'); setTimeout(() => deadEl.classList.add('dead'), 300); }
         updateHpBar(e, eElId);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏹猎杀！</span>${e.emoji}${e.name} 被强化弩箭击杀！`,'death');
+        await sleep(500);
 
         // Steal 20% stats + 10% lifesteal
         const sAtk = Math.round(e.baseAtk * f.passive.stealPct / 100);
         const sDef = Math.round(e.baseDef * f.passive.stealPct / 100);
+        const sMr  = Math.round((e.baseMr || e.baseDef) * f.passive.stealPct / 100);
         const sHp  = Math.round(e.maxHp   * f.passive.stealPct / 100);
-        f.baseAtk += sAtk; f.baseDef += sDef; f.maxHp += sHp; f.hp += sHp;
+        f.baseAtk += sAtk; f.baseDef += sDef; f.baseMr = (f.baseMr || f.baseDef) + sMr; f.maxHp += sHp; f.hp += sHp;
         f._hunterKills = (f._hunterKills || 0) + 1;
         f._hunterStolenAtk = (f._hunterStolenAtk || 0) + sAtk;
         f._hunterStolenDef = (f._hunterStolenDef || 0) + sDef;
+        f._hunterStolenMr = (f._hunterStolenMr || 0) + sMr;
         f._hunterStolenHp = (f._hunterStolenHp || 0) + sHp;
         // Lifesteal: stacks with each kill
         if (f.passive.lifesteal) {
           f._lifestealPct = (f._lifestealPct || 0) + f.passive.lifesteal;
         }
         const fElId = getFighterElId(f);
-        spawnFloatingNum(fElId, `+${sAtk}攻+${sDef}防+${sHp}HP`, 'passive-num', 300, 0);
+        spawnFloatingNum(fElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
         spawnFloatingNum(fElId, `吸血${f.passive.lifesteal}%`, 'heal-num', 500, -15);
         updateHpBar(f, fElId);
         updateFighterStats(f, fElId);
-        addLog(`${f.emoji}${f.name} 吸收属性：<span class="log-passive">攻+${sAtk} 防+${sDef} HP+${sHp} 吸血${f.passive.lifesteal}%</span>`);
+        addLog(`${f.emoji}${f.name} 吸收属性：<span class="log-passive">攻+${sAtk} 甲+${sDef} 抗+${sMr} HP+${sHp} 吸血${f.passive.lifesteal}%</span>`);
 
         if (checkBattleEnd()) return;
         await sleep(600);
