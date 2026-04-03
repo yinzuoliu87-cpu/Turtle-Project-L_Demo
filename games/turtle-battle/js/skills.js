@@ -1195,14 +1195,16 @@ async function doPhoenixBurn(attacker, target, skill) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const burnHp = 8;
     const burnTurns = 4;
+    const srcIdx = allFighters.indexOf(attacker);
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
     if (existing) {
       existing.turns = burnTurns;
       existing.value = Math.max(existing.value, burnVal);
+      existing.sourceIdx = srcIdx;
       spawnFloatingNum(tElId, `🔥刷新${burnTurns}回合`, 'debuff-label', 200, 0);
       addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧刷新至${burnTurns}回合</span>`);
     } else {
-      target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:burnTurns, sourceSide:attacker.side, dmgType:'magic' });
+      target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:burnTurns, sourceSide:attacker.side, sourceIdx:srcIdx, dmgType:'magic' });
       spawnFloatingNum(tElId, `🔥灼烧${burnTurns}回合`, 'debuff-label', 200, 0);
       addLog(`${attacker.emoji}${attacker.name} <b>灼烧</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + <span class="log-dot">灼烧${burnTurns}回合</span>`);
     }

@@ -557,7 +557,8 @@ async function processBuffs() {
       // Reduce by MR since burn is magic damage
       const mrRed = f.mr / (f.mr + DEF_CONSTANT);
       const burnDmg = Math.max(1, Math.round(rawBurn * (1 - mrRed)));
-      const { hpLoss, shieldAbs } = applyRawDmg(null, f, burnDmg, false, true);
+      const burnSource = (pb.sourceIdx !== undefined && pb.sourceIdx >= 0) ? allFighters[pb.sourceIdx] : null;
+      const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
       if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
       if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
       updateHpBar(f, elId);
@@ -1417,8 +1418,9 @@ function applySkillDebuffs(skill, target, attacker) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const burnHp = 8;
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
-    if (existing) { existing.turns = 4; existing.value = Math.max(existing.value, burnVal); }
-    else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:4, sourceSide: attacker.side, dmgType:'magic' });
+    const srcIdx = allFighters.indexOf(attacker);
+    if (existing) { existing.turns = 4; existing.value = Math.max(existing.value, burnVal); existing.sourceIdx = srcIdx; }
+    else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:burnHp, turns:4, sourceSide: attacker.side, sourceIdx:srcIdx, dmgType:'magic' });
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, '🔥灼烧', 'debuff-label', 200, -10);
     addLog(`${target.emoji}${target.name} 被施加 <span class="log-debuff">🔥灼烧4回合（魔法伤害）</span>`);
