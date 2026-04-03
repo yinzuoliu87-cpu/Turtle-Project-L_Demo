@@ -519,7 +519,9 @@ async function summonUseRandomSkill(summon, owner) {
 // ── BASIC TURTLE SKILLS ───────────────────────────────────
 async function doTurtleShieldBash(attacker, target, skill) {
   const tElId = getFighterElId(target);
-  const raw = Math.round(attacker.atk * skill.atkScale);
+  let raw = Math.round(attacker.atk * skill.atkScale);
+  // Add target lost HP% bonus
+  if (skill.lostHpPct) raw += Math.round((target.maxHp - target.hp) * skill.lostHpPct / 100);
 
   let effectiveCrit = attacker.crit;
   if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
