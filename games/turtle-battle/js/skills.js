@@ -179,6 +179,24 @@ async function doTwoHeadSwitch(caster, target, skill) {
     spawnFloatingNum(fElId, '切换近战!', 'crit-label', 0, -20);
     spawnFloatingNum(fElId, `+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}🛡`, 'passive-num', 200, 0);
     addLog(`${caster.emoji}${caster.name} <span class="log-passive">切换近战形态！+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}护盾</span>`);
+    // Switch attack: deal damage to lowest HP enemy on melee switch
+    if (skill.switchAtkScale) {
+      const enemies = getAliveEnemiesWithSummons(caster.side);
+      const switchTarget = enemies.length ? enemies.sort((a,b) => a.hp - b.hp)[0] : null;
+      if (switchTarget) {
+        await sleep(300);
+        const switchDmg = Math.round(caster.atk * skill.switchAtkScale);
+        const eDef = calcEffDef(caster, switchTarget);
+        const defRed = eDef / (eDef + DEF_CONSTANT);
+        const dmg = Math.max(1, Math.round(switchDmg * (1 - defRed)));
+        applyRawDmg(caster, switchTarget, dmg, false, false, 'physical');
+        const tElId = getFighterElId(switchTarget);
+        spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0, { atkSide: caster.side, amount: dmg });
+        await triggerOnHitEffects(caster, switchTarget, dmg);
+        updateHpBar(switchTarget, tElId);
+        addLog(`→ ${switchTarget.emoji}${switchTarget.name}：<span class="log-direct">${dmg}物理伤害</span>`);
+      }
+    }
   } else {
     // Melee → Remote: revert stats + attack + def reduction
     if (caster._formHpGain) {
@@ -232,7 +250,8 @@ async function doTwoHeadSwitch(caster, target, skill) {
 }
 
 // Absorb: damage + heal lost HP
-async function doTwoHeadAbsorb(attacker, target, skill) {
+// Two-head hammer: 140%ATK physical + 50% damage as permanent shield
+async function doTwoHeadHammer(attacker, target, skill) {
   const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const eDef = calcEffDef(attacker, target);
@@ -240,20 +259,46 @@ async function doTwoHeadAbsorb(attacker, target, skill) {
   const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
-  tEl.classList.add('hit-shake');
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+  // Shield from damage
+  if (skill.shieldFromDmgPct && attacker.alive) {
+    const shieldAmt = Math.round(dmg * skill.shieldFromDmgPct / 100);
+    attacker.shield += shieldAmt;
+    const fElId = getFighterElId(attacker);
+    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+    updateHpBar(attacker, fElId);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>锤击</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+}
+
+async function doTwoHeadAbsorb(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(target.maxHp * (skill.hpPct || 0) / 100);
+  const eDef = calcEffDef(attacker, target);
+  const defRed = eDef / (eDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+  applyRawDmg(attacker, target, dmg, false, false, 'physical');
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
   updateHpBar(target, tElId);
   await sleep(700);
-  tEl.classList.remove('hit-shake');
-  // Heal lost HP
-  if (attacker.alive && skill.healLostPct) {
+  if (tEl) tEl.classList.remove('hit-shake');
+  // Heal: 40%ATK + 18% lost HP
+  if (attacker.alive) {
+    const atkHeal = Math.round(attacker.atk * (skill.healAtkPct || 0) / 100);
     const lostHp = attacker.maxHp - attacker.hp;
-    const heal = Math.round(lostHp * skill.healLostPct / 100);
-    const before = attacker.hp;
-    attacker.hp = Math.min(attacker.maxHp, attacker.hp + heal);
-    const actual = Math.round(attacker.hp - before);
+    const lostHeal = Math.round(lostHp * (skill.healLostPct || 0) / 100);
+    const totalHeal = atkHeal + lostHeal;
+    const actual = applyHeal(attacker, totalHeal);
     if (actual > 0) {
       spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
       updateHpBar(attacker, getFighterElId(attacker));

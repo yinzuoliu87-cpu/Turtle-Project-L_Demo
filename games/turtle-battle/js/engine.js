@@ -900,6 +900,9 @@ async function executeAction(action) {
   } else if (skill.type === 'twoHeadSwitch') {
     const target = allFighters[action.targetId];
     await doTwoHeadSwitch(f, target, skill);
+  } else if (skill.type === 'twoHeadHammer') {
+    const target = allFighters[action.targetId];
+    await doTwoHeadHammer(f, target, skill);
   } else if (skill.type === 'twoHeadAbsorb') {
     const target = allFighters[action.targetId];
     await doTwoHeadAbsorb(f, target, skill);
