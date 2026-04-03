@@ -173,7 +173,10 @@ async function beginTurn() {
         const gain = Math.min(f.passive.defGain, f.passive.maxDef - f._stoneDefGained);
         f.baseDef += gain;
         f._stoneDefGained += gain;
-        spawnFloatingNum(getFighterElId(f), `+${gain}防`, 'passive-num', 0, 0);
+        recalcStats();
+        const elId = getFighterElId(f);
+        updateFighterStats(f, elId);
+        spawnFloatingNum(elId, `+${gain}防`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">防御+${gain}(已+${f._stoneDefGained}/${f.passive.maxDef})</span>`);
       }
     }
