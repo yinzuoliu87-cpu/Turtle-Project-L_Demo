@@ -454,7 +454,9 @@ function startBattle(seed) {
   // Snapshot was already set in createFighter with raw values
   renderFighters();
   updateDmgStats();
-  beginTurn();
+  // Delay if pirate bombardment happened so player can see it
+  const hasPirate = allFighters.some(f => f.passive && f.passive.type === 'pirateBarrage');
+  setTimeout(() => beginTurn(), hasPirate ? 3000 : 0);
 }
 
 

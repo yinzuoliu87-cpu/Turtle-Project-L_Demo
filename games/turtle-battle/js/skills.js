@@ -661,40 +661,46 @@ async function doIceSpike(attacker, target, skill) {
 
 async function doIceFrost(attacker, skill) {
   const enemies = getAliveEnemiesWithSummons(attacker.side);
-  const dmgBase = Math.round(attacker.atk * skill.atkScale);
+  const hits = skill.hits || 10;
+  const perHit = Math.round(attacker.atk * skill.atkScale);
   let totalDmg = 0;
 
   for (const enemy of enemies) {
     if (!enemy.alive) continue;
-    let dmg = dmgBase;
-    // Frost bonus vs fire targets
-    if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(enemy.id)) {
-      dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
-    }
-    // Crit check
-    let effectiveCrit = attacker.crit;
-    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
-      effectiveCrit += attacker.passive.pct / 100;
-    }
-    const isCrit = Math.random() < effectiveCrit;
-    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
-    dmg = Math.max(1, Math.round(dmg * critMult));
-
-    applyRawDmg(attacker, enemy, dmg, true, false, 'true');
-    totalDmg += dmg;
+    let enemyTotal = 0;
     const eElId = getFighterElId(enemy);
-
-    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-true' : 'true-dmg', 80, 0, {atkSide: attacker.side, amount: dmg});
-    updateHpBar(enemy, eElId);
-    await triggerOnHitEffects(attacker, enemy, dmg);
-
+    for (let h = 0; h < hits; h++) {
+      if (!enemy.alive) break;
+      let dmg = perHit;
+      if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(enemy.id)) {
+        dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
+      }
+      const {isCrit, critMult} = calcCrit(attacker);
+      const effMr = calcEffDef(attacker, enemy, 'magic');
+      const mrRed = effMr / (effMr + DEF_CONSTANT);
+      dmg = Math.max(1, Math.round(dmg * critMult * (1 - mrRed)));
+      applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
+      enemyTotal += dmg;
+      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (h % 4) * 28, {atkSide: attacker.side, amount: dmg});
+      await triggerOnHitEffects(attacker, enemy, dmg);
+    }
+    totalDmg += enemyTotal;
     const eEl = document.getElementById(eElId);
     if (eEl) { eEl.classList.add('hit-shake'); }
+    updateHpBar(enemy, eElId);
+    // Apply mrDown debuff
+    if (skill.mrDown && enemy.alive) {
+      const existing = enemy.buffs.find(b => b.type === 'mrDown');
+      if (existing) { existing.value = Math.max(existing.value, skill.mrDown.pct); existing.turns = Math.max(existing.turns, skill.mrDown.turns); }
+      else enemy.buffs.push({ type:'mrDown', value:skill.mrDown.pct, turns:skill.mrDown.turns });
+      spawnFloatingNum(eElId, '⬇️魔抗', 'debuff-label', 200, -10);
+      renderStatusIcons(enemy);
+    }
     await sleep(400);
     if (eEl) { eEl.classList.remove('hit-shake'); }
   }
-
-  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体：<span class="log-pierce">${totalDmg}真实伤害</span>`);
+  recalcStats();
+  addLog(`${attacker.emoji}${attacker.name} <b>冰霜</b> 全体${hits}段：<span class="log-magic">${totalDmg}魔法伤害</span> + ⬇️魔抗20%`);
 }
 
 // ── ANGEL TURTLE SKILLS ───────────────────────────────────

@@ -710,7 +710,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -1464,9 +1464,19 @@ async function doHeal(caster, target, skill) {
     const existing = target.buffs.find(b => b.type === 'defUp');
     if (existing) { existing.value += skill.defUp.val; existing.turns = Math.max(existing.turns, skill.defUp.turns); }
     else target.buffs.push({ type:'defUp', value:skill.defUp.val, turns:skill.defUp.turns });
-    spawnFloatingNum(getFighterElId(target), `+${skill.defUp.val}防`, 'passive-num', 300, 0);
-    logParts.push(`<span class="log-passive">防御+${skill.defUp.val} ${skill.defUp.turns}回合</span>`);
+    spawnFloatingNum(getFighterElId(target), `+${skill.defUp.val}护甲`, 'passive-num', 300, 0);
+    logParts.push(`<span class="log-passive">护甲+${skill.defUp.val} ${skill.defUp.turns}回合</span>`);
     recalcStats();
+    renderStatusIcons(target);
+  }
+  // DefUp buff (ATK% based — e.g. pirate rum)
+  if (skill.defUpAtkPct) {
+    const defGain = Math.round(caster.atk * skill.defUpAtkPct.pct / 100);
+    target.buffs.push({ type:'defUp', value:defGain, turns:skill.defUpAtkPct.turns });
+    spawnFloatingNum(getFighterElId(target), `+${defGain}护甲`, 'passive-num', 300, 0);
+    logParts.push(`<span class="log-passive">护甲+${defGain} ${skill.defUpAtkPct.turns}回合</span>`);
+    recalcStats();
+    updateFighterStats(target, getFighterElId(target));
     renderStatusIcons(target);
   }
   // DefUpPct buff (percentage-based)
