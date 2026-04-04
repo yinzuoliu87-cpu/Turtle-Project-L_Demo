@@ -1258,10 +1258,10 @@ async function doStarWormhole(attacker, target, skill) {
     const penGain = Math.round(attacker.atk * skill.magicPenAtkPct / 100);
     attacker.magicPen = (attacker.magicPen || 0) + penGain;
     const fElId = getFighterElId(attacker);
-    spawnFloatingNum(fElId, `+${penGain}魔穿`, 'passive-num', 200, 0);
+    spawnFloatingNum(fElId, `+${penGain}魔法穿透`, 'passive-num', 200, 0);
     updateFighterStats(attacker, fElId);
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% ${skill.duration}回合</span>` + (skill.magicPenAtkPct ? ` + <span class="log-passive">+${Math.round(attacker.atk * skill.magicPenAtkPct / 100)}魔穿</span>` : ''));
+  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% ${skill.duration}回合</span>` + (skill.magicPenAtkPct ? ` + <span class="log-passive">+${Math.round(attacker.atk * skill.magicPenAtkPct / 100)}魔法穿透</span>` : ''));
   // Passive: fire 40% star energy after skill
   if (target.alive) await fireStarPassive(attacker, target);
   await sleep(800);
@@ -1965,7 +1965,7 @@ async function doHunterShot(attacker, target, skill) {
   const savedCrit = attacker.crit;
   if (isExec) {
     attacker.crit += skill.execCrit / 100;
-    addLog(`${attacker.emoji}${attacker.name} 猎人本能！目标血量低，<span class="log-crit">暴击率+${skill.execCrit}% 暴击伤害+${skill.execCritDmg}%</span>`);
+    addLog(`${attacker.emoji}${attacker.name} 猎人本能！目标生命值低，<span class="log-crit">暴击率+${skill.execCrit}% 暴击伤害+${skill.execCritDmg}%</span>`);
   }
   // Temporarily boost crit damage multiplier
   attacker._extraCritDmg = isExec ? skill.execCritDmg / 100 : 0;

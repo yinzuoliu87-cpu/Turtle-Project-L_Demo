@@ -220,7 +220,7 @@ const ALL_PETS = [
   { id:'dice',      name:'骰子龟',   emoji:'🎲🐢',    rarity:'B',   hp:330,  atk:41,  def:11, mr:10, spd:11, crit:0.25,
     img:'../../assets/pets/骰子龟v1.png',
     passive:{ type:'gamblerBlood', name:'赌徒之血', maxCritAtLoss:30, maxCritGain:50, overflowMult:1.5,
-              brief:'骰子龟血量越低暴击越高，暴击溢出转为爆伤',
+              brief:'骰子龟生命值越低暴击越高，暴击溢出转为爆伤',
               desc:'骰子龟的赌徒之血在危机中觉醒。\n\n基于已损生命值获得暴击率加成：\n损失30%生命值时达到满额 <span class="val-atk">+50%</span> 暴击率。\n暴击率超过100%的部分，每1%转为 <span class="val-atk">1.5%</span> 暴击伤害。\n\n当前暴击率：<span class="val-atk">{N:crit*100}%</span>' },
     skills:[
       { name:'骰子攻击', type:'diceAttack', hits:3, power:0, pierce:0, cd:0, atkScale:0.9, critBonusMult:55,
@@ -413,7 +413,7 @@ const ALL_PETS = [
     img:'../../assets/pets/赛博龟.png',
     passive:{ type:'cyberDrone', name:'浮游炮', droneScale:0.14, droneMaxAge:5, maxDrones:10, mechHpPer:30, mechAtkPer:5,
               brief:'赛博龟每回合生成浮游炮（上限10），每个每回合造成（{N:ATK*0.14}）物理伤害。阵亡时浮游炮组装为机甲',
-              desc:'赛博龟每回合自动生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成（14%×攻击力({ATK}) = {N:ATK*0.14}）物理伤害。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n最大生命值 = 30 × {B:droneCount} = <span class="val-heal">{H:mechHp}</span>\n攻击力 = 5 × {B:droneCount} = <span class="val-normal">{N:mechAtk}</span>\n暴击率 = <span class="val-atk">25%</span>（护甲/魔抗 = 0）\n\n机甲每回合自动攻击血量最低的敌人，造成（150%×攻击力 = {N:mechAtk*1.5}）物理伤害。' },
+              desc:'赛博龟每回合自动生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成（14%×攻击力({ATK}) = {N:ATK*0.14}）物理伤害。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n最大生命值 = 30 × {B:droneCount} = <span class="val-heal">{H:mechHp}</span>\n攻击力 = 5 × {B:droneCount} = <span class="val-normal">{N:mechAtk}</span>\n暴击率 = <span class="val-atk">25%</span>（护甲/魔抗 = 0）\n\n机甲每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = {N:mechAtk*1.5}）物理伤害。' },
     skills:[
       { name:'激光枪', type:'physical', hits:5, power:0, pierce:0, cd:0, atkScale:0.15, hpPct:2.4,
         brief:'赛博龟发射激光5段，共（{N:0.15*ATK*5}）+ 12%目标最大生命值 物理伤害',
@@ -520,7 +520,7 @@ const ALL_PETS = [
   { id:'headless',  name:'无头龟',   emoji:'💀🐢',    rarity:'SS',  hp:350,  atk:39,  def:13, mr:12, spd:16, crit:0.25,
     img:'../../assets/pets/无头龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
     passive:{ type:'undeadRage', name:'亡灵', lifestealBase:22, atkPerLostPct:1.0, atkMaxBonus:100,
-              brief:'无头龟登场获得 <span class="val-heal">22%</span> 生命偷取。血量越低攻击力越高。首次濒死时锁血1HP 2回合',
+              brief:'无头龟登场获得 <span class="val-heal">22%</span> 生命偷取。生命值越低攻击力越高。首次濒死时锁血1HP 2回合',
               desc:'无头龟的亡灵之力。\n\n登场获得 <span class="val-heal">22%</span> 生命偷取。\n生命值越低攻击力越高：每损失1%生命值 → 攻击力 <span class="val-atk">+1%</span>（最高 <span class="val-atk">+100%</span>）。\n\n首次生命值归零时，触发亡灵之力：锁血1HP持续2回合。\n锁血期间不会死亡，敌人会优先攻击无头龟的队友。\n锁血结束后恢复为1HP，可以被正常击杀。' },
     skills:[
       { name:'撕咬',   type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.65, hpPct:4,

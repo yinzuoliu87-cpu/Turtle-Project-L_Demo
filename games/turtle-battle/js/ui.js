@@ -128,12 +128,12 @@ function renderSummonStatusIcons(summon) {
   const buffHTML = (summon.buffs || []).map(b => {
     if (b.type === 'dot')     return `<span class="status-dot" title="诅咒${b.value}/回合 剩${b.turns}回合"><img src="assets/curse-debuff-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'phoenixBurnDot') return `<span class="status-dot" title="灼烧 剩${b.turns}回合"><img src="assets/burn-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
-    if (b.type === 'atkDown') return `<span class="status-atkdown">⬇攻${b.turns}</span>`;
-    if (b.type === 'defDown') return `<span class="status-defdown">⬇防${b.turns}</span>`;
+    if (b.type === 'atkDown') return `<span class="status-atkdown">⬇攻力${b.turns}</span>`;
+    if (b.type === 'defDown') return `<span class="status-defdown">⬇护${b.turns}</span>`;
     if (b.type === 'mrDown')  return `<span class="status-defdown">⬇抗${b.turns}</span>`;
     if (b.type === 'hot')     return `<span class="status-hot">💚${b.turns}</span>`;
-    if (b.type === 'defUp')   return `<span class="status-defup">⬆防${b.turns}</span>`;
-    if (b.type === 'atkUp')   return `<span class="status-defup">⬆攻${b.turns}</span>`;
+    if (b.type === 'defUp')   return `<span class="status-defup">⬆护${b.turns}</span>`;
+    if (b.type === 'atkUp')   return `<span class="status-defup">⬆攻力${b.turns}</span>`;
     if (b.type === 'bubbleBind') return `<span class="status-bubble"><img src="assets/bubble-store-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge')   return `<span class="status-dodge"><img src="assets/dodge-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'fear')    return `<span class="status-atkdown">😱${b.turns}</span>`;
@@ -233,7 +233,7 @@ function updateFighterStats(f, elId) {
     `<span class="${sc(critPct, Math.round(f._initCrit*100))}">${ic('crit-icon.png')}暴击 ${critPct}%</span>` +
     `<span class="${critDmg > 150 ? 'stat-up' : ''}">${ic('crit-dmg-icon.png')}爆伤 ${critDmg}%${overflowCrit > 0 ? ' (溢出+'+Math.round(overflowCrit*100)+'%)' : ''}</span>` +
     `<span class="${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}护甲穿透 ${f.armorPen}</span>` +
-    `<span class="${sc(f.magicPen||0, f._initMagicPen||0)}">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</span>` +
+    `<span class="${sc(f.magicPen||0, f._initMagicPen||0)}">${ic('magic-pen-icon.png')}魔法穿透 ${f.magicPen||0}</span>` +
     `<span class="${sc(lifesteal, f._initLifesteal)}">${ic('lifesteal-icon.png')}吸血 ${lifesteal}%</span>` +
     `<span class="${dodgePct > 0 ? 'stat-up' : ''}">${ic('dodge-icon.png')}闪避 ${dodgePct}%</span>` +
     `</div>`;
@@ -458,11 +458,11 @@ function renderStatusIcons(f) {
   box.innerHTML = f.buffs.map(b => {
     if (b.type === 'dot')     return `<span class="status-dot" title="诅咒${b.value}/回合 剩${b.turns}回合"><img src="assets/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'phoenixBurnDot') return `<span class="status-dot" title="灼烧(${b.value}+${b.hpPct}%HP)/回合 剩${b.turns}回合"><img src="assets/burn-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
-    if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击-${b.value}% 剩${b.turns}回合">⬇攻${b.turns}</span>`;
-    if (b.type === 'defDown') return `<span class="status-defdown" title="防御-${b.value}% 剩${b.turns}回合">⬇防${b.turns}</span>`;
+    if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击力-${b.value}% 剩${b.turns}回合">⬇攻力${b.turns}</span>`;
+    if (b.type === 'defDown') return `<span class="status-defdown" title="护甲-${b.value}% 剩${b.turns}回合">⬇护${b.turns}</span>`;
     if (b.type === 'hot')     return `<span class="status-hot" title="回复${b.value}/回合 剩${b.turns}回合">💚${b.turns}</span>`;
-    if (b.type === 'defUp')   return `<span class="status-defup" title="防御+${b.value} 剩${b.turns}回合">⬆防${b.turns}</span>`;
-    if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击+${b.value} 剩${b.turns}回合">⬆攻${b.turns}</span>`;
+    if (b.type === 'defUp')   return `<span class="status-defup" title="护甲+${b.value} 剩${b.turns}回合">⬆护${b.turns}</span>`;
+    if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击力+${b.value} 剩${b.turns}回合">⬆攻力${b.turns}</span>`;
     if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合"><img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合">💨${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
@@ -775,7 +775,7 @@ function autoGenerateBrief(f, s) {
   if (s.shieldFlat || s.shieldHpPct) { let a = (s.shieldFlat||0); if(s.shieldHpPct) a+=Math.round(f.maxHp*s.shieldHpPct/100); parts.push(`${S('+'+a+'护盾')}`); }
   // Debuffs
   if (s.atkDown) parts.push(`攻击-${s.atkDown.pct}%`);
-  if (s.defDown) parts.push(`防御-${s.defDown.pct}%`);
+  if (s.defDown) parts.push(`护甲-${s.defDown.pct}%`);
   if (s.dot) parts.push(`灼烧${s.dot.turns}回合`);
   if (s.hot) parts.push(`回复${H(s.hot.hpPerTurn+'/回合')}×${s.hot.turns}`);
   if (s.aoe) parts.push('全体');
@@ -972,17 +972,17 @@ function buildSkillDetail(s, f) {
 
   // ── Debuffs ──
   if (s.dot)     lines.push(`<b>🔥持续伤害</b> ${N(s.dot.dmg+'/回合')} ${s.dot.turns}回合`);
-  if (s.atkDown) lines.push(`<b>⬇攻击</b> <span class="detail-debuff">-${s.atkDown.pct}%</span> ${s.atkDown.turns}回合`);
-  if (s.defDown) lines.push(`<b>⬇防御</b> <span class="detail-debuff">-${s.defDown.pct}%</span> ${s.defDown.turns}回合`);
+  if (s.atkDown) lines.push(`<b>⬇攻击力</b> <span class="detail-debuff">-${s.atkDown.pct}%</span> ${s.atkDown.turns}回合`);
+  if (s.defDown) lines.push(`<b>⬇护甲</b> <span class="detail-debuff">-${s.defDown.pct}%</span> ${s.defDown.turns}回合`);
   if (s.armorBreak) lines.push(`<b>🔨破甲</b> <span class="detail-debuff">-${s.armorBreak.pct}%</span> ${s.armorBreak.turns}回合`);
   if (s.shieldBreak) lines.push(`<b>💥破盾</b> <span class="detail-debuff">${s.shieldBreak}%</span>`);
 
   // ── Buffs ──
   if (s.hot)      lines.push(`<b>💚持续回复</b> ${H(s.hot.hpPerTurn+'/回合')} ${s.hot.turns}回合`);
-  if (s.defUp)    lines.push(`<b>⬆防御</b> ${B('+'+s.defUp.val)} ${s.defUp.turns}回合`);
-  if (s.defUpPct) { const v = f?Math.round(f.baseDef*s.defUpPct.pct/100):'?'; lines.push(`<b>⬆防御</b> +${s.defUpPct.pct}% = ${B('+'+v)} ${s.defUpPct.turns}回合`); }
+  if (s.defUp)    lines.push(`<b>⬆护甲</b> ${B('+'+s.defUp.val)} ${s.defUp.turns}回合`);
+  if (s.defUpPct) { const v = f?Math.round(f.baseDef*s.defUpPct.pct/100):'?'; lines.push(`<b>⬆护甲</b> +${s.defUpPct.pct}% = ${B('+'+v)} ${s.defUpPct.turns}回合`); }
   if (s.selfDefUpPct) { const v = f?Math.round(f.baseDef*s.selfDefUpPct.pct/100):'?'; lines.push(`<b>⬆自身防御</b> +${s.selfDefUpPct.pct}% = ${B('+'+v)} ${s.selfDefUpPct.turns}回合`); }
-  if (s.atkUpPct) { const v = f?Math.round(f.baseAtk*s.atkUpPct/100):'?'; lines.push(`<b>⬆攻击</b> +${s.atkUpPct}% = ${B('+'+v)} 全体 ${s.atkUpTurns}回合`); }
+  if (s.atkUpPct) { const v = f?Math.round(f.baseAtk*s.atkUpPct/100):'?'; lines.push(`<b>⬆攻击力</b> +${s.atkUpPct}% = ${B('+'+v)} 全体 ${s.atkUpTurns}回合`); }
 
   // ── Random ──
   if (s.random) lines.push(`<b>🎲随机</b> 伤害×0.5~1.5倍率`);
@@ -1096,7 +1096,7 @@ function buildSkillDetail(s, f) {
   // Angel turtle
   if (s.type === 'angelBless') {
     lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> ${s.shieldScale}×ATK 持续${s.shieldTurns}回合`);
-    lines.push(`<b>⬆防御</b> +${s.defBoostScale}×ATK ${s.defBoostTurns}回合`);
+    lines.push(`<b>⬆护甲</b> +${s.defBoostScale}×ATK ${s.defBoostTurns}回合`);
   }
   if (s.type === 'angelEquality') {
     lines.push(`<b>⚔️第一段</b> ${s.normalScale}×ATK 物理伤害`);

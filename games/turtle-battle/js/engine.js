@@ -193,8 +193,8 @@ async function beginTurn() {
         recalcStats();
         const elId = getFighterElId(f);
         updateFighterStats(f, elId);
-        spawnFloatingNum(elId, `+${gain}防`, 'passive-num', 0, 0);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">防御+${gain}(已+${f._stoneDefGained}/${f.passive.maxDef})</span>`);
+        spawnFloatingNum(elId, `+${gain}护甲`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">护甲+${gain}(已+${f._stoneDefGained}/${f.passive.maxDef})</span>`);
       }
     }
     // Passive: cyberDrone — generate 1 drone per turn
@@ -260,7 +260,7 @@ async function beginTurn() {
       // Visual + log
       spawnFloatingNum(elId, '🐚气场觉醒!', 'crit-label', 0, -20);
       recalcStats();
-      spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}防 +${hpGain}HP`, 'passive-num', 0, 10);
+      spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}护甲 +${hpGain}HP`, 'passive-num', 0, 10);
       updateHpBar(f, elId);
       updateFighterStats(f, elId);
       addLog(`${f.emoji}${f.name} <span class="log-passive">🐚气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
@@ -407,8 +407,8 @@ async function beginTurn() {
       if (s._stoneDefGained < p.maxDef) {
         const gain = Math.min(p.defGain, p.maxDef - s._stoneDefGained);
         s.baseDef += gain; s.def = s.baseDef; s._stoneDefGained += gain;
-        spawnFloatingNum(sElId, `+${gain}防`, 'passive-num', 0, 0);
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">防御+${gain}(已+${s._stoneDefGained}/${p.maxDef})</span>`);
+        spawnFloatingNum(sElId, `+${gain}护甲`, 'passive-num', 0, 0);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">护甲+${gain}(已+${s._stoneDefGained}/${p.maxDef})</span>`);
       }
     }
     if (p.type === 'lightningStorm') {
@@ -1330,10 +1330,10 @@ async function executeAction(action) {
       ff.emoji = '🤖';
       ff.img = 'assets/mech-form-icon.png';
       ff.buffs = [];
-      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n防御力 = 0，暴击率 = 25%\n每回合自动攻击血量最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 物理伤害。` };
+      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n护甲 = 0，暴击率 = 25%\n每回合自动攻击生命值最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
-        brief:'机甲自动攻击血量最低的敌人，造成{N:1.5*ATK}物理伤害',
-        detail:'机甲自动锁定血量最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
+        brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害',
+        detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) {
         el.classList.remove('dead');
@@ -1702,9 +1702,9 @@ async function doDamage(attacker, target, skill) {
     attacker.buffs.push({ type:'defUp', value:defGain, turns:skill.selfDefUpPct.turns });
     recalcStats();
     const aElId = getFighterElId(attacker);
-    spawnFloatingNum(aElId, `+${defGain}防`, 'passive-num', 300, 0);
+    spawnFloatingNum(aElId, `+${defGain}护甲`, 'passive-num', 300, 0);
     renderStatusIcons(attacker);
-    addLog(`${attacker.emoji}${attacker.name} 自身 <span class="log-passive">防御+${defGain}(${skill.selfDefUpPct.pct}%)</span> ${skill.selfDefUpPct.turns}回合`);
+    addLog(`${attacker.emoji}${attacker.name} 自身 <span class="log-passive">护甲+${defGain}(${skill.selfDefUpPct.pct}%)</span> ${skill.selfDefUpPct.turns}回合`);
   }
 }
 
@@ -1796,8 +1796,8 @@ async function doHeal(caster, target, skill) {
     const existing = target.buffs.find(b => b.type === 'defUp');
     if (existing) { existing.value += val; existing.turns = Math.max(existing.turns, skill.defUpPct.turns); }
     else target.buffs.push({ type:'defUp', value:val, turns:skill.defUpPct.turns });
-    spawnFloatingNum(getFighterElId(target), `+${val}防(${skill.defUpPct.pct}%)`, 'passive-num', 300, 0);
-    logParts.push(`<span class="log-passive">防御+${skill.defUpPct.pct}%(+${val}) ${skill.defUpPct.turns}回合</span>`);
+    spawnFloatingNum(getFighterElId(target), `+${val}护甲(${skill.defUpPct.pct}%)`, 'passive-num', 300, 0);
+    logParts.push(`<span class="log-passive">护甲+${skill.defUpPct.pct}%(+${val}) ${skill.defUpPct.turns}回合</span>`);
     recalcStats();
     renderStatusIcons(target);
   }
