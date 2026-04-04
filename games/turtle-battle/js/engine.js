@@ -2553,8 +2553,9 @@ async function processLavaTransform() {
       const defGain = Math.round(preAtk * p.transformDefScale);
       const mrGain = Math.round(preAtk * p.transformMrScale);
       f._lavaHpGain = hpGain; f._lavaAtkGain = atkGain; f._lavaDefGain = defGain; f._lavaMrGain = mrGain;
+      const oldMax = f.maxHp;
       f.maxHp += hpGain;
-      // Current HP unchanged — transform only adds max HP, no free heal
+      f.hp = Math.round(f.hp * f.maxHp / oldMax);
       f.baseAtk += atkGain;
       f.baseDef += defGain;
       f.baseMr = (f.baseMr || f.baseDef) + mrGain;
