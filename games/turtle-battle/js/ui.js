@@ -43,13 +43,19 @@ function renderSummonMiniCard(owner) {
   const mini = document.createElement('div');
   mini.id = summonElId;
   mini.className = 'summon-mini' + (summon.alive ? '' : ' dead');
-  const avatarHTML = summon.img
-    ? `<img src="${summon.img}" class="summon-avatar" alt="${summon.name}">`
-    : `<span class="summon-emoji">${summon.emoji}</span>`;
+  const avatarHTML = buildPetImgHTML(summon, 32);
+  // Passive icon
+  const passiveIcon = summon.passive ? PASSIVE_ICONS[summon.passive.type] || '' : '';
+  let passiveHTML = '';
+  if (passiveIcon) {
+    if (passiveIcon.endsWith('.png')) passiveHTML = `<img src="assets/${passiveIcon}" class="summon-passive-icon" title="${summon.passive.name||summon.passive.type}">`;
+    else passiveHTML = `<span class="summon-passive-icon" title="${summon.passive.name||summon.passive.type}">${passiveIcon}</span>`;
+  }
   mini.innerHTML = `
     <div class="summon-header">
       ${avatarHTML}
       <span class="summon-name" style="color:${RARITY_COLORS[summon.rarity]}">${summon.name}</span>
+      ${passiveHTML}
       <span class="summon-tag">随从</span>
     </div>
     <div class="summon-hp-bar">
@@ -57,9 +63,13 @@ function renderSummonMiniCard(owner) {
       <div class="summon-shield-fill"></div>
     </div>
     <div class="summon-hp-text"></div>
+    <div class="summon-stats"></div>
+    <div class="summon-status-icons"></div>
   `;
   ownerCard.appendChild(mini);
   updateSummonHpBar(summon);
+  updateSummonStats(summon);
+  renderSummonStatusIcons(summon);
 }
 
 function updateSummonHpBar(summon) {
@@ -84,10 +94,60 @@ function updateSummonHpBar(summon) {
   }
 
   let hpStr = `HP ${Math.ceil(summon.hp)}/${summon.maxHp}`;
-  if (summon.shield > 0) hpStr += ` 🛡${Math.ceil(summon.shield)}`;
-  if (text) text.textContent = hpStr;
+  if (summon.shield > 0) hpStr += ` <img src="assets/shield-icon.png" style="width:10px;height:10px;vertical-align:middle">${Math.ceil(summon.shield)}`;
+  if (text) text.innerHTML = hpStr;
 
   card.classList.toggle('dead', !summon.alive);
+}
+
+function updateSummonStats(summon) {
+  if (!summon || !summon._summonElId) return;
+  const card = document.getElementById(summon._summonElId);
+  if (!card) return;
+  const box = card.querySelector('.summon-stats');
+  if (!box) return;
+  const atkClass = summon.atk > summon.baseAtk ? 'stat-up' : summon.atk < summon.baseAtk ? 'stat-down' : '';
+  const defClass = summon.def > summon.baseDef ? 'stat-up' : summon.def < summon.baseDef ? 'stat-down' : '';
+  const mrClass = summon.mr > (summon.baseMr||summon.baseDef) ? 'stat-up' : summon.mr < (summon.baseMr||summon.baseDef) ? 'stat-down' : '';
+  box.innerHTML = `<span class="${atkClass}">⚔${summon.atk}</span> <span class="${defClass}">🛡${summon.def}</span> <span class="${mrClass}">✨${summon.mr||summon.def}</span>`;
+}
+
+function renderSummonStatusIcons(summon) {
+  if (!summon || !summon._summonElId) return;
+  const card = document.getElementById(summon._summonElId);
+  if (!card) return;
+  const box = card.querySelector('.summon-status-icons');
+  if (!box) return;
+  box.innerHTML = '';
+  if (!summon.alive) return;
+
+  // Buffs/debuffs
+  const buffHTML = (summon.buffs || []).map(b => {
+    if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击+${b.value} ${b.turns}回合">⬆攻${b.turns}</span>`;
+    if (b.type === 'defUp')   return `<span class="status-defup" title="防御+${b.value} ${b.turns}回合">⬆防${b.turns}</span>`;
+    if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击-${b.pct||b.value}% ${b.turns}回合">⬇攻${b.turns}</span>`;
+    if (b.type === 'defDown') return `<span class="status-atkdown" title="防御-${b.pct||b.value}% ${b.turns}回合">⬇防${b.turns}</span>`;
+    if (b.type === 'dodge')   return `<span class="status-dodge" title="闪避${b.value}% ${b.turns}回合">💨${b.turns}</span>`;
+    if (b.type === 'dot')     return `<span class="status-atkdown" title="持续伤害${b.value}/回合 ${b.turns}回合">🔥${b.turns}</span>`;
+    if (b.type === 'phoenixBurnDot') return `<span class="status-atkdown" title="灼烧${b.value}/回合 ${b.turns}回合">🔥${b.turns}</span>`;
+    if (b.type === 'healReduce') return `<span class="status-atkdown" title="治疗削减-${b.value}% ${b.turns}回合">☠️${b.turns}</span>`;
+    if (b.type === 'stun')    return `<span style="color:#ff0">💫</span>`;
+    return '';
+  }).filter(s => s).join('');
+  box.innerHTML = buffHTML;
+
+  // Ink stacks
+  if (summon._inkStacks > 0) {
+    box.innerHTML += `<span style="color:#1a1a2e;background:rgba(100,100,100,.2);padding:0 3px;border-radius:4px;font-size:9px">🖊️${summon._inkStacks}</span>`;
+  }
+  // Shock stacks (lightning)
+  if (summon._shockStacks > 0) {
+    box.innerHTML += `<span style="color:#ffd700;font-size:9px">⚡${summon._shockStacks}/8</span>`;
+  }
+  // Gold lightning
+  if (summon._goldLightning > 0) {
+    box.innerHTML += `<span style="color:#ffd700;font-size:9px">⚡${summon._goldLightning}/8</span>`;
+  }
 }
 
 const PASSIVE_ICONS = {
@@ -97,7 +157,7 @@ const PASSIVE_ICONS = {
 };
 
 function updateFighterStats(f, elId) {
-  if (f._isSummon) return;
+  if (f._isSummon) { updateSummonStats(f); return; }
   const card = document.getElementById(elId);
   if (!card) return;
   const statsEl = card.querySelector('.fighter-stats');
@@ -348,6 +408,7 @@ function updateHpBar(f, elId) {
 // Get all alive enemies including summons (for AOE)
 
 function renderStatusIcons(f) {
+  if (f._isSummon) { renderSummonStatusIcons(f); return; }
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;

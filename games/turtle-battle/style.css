@@ -471,6 +471,12 @@ body{
 .summon-hp-fill{height:100%;background:var(--green);border-radius:3px;transition:width .3s;position:absolute;left:0;top:0}
 .summon-shield-fill{height:100%;background:rgba(255,255,255,.5);border-radius:3px;transition:width .3s,left .3s;position:absolute;top:0}
 .summon-hp-text{font-size:9px;color:var(--fg2);text-align:center}
+.summon-stats{font-size:9px;color:var(--fg2);text-align:center;margin-top:2px;display:flex;justify-content:center;gap:6px}
+.summon-stats .stat-up{color:var(--green)}
+.summon-stats .stat-down{color:#ff6b6b}
+.summon-status-icons{display:flex;flex-wrap:wrap;gap:3px;justify-content:center;margin-top:3px;font-size:9px}
+.summon-passive-icon{width:16px;height:16px;vertical-align:middle;image-rendering:pixelated}
+.summon-header .sprite-wrap{flex-shrink:0;border-radius:4px;overflow:hidden}
 .summon-mini.hit-shake{animation:shake .25s ease}
 
 /* ── DAMAGE STATS PANEL (right side) ── */
