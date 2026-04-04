@@ -92,7 +92,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'🪙', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'🛸', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'🤖', candySteal:'🍬', chestTreasure:'chest-treasure-icon.png'
+  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'🪙', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
 };
 
 function updateFighterStats(f, elId) {
@@ -296,7 +296,7 @@ function updateHpBar(f, elId) {
   let hpLine = `<div class="hp-line"><img src="assets/hp-icon.png" class="stat-icon"> ${Math.ceil(f.hp)}/<span class="${maxHpClass}">${f.maxHp}</span></div>`;
   const shieldParts = [];
   if (f.shield > 0) shieldParts.push(`<span class="shield-val">🛡${Math.ceil(f.shield)}</span>`);
-  if (f.bubbleShieldVal > 0) shieldParts.push(`<span class="bubble-val">🫧${Math.ceil(f.bubbleShieldVal)} <small>${f.bubbleShieldTurns}回合</small></span>`);
+  if (f.bubbleShieldVal > 0) shieldParts.push(`<span class="bubble-val"><img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${Math.ceil(f.bubbleShieldVal)} <small>${f.bubbleShieldTurns}回合</small></span>`);
   const shieldLine = shieldParts.length ? `<div class="shield-line">${shieldParts.join(' ')}</div>` : '';
   card.querySelector('.hp-text').innerHTML = hpLine + shieldLine;
 
@@ -361,7 +361,7 @@ function renderStatusIcons(f) {
     if (b.type === 'hot')     return `<span class="status-hot" title="回复${b.value}/回合 剩${b.turns}回合">💚${b.turns}</span>`;
     if (b.type === 'defUp')   return `<span class="status-defup" title="防御+${b.value} 剩${b.turns}回合">⬆防${b.turns}</span>`;
     if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击+${b.value} 剩${b.turns}回合">⬆攻${b.turns}</span>`;
-    if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合">🫧${b.turns}</span>`;
+    if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合"><img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合">💨${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
     if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：真实+${b.pierceBonusPct}% 魔伤+${b.normalBonusPct}% 剩${b.turns}回合">🌀${b.turns}</span>`;
@@ -418,6 +418,19 @@ function renderStatusIcons(f) {
     const prismTips = ['攻击力+15%，光束额外真实伤害','护甲+15%魔抗+15%，光束获得护盾','回复7%HP，光束回复生命'];
     const c = f._prismColor;
     box.innerHTML += `<span style="color:${prismColors[c]};background:${prismColors[c]}22;padding:1px 5px;border-radius:6px;font-weight:700" title="${prismTips[c]}">${prismLabels[c]}</span>`;
+  }
+  // Undead lock indicator
+  if (f._undeadLockTurns > 0) {
+    box.innerHTML += `<span style="color:#9b59b6;background:rgba(155,89,182,.2);padding:1px 5px;border-radius:6px;font-weight:700" title="亡灵之力：锁血1HP ${f._undeadLockTurns}回合"><img src="assets/undead-rage-icon.png" style="width:14px;height:14px;vertical-align:middle">锁血${f._undeadLockTurns}</span>`;
+  }
+  // Lava rage indicator
+  if (f.passive && f.passive.type === 'lavaRage') {
+    if (f._lavaTransformed) {
+      box.innerHTML += `<span style="color:#ff6600;background:rgba(255,102,0,.2);padding:1px 5px;border-radius:6px;font-weight:700" title="火山形态 剩余${f._lavaTransformTurns}回合"><img src="assets/volcano-form-icon.png" style="width:14px;height:14px;vertical-align:middle">火山${f._lavaTransformTurns}</span>`;
+    } else if (!f._lavaSpent) {
+      const rage = f._lavaRage || 0;
+      box.innerHTML += `<span style="color:#ff6600;background:rgba(255,102,0,.15);padding:1px 5px;border-radius:6px" title="怒气${rage}/100"><img src="assets/lava-heart-icon.png" style="width:14px;height:14px;vertical-align:middle">${rage}/100</span>`;
+    }
   }
   // Chest treasure progress + equipped items
   if (f.passive && f.passive.type === 'chestTreasure') {
@@ -490,6 +503,7 @@ function renderSkillTemplate(template, f, s) {
     crit: f.crit || 0.25,
     bambooGainedHp: f._bambooGainedHp || 0,
     stoneDefGained: f._stoneDefGained || 0,
+    lavaTransformTurns: f._lavaTransformTurns || 0,
     hunterKills: f._hunterKills || 0,
     hunterStolenAtk: f._hunterStolenAtk || 0,
     hunterStolenDef: f._hunterStolenDef || 0,
@@ -758,7 +772,7 @@ function renderActionButtons(f) {
   const box = document.getElementById('actionButtons');
   box.innerHTML = f.skills.map((s,i) => {
     const ready = s.cdLeft === 0;
-    const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:'🛡',bubbleShield:'🫧',bubbleBind:'🫧',hidingDefend:'🛡',hidingCommand:'🫣'};
+    const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:'🛡',bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:'🛡',hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';
     const hitsLabel = s.hits > 1 ? ` ×${s.hits}` : '';
 
@@ -796,7 +810,7 @@ function buildSkillDetail(s, f) {
   // ── Type label ──
   const typeMap = {
     physical:'⚔️ 物理', magic:'✨ 魔法', heal:'💚 治疗', shield:'🛡 护盾',
-    bubbleShield:'🫧 泡泡盾', bubbleBind:'🫧 泡泡束缚',
+    bubbleShield:'<img src=\"assets/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡盾', bubbleBind:'<img src=\"assets/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡束缚',
     hunterShot:'🏹 猎人射击', hunterBarrage:'🏹 箭雨', hunterStealth:'🏹 隐蔽',
     ninjaShuriken:'🥷 飞镖', ninjaTrap:'🥷 陷阱', ninjaBomb:'🥷 炸弹',
     phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
@@ -1059,7 +1073,9 @@ function showPassivePopup(e, fIdx) {
   const iconRaw = PASSIVE_ICONS[f.passive.type] || '⭐';
   const iconHtml = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="passive-popup-icon">` : iconRaw;
   // Render passive desc — use descMelee if in melee form
-  const descText = (f._twoHeadForm === 'melee' && f.passive.descMelee) ? f.passive.descMelee : f.passive.desc;
+  let descText = f.passive.desc;
+  if (f._twoHeadForm === 'melee' && f.passive.descMelee) descText = f.passive.descMelee;
+  if (f._lavaTransformed && f.passive.descVolcano) descText = f.passive.descVolcano;
   const descRendered = renderSkillTemplate(descText, f, f.passive);
   // Brief/detail support for passives
   let briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;

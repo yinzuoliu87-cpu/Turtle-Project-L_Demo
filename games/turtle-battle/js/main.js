@@ -404,6 +404,9 @@ function startBattle(seed) {
       f._extraCritDmgPerm = (f.passive.critDmgBonus || 0) / 100;
       f.armorPen += f.passive.armorPen || 0;
     }
+    if (f.passive && f.passive.type === 'undeadRage') {
+      f._lifestealPct = (f._lifestealPct || 0) + (f.passive.lifestealBase || 15);
+    }
     // Two-head vitality: opening shield
     if (f.passive && f.passive.type === 'twoHeadVitality') {
       const shieldAmt = Math.round(f.maxHp * f.passive.shieldPct / 100);
@@ -483,7 +486,7 @@ function startBattle(seed) {
       for (const f of pirates) {
         const fElId = getFighterElId(f);
         // Show passive trigger on pirate
-        spawnFloatingNum(fElId, '🏴‍☠️掠夺！', 'debuff-label', 0, -10);
+        spawnFloatingNum(fElId, '<img src="assets/pirate-plunder-icon.png" style="width:24px;height:24px;vertical-align:middle">掠夺！', 'debuff-label', 0, -10);
         await sleep(1000);
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         if (!enemies.length) continue;

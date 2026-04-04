@@ -1176,6 +1176,270 @@ async function doCyberDeploy(caster, _skill) {
   await sleep(800);
 }
 
+// ── SOUL REAP (无头龟) ────────────────────────────────────
+async function doSoulReap(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  if (!enemies.length) return;
+  const lostHp = attacker.maxHp - attacker.hp;
+  const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(lostHp * skill.lostHpPct / 100);
+  let totalDmg = 0;
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    const {isCrit, critMult} = calcCrit(attacker);
+    const effDef = calcEffDef(attacker, enemy, 'physical');
+    const defRed = effDef / (effDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+    applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
+    totalDmg += dmg;
+    const eElId = getFighterElId(enemy);
+    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+    await triggerOnHitEffects(attacker, enemy, dmg);
+    const eEl = document.getElementById(eElId);
+    if (eEl) eEl.classList.add('hit-shake');
+    updateHpBar(enemy, eElId);
+  }
+  await sleep(500);
+  for (const enemy of enemies) {
+    const eEl = document.getElementById(getFighterElId(enemy));
+    if (eEl) eEl.classList.remove('hit-shake');
+  }
+  // Lifesteal
+  if (skill.lifestealPct && attacker.alive && totalDmg > 0) {
+    const heal = Math.round(totalDmg * skill.lifestealPct / 100);
+    const actual = applyHeal(attacker, heal);
+    if (actual > 0) {
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>灵魂收割</b> 全体：<span class="log-direct">${totalDmg}物理伤害</span>（已损HP加成${Math.round(lostHp*skill.lostHpPct/100)}）`);
+}
+
+// ── CANDY BARRAGE ─────────────────────────────────────────
+async function doCandyBarrage(attacker, skill) {
+  const fElId = getFighterElId(attacker);
+  // Apply armor pen buff first
+  if (skill.armorPenAtkPct) {
+    // Remove old candy pen buff if exists
+    if (attacker._candyPenGain) attacker.armorPen -= attacker._candyPenGain;
+    const penGain = Math.round(attacker.atk * skill.armorPenAtkPct / 100);
+    attacker._candyPenGain = penGain;
+    attacker._candyPenTurns = skill.armorPenTurns;
+    attacker.armorPen += penGain;
+    spawnFloatingNum(fElId, `+${penGain}穿甲`, 'passive-num', 0, 0);
+    updateFighterStats(attacker, fElId);
+    addLog(`${attacker.emoji}${attacker.name} 护甲穿透 +${penGain}，持续${skill.armorPenTurns}回合`);
+    await sleep(400);
+  }
+  // AOE 4 hits
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  if (!enemies.length) return;
+  const hits = skill.hits || 4;
+  let totalAll = 0;
+  for (let i = 0; i < hits; i++) {
+    if (battleOver) break;
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
+      const {isCrit, critMult} = calcCrit(attacker);
+      let baseDmg = Math.round(attacker.atk * skill.atkScale);
+      if (skill.hpPct) baseDmg += Math.round(enemy.maxHp * skill.hpPct / 100);
+      const effDef = calcEffDef(attacker, enemy, 'physical');
+      const defRed = effDef / (effDef + DEF_CONSTANT);
+      const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+      applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
+      totalAll += dmg;
+      const eElId = getFighterElId(enemy);
+      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:dmg});
+      await triggerOnHitEffects(attacker, enemy, dmg);
+      updateHpBar(enemy, eElId);
+      const eEl = document.getElementById(eElId);
+      if (eEl) eEl.classList.add('hit-shake');
+    }
+    await sleep(400);
+    for (const enemy of enemies) {
+      const eEl = document.getElementById(getFighterElId(enemy));
+      if (eEl) eEl.classList.remove('hit-shake');
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>糖衣炮弹</b> ${hits}段全体：<span class="log-direct">${totalAll}物理伤害</span>`);
+}
+
+// ── LAVA TURTLE SKILLS (small form) ───────────────────────
+async function doLavaBolt(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
+  let baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effDef = calcEffDef(attacker, target, 'magic');
+  const defRed = effDef / (effDef + DEF_CONSTANT);
+  const mainDmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+  const hpBonusDmg = skill.targetHpPct ? Math.round(target.maxHp * skill.targetHpPct / 100 * critMult) : 0;
+  const dmg = mainDmg + hpBonusDmg;
+  const tElId = getFighterElId(target);
+  applyRawDmg(attacker, target, dmg, false, false, 'magic');
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+  if (target.alive) applySkillDebuffs(skill, target, attacker);
+  addLog(`${attacker.emoji}${attacker.name} <b>熔岩弹</b> → ${target.emoji}${target.name}：<span class="log-magic">${dmg}魔法伤害</span>`);
+}
+
+async function doLavaQuake(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  let totalDmg = 0;
+  for (const enemy of enemies) {
+    if (!enemy.alive) continue;
+    const {isCrit, critMult} = calcCrit(attacker);
+    const baseDmg = Math.round(attacker.atk * skill.atkScale);
+    const effDef = calcEffDef(attacker, enemy, 'magic');
+    const defRed = effDef / (effDef + DEF_CONSTANT);
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+    applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
+    totalDmg += dmg;
+    const eElId = getFighterElId(enemy);
+    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+    updateHpBar(enemy, eElId);
+    if (skill.mrDown && enemy.alive) {
+      const existing = enemy.buffs.find(b => b.type === 'mrDown');
+      if (existing) { existing.value = Math.max(existing.value, skill.mrDown.pct); existing.turns = Math.max(existing.turns, skill.mrDown.turns); }
+      else enemy.buffs.push({type:'mrDown', value:skill.mrDown.pct, turns:skill.mrDown.turns});
+      spawnFloatingNum(eElId, `⬇️魔抗`, 'debuff-label', 200, -10);
+      renderStatusIcons(enemy);
+    }
+  }
+  recalcStats();
+  addLog(`${attacker.emoji}${attacker.name} <b>地裂</b> 全体：<span class="log-magic">${totalDmg}魔法伤害</span> + ⬇️魔抗`);
+  await sleep(600);
+}
+
+async function doLavaSurge(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
+  const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const effDef = calcEffDef(attacker, target, 'magic');
+  const defRed = effDef / (effDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+  const tElId = getFighterElId(target);
+  applyRawDmg(attacker, target, dmg, false, false, 'magic');
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  await triggerOnHitEffects(attacker, target, dmg);
+  updateHpBar(target, tElId);
+  // Shield
+  const shieldAmt = Math.round(attacker.atk * skill.shieldAtkPct / 100);
+  attacker.shield += shieldAmt;
+  const fElId = getFighterElId(attacker);
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  updateHpBar(attacker, fElId);
+  addLog(`${attacker.emoji}${attacker.name} <b>岩浆涌动</b> → ${target.emoji}${target.name}：<span class="log-magic">${dmg}魔法</span> + <span class="log-shield">${shieldAmt}护盾</span>`);
+  await sleep(600);
+}
+
+// ── VOLCANO TURTLE SKILLS (large form) ───────────────────
+async function doVolcanoSmash(attacker, target, skill) {
+  const {isCrit, critMult} = calcCrit(attacker);
+  let baseDmg = Math.round(attacker.atk * skill.atkScale);
+  if (skill.selfHpPct) baseDmg += Math.round(attacker.maxHp * skill.selfHpPct / 100);
+  const effDef = calcEffDef(attacker, target, 'physical');
+  const defRed = effDef / (effDef + DEF_CONSTANT);
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
+  const tElId = getFighterElId(target);
+  applyRawDmg(attacker, target, dmg, false, false, 'physical');
+  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  await triggerOnHitEffects(attacker, target, dmg);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  updateHpBar(target, tElId);
+  // Lifesteal
+  if (skill.lifestealPct && attacker.alive) {
+    const heal = Math.round(dmg * skill.lifestealPct / 100);
+    const actual = applyHeal(attacker, heal);
+    if (actual > 0) {
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+    }
+  }
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+  addLog(`${attacker.emoji}${attacker.name} <b>烈焰重击</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+}
+
+async function doVolcanoArmor(caster, skill) {
+  const fElId = getFighterElId(caster);
+  const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  if (skill.defMrUpPct) {
+    const defGain = Math.round(caster.baseDef * skill.defMrUpPct / 100);
+    const mrGain = Math.round((caster.baseMr || caster.baseDef) * skill.defMrUpPct / 100);
+    caster.buffs.push({type:'defUp', value:defGain, turns:skill.defMrUpTurns});
+    caster.buffs.push({type:'mrUp', value:mrGain, turns:skill.defMrUpTurns});
+    spawnFloatingNum(fElId, `+${defGain}甲+${mrGain}抗`, 'passive-num', 200, 0);
+  }
+  // Heal lost HP
+  if (skill.healLostPct && caster.alive) {
+    const lostHp = caster.maxHp - caster.hp;
+    const heal = Math.round(lostHp * skill.healLostPct / 100);
+    const actual = applyHeal(caster, heal);
+    if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 300, 0);
+  }
+  recalcStats();
+  updateHpBar(caster, fElId);
+  renderStatusIcons(caster);
+  updateFighterStats(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>熔岩铠甲</b>：<span class="log-shield">+${shieldAmt}护盾</span> + 护甲/魔抗提升`);
+  await sleep(800);
+}
+
+async function doVolcanoErupt(attacker, skill) {
+  const enemies = getAliveEnemiesWithSummons(attacker.side);
+  if (!enemies.length) return;
+  const hits = skill.hits || 5;
+  let totalAll = 0;
+  for (let i = 0; i < hits; i++) {
+    if (battleOver) break;
+    for (const enemy of enemies) {
+      if (!enemy.alive) continue;
+      const {isCrit, critMult} = calcCrit(attacker);
+      let magicBase = Math.round(attacker.atk * skill.atkScale);
+      if (skill.selfHpPct) magicBase += Math.round(attacker.maxHp * skill.selfHpPct / 100);
+      const effMr = calcEffDef(attacker, enemy, 'magic');
+      const mrRed = effMr / (effMr + DEF_CONSTANT);
+      const magicDmg = Math.max(1, Math.round(magicBase * critMult * (1 - mrRed)));
+      const trueDmg = Math.round(attacker.atk * (skill.pierceScale || 0) * critMult);
+      const eElId = getFighterElId(enemy);
+      applyRawDmg(attacker, enemy, magicDmg, false, false, 'magic');
+      if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
+      totalAll += magicDmg + trueDmg;
+      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
+      await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
+      updateHpBar(enemy, eElId);
+      const eEl = document.getElementById(eElId);
+      if (eEl) eEl.classList.add('hit-shake');
+    }
+    await sleep(400);
+    for (const enemy of enemies) {
+      const eEl = document.getElementById(getFighterElId(enemy));
+      if (eEl) eEl.classList.remove('hit-shake');
+    }
+  }
+  // Burn all alive enemies
+  for (const enemy of enemies) {
+    if (enemy.alive) applySkillDebuffs({burn:true}, enemy, attacker);
+  }
+  // Heal 15% of total damage
+  if (attacker.alive && totalAll > 0) {
+    const heal = Math.round(totalAll * 0.15);
+    const actual = applyHeal(attacker, heal);
+    if (actual > 0) {
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 300, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+    }
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>火山爆发</b> ${hits}段全体：<span class="log-magic">${totalAll}伤害</span> + 灼烧`);
+}
+
 // ── RAINBOW STORM ─────────────────────────────────────────
 async function doRainbowStorm(attacker, skill) {
   const enemies = getAliveEnemiesWithSummons(attacker.side);

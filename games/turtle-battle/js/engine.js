@@ -68,6 +68,13 @@ function createFighter(petId, side) {
     _diamondCollideCount: {},  // 钻石龟碰撞计数 {fighterIdx: count}
     _inkStacks: 0,            // 线条龟墨迹层数(被标记方)
     _inkLink: null,           // 线条龟连笔链接 {partner:fighterRef, turns:N, transferPct:30}
+    _undeadLockTurns: 0,      // 无头龟锁血剩余回合
+    _undeadLockUsed: false,   // 无头龟锁血是否已用
+    _lavaRage: 0,             // 熔岩龟怒气值
+    _lavaTransformed: false,  // 熔岩龟是否已变身
+    _lavaTransformTurns: 0,   // 熔岩龟变身剩余回合
+    _lavaSpent: false,        // 熔岩龟变身已用完
+    _lavaSmallSkills: null,   // 熔岩龟小形态技能备份
     _chestTreasure: 0,        // 宝箱龟财宝值
     _chestEquips: [],         // 宝箱龟已装备列表 [{id,icon,name,desc,stat,...}]
     _chestTier: 0,            // 宝箱龟当前装备层数
@@ -271,6 +278,28 @@ async function beginTurn() {
       }
       // If still charged from last turn (didn't fire — stunned etc), keep it
     }
+    // Undead lock countdown
+    if (f._undeadLockTurns > 0) {
+      f._undeadLockTurns--;
+      if (f._undeadLockTurns <= 0) {
+        f.hp = 1;
+        const elId = getFighterElId(f);
+        spawnFloatingNum(elId, '锁血结束', 'debuff-label', 0, -20);
+        renderStatusIcons(f);
+        addLog(`${f.emoji}${f.name} 亡灵之力消散，恢复正常`);
+      }
+    }
+    // Candy pen countdown
+    if (f._candyPenTurns > 0) {
+      f._candyPenTurns--;
+      if (f._candyPenTurns <= 0 && f._candyPenGain) {
+        f.armorPen -= f._candyPenGain;
+        f._candyPenGain = 0;
+        updateFighterStats(f, getFighterElId(f));
+      }
+    }
+    // Lava turtle: transform countdown + check rage
+    processLavaCountdown(f);
     // Chest turtle: rum HoT (3% maxHP per turn)
     if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
       const heal = Math.round(f.maxHp * 0.06);
@@ -617,20 +646,38 @@ async function processBuffs() {
         hadTick = true;
       }
     }
-    // BubbleStore passive: heal 50% of stored value, then clear
+    // BubbleStore passive: heal 25% + damage 25% of stored value
     if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
-      const heal = Math.round(f.bubbleStore * f.passive.healPct / 100);
-      const before = f.hp;
-      f.hp = Math.min(f.maxHp, f.hp + heal);
-      const actual = Math.round(f.hp - before);
-      f.bubbleStore -= heal;
-      if (f.bubbleStore < 1) f.bubbleStore = 0;
+      // Heal portion
+      const healAmt = Math.round(f.bubbleStore * (f.passive.healPct || 25) / 100);
+      const actual = applyHeal(f, healAmt);
+      f.bubbleStore -= healAmt;
       if (actual > 0) {
-        spawnFloatingNum(elId, `+${actual}🫧`, 'bubble-num', 100, 0);
+        spawnFloatingNum(elId, `+${actual}<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'bubble-num', 100, 0);
         updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">泡泡回复${actual}HP</span>（剩余储存${Math.round(f.bubbleStore)}）`);
         hadTick = true;
       }
+      // Damage portion: magic damage to random enemy
+      if (f.passive.dmgPct) {
+        const dmgAmt = Math.round(f.bubbleStore * f.passive.dmgPct / 100);
+        f.bubbleStore -= dmgAmt;
+        if (dmgAmt > 0) {
+          const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+          if (enemies.length) {
+            const target = enemies[Math.floor(Math.random() * enemies.length)];
+            const effMr = calcEffDef(f, target, 'magic');
+            const mrRed = effMr / (effMr + DEF_CONSTANT);
+            const finalDmg = Math.max(1, Math.round(dmgAmt * (1 - mrRed)));
+            applyRawDmg(f, target, finalDmg, false, false, 'magic');
+            const tElId = getFighterElId(target);
+            spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
+            updateHpBar(target, tElId);
+            hadTick = true;
+          }
+        }
+      }
+      if (f.bubbleStore < 1) f.bubbleStore = 0;
+      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">泡泡回复${actual}HP` + (f.passive.dmgPct ? ` + 泡泡伤害` : '') + `</span>（剩余储存${Math.round(f.bubbleStore)}）`);
     }
     // BubbleShield tick down
     if (f.bubbleShieldTurns > 0) {
@@ -712,6 +759,12 @@ function recalcStats() {
       // Dice fate crit buff
       if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
     }
+    // UndeadRage: ATK scales with lost HP
+    if (f.passive && f.passive.type === 'undeadRage' && f.maxHp > 0) {
+      const lostPct = Math.max(0, 1 - f.hp / f.maxHp) * 100;
+      const atkBonus = Math.min(f.passive.atkMaxBonus, lostPct * f.passive.atkPerLostPct);
+      f.atk += Math.round(f.baseAtk * atkBonus / 100);
+    }
     // GamblerBlood: dynamic crit based on lost HP
     if (f.passive && f.passive.type === 'gamblerBlood') {
       const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
@@ -745,7 +798,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -830,10 +883,20 @@ async function executeAction(action) {
 
   if (skill.cd > 0) skill.cdLeft = skill.cd;
 
+  // Lava rage: check transform before action
+  await processLavaTransform();
+  if (battleOver) { animating=false; return; }
+  // Re-read skill in case transform changed skill set
+  const updatedSkill = f.skills[action.skillIdx];
+  if (updatedSkill && updatedSkill.type !== skill.type) {
+    // Skill set changed due to transform, use new skill 0 (basic attack)
+    action.skillIdx = 0;
+  }
+
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
-  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm') {
+  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
@@ -964,6 +1027,25 @@ async function executeAction(action) {
     await sleep(800);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
+  } else if (skill.type === 'soulReap') {
+    await doSoulReap(f, skill);
+  } else if (skill.type === 'candyBarrage') {
+    await doCandyBarrage(f, skill);
+  } else if (skill.type === 'lavaBolt') {
+    const target = allFighters[action.targetId];
+    await doLavaBolt(f, target, skill);
+  } else if (skill.type === 'lavaQuake') {
+    await doLavaQuake(f, skill);
+  } else if (skill.type === 'lavaSurge') {
+    const target = allFighters[action.targetId];
+    await doLavaSurge(f, target, skill);
+  } else if (skill.type === 'volcanoSmash') {
+    const target = allFighters[action.targetId];
+    await doVolcanoSmash(f, target, skill);
+  } else if (skill.type === 'volcanoArmor') {
+    await doVolcanoArmor(f, skill);
+  } else if (skill.type === 'volcanoErupt') {
+    await doVolcanoErupt(f, skill);
   } else if (skill.type === 'chestSmash') {
     const target = allFighters[action.targetId];
     await doChestSmash(f, target, skill);
@@ -1149,7 +1231,7 @@ async function executeAction(action) {
       ff.alive = true; ff._deathProcessed = false;
       ff.name = '机甲';
       ff.emoji = '🤖';
-      ff.img = null;
+      ff.img = 'assets/mech-form-icon.png';
       ff.buffs = [];
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n防御力 = 0，暴击率 = 25%\n每回合自动攻击血量最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
@@ -1192,6 +1274,10 @@ async function executeAction(action) {
 
   // Hunter passive: check after every action
   await processHunterKill();
+  if (checkBattleEnd()) { animating=false; return; }
+
+  // Lava rage transform check
+  await processLavaTransform();
   if (checkBattleEnd()) { animating=false; return; }
 
   // BambooCharge follow-up: extra pierce attack after skill
@@ -1389,7 +1475,7 @@ async function doDamage(attacker, target, skill) {
     const totalHit = mainPart + truePart;
 
     // Damage absorption
-    const { hpLoss, shieldAbs } = applyRawDmg(null, target, totalHit);
+    const { hpLoss, shieldAbs, bubbleAbs } = applyRawDmg(null, target, totalHit);
     // Track by type
     if (dmgType === 'magic') attacker._magicDmgDealt = (attacker._magicDmgDealt||0) + mainPart;
     else if (dmgType === 'true') attacker._trueDmgDealt = (attacker._trueDmgDealt||0) + mainPart;
@@ -1400,12 +1486,13 @@ async function doDamage(attacker, target, skill) {
 
     totalDirect += mainPart;
     totalPierce += truePart;
-    totalShieldDmg += shieldAbs;
+    totalShieldDmg += shieldAbs + bubbleAbs;
 
     // Floating number classes by damage type
     const mainCls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
     const trueCls = isCrit ? 'crit-true' : 'true-dmg';
     const yOff = (i % 4) * 32;
+    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 16, { atkSide: attacker.side, amount: bubbleAbs });
     if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff, { atkSide: attacker.side, amount: shieldAbs });
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
@@ -1650,6 +1737,8 @@ async function doHeal(caster, target, skill) {
 }
 
 async function doShield(caster, target, skill) {
+  if (!target) target = caster;
+  if (target._undeadLockTurns > 0) { await sleep(500); return; } // locked, no shield
   // Calculate shield amount: fixed + % of caster's maxHP + ATK scaling
   let amount = skill.shield || 0;
   if (skill.shieldFlat) amount += skill.shieldFlat;
@@ -1658,8 +1747,20 @@ async function doShield(caster, target, skill) {
   target.shield += amount;
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `+${amount}🛡`, 'shield-num', 0, 0);
+  // Heal HP% if specified
+  let healStr = '';
+  if (skill.healHpPct && caster.alive) {
+    const heal = Math.round(caster.maxHp * skill.healHpPct / 100);
+    const actual = applyHeal(caster, heal);
+    if (actual > 0) {
+      const fElId = getFighterElId(caster);
+      spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
+      updateHpBar(caster, fElId);
+      healStr = ` <span class="log-heal">+${actual}HP</span>`;
+    }
+  }
   updateHpBar(target, tElId);
-  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${amount}护盾</span>`);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${amount}护盾</span>${healStr}`);
   await sleep(1000);
 }
 
@@ -2194,6 +2295,120 @@ function checkBattleEnd() {
   return false;
 }
 
+// ── LAVA RAGE TRANSFORM ──────────────────────────────────
+async function processLavaTransform() {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'lavaRage') continue;
+    // Check rage full → transform
+    if (!f._lavaTransformed && !f._lavaSpent && f._lavaRage >= f.passive.rageMax) {
+      f._lavaTransformed = true;
+      f._lavaTransformTurns = f.passive.transformDuration;
+      f._lavaRage = 0;
+      const p = f.passive;
+      const preAtk = f.atk;
+      // Store small form skills
+      f._lavaSmallSkills = f.skills;
+      // Apply stat boosts
+      const hpGain = Math.round(preAtk * p.transformHpScale);
+      const atkGain = Math.round(preAtk * p.transformAtkScale);
+      const defGain = Math.round(preAtk * p.transformDefScale);
+      const mrGain = Math.round(preAtk * p.transformMrScale);
+      f._lavaHpGain = hpGain; f._lavaAtkGain = atkGain; f._lavaDefGain = defGain; f._lavaMrGain = mrGain;
+      const oldMax = f.maxHp;
+      f.maxHp += hpGain;
+      f.hp = Math.round(f.hp * f.maxHp / oldMax);
+      f.baseAtk += atkGain;
+      f.baseDef += defGain;
+      f.baseMr = (f.baseMr || f.baseDef) + mrGain;
+      recalcStats();
+      // Switch to volcano skills
+      const pet = ALL_PETS.find(p => p.id === f.id);
+      if (pet && pet.volcanoSkills) f.skills = pet.volcanoSkills.map(s => ({...s, cdLeft:0}));
+      f.name = '火山龟';
+      f._lavaSmallImg = f.img;
+      f.img = null; // use emoji display
+      f.emoji = '🌋🐢';
+      f.sprite = null;
+      const elId = getFighterElId(f);
+      // Visual
+      spawnFloatingNum(elId, '🌋变身！', 'crit-label', 0, -30);
+      spawnFloatingNum(elId, `+${hpGain}HP +${atkGain}攻 +${defGain}甲 +${mrGain}抗`, 'passive-num', 200, 0);
+      // Screen flash
+      try {
+        const flash = document.createElement('div');
+        flash.className = 'mech-transform-flash';
+        flash.style.background = 'rgba(255,100,0,.35)';
+        document.body.appendChild(flash);
+        setTimeout(() => flash.remove(), 500);
+      } catch(e) {}
+      updateHpBar(f, elId);
+      renderFighterCard(f, elId);
+      renderStatusIcons(f);
+      addLog(`${f.emoji}${f.name} <span class="log-passive">🌋怒气爆发！变身为火山龟！+${hpGain}HP +${atkGain}攻 +${defGain}甲 +${mrGain}抗</span>`);
+      await sleep(800);
+      // Transform AOE: 120% post-transform ATK magic damage + burn to all enemies
+      const aoeDmg = Math.round(f.atk * p.transformAoeDmgScale);
+      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+      for (const e of enemies) {
+        const effMr = calcEffDef(f, e, 'magic');
+        const mrRed = effMr / (effMr + DEF_CONSTANT);
+        const dmg = Math.max(1, Math.round(aoeDmg * (1 - mrRed)));
+        applyRawDmg(f, e, dmg, false, false, 'magic');
+        const eElId = getFighterElId(e);
+        spawnFloatingNum(eElId, `-${dmg}🌋`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+        updateHpBar(e, eElId);
+        if (!(e.passive && e.passive.burnImmune)) {
+          applySkillDebuffs({burn:true}, e, f);
+          // Heal 8% lost HP per burn applied
+          const lostHp = f.maxHp - f.hp;
+          const burnHeal = Math.round(lostHp * 0.08);
+          const actual = applyHeal(f, burnHeal);
+          if (actual > 0) {
+            spawnFloatingNum(getFighterElId(f), `+${actual}`, 'heal-num', 200, 0);
+            updateHpBar(f, getFighterElId(f));
+          }
+        }
+      }
+      addLog(`${f.emoji}${f.name} 变身冲击波：全体敌方 <span class="log-magic">${aoeDmg}魔法伤害</span> + <span style="color:#ff6600">灼烧</span> + 回复`);
+      await sleep(600);
+      checkDeaths(f);
+      if (checkBattleEnd()) return;
+    }
+  }
+}
+
+// Lava transform countdown (called in beginTurn per-turn passives)
+function processLavaCountdown(f) {
+  if (!f.passive || f.passive.type !== 'lavaRage' || !f._lavaTransformed) return;
+  f._lavaTransformTurns--;
+  if (f._lavaTransformTurns <= 0) {
+    // Revert to small form
+    f._lavaTransformed = false;
+    f._lavaSpent = true;
+    // Revert stats
+    const oldMax = f.maxHp;
+    f.maxHp -= f._lavaHpGain;
+    f.hp = Math.max(1, Math.round(f.hp * f.maxHp / oldMax));
+    f.baseAtk -= f._lavaAtkGain;
+    f.baseDef -= f._lavaDefGain;
+    f.baseMr = (f.baseMr || f.baseDef) - f._lavaMrGain;
+    recalcStats();
+    // Restore small skills
+    if (f._lavaSmallSkills) f.skills = f._lavaSmallSkills;
+    f.name = '熔岩龟';
+    f.img = f._lavaSmallImg || '../../assets/pets/熔岩龟.png';
+    f.emoji = '🌋🐢';
+    const pet = ALL_PETS.find(p => p.id === f.id);
+    if (pet && pet.sprite) f.sprite = pet.sprite;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, '变身结束', 'debuff-label', 0, -20);
+    updateHpBar(f, elId);
+    renderFighterCard(f, elId);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} 火山形态结束，恢复小形态`);
+  }
+}
+
 // ── HUNTER KILL PASSIVE ───────────────────────────────────
 async function processHunterKill() {
   for (const f of allFighters) {
@@ -2201,7 +2416,7 @@ async function processHunterKill() {
     // Check ALL alive enemies (including summons and mechs)
     const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
     for (const e of enemies) {
-      if (e.hp / e.maxHp < f.passive.hpThresh / 100) {
+      if (e.hp / e.maxHp < f.passive.hpThresh / 100 && !e._undeadLockTurns) {
         // Execute with animation!
         const eElId = getFighterElId(e);
         const fElAnim = getFighterElId(f);
@@ -2257,37 +2472,20 @@ async function processHunterKill() {
         } catch(err) {}
 
         spawnFloatingNum(eElId, '<img src="assets/hunter-kill-icon.png" style="width:24px;height:24px;vertical-align:middle">猎杀!', 'crit-label', 0, -20);
-        e.hp = 0; e.alive = false; e._deathProcessed = true;
+        const execDmg = e.hp + e.shield;
+        applyRawDmg(f, e, execDmg, false, false, 'true');
+        // Keep alive temporarily for on-hit effects (bubble bind shield, etc.)
+        e.alive = true;
+        spawnFloatingNum(eElId, `-99999`, 'true-dmg', 100, 0, { atkSide: f.side, amount: execDmg });
+        await triggerOnHitEffects(f, e, execDmg);
+        e.hp = 0; e.alive = false;
         const deadEl = document.getElementById(eElId);
         if (deadEl) { deadEl.classList.add('hit-shake'); setTimeout(() => deadEl.classList.add('dead'), 300); }
         updateHpBar(e, eElId);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏹猎杀！</span>${e.emoji}${e.name} 被强化弩箭击杀！`,'death');
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏹猎杀！</span>${e.emoji}${e.name} 被斩杀！`,'death');
         await sleep(500);
-
-        // Steal 20% stats + 10% lifesteal
-        const sAtk = Math.round(e.baseAtk * f.passive.stealPct / 100);
-        const sDef = Math.round(e.baseDef * f.passive.stealPct / 100);
-        const sMr  = Math.round((e.baseMr || e.baseDef) * f.passive.stealPct / 100);
-        const sHp  = Math.round(e.maxHp   * f.passive.stealPct / 100);
-        f.baseAtk += sAtk; f.baseDef += sDef; f.baseMr = (f.baseMr || f.baseDef) + sMr; f.maxHp += sHp; f.hp += sHp;
-        f._hunterKills = (f._hunterKills || 0) + 1;
-        f._hunterStolenAtk = (f._hunterStolenAtk || 0) + sAtk;
-        f._hunterStolenDef = (f._hunterStolenDef || 0) + sDef;
-        f._hunterStolenMr = (f._hunterStolenMr || 0) + sMr;
-        f._hunterStolenHp = (f._hunterStolenHp || 0) + sHp;
-        // Lifesteal: stacks with each kill
-        if (f.passive.lifesteal) {
-          f._lifestealPct = (f._lifestealPct || 0) + f.passive.lifesteal;
-        }
-        const fElId = getFighterElId(f);
-        spawnFloatingNum(fElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
-        spawnFloatingNum(fElId, `吸血${f.passive.lifesteal}%`, 'heal-num', 500, -15);
-        updateHpBar(f, fElId);
-        updateFighterStats(f, fElId);
-        addLog(`${f.emoji}${f.name} 吸收属性：<span class="log-passive">攻+${sAtk} 甲+${sDef} 抗+${sMr} HP+${sHp} 吸血${f.passive.lifesteal}%</span>`);
-
+        // Stat steal handled by checkDeaths → hunterKill trigger
         if (checkBattleEnd()) return;
-        await sleep(600);
       }
     }
   }
@@ -2339,6 +2537,7 @@ function addLog(html, cls='') {
 }
 // ── HEAL REDUCE HELPER ────────────────────────────────────
 function applyHeal(target, amount) {
+  if (target._undeadLockTurns > 0) return 0; // locked at 1HP, no healing
   const healRedBuff = target.buffs ? target.buffs.find(b => b.type === 'healReduce') : null;
   if (healRedBuff) amount = Math.round(amount * (1 - healRedBuff.value / 100));
   const before = target.hp;
@@ -2391,13 +2590,37 @@ function hasChestEquip(f, equipId) {
 function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   // Star equip: convert all damage to true
   if (source && hasChestEquip(source, 'star') && dmgType && dmgType !== 'true') dmgType = 'true';
+  // Undead lock: still takes damage normally but HP cannot go below 1 (won't die)
+  if (target._undeadLockTurns > 0) {
+    let rem2 = amount, shieldAbs2 = 0, bubbleAbs2 = 0;
+    if (target.shield > 0) { shieldAbs2 = Math.min(target.shield, rem2); target.shield -= shieldAbs2; rem2 -= shieldAbs2; }
+    const hpBefore = target.hp;
+    target.hp = Math.max(1, target.hp - rem2); // can't go below 1
+    const hpLoss2 = Math.round(hpBefore - target.hp);
+    if (source && source._dmgDealt !== undefined) { source._dmgDealt += amount; }
+    if (target._dmgTaken !== undefined) { target._dmgTaken += amount; }
+    updateDmgStats();
+    return { hpLoss: hpLoss2, shieldAbs: shieldAbs2, bubbleAbs: bubbleAbs2 };
+  }
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
   target.hp = Math.max(0, target.hp - rem);
-  // Only host determines death — guest waits for sync
-  const isGuest = gameMode === 'pvp-online' && onlineSide === 'right';
-  if (target.hp <= 0 && !isGuest) target.alive = false;
+  // Undead passive: first death triggers lock — HP stays at 1 but still takes damage visually
+  if (target.hp <= 0 && target.passive && target.passive.type === 'undeadRage' && !target._undeadLockUsed) {
+    target._undeadLockUsed = true;
+    target._undeadLockTurns = 1;
+    target.hp = 1;
+    target.alive = true;
+    const elId = getFighterElId(target);
+    spawnFloatingNum(elId, '💀亡灵之力!', 'crit-label', 0, -30);
+    addLog(`${target.emoji}${target.name} <span class="log-passive">💀亡灵之力！锁血1HP 1回合！</span>`);
+    renderStatusIcons(target);
+  } else {
+    // Only host determines death — guest waits for sync
+    const isGuest = gameMode === 'pvp-online' && onlineSide === 'right';
+    if (target.hp <= 0 && !isGuest) target.alive = false;
+  }
   // Real-time tracking by damage type
   if (source && source._dmgDealt !== undefined) {
     source._dmgDealt += amount;
@@ -2415,6 +2638,16 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   if (source && source.passive && source.passive.type === 'chestTreasure' && amount > 0) {
     source._chestTreasure = (source._chestTreasure || 0) + amount;
     checkChestEquipDraw(source);
+  }
+  // Lava turtle: accumulate rage from damage dealt
+  if (source && source.passive && source.passive.type === 'lavaRage' && !source._lavaSpent && !source._lavaTransformed && amount > 0) {
+    source._lavaRage = Math.min(source.passive.rageMax, (source._lavaRage || 0) + Math.round(amount * source.passive.rageDmgPct / 100));
+    renderStatusIcons(source);
+  }
+  // Lava turtle: accumulate rage from damage taken
+  if (target && target.passive && target.passive.type === 'lavaRage' && !target._lavaSpent && !target._lavaTransformed && amount > 0) {
+    target._lavaRage = Math.min(target.passive.rageMax, (target._lavaRage || 0) + Math.round(amount * target.passive.rageTakenPct / 100));
+    renderStatusIcons(target);
   }
   updateDmgStats();
   // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner

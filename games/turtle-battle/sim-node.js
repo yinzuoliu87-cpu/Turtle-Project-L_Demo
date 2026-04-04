@@ -110,6 +110,9 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       f._extraCritDmgPerm = (f.passive.critDmgBonus || 0) / 100;
       f.armorPen += f.passive.armorPen || 0;
     }
+    if (f.passive.type === 'undeadRage') {
+      f._lifestealPct = (f._lifestealPct || 0) + (f.passive.lifestealBase || 15);
+    }
     if (f.passive.type === 'twoHeadVitality') {
       f.shield += Math.round(f.maxHp * f.passive.shieldPct / 100);
       f._twoHeadHalfTriggered = false;
@@ -174,6 +177,20 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
       // Chest turtle rum HoT
+      // Lava countdown
+      if (p.type === 'lavaRage' && f._lavaTransformed) {
+        f._lavaTransformTurns--;
+        if (f._lavaTransformTurns <= 0) {
+          f._lavaTransformed = false; f._lavaSpent = true;
+          const oldMax = f.maxHp;
+          f.maxHp -= f._lavaHpGain; f.hp = Math.max(1, Math.round(f.hp * f.maxHp / oldMax));
+          f.baseAtk -= f._lavaAtkGain; f.baseDef -= f._lavaDefGain;
+          f.baseMr = (f.baseMr||f.baseDef) - f._lavaMrGain;
+          recalcStats();
+          if (f._lavaSmallSkills) f.skills = f._lavaSmallSkills;
+          f.name = '熔岩龟';
+        }
+      }
       if (p.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
         f.hp = Math.min(f.maxHp, f.hp + Math.round(f.maxHp * 0.06));
       }
@@ -256,10 +273,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
       const SELF_TYPES = ['fortuneDice','phoenixShield','gamblerDraw','hidingDefend','hidingCommand',
         'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','chestCount','bambooHeal',
-        'lightningBuff','iceShield'];
+        'lightningBuff','iceShield','volcanoArmor'];
       const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
       const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
-        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm','chestStorm'];
+        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm','chestStorm','lavaQuake','volcanoErupt','candyBarrage','soulReap'];
 
       const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
       const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield');
@@ -275,6 +292,20 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         skill = (dmgS[0].cd > 0 && Math.random() < 0.8) ? dmgS[0] : dmgS[Math.floor(Math.random() * dmgS.length)];
       } else skill = ready[0];
       if (!skill) continue;
+
+      // Candy turtle AI: always use shield when available (unless big move ready)
+      if (f.passive && f.passive.type === 'candySteal') {
+        const candyShield = ready.find(s => s.type === 'shield' && !s.aoeAlly);
+        const bigMove = ready.find(s => s.type === 'candyBarrage');
+        if (candyShield && !bigMove) skill = candyShield;
+      }
+
+      // Bubble turtle AI: prioritize bubbleShield when no big move available
+      if (f.passive && f.passive.type === 'bubbleStore') {
+        const bShield = ready.find(s => s.type === 'bubbleShield');
+        const bigMove = ready.find(s => s.type === 'bubbleBind');
+        if (bShield && !bigMove) skill = bShield;
+      }
 
       // Chest turtle AI: use chestCount when HP < 60%
       if (f.passive && f.passive.type === 'chestTreasure') {
