@@ -258,33 +258,14 @@ function handleOnlineMessage(msg) {
       if (onlineSide === 'left') executeAction(msg.action);
       break;
     case 'action':
-      // Guest: skip executeAction, wait for sync to apply authoritative state
-      // This prevents desync from different Math.random() results
-      if (onlineSide === 'right') {
-        // Just log the action for visual feedback
-        const af = allFighters[msg.action.attackerId];
-        const sk = af && af.skills[msg.action.skillIdx];
-        if (af && sk) addLog(`${af.emoji}${af.name} 使用 <b>${sk.name}</b>`);
-      }
+      // Guest executes action for animation + turn flow advancement
+      // Sync message follows immediately to correct any random differences (crit etc.)
+      if (onlineSide === 'right') executeAction(msg.action);
       break;
     case 'sync':
-      // Guest receives authoritative state from host → apply and refresh all UI
-      if (onlineSide === 'right') {
-        applyStateSync(msg.state);
-        // Check for deaths and battle end after sync
-        allFighters.forEach(f => {
-          const elId = getFighterElId(f);
-          const card = document.getElementById(elId);
-          if (card && !f.alive) { card.classList.add('dead'); }
-        });
-        if (!leftTeam.some(f => f.alive) || !rightTeam.some(f => f.alive)) {
-          if (!battleOver) {
-            battleOver = true;
-            const leftWon = leftTeam.some(f => f.alive);
-            setTimeout(() => showResult(!leftWon), 1200); // guest is right, so invert
-          }
-        }
-      }
+      // Guest receives authoritative state from host → overwrite all values
+      // This corrects any differences from Math.random() (crit, damage amounts)
+      if (onlineSide === 'right') applyStateSync(msg.state);
       break;
     case 'battle-end':
       // Guest receives battle end from host
