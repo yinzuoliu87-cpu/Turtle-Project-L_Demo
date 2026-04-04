@@ -88,7 +88,7 @@ function createFighter(petId, side) {
 function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
-  _actionQueue=[];
+  _actionQueue=[]; _bossActionsThisRound=0;
   currentActingFighter = null;
   pendingSkillIdx = null;
   resetTurnState();
@@ -145,7 +145,7 @@ async function beginTurn() {
     addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
     try { sfxTurnStart(); } catch(e) {}
     activeSide = 'left';
-    actedThisSide = new Set();
+    actedThisSide = new Set(); _bossActionsThisRound = 0;
     sidesActedThisRound = 0;
     nextSideAction();
     return;
@@ -434,7 +434,7 @@ async function beginTurn() {
   }
   // Start new round: left acts first
   activeSide = 'left';
-  actedThisSide = new Set();
+  actedThisSide = new Set(); _bossActionsThisRound = 0;
   sidesActedThisRound = 0;
   nextSideAction();
 }
@@ -445,12 +445,13 @@ async function beginTurn() {
 // Player chooses which turtle acts each time
 let activeSide = 'left';      // whose turn it is
 let actedThisSide = new Set(); // fighter indices that already acted this side
+let _bossActionsThisRound = 0; // boss actions counter per round
 let isFirstRound = true;
 let sidesActedThisRound = 0;  // 0, 1, or 2
 
 function resetTurnState() {
   activeSide = 'left';
-  actedThisSide = new Set();
+  actedThisSide = new Set(); _bossActionsThisRound = 0;
   isFirstRound = true;
   sidesActedThisRound = 0;
 }
@@ -460,12 +461,20 @@ async function nextSideAction() {
 
   // Get alive fighters for active side that haven't acted yet
   const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
-  const canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
+  // Boss mode: boss can act twice per round, use counter instead of Set
+  const isBossSide = gameMode === 'boss' && activeSide === 'right';
+  let canAct;
+  if (isBossSide) {
+    if (!_bossActionsThisRound) _bossActionsThisRound = 0;
+    canAct = (_bossActionsThisRound < 2) ? sideTeam.filter(f => f.alive) : [];
+  } else {
+    canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
+  }
 
   // First round: left only sends 1
   const totalAlive = sideTeam.filter(f => f.alive).length;
-  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : totalAlive;
-  const alreadyActed = sideTeam.filter(f => f.alive).length - canAct.length;
+  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 2 : totalAlive);
+  const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
     // This side is done, switch to other side or end round
@@ -478,6 +487,7 @@ async function nextSideAction() {
   // Determine if player or AI controls this side
   const isPlayer =
     (gameMode === 'pve' && activeSide === 'left') ||
+    (gameMode === 'boss' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
   // Check for stunned fighters — auto-skip them (only once per stun)
@@ -552,7 +562,7 @@ async function finishSide() {
 
   // Switch to other side
   activeSide = activeSide === 'left' ? 'right' : 'left';
-  actedThisSide = new Set();
+  actedThisSide = new Set(); _bossActionsThisRound = 0;
   await sleep(300);
   nextSideAction();
 }
@@ -878,6 +888,7 @@ async function executeAction(action) {
   currentActingFighter = f;
   // Track this fighter as acted (needed for online: opponent actions come via network)
   actedThisSide.add(action.attackerId);
+  if (gameMode === 'boss' && allFighters[action.attackerId]._isBoss) _bossActionsThisRound++;
   const skill = f.skills[action.skillIdx];
   if (!skill) { console.error('executeAction: skill not found', action, 'fighter:', f.name, 'skills:', f.skills.length); animating=false; onActionComplete(); return; }
 

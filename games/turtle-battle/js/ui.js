@@ -18,6 +18,7 @@ function renderFighterCard(f, elId) {
   }
   card.querySelector('.fighter-name').textContent = f.name;
   card.querySelector('.fighter-name').style.color = RARITY_COLORS[f.rarity];
+  card.classList.toggle('boss-card', !!f._isBoss);
   updateFighterStats(f, elId);
   updateHpBar(f, elId);
   card.classList.toggle('dead', !f.alive);

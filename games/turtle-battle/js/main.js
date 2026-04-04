@@ -33,6 +33,11 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     showSelectScreen('选择你的队伍（选2只龟）');
+  } else if (mode === 'boss') {
+    difficulty = 'hard';
+    selecting = 'left';
+    selectedIds = [];
+    showSelectScreen('👑 Boss挑战 — 选择你的队伍（选2只龟）');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -358,6 +363,21 @@ function confirmTeam() {
     const shuffled = pool.sort(() => Math.random() - 0.5);
     rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right')];
     startBattle();
+  } else if (gameMode === 'boss') {
+    leftTeam = selectedIds.map(id => createFighter(id,'left'));
+    const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
+    const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
+    const boss = createFighter(bossPet.id, 'right');
+    // Boss stat multipliers
+    boss.maxHp = Math.round(boss.maxHp * 3.0); boss.hp = boss.maxHp;
+    boss.baseAtk = Math.round(boss.baseAtk * 1.8); boss.atk = boss.baseAtk;
+    boss.baseDef = Math.round(boss.baseDef * 1.5); boss.def = boss.baseDef;
+    boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.5); boss.mr = boss.baseMr;
+    boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
+    boss._isBoss = true;
+    boss.name = '👑' + boss.name;
+    rightTeam = [boss];
+    startBattle();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
     if (side === 'left')  leftTeam  = team.map(id => createFighter(id,'left'));
@@ -394,7 +414,11 @@ function startBattle(seed) {
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
+  else if (gameMode === 'boss') { ll.textContent = '我方'; lr.textContent = '👑 BOSS'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
+  // Boss mode: hide second enemy card
+  const rf1 = document.getElementById('rightFighter1');
+  if (rf1) rf1.style.display = (gameMode === 'boss') ? 'none' : '';
   document.getElementById('battleLog').innerHTML = '';
   try { sfxBattleStart(); } catch(e) {}
   // Apply one-time passives (like ninjaInstinct)
@@ -514,7 +538,7 @@ function startBattle(seed) {
 // ── RESULT ────────────────────────────────────────────────
 function showResult(leftWon) {
   let isWin;
-  if (gameMode==='pve') isWin = leftWon;
+  if (gameMode==='pve' || gameMode==='boss') isWin = leftWon;
   else if (gameMode==='pvp-online') isWin = (leftWon&&onlineSide==='left')||(!leftWon&&onlineSide==='right');
   else isWin = null;
 

@@ -94,6 +94,9 @@ body{
 .select-actions{display:flex;gap:12px;align-items:center}
 .slot-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
+/* ── BOSS ── */
+.fighter-card.boss-card{border:2px solid #ff4500;box-shadow:0 0 20px rgba(255,69,0,.3)}
+
 /* ── RECORD ── */
 .record-box{margin-top:32px;text-align:center}
 .record-box h3{color:var(--fg2);font-size:14px;margin-bottom:6px}
