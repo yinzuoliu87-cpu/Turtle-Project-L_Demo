@@ -1052,6 +1052,7 @@ function addStarEnergy(f, dmg) {
   const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
   const gain = Math.round(dmg * f.passive.chargeRate / 100);
   f._starEnergy = Math.min(maxE, (f._starEnergy || 0) + gain);
+  renderStatusIcons(f);
 }
 
 // Helper: passive star fire — after each skill, deal 40% stored energy as true damage to target
