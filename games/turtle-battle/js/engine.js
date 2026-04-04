@@ -996,6 +996,8 @@ function executePlayerAction(f, skill, target) {
 // ── ACTION EXECUTION ──────────────────────────────────────
 let _actionQueue = [];
 
+// Guest replay mode: guest executes action but sync will overwrite state afterward
+let _isGuestReplay = false;
 async function executeAction(action) {
   if (battleOver) return;
   clearTurnTimer(); // player acted, stop countdown
@@ -1439,10 +1441,12 @@ async function executeAction(action) {
 
   animating = false;
 
-  // Host: send action + state sync to guest after execution
+  // Host: send action + full state sync to guest after execution
+  // Guest will replay action for animation but sync overwrites all state (authoritative)
   if (gameMode === 'pvp-online' && onlineSide === 'left') {
+    const syncState = buildStateSync();
     sendOnline({ type:'action', action });
-    sendOnline({ type:'sync', state: buildStateSync() });
+    sendOnline({ type:'sync', state: syncState });
   }
 
   // Drain queued actions (online opponent sent action while we were animating)

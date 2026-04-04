@@ -258,12 +258,33 @@ function handleOnlineMessage(msg) {
       if (onlineSide === 'left') executeAction(msg.action);
       break;
     case 'action':
-      // Guest receives action from host → execute for animation
-      if (onlineSide === 'right') executeAction(msg.action);
+      // Guest: skip executeAction, wait for sync to apply authoritative state
+      // This prevents desync from different Math.random() results
+      if (onlineSide === 'right') {
+        // Just log the action for visual feedback
+        const af = allFighters[msg.action.attackerId];
+        const sk = af && af.skills[msg.action.skillIdx];
+        if (af && sk) addLog(`${af.emoji}${af.name} 使用 <b>${sk.name}</b>`);
+      }
       break;
     case 'sync':
-      // Guest receives state sync from host → patch state
-      if (onlineSide === 'right') applyStateSync(msg.state);
+      // Guest receives authoritative state from host → apply and refresh all UI
+      if (onlineSide === 'right') {
+        applyStateSync(msg.state);
+        // Check for deaths and battle end after sync
+        allFighters.forEach(f => {
+          const elId = getFighterElId(f);
+          const card = document.getElementById(elId);
+          if (card && !f.alive) { card.classList.add('dead'); }
+        });
+        if (!leftTeam.some(f => f.alive) || !rightTeam.some(f => f.alive)) {
+          if (!battleOver) {
+            battleOver = true;
+            const leftWon = leftTeam.some(f => f.alive);
+            setTimeout(() => showResult(!leftWon), 1200); // guest is right, so invert
+          }
+        }
+      }
       break;
     case 'battle-end':
       // Guest receives battle end from host
