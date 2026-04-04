@@ -4,7 +4,59 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>龟龟对战 - 2V2 回合制</title>
+
+<!-- SEO Meta Tags -->
+<meta name="description" content="龟龟对战 - 2V2回合制策略战斗游戏，27只独特龟龟，丰富被动和技能组合">
+<meta name="keywords" content="龟龟对战, 回合制, 策略游戏, 2V2, 网页游戏, turtle battle">
+<meta name="theme-color" content="#1a1a2e">
+
+<!-- Open Graph -->
+<meta property="og:title" content="龟龟对战 - 2V2 回合制策略战斗">
+<meta property="og:description" content="27只独特龟龟，每只拥有独特被动和技能。选择你的2只龟组成最强阵容！">
+<meta property="og:type" content="website">
+<meta property="og:image" content="assets/og-preview.png">
+<meta property="og:url" content="">
+
+<!-- Twitter Card -->
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="龟龟对战 - 2V2 回合制策略战斗">
+<meta name="twitter:description" content="27只独特龟龟，每只拥有独特被动和技能。选择你的2只龟组成最强阵容！">
+<meta name="twitter:image" content="assets/og-preview.png">
+
+<!-- Canonical URL -->
+<link rel="canonical" href="">
+
+<!-- Apple Mobile Web App -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="龟龟对战">
+
+<!-- Favicon -->
+<link rel="icon" type="image/png" href="assets/favicon.png">
+<link rel="apple-touch-icon" href="assets/favicon.png">
+
+<!-- Structured Data -->
+<script type="application/ld+json">
+{
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "name": "龟龟对战",
+  "description": "2V2回合制策略战斗网页游戏",
+  "applicationCategory": "Game",
+  "operatingSystem": "Web Browser"
+}
+</script>
+
 <link rel="stylesheet" href="style.css">
+<!-- Preload critical resources -->
+<link rel="preload" href="js/pets.js" as="script">
+<link rel="preload" href="js/engine.js" as="script">
+<link rel="preload" href="assets/hp-icon.png" as="image">
+<link rel="preload" href="assets/atk-icon.png" as="image">
+<link rel="preload" href="assets/def-icon.png" as="image">
+<link rel="preload" href="assets/mr-icon.png" as="image">
+<!-- DNS prefetch for CDN -->
+<link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 </head>
 <body>
 
@@ -113,23 +165,23 @@
     <div class="help-title">术语说明 <span class="help-close" onclick="toggleHelp()">✕</span></div>
     <div class="help-grid">
       <div class="help-item">
-        <img src="assets/atk-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/atk-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>攻击力 (ATK)</b><br>技能伤害基于攻击力百分比计算，如"90%ATK"</div>
       </div>
       <div class="help-item">
-        <img src="assets/def-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/def-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>护甲</b><br>减少受到的物理伤害。减伤% = 护甲÷(护甲+40)</div>
       </div>
       <div class="help-item">
-        <img src="assets/mr-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/mr-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>魔抗</b><br>减少受到的魔法伤害。减伤% = 魔抗÷(魔抗+40)</div>
       </div>
       <div class="help-item">
-        <img src="assets/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>护甲穿透</b><br>无视目标等量护甲值</div>
       </div>
       <div class="help-item">
-        <img src="assets/magic-pen-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/magic-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>魔法穿透</b><br>无视目标等量魔抗值</div>
       </div>
       <div class="help-item">
@@ -149,23 +201,23 @@
         <div><b>护盾（白色）</b><br>额外生命层，所有伤害先消耗护盾再扣血。血条上白色部分</div>
       </div>
       <div class="help-item">
-        <img src="assets/hp-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/hp-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>生命值（绿色回复）</b><br>恢复生命值，不超过最大HP</div>
       </div>
       <div class="help-item">
-        <img src="assets/crit-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/crit-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>暴击率</b><br>基础暴击率25%，暴击时触发额外伤害</div>
       </div>
       <div class="help-item">
-        <img src="assets/crit-dmg-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/crit-dmg-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>暴击伤害</b><br>暴击时伤害倍率，基础×1.5倍。暴击数字前显示此图标</div>
       </div>
       <div class="help-item">
-        <img src="assets/lifesteal-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/lifesteal-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>生命偷取</b><br>造成伤害时按比例回复自身生命值</div>
       </div>
       <div class="help-item">
-        <img src="assets/dodge-icon.png" class="help-icon" style="width:20px;height:20px">
+        <img src="assets/dodge-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>闪避率</b><br>有概率完全闪避一段攻击，不受伤害</div>
       </div>
       <div class="help-item">
@@ -288,15 +340,38 @@
   </div>
 </section>
 
+<!-- ══════ TUTORIAL OVERLAY ══════ -->
+<div class="tut-overlay" id="tutorialOverlay">
+  <div class="tut-card tut-card-enter">
+    <button class="tut-skip" onclick="TutorialSystem.complete()">跳过</button>
+    <div class="tut-icon"></div>
+    <h2 class="tut-title"></h2>
+    <div class="tut-body"></div>
+    <div class="tut-dots">
+      <span class="tut-dot active"></span>
+      <span class="tut-dot"></span>
+      <span class="tut-dot"></span>
+      <span class="tut-dot"></span>
+      <span class="tut-dot"></span>
+    </div>
+    <div class="tut-counter"></div>
+    <div class="tut-nav">
+      <button class="btn btn-secondary tut-prev" onclick="TutorialSystem.prev()" style="display:none">← 上一步</button>
+      <button class="btn btn-primary tut-next" onclick="TutorialSystem.next()">下一步 →</button>
+    </div>
+  </div>
+</div>
+
 <!-- Toast -->
 <div class="toast" id="toast"></div>
 
-<script src="https://cdn.jsdelivr.net/npm/peerjs@1/dist/peerjs.min.js"></script>
-<script src="audio.js"></script>
-<script src="js/pets.js"></script>
-<script src="js/engine.js"></script>
-<script src="js/skills.js"></script>
-<script src="js/ui.js"></script>
-<script src="js/main.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/peerjs@1/dist/peerjs.min.js" defer></script>
+<script src="audio.js" defer></script>
+<script src="js/pets.js" defer></script>
+<script src="js/engine.js" defer></script>
+<script src="js/skills.js" defer></script>
+<script src="js/ui.js" defer></script>
+<script src="js/tutorial.js" defer></script>
+<script src="js/main.js" defer></script>
 </body>
 </html>

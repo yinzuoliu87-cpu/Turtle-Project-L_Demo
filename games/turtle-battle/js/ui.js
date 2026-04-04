@@ -273,7 +273,7 @@ function buildPetImgHTML(pet, size) {
       + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ') infinite;"></div></div>';
   }
   if (pet.img) {
-    return '<img src="' + pet.img + '" alt="' + pet.name + '" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
+    return '<img src="' + pet.img + '" alt="' + pet.name + '" loading="lazy" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
   }
   return '<span style="font-size:' + Math.round(size * 0.75) + 'px;line-height:1;">' + pet.emoji + '</span>';
 }

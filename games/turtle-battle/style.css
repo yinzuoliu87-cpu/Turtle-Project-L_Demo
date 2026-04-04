@@ -645,3 +645,783 @@ body{
   .side-indicator{margin-bottom:6px}
   .help-grid{grid-template-columns:1fr}
 }
+
+/* ═══════════════════════════════════════════════════
+   MOBILE-RESPONSIVE & TOUCH-FRIENDLY
+   768px tablets / 480px phones
+   ═══════════════════════════════════════════════════ */
+
+/* ── TOUCH-FRIENDLY GLOBAL ── */
+.btn,
+.skill-card,
+.picker-btn,
+.pet-card,
+.diff-card,
+.btn-target,
+.pet-passive-icon,
+.btn-help,
+.btn-sound,
+.back-link,
+.skill-toggle-btn,
+.stats-toggle,
+.passive-icon {
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+
+/* ── TABLET BREAKPOINT (max-width: 768px) ── */
+@media (max-width: 768px) {
+  /* -- Nav compact -- */
+  .top-nav {
+    padding: 8px 12px;
+    gap: 8px;
+  }
+  .nav-title {
+    font-size: 16px;
+  }
+  .back-link {
+    font-size: 13px;
+  }
+  .btn-sound {
+    min-width: 36px;
+    min-height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .coin-display {
+    font-size: 14px;
+  }
+
+  /* -- Screens -- */
+  .screen {
+    padding: 14px 12px;
+  }
+  .screen-title {
+    font-size: 18px;
+    margin-bottom: 14px;
+  }
+
+  /* -- Menu buttons full width -- */
+  .menu-hero {
+    padding: 28px 0 20px;
+  }
+  .menu-logo {
+    font-size: 52px;
+  }
+  .menu-buttons {
+    max-width: 100%;
+    padding: 0 8px;
+  }
+  .btn-lg {
+    padding: 14px 16px;
+    font-size: 15px;
+    min-height: 56px;
+  }
+  .btn-sm {
+    padding: 8px 14px;
+    font-size: 13px;
+    min-height: 44px;
+  }
+  .btn-secondary {
+    padding: 12px 20px;
+    font-size: 14px;
+    min-height: 44px;
+  }
+  .btn-target {
+    padding: 12px 16px;
+    min-height: 44px;
+  }
+
+  /* -- Battle area single column -- */
+  #screenBattle {
+    max-width: 100%;
+    padding: 10px 8px;
+  }
+  .battle-main-row {
+    flex-direction: column;
+    gap: 10px;
+  }
+  .battle-field {
+    gap: 10px;
+  }
+  .battle-side {
+    max-width: 100%;
+  }
+
+  /* -- Fighter cards -- */
+  .fighter-card {
+    padding: 10px 8px;
+  }
+  .fighter-emoji {
+    font-size: 36px;
+    min-height: 60px;
+  }
+  .fighter-name {
+    font-size: 13px;
+  }
+
+  /* -- Damage stats panel -- */
+  .dmg-stats-panel {
+    width: 100%;
+    max-height: 160px;
+  }
+
+  /* -- Action panel: full width buttons, larger touch targets -- */
+  .action-panel {
+    padding: 12px 10px;
+  }
+  .skill-btn-wrap {
+    flex: 1 1 100%;
+    min-width: 0;
+    max-width: 100%;
+  }
+  .skill-card {
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+  .skill-header {
+    font-size: 14px;
+    margin-bottom: 6px;
+  }
+  .skill-body-brief,
+  .skill-body-detail {
+    font-size: 12px;
+  }
+  .action-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  /* -- Pet selection grid: 2 columns -- */
+  .pet-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .pet-card {
+    padding: 14px 10px;
+  }
+  .pet-name {
+    font-size: 15px;
+  }
+  .pet-avatar {
+    min-height: 80px;
+  }
+  .pet-passive-icon {
+    width: 44px;
+    height: 44px;
+  }
+  .pet-stats-mini {
+    font-size: 12px;
+  }
+
+  /* -- Team slots -- */
+  .team-slots {
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+  .team-slot {
+    width: 120px;
+    height: 70px;
+  }
+
+  /* -- Difficulty cards -- */
+  .diff-cards {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .diff-card {
+    width: 100%;
+    padding: 18px 16px;
+    min-height: 44px;
+  }
+
+  /* -- Font sizes for readability -- */
+  .hp-text {
+    font-size: 11px;
+  }
+  .fighter-stats {
+    font-size: 11px;
+  }
+
+  /* -- Floating numbers slightly larger -- */
+  .floating-num {
+    font-size: 26px;
+  }
+  .floating-num.direct-dmg,
+  .floating-num.magic-dmg,
+  .floating-num.true-dmg {
+    font-size: 24px;
+  }
+  .floating-num.crit-dmg,
+  .floating-num.crit-magic,
+  .floating-num.crit-true {
+    font-size: 28px;
+  }
+  .floating-num.heal-num {
+    font-size: 26px;
+  }
+  .floating-num.dot-dmg {
+    font-size: 20px;
+  }
+  .floating-num.shield-dmg {
+    font-size: 18px;
+  }
+
+  /* -- Status icons: don't shrink too small -- */
+  .status-icons {
+    font-size: 12px;
+    gap: 5px;
+  }
+  .status-dot,
+  .status-atkdown,
+  .status-defdown,
+  .status-hot,
+  .status-defup,
+  .status-bubble,
+  .status-dodge {
+    padding: 2px 6px;
+  }
+
+  /* -- Summon mini-card compact but readable -- */
+  .summon-mini {
+    padding: 8px 10px;
+  }
+  .summon-name {
+    font-size: 12px;
+  }
+  .summon-hp-bar {
+    height: 8px;
+  }
+  .summon-hp-text {
+    font-size: 10px;
+  }
+  .summon-stats {
+    font-size: 10px;
+  }
+
+  /* -- Lobby -- */
+  .lobby-box {
+    padding: 18px 14px;
+  }
+  .input-field {
+    font-size: 16px; /* prevents iOS zoom */
+    padding: 12px 14px;
+    min-height: 44px;
+  }
+
+  /* -- Target select -- */
+  .target-buttons {
+    flex-direction: column;
+    gap: 8px;
+  }
+  .target-buttons .btn-target {
+    width: 100%;
+    text-align: center;
+  }
+
+  /* -- Picker -- */
+  .picker-buttons {
+    gap: 6px;
+  }
+  .picker-btn {
+    padding: 10px 12px;
+    min-width: 80px;
+    min-height: 44px;
+  }
+
+  /* -- Battle log -- */
+  .battle-log {
+    font-size: 12px;
+    max-height: 160px;
+    padding: 10px;
+  }
+
+  /* -- Result screen -- */
+  .result-icon {
+    font-size: 56px;
+  }
+  #resultTitle {
+    font-size: 24px;
+  }
+  .result-actions {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .result-actions .btn {
+    padding: 14px 20px;
+    font-size: 15px;
+    min-height: 48px;
+  }
+
+  /* -- Help panel -- */
+  .help-grid {
+    grid-template-columns: 1fr;
+  }
+  .help-panel {
+    padding: 12px;
+  }
+
+  /* -- Select top bar -- */
+  .select-top {
+    gap: 12px;
+  }
+  .select-actions {
+    gap: 8px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+
+  /* -- Turn banner -- */
+  .turn-banner {
+    font-size: 14px;
+  }
+  .btn-help {
+    width: 36px;
+    height: 36px;
+    font-size: 18px;
+  }
+
+  /* -- Disconnect overlay -- */
+  .disconnect-box {
+    padding: 24px 20px;
+    margin: 0 16px;
+    max-width: 100%;
+  }
+
+  /* -- Toast -- */
+  .toast {
+    left: 16px;
+    right: 16px;
+    transform: translateX(0) translateY(80px);
+    text-align: center;
+    font-size: 13px;
+  }
+  .toast.show {
+    transform: translateX(0) translateY(0);
+  }
+}
+
+/* ── SMALL PHONE BREAKPOINT (max-width: 480px) ── */
+@media (max-width: 480px) {
+  /* -- Nav extra compact -- */
+  .top-nav {
+    padding: 6px 8px;
+    gap: 6px;
+  }
+  .nav-title {
+    font-size: 14px;
+  }
+  .back-link {
+    font-size: 12px;
+  }
+
+  /* -- Menu -- */
+  .menu-hero {
+    padding: 20px 0 14px;
+  }
+  .menu-logo {
+    font-size: 44px;
+  }
+  .menu-sub {
+    font-size: 13px;
+  }
+  .btn-lg {
+    padding: 12px 12px;
+    font-size: 14px;
+    gap: 10px;
+  }
+  .btn-icon {
+    font-size: 22px;
+  }
+  .btn-text strong {
+    font-size: 14px;
+  }
+  .btn-text small {
+    font-size: 11px;
+  }
+
+  /* -- Battle: very compact cards -- */
+  .fighter-card {
+    padding: 6px 4px;
+    border-radius: 8px;
+  }
+  .fighter-emoji {
+    font-size: 28px;
+    min-height: 48px;
+  }
+  .fighter-name {
+    font-size: 11px;
+  }
+  .hp-bar {
+    height: 10px;
+  }
+  .hp-text {
+    font-size: 9px;
+  }
+  .fighter-stats {
+    font-size: 9px;
+  }
+
+  /* -- Pet grid: 2 columns tighter -- */
+  .pet-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 6px;
+    padding: 4px;
+  }
+  .pet-card {
+    padding: 10px 6px;
+    border-radius: 8px;
+  }
+  .pet-emoji {
+    font-size: 32px;
+  }
+  .pet-avatar {
+    min-height: 64px;
+  }
+  .pet-name {
+    font-size: 13px;
+  }
+  .pet-rarity {
+    font-size: 10px;
+  }
+  .pet-passive-icon {
+    width: 38px;
+    height: 38px;
+    top: -6px;
+    right: -6px;
+  }
+  .pet-passive-icon img.stat-icon {
+    width: 28px;
+    height: 28px;
+  }
+  .pet-stats-mini {
+    font-size: 11px;
+  }
+
+  /* -- Team slots shrink -- */
+  .team-slots {
+    gap: 6px;
+  }
+  .team-slot {
+    width: 100px;
+    height: 60px;
+  }
+  .slot-emoji {
+    font-size: 22px;
+  }
+  .slot-filled {
+    font-size: 13px;
+    gap: 4px;
+  }
+  .slot-empty {
+    font-size: 12px;
+  }
+
+  /* -- Action panel: stacked full-width -- */
+  .action-panel.show {
+    padding: 8px 6px;
+    border-radius: 10px 10px 0 0;
+  }
+  .action-header {
+    font-size: 12px;
+    margin-bottom: 6px;
+  }
+  .skill-card {
+    padding: 10px 10px;
+  }
+  .skill-header {
+    font-size: 13px;
+  }
+  .skill-body-brief,
+  .skill-body-detail {
+    font-size: 11px;
+  }
+  .skill-cd-info {
+    font-size: 10px;
+  }
+
+  /* -- Floating numbers -- */
+  .floating-num {
+    font-size: 22px;
+  }
+  .floating-num.heal-num {
+    font-size: 24px;
+  }
+  .floating-num.direct-dmg,
+  .floating-num.magic-dmg,
+  .floating-num.true-dmg {
+    font-size: 22px;
+  }
+  .floating-num.crit-dmg,
+  .floating-num.crit-magic,
+  .floating-num.crit-true {
+    font-size: 26px;
+  }
+  .floating-num.shield-dmg {
+    font-size: 16px;
+  }
+  .floating-num.dot-dmg {
+    font-size: 18px;
+  }
+  .floating-num.passive-num {
+    font-size: 16px;
+  }
+  .floating-num.debuff-label {
+    font-size: 14px;
+  }
+
+  /* -- Status icons minimum readable size -- */
+  .status-icons {
+    font-size: 10px;
+    gap: 3px;
+  }
+  .status-dot,
+  .status-atkdown,
+  .status-defdown,
+  .status-hot,
+  .status-defup,
+  .status-bubble,
+  .status-dodge {
+    padding: 2px 5px;
+    min-width: 24px;
+    text-align: center;
+  }
+
+  /* -- Summon mini-card -- */
+  .summon-mini {
+    padding: 5px 6px;
+  }
+  .summon-header {
+    gap: 4px;
+    margin-bottom: 2px;
+  }
+  .summon-avatar {
+    width: 22px;
+    height: 22px;
+  }
+  .summon-emoji {
+    font-size: 14px;
+  }
+  .summon-name {
+    font-size: 10px;
+  }
+  .summon-tag {
+    font-size: 8px;
+    padding: 0 3px;
+  }
+  .summon-hp-bar {
+    height: 5px;
+  }
+  .summon-hp-text {
+    font-size: 8px;
+  }
+  .summon-stats {
+    font-size: 8px;
+    gap: 4px;
+  }
+
+  /* -- Damage stats panel -- */
+  .dmg-stats-panel {
+    max-height: 100px;
+    font-size: 10px;
+    padding: 4px 6px;
+  }
+  .dmg-stats-header {
+    font-size: 11px;
+    margin-bottom: 4px;
+  }
+
+  /* -- VS badge -- */
+  .vs-badge {
+    font-size: 14px;
+    margin-top: 2px;
+  }
+
+  /* -- Lobby -- */
+  .lobby-box {
+    padding: 14px 10px;
+  }
+  .room-code-display strong {
+    font-size: 18px;
+  }
+
+  /* -- Difficulty cards -- */
+  .diff-card {
+    padding: 14px 12px;
+  }
+  .diff-icon {
+    font-size: 28px;
+    margin-bottom: 4px;
+  }
+
+  /* -- Result -- */
+  .result-icon {
+    font-size: 48px;
+  }
+  #resultTitle {
+    font-size: 20px;
+  }
+  #resultSub {
+    font-size: 13px;
+  }
+  .reward-line {
+    font-size: 16px;
+  }
+
+  /* -- Battle log compact -- */
+  .battle-log {
+    font-size: 11px;
+    max-height: 120px;
+    line-height: 1.6;
+    padding: 8px;
+  }
+
+  /* -- Passive popup -- */
+  .passive-popup {
+    max-width: calc(100vw - 24px);
+    padding: 12px 14px;
+    font-size: 13px;
+  }
+  .passive-popup-title {
+    font-size: 14px;
+  }
+  .passive-popup-icon {
+    width: 40px;
+    height: 40px;
+  }
+
+  /* -- Picker compact -- */
+  .picker-btn {
+    padding: 8px 10px;
+    min-width: 70px;
+  }
+  .picker-emoji {
+    font-size: 22px;
+  }
+  .picker-name {
+    font-size: 11px;
+  }
+  .picker-hp {
+    font-size: 9px;
+  }
+
+  /* -- Select top -- */
+  .select-top {
+    gap: 8px;
+    flex-direction: column;
+    align-items: stretch;
+    text-align: center;
+  }
+  .select-actions {
+    justify-content: center;
+  }
+
+  /* -- Toast full width -- */
+  .toast {
+    left: 8px;
+    right: 8px;
+    font-size: 12px;
+    padding: 8px 16px;
+    border-radius: 12px;
+  }
+
+  /* -- Disconnect -- */
+  .disconnect-box {
+    padding: 20px 16px;
+    margin: 0 12px;
+  }
+  .disconnect-icon {
+    font-size: 40px;
+  }
+  .disconnect-title {
+    font-size: 18px;
+  }
+  .disconnect-msg {
+    font-size: 13px;
+  }
+}
+
+/* ═══════════════════════════════════════
+   TUTORIAL OVERLAY
+   ═══════════════════════════════════════ */
+.tut-overlay{
+  position:fixed;inset:0;z-index:9999;
+  display:flex;align-items:center;justify-content:center;
+  background:rgba(0,0,0,.75);backdrop-filter:blur(4px);
+  opacity:0;pointer-events:none;
+  transition:opacity .3s ease;
+}
+.tut-overlay.tut-visible{opacity:1;pointer-events:auto}
+.tut-overlay.tut-hiding{opacity:0;pointer-events:none}
+
+.tut-card{
+  position:relative;
+  background:var(--bg2);border:1px solid rgba(255,255,255,.1);
+  border-radius:16px;padding:36px 32px 28px;
+  max-width:480px;width:90%;
+  box-shadow:0 8px 40px rgba(0,0,0,.6);
+  text-align:center;
+}
+.tut-card-enter{animation:tutCardIn .35s ease both}
+@keyframes tutCardIn{
+  from{opacity:0;transform:translateY(20px) scale(.96)}
+  to{opacity:1;transform:translateY(0) scale(1)}
+}
+
+.tut-skip{
+  position:absolute;top:12px;right:16px;
+  background:none;border:none;color:var(--fg2);
+  font-size:13px;cursor:pointer;padding:4px 8px;border-radius:6px;
+  transition:.2s;
+}
+.tut-skip:hover{color:var(--fg);background:rgba(255,255,255,.08)}
+
+.tut-icon{font-size:48px;margin-bottom:12px}
+.tut-title{font-size:22px;font-weight:700;margin-bottom:16px;color:var(--fg)}
+.tut-body{
+  font-size:14px;line-height:1.7;color:var(--fg2);
+  text-align:left;margin-bottom:20px;
+}
+.tut-body b{color:var(--fg)}
+
+/* Step dots */
+.tut-dots{display:flex;gap:8px;justify-content:center;margin-bottom:8px}
+.tut-dot{
+  width:8px;height:8px;border-radius:50%;
+  background:rgba(255,255,255,.15);transition:.3s;
+}
+.tut-dot.active{background:var(--accent);transform:scale(1.3)}
+
+.tut-counter{font-size:12px;color:var(--fg2);margin-bottom:16px}
+
+.tut-nav{display:flex;gap:12px;justify-content:center}
+.tut-nav .btn{min-width:110px;padding:10px 20px;font-size:14px}
+.tut-prev{margin-top:0}
+.tut-next{margin-top:0}
+
+/* Tutorial mode cards */
+.tut-modes{display:flex;flex-direction:column;gap:10px;margin:4px 0}
+.tut-mode{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:10px 12px;background:var(--bg3);border-radius:10px;
+  font-size:13px;line-height:1.5;
+}
+.tut-mode b{color:var(--fg);display:block;margin-bottom:2px}
+.tut-mode-icon{font-size:22px;flex-shrink:0;margin-top:2px}
+
+/* Tutorial tips */
+.tut-tips{display:flex;flex-direction:column;gap:8px}
+.tut-tip{
+  padding:8px 12px;background:var(--bg3);border-radius:8px;
+  font-size:13px;line-height:1.5;
+}
+
+/* Mobile adjustments for tutorial */
+@media(max-width:480px){
+  .tut-card{padding:28px 18px 22px}
+  .tut-icon{font-size:36px}
+  .tut-title{font-size:18px}
+  .tut-body{font-size:13px}
+  .tut-nav .btn{min-width:90px;padding:8px 14px;font-size:13px}
+}
