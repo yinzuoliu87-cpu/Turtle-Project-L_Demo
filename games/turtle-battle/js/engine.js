@@ -162,6 +162,7 @@ async function beginTurn() {
   // Passive: per-turn scaling
   for (const f of allFighters) {
     if (!f.alive || !f.passive) continue;
+    if (f._isSummon) continue; // summon passives handled in dedicated loop below
     f.passiveUsedThisTurn = false; // reset once-per-turn passives
     if (f.passive.type === 'turnScaleAtk') {
       const gain = Math.round(f.baseAtk * f.passive.pct / 100);
@@ -421,6 +422,61 @@ async function beginTurn() {
         updateHpBar(t, tElId);
         addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">⚡电击${t.emoji}${t.name} ${sDmg}真实</span>`);
       }
+    }
+    // Bamboo charge
+    if (p.type === 'bambooCharge') {
+      s._bambooFired = false;
+      if (!s._bambooCharged) {
+        s._bambooCounter = (s._bambooCounter || 0) + 1;
+        if (s._bambooCounter >= 2) {
+          s._bambooCharged = true; s._bambooCounter = 0;
+          spawnFloatingNum(sElId, '🎋充能!', 'passive-num', 0, 0);
+          addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🎋竹编充能！</span>`);
+        }
+      }
+    }
+    // Candy steal
+    if (p.type === 'candySteal' && turnNum === p.stealTurn) {
+      const enemies = (s.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      if (enemies.length) {
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const stealAmt = Math.round(target.maxHp * p.stealPct / 100);
+        target.maxHp -= stealAmt; target.hp = Math.min(target.hp, target.maxHp);
+        if (target.hp <= 0) target.hp = 1;
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
+        updateHpBar(target, tElId);
+        s.maxHp += stealAmt; s.hp += stealAmt;
+        spawnFloatingNum(sElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
+        updateSummonHpBar(s);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大HP！</span>`);
+      }
+    }
+    // Candy pen countdown
+    if (s._candyPenTurns > 0) {
+      s._candyPenTurns--;
+      if (s._candyPenTurns <= 0 && s._candyPenGain) { s.armorPen -= s._candyPenGain; s._candyPenGain = 0; }
+    }
+    // Rainbow prism
+    if (p.type === 'rainbowPrism') {
+      const allies = (s.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+      // Include owner
+      const owner = s._owner;
+      if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
+      const maxRoll = (turnNum <= 1) ? 2 : 3;
+      const roll = Math.floor(Math.random() * maxRoll);
+      s._prismColor = roll;
+      if (roll === 0) {
+        for (const a of allies) { const gain = Math.round(a.baseAtk * p.atkPct / 100); a.buffs.push({ type:'atkUp', value:gain, turns:2 }); }
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🔴红光！友方攻击+${p.atkPct}%</span>`);
+      } else if (roll === 1) {
+        for (const a of allies) { const dg = Math.round(a.baseDef * p.defPct / 100); const mg = Math.round((a.baseMr||a.baseDef) * p.defPct / 100); a.buffs.push({ type:'defUp', value:dg, turns:2 }); a.buffs.push({ type:'mrUp', value:mg, turns:2 }); }
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🔵蓝光！友方护甲/魔抗+${p.defPct}%</span>`);
+      } else {
+        for (const a of allies) { const heal = Math.round(a.maxHp * p.healPct / 100); a.hp = Math.min(a.maxHp, a.hp + heal); updateHpBar(a, getFighterElId(a)); }
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🟢绿光！友方回复${p.healPct}%HP</span>`);
+      }
+      recalcStats();
     }
   }
   // Process buffs/debuffs at turn start
