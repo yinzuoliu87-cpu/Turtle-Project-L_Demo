@@ -347,9 +347,9 @@ const ALL_PETS = [
     ]},
   { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:329,  atk:42,  def:10, mr:13, spd:18, crit:0.25,
     img:'../../assets/pets/闪电龟.png',
-    passive:{ type:'lightningStorm', name:'雷电', shockScale:0.85, stackMax:8,
-              brief:'闪电龟每回合电击随机敌人 {T:ATK*0.85} 真实伤害；攻击叠电击层，满8层引爆 {T:ATK*0.85} 真实伤害',
-              desc:'闪电龟周身环绕雷电之力。\n\n每回合自动电击随机敌人，造成（85%×攻击力({ATK}) = {T:ATK*0.85}）真实伤害。\n\n每段攻击命中敌人叠加1层电击标记，满{stackMax}层时引爆雷暴，\n造成（85%×攻击力({ATK}) = {T:ATK*0.85}）真实伤害并清零层数。' },
+    passive:{ type:'lightningStorm', name:'雷电', shockScale:0.82, stackMax:8,
+              brief:'闪电龟每回合电击随机敌人 {T:ATK*0.82} 真实伤害；攻击叠电击层，满8层引爆 {T:ATK*0.82} 真实伤害',
+              desc:'闪电龟周身环绕雷电之力。\n\n每回合自动电击随机敌人，造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害。\n\n每段攻击命中敌人叠加1层电击标记，满{stackMax}层时引爆雷暴，\n造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害并清零层数。' },
     skills:[
       { name:'闪电打击', type:'lightningStrike', dmgType:'magic', hits:5, power:0, pierce:0, cd:0, atkScale:0.23, splashPct:25,
         brief:'闪电龟打击5段，共 {M:0.23*ATK*5} 魔法伤害，每段溅射25%到次目标，每段叠电击层',
@@ -486,7 +486,7 @@ const ALL_PETS = [
     ]},
   { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:349,  atk:45,  def:13, mr:15, spd:17, crit:0.25,
     img:'../../assets/pets/星际龟v1.png', sprite:{frames:12,frameW:500,frameH:500,duration:1200},
-    passive:{ type:'starEnergy', name:'星能', chargeRate:60, maxChargePct:40, passiveFirePct:30, burstPct:100,
+    passive:{ type:'starEnergy', name:'星能', chargeRate:62, maxChargePct:40, passiveFirePct:30, burstPct:100,
               brief:'星际龟造成伤害积累星能。每次技能后额外打出 <span class="val-atk">30%</span> 星能真实伤害。满能时流星暴击消耗全部星能附加 <span class="val-atk">100%</span> 真实伤害',
               desc:'星际龟的星能核心。\n\n造成伤害的 <span class="val-atk">65%</span> 转化为星能，上限（40%×最大生命值({HP}) = {B:HP*0.4}）。\n\n每次释放技能后，额外打出相当于储存星能 <span class="val-atk">30%</span> 的真实伤害（对攻击目标）。\n\n流星暴击时，若星能已满，消耗全部星能，对全体敌人附加星能 <span class="val-atk">100%</span> 的真实伤害。' },
     skills:[
