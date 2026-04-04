@@ -1067,10 +1067,11 @@ async function fireStarPassive(f, target) {
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `-${fireDmg}<img src="assets/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
   updateHpBar(target, tElId);
-  renderStatusIcons(f);
+  // Passive true damage also charges star energy
+  addStarEnergy(f, fireDmg);
 }
 
-// Helper: star meteor full energy burst — consume all energy, deal 80% as true AOE
+// Helper: star meteor full energy burst — consume all energy, deal burstPct% as true AOE
 async function starMeteorBurst(f) {
   if (!f.passive || f.passive.type !== 'starEnergy') return;
   const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
@@ -1183,7 +1184,7 @@ async function doStarMeteor(attacker, skill) {
     }
   }
 
-  // Full energy burst: consume all, deal 80% as true AOE
+  // Full energy burst: consume all, deal 100% as true AOE
   await starMeteorBurst(attacker);
 
   // Passive fire on first alive enemy
