@@ -93,8 +93,9 @@ function updateSummonHpBar(summon) {
     shieldFill.style.width = sPct + '%';
   }
 
-  let hpStr = `HP ${Math.ceil(summon.hp)}/${summon.maxHp}`;
+  let hpStr = `<img src="assets/hp-icon.png" style="width:10px;height:10px;vertical-align:middle"> ${Math.ceil(summon.hp)}/${summon.maxHp}`;
   if (summon.shield > 0) hpStr += ` <img src="assets/shield-icon.png" style="width:10px;height:10px;vertical-align:middle">${Math.ceil(summon.shield)}`;
+  if (summon.bubbleShieldVal > 0) hpStr += ` <img src="assets/bubble-store-icon.png" style="width:10px;height:10px;vertical-align:middle">${Math.ceil(summon.bubbleShieldVal)}`;
   if (text) text.innerHTML = hpStr;
 
   card.classList.toggle('dead', !summon.alive);
@@ -106,10 +107,12 @@ function updateSummonStats(summon) {
   if (!card) return;
   const box = card.querySelector('.summon-stats');
   if (!box) return;
-  const atkClass = summon.atk > summon.baseAtk ? 'stat-up' : summon.atk < summon.baseAtk ? 'stat-down' : '';
-  const defClass = summon.def > summon.baseDef ? 'stat-up' : summon.def < summon.baseDef ? 'stat-down' : '';
-  const mrClass = summon.mr > (summon.baseMr||summon.baseDef) ? 'stat-up' : summon.mr < (summon.baseMr||summon.baseDef) ? 'stat-down' : '';
-  box.innerHTML = `<span class="${atkClass}">⚔${summon.atk}</span> <span class="${defClass}">🛡${summon.def}</span> <span class="${mrClass}">✨${summon.mr||summon.def}</span>`;
+  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const sc = (cur, init) => cur > init ? 'stat-up' : cur < init ? 'stat-down' : '';
+  box.innerHTML =
+    `<span class="${sc(summon.atk, summon.baseAtk)}">${ic('atk-icon.png')}${summon.atk}</span>` +
+    `<span class="${sc(summon.def, summon.baseDef)}">${ic('def-icon.png')}${summon.def}</span>` +
+    `<span class="${sc(summon.mr||0, summon.baseMr||0)}">${ic('mr-icon.png')}${summon.mr||summon.def}</span>`;
 }
 
 function renderSummonStatusIcons(summon) {
@@ -121,32 +124,69 @@ function renderSummonStatusIcons(summon) {
   box.innerHTML = '';
   if (!summon.alive) return;
 
-  // Buffs/debuffs
+  // Reuse same buff rendering as main fighters
   const buffHTML = (summon.buffs || []).map(b => {
-    if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击+${b.value} ${b.turns}回合">⬆攻${b.turns}</span>`;
-    if (b.type === 'defUp')   return `<span class="status-defup" title="防御+${b.value} ${b.turns}回合">⬆防${b.turns}</span>`;
-    if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击-${b.pct||b.value}% ${b.turns}回合">⬇攻${b.turns}</span>`;
-    if (b.type === 'defDown') return `<span class="status-atkdown" title="防御-${b.pct||b.value}% ${b.turns}回合">⬇防${b.turns}</span>`;
-    if (b.type === 'dodge')   return `<span class="status-dodge" title="闪避${b.value}% ${b.turns}回合">💨${b.turns}</span>`;
-    if (b.type === 'dot')     return `<span class="status-atkdown" title="持续伤害${b.value}/回合 ${b.turns}回合">🔥${b.turns}</span>`;
-    if (b.type === 'phoenixBurnDot') return `<span class="status-atkdown" title="灼烧${b.value}/回合 ${b.turns}回合">🔥${b.turns}</span>`;
-    if (b.type === 'healReduce') return `<span class="status-atkdown" title="治疗削减-${b.value}% ${b.turns}回合">☠️${b.turns}</span>`;
+    if (b.type === 'dot')     return `<span class="status-dot" title="诅咒${b.value}/回合 剩${b.turns}回合"><img src="assets/curse-debuff-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
+    if (b.type === 'phoenixBurnDot') return `<span class="status-dot" title="灼烧 剩${b.turns}回合"><img src="assets/burn-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
+    if (b.type === 'atkDown') return `<span class="status-atkdown">⬇攻${b.turns}</span>`;
+    if (b.type === 'defDown') return `<span class="status-defdown">⬇防${b.turns}</span>`;
+    if (b.type === 'mrDown')  return `<span class="status-defdown">⬇抗${b.turns}</span>`;
+    if (b.type === 'hot')     return `<span class="status-hot">💚${b.turns}</span>`;
+    if (b.type === 'defUp')   return `<span class="status-defup">⬆防${b.turns}</span>`;
+    if (b.type === 'atkUp')   return `<span class="status-defup">⬆攻${b.turns}</span>`;
+    if (b.type === 'bubbleBind') return `<span class="status-bubble"><img src="assets/bubble-store-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
+    if (b.type === 'dodge')   return `<span class="status-dodge"><img src="assets/dodge-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
+    if (b.type === 'fear')    return `<span class="status-atkdown">😱${b.turns}</span>`;
+    if (b.type === 'wormhole') return `<span style="color:#ffa500">🌀${b.turns}</span>`;
+    if (b.type === 'gamblerPierceConvert') return `<span class="status-defup">🗡${b.turns}</span>`;
+    if (b.type === 'hidingShield') return `<span class="status-defup"><img src="assets/shield-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun')    return `<span style="color:#ff0">💫</span>`;
+    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b">🎲+${b.value}%</span>`;
+    if (b.type === 'healReduce') return `<span style="color:#6b8e23">☠️${b.turns}</span>`;
+    if (b.type === 'armorPenBuff') return `<span class="status-defup">🗡穿${b.turns}</span>`;
     return '';
   }).filter(s => s).join('');
   box.innerHTML = buffHTML;
 
   // Ink stacks
   if (summon._inkStacks > 0) {
-    box.innerHTML += `<span style="color:#1a1a2e;background:rgba(100,100,100,.2);padding:0 3px;border-radius:4px;font-size:9px">🖊️${summon._inkStacks}</span>`;
+    box.innerHTML += `<span style="color:#1a1a2e;background:rgba(100,100,100,.2);padding:0 3px;border-radius:4px"><img src="assets/ink-mark-icon.png" style="width:12px;height:12px;vertical-align:middle">${summon._inkStacks}</span>`;
+  }
+  // Ink link
+  if (summon._inkLink && summon._inkLink.partner && summon._inkLink.partner.alive && summon._inkLink.turns > 0) {
+    box.innerHTML += `<span style="color:#6c5ce7">🔗${summon._inkLink.turns}</span>`;
   }
   // Shock stacks (lightning)
   if (summon._shockStacks > 0) {
-    box.innerHTML += `<span style="color:#ffd700;font-size:9px">⚡${summon._shockStacks}/8</span>`;
+    box.innerHTML += `<span style="color:#ffd700">⚡${summon._shockStacks}/8</span>`;
   }
   // Gold lightning
   if (summon._goldLightning > 0) {
-    box.innerHTML += `<span style="color:#ffd700;font-size:9px">⚡${summon._goldLightning}/8</span>`;
+    box.innerHTML += `<span style="color:#ffd700">⚡${summon._goldLightning}/8</span>`;
+  }
+  // Crystallize stacks
+  if (summon._crystallize > 0) {
+    box.innerHTML += `<span style="color:#c77dff">🔮${summon._crystallize}/4</span>`;
+  }
+  // Star energy
+  if (summon._starEnergy > 0) {
+    box.innerHTML += `<span style="color:#ffa500"><img src="assets/star-energy-bar-icon.png" style="width:12px;height:12px;vertical-align:middle">${Math.round(summon._starEnergy)}</span>`;
+  }
+  // Gold coins
+  if (summon._goldCoins > 0) {
+    box.innerHTML += `<span style="color:#ffd93d"><img src="assets/gold-coin-icon.png" style="width:12px;height:12px;vertical-align:middle">${summon._goldCoins}</span>`;
+  }
+  // Drone count
+  if (summon._drones && summon._drones.length > 0) {
+    box.innerHTML += `<span style="color:#4cc9f0"><img src="assets/cyber-drone-icon.png" style="width:12px;height:12px;vertical-align:middle">${summon._drones.length}</span>`;
+  }
+  // Bamboo charge
+  if (summon._bambooCharged && !summon._bambooFired) {
+    box.innerHTML += `<span class="bamboo-charge-ready"><img src="assets/bamboo-charge-icon.png" style="width:12px;height:12px;vertical-align:middle"></span>`;
+  }
+  // Lava rage
+  if (summon._lavaRage > 0 && !summon._lavaTransformed) {
+    box.innerHTML += `<span style="color:#ff6600"><img src="assets/lava-heart-icon.png" style="width:12px;height:12px;vertical-align:middle">${summon._lavaRage}</span>`;
   }
 }
 
