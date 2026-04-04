@@ -536,20 +536,21 @@ const ALL_PETS = [
   // SSS级
   { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:414,  atk:48,  def:21, mr:21, spd:14, crit:0.25,
     img:'../../assets/pets/龟壳v1.png', sprite:{frames:20,frameW:500,frameH:500,duration:2000},
-    passive:{ type:'auraAwaken',
+    passive:{ type:'auraAwaken', name:'气场觉醒',
               awakenTurn:4,
               atkPct:12, defPct:12, hpPct:12,
               lifestealPct:12, reflectPct:12, armorPenPct:12,
               energyStore:true, energyReleaseTurn:4,
               energyDmgScale:0.008, energyShieldScale:0.01, energyShieldTurns:3,
-              desc:'6回合后全面强化+10%；受伤储能，每9回合波击释放' },
+              brief:'龟壳第4回合全面强化 <span class="val-atk">+12%</span> 属性；受伤储能，每4回合释放波击',
+              desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n生命偷取 <span class="val-heal">+12%</span>\n反伤 <span class="val-atk">+12%</span>\n护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值。\n每4回合消耗全部储能，对全体敌方造成伤害并为自身获得护盾。' },
     skills:[
       { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0, cd:0, totalScale:1.2, splashPct:25,
-        brief:'龟壳打击6段物理/真实交替，共{N:1.2*ATK}混合伤害，每段溅射{splashPct}%',
-        detail:'龟壳对单体打击6段，奇数段物理伤害，偶数段真实伤害。\n共 120%×(攻击力={ATK}) = {N:1.2*ATK} 混合伤害。\n每段对次目标溅射主目标{splashPct}%伤害。' },
+        brief:'龟壳打击6段，物理/真实交替，共（{N:1.2*ATK}）混合伤害，每段溅射 <span class="val-atk">25%</span>',
+        detail:'龟壳对单体打击6段，奇数段物理伤害，偶数段真实伤害。\n共（120%×攻击力({ATK}) = {N:1.2*ATK}）混合伤害。\n每段对次目标溅射主目标 <span class="val-atk">25%</span> 伤害。' },
       { name:'复制', type:'shellCopy', hits:0, power:0, pierce:0, cd:4,
-        brief:'龟壳随机复制敌方2个技能并以60%效果释放',
-        detail:'龟壳随机复制敌方的2个可用技能，并以60%效果立即释放。\n冷却{cd}回合。' },
+        brief:'龟壳随机复制敌方2个技能，以 <span class="val-atk">60%</span> 效果立即释放',
+        detail:'龟壳随机复制敌方的2个可用技能，并以 <span class="val-atk">60%</span> 效果立即释放。\n冷却{cd}回合。' },
     ]},
 ];
 
