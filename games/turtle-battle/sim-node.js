@@ -235,14 +235,16 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
     for (const f of allFighters) {
       if (!f.alive) continue;
       f.buffs.filter(b => b.type === 'dot').forEach(d => {
-        f.hp = Math.max(0, f.hp - d.value);
+        const dotSource = (d.sourceIdx !== undefined) ? allFighters[d.sourceIdx] : null;
+        applyRawDmg(dotSource, f, d.value, false, true, 'true');
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'phoenixBurnDot').forEach(pb => {
         const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
         const mrRed = (f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT);
         const burnDmg = Math.max(1, Math.round(rawBurn * (1 - mrRed)));
-        applyRawDmg(null, f, burnDmg, false, true);
+        const burnSource = (pb.sourceIdx !== undefined) ? allFighters[pb.sourceIdx] : null;
+        applyRawDmg(burnSource, f, burnDmg, false, true);
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'hot').forEach(h => { f.hp = Math.min(f.maxHp, f.hp + h.value); });
@@ -528,7 +530,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
             const cursedEnemies = allFighters.filter(e => e.alive && e.side !== ff.side);
             for (const ce of cursedEnemies) {
               const dotDmg = Math.round(ce.maxHp * ff.passive.hpPct / 100);
-              ce.buffs.push({ type:'dot', value:dotDmg, turns:ff.passive.turns });
+              ce.buffs.push({ type:'dot', value:dotDmg, turns:ff.passive.turns, sourceIdx:allFighters.indexOf(ff) });
             }
           }
           ff.alive = false; ff._deathProcessed = true;
