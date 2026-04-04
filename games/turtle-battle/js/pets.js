@@ -236,7 +236,7 @@ const ALL_PETS = [
   // A级
   { id:'rainbow',   name:'彩虹龟',   emoji:'🌈🐢',    rarity:'A',   hp:360,  atk:42,  def:15, mr:17, spd:13, crit:0.25,
     img:'../../assets/pets/彩虹龟.png',
-    passive:{ type:'rainbowPrism', name:'棱镜', atkPct:15, defPct:15, healPct:7,
+    passive:{ type:'rainbowPrism', name:'棱镜', atkPct:12, defPct:12, healPct:5,
               desc:'彩虹龟的棱镜每回合折射出随机光芒，为全体友方附加增益1回合：\n🔴红光：攻击力 <span class="val-atk">+15%</span>\n🔵蓝光：护甲 <span class="val-atk">+15%</span> + 魔抗 <span class="val-atk">+15%</span>\n🟢绿光：回复 <span class="val-heal">7%</span> 最大生命值\n\n首回合不会抽到绿光。' },
     skills:[
       { name:'七彩光束', type:'magic', dmgType:'magic', hits:2, power:0, pierce:0, cd:0, atkScale:0.7, prismBonus:true,
@@ -245,7 +245,7 @@ const ALL_PETS = [
       { name:'棱镜护盾', type:'shield', hits:1, power:0, pierce:0, cd:3, shieldAtkScale:0.5, aoeAlly:true,
         brief:'彩虹龟为全体友方施加 {S:0.5*ATK} 护盾',
         detail:'彩虹龟用棱镜之光保护全体友方。\n每人获得（50%×攻击力({ATK}) = {S:0.5*ATK}）护盾。\n冷却{cd}回合。' },
-      { name:'全色风暴', type:'rainbowStorm', dmgType:'magic', hits:4, power:0, pierce:0, cd:4, aoe:true, atkScale:0.2, pierceScale:0.1, defDown:{pct:20,turns:3}, burn:true,
+      { name:'全色风暴', type:'rainbowStorm', dmgType:'magic', hits:4, power:0, pierce:0, cd:5, aoe:true, atkScale:0.2, pierceScale:0.1, defDown:{pct:15,turns:3}, burn:true,
         brief:'彩虹龟对全体敌人4段，每段 {M:0.2*ATK} 魔法+{T:0.1*ATK} 真实，施加 <span class="val-atk">-20%护甲</span> + 灼烧4回合',
         detail:'彩虹龟对全体敌人释放七色风暴，共4段。\n每段造成（20%×攻击力({ATK}) = {M:0.2*ATK}）魔法伤害 +（10%×攻击力({ATK}) = {T:0.1*ATK}）真实伤害。\n对所有命中目标施加 <span class="val-atk">-20%</span> 护甲削减效果，持续3回合。\n附加灼烧4回合（每回合40%攻击力+8%最大生命值，魔法伤害）。\n冷却{cd}回合。' },
     ]},
@@ -381,8 +381,8 @@ const ALL_PETS = [
   { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',    rarity:'S',   hp:290,  atk:40,  def:14, mr:16, spd:8, crit:0.25,
     img:'../../assets/pets/熔岩龟.png',
     passive:{ type:'lavaRage', name:'熔岩之心', rageDmgPct:25, rageTakenPct:20, rageMax:100,
-              transformHpScale:3.5, transformAtkScale:0.2, transformDefScale:0.2, transformMrScale:0.2,
-              transformAoeDmgScale:1.2, transformDuration:7,
+              transformHpScale:2.8, transformAtkScale:0.2, transformDefScale:0.2, transformMrScale:0.2,
+              transformAoeDmgScale:0.9, transformDuration:7,
               brief:'熔岩龟将造成伤害的 <span class="val-atk">25%</span> 和承受伤害的 <span class="val-atk">20%</span> 转化为怒气，在100怒气时变身为火山龟并拥有更强大的技能组',
               desc:'熔岩龟体内蕴含炽热岩浆，积蓄怒气。\n\n造成伤害的 <span class="val-atk">25%</span> + 承受伤害的 <span class="val-atk">20%</span> 转化为怒气。\n怒气满100时自动变身为火山龟，获得以下加成：\n最大生命值增加（350%×攻击力({ATK}) = {H:ATK*3.5}）→ 变身后最大生命值 {H:HP+ATK*3.5}\n攻击力增加（20%×攻击力({ATK}) = {N:ATK*0.2}）→ 变身后攻击力 {N:ATK+ATK*0.2}\n护甲增加（20%×攻击力({ATK}) = {D:ATK*0.2}）→ 变身后护甲 {D:DEF+ATK*0.2}\n魔抗增加（20%×攻击力({ATK}) = {M:ATK*0.2}）→ 变身后魔抗 {M:MR+ATK*0.2}\n\n变身时对全体敌人造成（120%×变身后攻击力 = {M:ATK*1.2+ATK*0.2*1.2}）魔法伤害，并施加<span style="color:#ff6600">灼烧</span>。\n每给一名敌人挂上灼烧，回复 <span class="val-heal">8%</span> 已损生命值。\n\n火山形态持续7回合后变回小形态，之后不再积攒怒气。',
               descVolcano:'熔岩龟已变身为火山龟！\n\n已获得加成：\n最大生命值 <span class="val-heal">+{H:ATK*3.5}</span>\n攻击力 <span class="val-atk">+{N:ATK*0.2}</span>\n护甲 <span class="val-atk">+{D:ATK*0.2}</span>\n魔抗 <span class="val-atk">+{M:ATK*0.2}</span>\n\n拥有更强大的火山技能组。\n剩余 <span class="val-atk">{lavaTransformTurns}</span> 回合后恢复小形态。' },
