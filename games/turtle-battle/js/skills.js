@@ -429,9 +429,105 @@ async function doHidingCommand(owner, _skill) {
     await sleep(800);
     return;
   }
-  addLog(`${owner.emoji}${owner.name} <b>指挥</b>：命令 ${summon.emoji}${summon.name} 出击！`);
+  addLog(`${owner.emoji}${owner.name} <b>指挥</b>：命令 ${summon.emoji}${summon.name} 额外出击！`);
   await sleep(400);
-  await summonUseRandomSkill(summon, owner);
+  await summonAutoAction(summon, owner);
+}
+
+// Summon AI: smart skill selection with own CD tracking
+async function summonAutoAction(summon, owner) {
+  if (!summon || !summon.alive) return;
+  const ready = summon.skills.filter(s => s.cdLeft === 0);
+  if (!ready.length) {
+    addLog(`${summon.emoji}${summon.name}(随从) 没有可用技能！`);
+    await sleep(500);
+    return;
+  }
+
+  const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  const allies = (summon.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
+  if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
+  if (!enemies.length) return;
+
+  // Smart AI: categorize skills
+  const SELF_TYPES = new Set(['phoenixShield','fortuneDice','lightningBuff','hidingDefend','hidingCommand',
+    'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestCount','bambooHeal',
+    'iceShield','volcanoArmor','crystalBarrier']);
+  const ALLY_TYPES = new Set(['heal','shield','bubbleShield','ninjaTrap','angelBless']);
+
+  const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
+  const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield' || s.type === 'iceShield');
+  const dmgS = ready.filter(s => !SELF_TYPES.has(s.type) && !ALLY_TYPES.has(s.type) && s.type !== 'hidingCommand');
+  const selfS = ready.filter(s => SELF_TYPES.has(s.type));
+
+  let skill;
+  // Heal if low HP
+  if (healS && (summon.hp / summon.maxHp < 0.35 || (owner && owner.alive && owner.hp / owner.maxHp < 0.35))) {
+    skill = healS;
+  }
+  // Shield if ally needs it
+  else if (shieldS && allies.some(a => a.shield < 20 && a.hp / a.maxHp < 0.6)) {
+    skill = shieldS;
+  }
+  // Self buffs 30% chance
+  else if (selfS.length && Math.random() < 0.3) {
+    skill = selfS[Math.floor(Math.random() * selfS.length)];
+  }
+  // Damage: prioritize big moves
+  else if (dmgS.length) {
+    dmgS.sort((a, b) => (b.cd || 0) - (a.cd || 0));
+    skill = (dmgS[0].cd > 0 && Math.random() < 0.8) ? dmgS[0] : dmgS[Math.floor(Math.random() * dmgS.length)];
+  }
+  else { skill = ready[0]; }
+  if (!skill) return;
+
+  // Skip hidingCommand to prevent recursion
+  if (skill.type === 'hidingCommand') {
+    const others = ready.filter(s => s.type !== 'hidingCommand');
+    skill = others.length ? others[0] : null;
+    if (!skill) return;
+  }
+
+  if (skill.cd > 0) skill.cdLeft = skill.cd;
+
+  // Target selection
+  let target;
+  if (SELF_TYPES.has(skill.type) || skill.selfCast) {
+    target = summon;
+  } else if (ALLY_TYPES.has(skill.type)) {
+    target = allies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
+  } else {
+    // Smart target: lowest HP enemy
+    const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+    const lowest = sorted[0];
+    if (lowest._undeadLockTurns > 0) { target = sorted.find(e => !e._undeadLockTurns) || lowest; }
+    else if (lowest.hp / lowest.maxHp < 0.2 && Math.random() < 0.9) target = lowest;
+    else if (Math.random() < 0.7) target = lowest;
+    else target = enemies[Math.floor(Math.random() * enemies.length)];
+  }
+
+  // Execute via real engine action
+  const action = {
+    attackerId: allFighters.indexOf(summon),
+    skillIdx: summon.skills.indexOf(skill),
+    targetId: allFighters.indexOf(target),
+    aoe: !!skill.aoe
+  };
+
+  addLog(`${summon.emoji}${summon.name}(随从) 使用 <b>${skill.name}</b>！`);
+  const sElId = getFighterElId(summon);
+  const sCard = document.getElementById(sElId);
+  if (sCard) sCard.classList.add('attack-anim');
+
+  try {
+    await executeAction(action);
+  } catch(e) {
+    // Fallback: use old method
+    await summonUseRandomSkill(summon, owner);
+  }
+
+  if (sCard) sCard.classList.remove('attack-anim');
+  checkDeaths(summon);
 }
 
 // Helper: make a summon use a random available skill
@@ -2191,8 +2287,7 @@ async function doLineSketch(attacker, target, skill) {
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
     let dmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
-    // Ink amplification
-    if (target._inkStacks > 0) dmg = Math.round(dmg * (1 + target._inkStacks * 0.05));
+    // Ink amplification now handled in applyRawDmg
 
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
@@ -2220,7 +2315,6 @@ async function doLineLink(attacker, target, skill) {
   const eDef1 = calcEffDef(attacker, target);
   const defRed1 = eDef1 / (eDef1 + DEF_CONSTANT);
   let dmg1 = Math.max(1, Math.round(baseDmg * critMult1 * (1 - defRed1)));
-  if (target._inkStacks > 0) dmg1 = Math.round(dmg1 * (1 + target._inkStacks * 0.05));
 
   applyRawDmg(attacker, target, dmg1, false, false, 'physical');
   addInkStack(target, 1);
@@ -2237,7 +2331,6 @@ async function doLineLink(attacker, target, skill) {
     const eDef2 = calcEffDef(attacker, second);
     const defRed2 = eDef2 / (eDef2 + DEF_CONSTANT);
     dmg2 = Math.max(1, Math.round(baseDmg * critMult2 * (1 - defRed2)));
-    if (second._inkStacks > 0) dmg2 = Math.round(dmg2 * (1 + second._inkStacks * 0.05));
 
     applyRawDmg(attacker, second, dmg2, false, false, 'physical');
     addInkStack(second, 1);
@@ -2269,9 +2362,8 @@ async function doLineFinish(attacker, target, skill) {
   const baseNormal = Math.round(attacker.atk * skill.baseScale);
   const eDef = calcEffDef(attacker, target);
   const defRed = eDef / (eDef + DEF_CONSTANT);
-  // Ink amplification on base hit
+  // Ink amplification now handled in applyRawDmg
   let normalDmg = Math.max(1, Math.round(baseNormal * critMult * (1 - defRed)));
-  if (stacks > 0) normalDmg = Math.round(normalDmg * (1 + stacks * 0.05));
 
   // Pierce damage per stack (ignores DEF)
   const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks * critMult);

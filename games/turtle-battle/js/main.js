@@ -464,8 +464,8 @@ function startBattle(seed) {
           id:pick.id, name:pick.name, emoji:pick.emoji, rarity:pick.rarity, side:f.side,
           img:pick.img, sprite:pick.sprite || null,
           maxHp:sHp, hp:sHp, shield:0,
-          baseAtk:Math.round(pick.atk * m), baseDef:Math.round(pick.def * m), baseSpd:Math.round(pick.spd * m),
-          atk:Math.round(pick.atk * m), def:Math.round(pick.def * m), spd:Math.round(pick.spd * m),
+          baseAtk:Math.round(pick.atk * m), baseDef:Math.round(pick.def * m), baseMr:Math.round((pick.mr||pick.def) * m), baseSpd:Math.round(pick.spd * m),
+          atk:Math.round(pick.atk * m), def:Math.round(pick.def * m), mr:Math.round((pick.mr||pick.def) * m), spd:Math.round(pick.spd * m),
           crit: pick.crit || 0.08,
           armorPen: 0, armorPenPct: 0,
           passive: pick.passive || null,  // summon passive enabled

@@ -548,6 +548,17 @@ async function finishSide() {
   if (sidesActedThisRound >= 2) {
     // Both sides acted → end of round
     if (!isOnlineGuest) {
+      // Summon auto-action at end of turn
+      for (const f of allFighters) {
+        if (battleOver) break;
+        if (!f.alive || !f.passive || f.passive.type !== 'summonAlly') continue;
+        if (f._summon && f._summon.alive) {
+          addLog(`${f._summon.emoji}${f._summon.name}(随从) 回合末自动出招！`);
+          await sleep(400);
+          await summonAutoAction(f._summon, f);
+          if (checkBattleEnd()) return;
+        }
+      }
       await processFortuneGold();
       if (battleOver) return;
       await processLightningStorm();
@@ -1318,13 +1329,8 @@ async function executeAction(action) {
     }
   }
 
-  // Summon auto-follow-up: after any owner action, summon auto-attacks (including hidingCommand = 2nd hit)
-  if (f.passive && f.passive.type === 'summonAlly' && f._summon && f._summon.alive) {
-    addLog(`${f._summon.emoji}${f._summon.name}(随从) 跟随出招！`);
-    await sleep(400);
-    await summonUseRandomSkill(f._summon, f);
-    if (checkBattleEnd()) { animating=false; return; }
-  }
+  // Summon: hidingCommand gives summon an extra action NOW
+  // Normal summon auto-action happens at end of turn (processEndOfTurn)
 
   animating = false;
 
@@ -1491,12 +1497,7 @@ async function doDamage(attacker, target, skill) {
     let mainPart = mainDmg;
     // True damage portion: ignores all defenses, but hits shield
     let truePart = Math.round(trueFlat * critMult) + convertedTrue;
-    // Ink mark amplification
-    if (target._inkStacks > 0) {
-      const inkAmp = 1 + target._inkStacks * 0.05;
-      mainPart = Math.round(mainPart * inkAmp);
-      truePart = Math.round(truePart * inkAmp);
-    }
+    // Ink mark amplification now handled in applyRawDmg
     const totalHit = mainPart + truePart;
 
     // Damage absorption
@@ -2362,18 +2363,93 @@ function checkDeaths(attacker) {
       });
     }
   });
-  // Check summon deaths (summons are not in allFighters)
+  // Owner death → summon death
   allFighters.forEach(f => {
-    if (f._summon && f._summon.alive && f._summon.hp <= 0) {
-      f._summon.alive = false;
-      f._summon.hp = 0;
-      const sElId = getFighterElId(f._summon);
-      const sCard = document.getElementById(sElId);
-      if (sCard) sCard.classList.add('dead');
-      updateSummonHpBar(f._summon);
-      addLog(`${f._summon.emoji}${f._summon.name}(随从) 被击败！`,'death');
+    if (!f.alive && f._summon && f._summon.alive) {
+      processSummonDeath(f._summon, attacker, '主人阵亡，随从一同倒下！');
     }
   });
+  // Check summon deaths from damage (summons are not in allFighters)
+  allFighters.forEach(f => {
+    if (f._summon && f._summon.alive && f._summon.hp <= 0) {
+      processSummonDeath(f._summon, attacker);
+    }
+  });
+}
+
+function processSummonDeath(summon, attacker, extraMsg) {
+  summon.alive = false;
+  summon.hp = 0;
+  const sElId = getFighterElId(summon);
+  const sCard = document.getElementById(sElId);
+  if (sCard) { sCard.classList.add('death-anim'); sCard.addEventListener('animationend', () => sCard.classList.add('dead'), { once:true }); }
+  updateSummonHpBar(summon);
+  addLog(`${summon.emoji}${summon.name}(随从) ${extraMsg || '被击败！'}`,'death');
+
+  // Trigger summon's death passives
+  if (summon.passive) {
+    // Death explode
+    if (summon.passive.type === 'deathExplode' && attacker && attacker.alive) {
+      const dmg = Math.round(summon.maxHp * summon.passive.pct / 100);
+      attacker.hp = Math.max(0, attacker.hp - dmg);
+      const aElId = getFighterElId(attacker);
+      spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
+      updateHpBar(attacker, aElId);
+      addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">死亡爆炸！${dmg}伤害</span>`);
+      if (attacker.hp <= 0) attacker.alive = false;
+    }
+    // Death hook / pirate
+    const hookPct = (summon.passive.type === 'deathHook') ? summon.passive.pct
+                  : (summon.passive.type === 'pirateBarrage') ? summon.passive.deathHookPct : 0;
+    if (hookPct > 0 && attacker && attacker.alive) {
+      const dmg = Math.round(summon.maxHp * hookPct / 100);
+      attacker.hp = Math.max(0, attacker.hp - dmg);
+      const aElId = getFighterElId(attacker);
+      spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
+      updateHpBar(attacker, aElId);
+      addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">钩锁！${dmg}真实伤害</span>`);
+      if (attacker.hp <= 0) attacker.alive = false;
+    }
+    // Ghost curse
+    if (summon.passive.type === 'ghostCurse') {
+      const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      for (const e of enemies) {
+        const dotDmg = Math.round(e.maxHp * summon.passive.hpPct / 100);
+        e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side });
+        const eElId = getFighterElId(e);
+        spawnFloatingNum(eElId, `<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
+        renderStatusIcons(e);
+      }
+      addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">怨灵诅咒！</span>`);
+    }
+  }
+
+  // Fortune gold on summon death
+  allFighters.forEach(fg => {
+    if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
+      fg._goldCoins += 9;
+      const fgElId = getFighterElId(fg);
+      spawnFloatingNum(fgElId, `+9<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
+      renderStatusIcons(fg);
+    }
+  });
+  // Hunter stat steal on summon death
+  const hunters = allFighters.filter(h => h.alive && h.side !== summon.side && h.passive && h.passive.type === 'hunterKill');
+  for (const hunter of hunters) {
+    const sAtk = Math.round(summon.baseAtk * hunter.passive.stealPct / 100);
+    const sDef = Math.round(summon.baseDef * hunter.passive.stealPct / 100);
+    const sMr  = Math.round((summon.baseMr || summon.baseDef) * hunter.passive.stealPct / 100);
+    const sHp  = Math.round(summon.maxHp * hunter.passive.stealPct / 100);
+    hunter.baseAtk += sAtk; hunter.baseDef += sDef; hunter.baseMr = (hunter.baseMr || hunter.baseDef) + sMr; hunter.maxHp += sHp; hunter.hp += sHp;
+    hunter._hunterKills = (hunter._hunterKills || 0) + 1;
+    hunter._hunterStolenAtk = (hunter._hunterStolenAtk || 0) + sAtk;
+    hunter._hunterStolenDef = (hunter._hunterStolenDef || 0) + sDef;
+    hunter._hunterStolenMr = (hunter._hunterStolenMr || 0) + sMr;
+    hunter._hunterStolenHp = (hunter._hunterStolenHp || 0) + sHp;
+    const hElId = getFighterElId(hunter);
+    spawnFloatingNum(hElId, `+${sAtk}攻+${sDef}甲`, 'passive-num', 300, 0);
+    recalcStats(); updateFighterStats(hunter, hElId);
+  }
 }
 
 function checkBattleEnd() {
@@ -2691,6 +2767,10 @@ function hasChestEquip(f, equipId) {
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
 function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
+  // Ink mark amplification: all damage to marked target is increased
+  if (target._inkStacks > 0 && amount > 0) {
+    amount = Math.round(amount * (1 + target._inkStacks * 0.05));
+  }
   // Star equip: convert all damage to true
   if (source && hasChestEquip(source, 'star') && dmgType && dmgType !== 'true') dmgType = 'true';
   // Crystal resonance: extra magic damage reduction
