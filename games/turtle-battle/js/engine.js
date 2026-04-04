@@ -449,6 +449,7 @@ let actedThisSide = new Set(); // fighter indices that already acted this side
 let _bossActionsThisRound = 0; // boss actions counter per round
 let isFirstRound = true;
 let sidesActedThisRound = 0;  // 0, 1, or 2
+let _processingEndOfRound = false; // prevent re-entry during summon actions
 
 function resetTurnState() {
   activeSide = 'left';
@@ -546,9 +547,12 @@ async function finishSide() {
   const isOnlineGuest = gameMode === 'pvp-online' && onlineSide === 'right';
 
   if (sidesActedThisRound >= 2) {
+    // Prevent re-entry (summon executeAction could trigger finishSide again)
+    if (_processingEndOfRound) return;
+    _processingEndOfRound = true;
     // Both sides acted → end of round
     if (!isOnlineGuest) {
-      // Summon auto-action at end of turn
+      // Summon auto-action at end of turn (once per summon)
       for (const f of allFighters) {
         if (battleOver) break;
         if (!f.alive || !f.passive || f.passive.type !== 'summonAlly') continue;
@@ -556,15 +560,16 @@ async function finishSide() {
           addLog(`${f._summon.emoji}${f._summon.name}(随从) 回合末自动出招！`);
           await sleep(400);
           await summonAutoAction(f._summon, f);
-          if (checkBattleEnd()) return;
+          if (checkBattleEnd()) { _processingEndOfRound = false; return; }
         }
       }
       await processFortuneGold();
-      if (battleOver) return;
+      if (battleOver) { _processingEndOfRound = false; return; }
       await processLightningStorm();
-      if (battleOver) return;
-      if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) return; }
+      if (battleOver) { _processingEndOfRound = false; return; }
+      if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) { _processingEndOfRound = false; return; } }
     }
+    _processingEndOfRound = false;
     isFirstRound = false;
     turnNum++;
     sidesActedThisRound = 0;
@@ -581,7 +586,7 @@ async function finishSide() {
 
 // Called after a fighter finishes their action (from executeAction)
 function onActionComplete() {
-  if (battleOver) return;
+  if (battleOver || _processingEndOfRound) return;
   nextSideAction();
 }
 
