@@ -38,19 +38,8 @@ const TutorialSystem = (() => {
         '① <b>选择出战龟</b> — 决定哪只龟行动<br>' +
         '② <b>选择技能</b> — 每只龟有多个技能可选<br>' +
         '③ <b>选择目标</b> — 部分技能可指定攻击目标<br><br>' +
-        '注意技能的 <span style="color:var(--red)">物理</span> / <span style="color:var(--blue)">魔法</span> 伤害类型，针对敌方弱项进攻！'
-    },
-    {
-      title: '战斗技巧',
-      icon: '💡',
-      body:
-        '<div class="tut-tips">' +
-          '<div class="tut-tip"><span style="color:#ff6600">🔥 灼烧</span>：持续魔法伤害，受魔抗减免</div>' +
-          '<div class="tut-tip"><span style="color:#fff">🛡️ 护盾</span>：额外生命层，所有伤害先消耗护盾</div>' +
-          '<div class="tut-tip"><span style="color:#4dabf7">💧 墨迹</span>：降低敌方属性的减益效果</div>' +
-          '<div class="tut-tip"><span style="color:#ff4444">💥 暴击</span>：25% 基础暴击率，造成 1.5 倍伤害</div>' +
-        '</div>' +
-        '<br>善用属性克制和技能搭配，祝你旗开得胜！'
+        '注意技能的 <span style="color:var(--red)">物理</span> / <span style="color:var(--blue)">魔法</span> 伤害类型，针对敌方弱项进攻！<br><br>' +
+        '善用属性克制和技能搭配，祝你旗开得胜！'
     }
   ];
 
