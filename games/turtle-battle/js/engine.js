@@ -1944,13 +1944,17 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
     const eDef = calcEffDef(attacker, target);
     const eRed = eDef / (eDef + DEF_CONSTANT);
     const eFinal = Math.max(1, Math.round(extraDmg * (1 - eRed)));
-    applyRawDmg(attacker, target, eFinal);
+    const {isCrit, critMult} = calcCrit(attacker);
+    const critFinal = Math.max(1, Math.round(eFinal * critMult));
+    applyRawDmg(attacker, target, critFinal, false, false, 'physical');
     if (!tElId) tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${eFinal}🃏`, 'crit-dmg', 0, (Math.random()-0.5)*30);
+    const hitIcon = '<img src="assets/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
+    const critIcon = isCrit ? '<img src="assets/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
+    spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${critFinal}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (Math.random()-0.5)*30);
     updateHpBar(target, tElId);
 
     // All on-hit effects
-    await triggerOnHitEffects(attacker, target, eFinal);
+    await triggerOnHitEffects(attacker, target, critFinal);
 
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
@@ -2308,7 +2312,7 @@ function checkDeaths(attacker) {
           const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
           e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side });
           const eElId = getFighterElId(e);
-          spawnFloatingNum(eElId, `👻诅咒!`, 'crit-label', 0, -20);
+          spawnFloatingNum(eElId, `<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
           renderStatusIcons(e);
         }
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">怨灵诅咒！全体敌人每回合受10%最大HP持续伤害 ${f.passive.turns}回合</span>`);

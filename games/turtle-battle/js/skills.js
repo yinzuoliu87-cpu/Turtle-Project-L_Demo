@@ -77,10 +77,9 @@ async function doGamblerBet(attacker, target, skill) {
   // Temporarily boost multi-hit chance by 20% (only for this skill)
   attacker._multiBonus = (attacker._multiBonus || 0) + skill.multiBonus;
 
-  // 6 hits of boosted damage (hpCost split into 6 hits as pierce bonus)
+  // 6 hits — consumed HP split equally as physical damage per hit
   const tElId = getFighterElId(target);
-  const piercePer = Math.round(hpCost / skill.hits);
-  const normalPer = Math.round(attacker.atk * 0.3);
+  const dmgPer = Math.round(hpCost / skill.hits);
   let totalDmg = 0;
 
   for (let i = 0; i < skill.hits; i++) {
@@ -88,22 +87,23 @@ async function doGamblerBet(attacker, target, skill) {
     const {isCrit, critMult} = calcCrit(attacker);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
-    const normalDmg = Math.max(1, Math.round(normalPer * critMult * (1 - defRed)));
-    const total = normalDmg + piercePer;
-    applyRawDmg(attacker, target, total, false, false, 'physical');
-    totalDmg += total;
-    spawnFloatingNum(tElId, `-${total}🃏`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28);
+    const dmg = Math.max(1, Math.round(dmgPer * critMult * (1 - defRed)));
+    applyRawDmg(attacker, target, dmg, false, false, 'physical');
+    totalDmg += dmg;
+    const hitIcon = '<img src="assets/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
+    const critIcon = isCrit ? '<img src="assets/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
+    spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
-    await triggerOnHitEffects(attacker, target, total);
+    await triggerOnHitEffects(attacker, target, dmg);
     await sleep(500);
     tEl.classList.remove('hit-shake');
     await sleep(100);
     // Multi-hit passive (boosted to 60% for this skill)
     await tryGamblerMultiHit(attacker, target, tElId);
   }
-  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}伤害</span>（每段含${piercePer}真实）`);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}物理伤害</span>（消耗${hpCost}HP÷6段）`);
 
   // Remove temporary multi-hit bonus after this skill
   attacker._multiBonus = Math.max(0, (attacker._multiBonus || 0) - skill.multiBonus);
@@ -944,8 +944,9 @@ async function doFortuneAllIn(attacker, target, skill) {
     totalPierce += piercePer;
     totalNormal += normalDmg;
     const yOff = (i % 4) * 28;
-    spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: normalDmg});
-    spawnFloatingNum(tElId, `-${piercePer}`, 'true-dmg', 0, yOff + 18, {atkSide: attacker.side, amount: piercePer});
+    // True on top, physical below (rule: white→red top→bottom)
+    spawnFloatingNum(tElId, `-${piercePer}`, 'true-dmg', 0, yOff, {atkSide: attacker.side, amount: piercePer});
+    spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, yOff + 20, {atkSide: attacker.side, amount: normalDmg});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -2364,11 +2365,11 @@ async function doGhostStorm(attacker, target, skill) {
     if (tEl) tEl.classList.remove('hit-shake');
   }
 
-  // Apply DoT
+  // Apply curse: 10% target maxHP per turn
   if (target.alive) {
-    const dotDmg = Math.round(attacker.atk * skill.dotScale);
+    const dotDmg = Math.round(target.maxHp * 0.09);
     target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side });
-    spawnFloatingNum(tElId, '👻诅咒', 'debuff-label', 200, -10);
+    spawnFloatingNum(tElId, '<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒', 'debuff-label', 200, -10);
     renderStatusIcons(target);
   }
 

@@ -92,8 +92,8 @@ function updateSummonHpBar(summon) {
 
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
-  lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', crystalResonance:'crystal-resonance-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'fortune-gold-icon.png', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'star-energy-icon.png', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
+  lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'shield-icon.png',
+  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', crystalResonance:'crystal-resonance-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'fortune-gold-icon.png', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'gambler-multi-icon.png', summonAlly:'🫣', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'star-energy-icon.png', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'ghost-curse-icon.png', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
 };
 
 function updateFighterStats(f, elId) {
@@ -296,7 +296,7 @@ function updateHpBar(f, elId) {
   const maxHpClass = f.maxHp > f._initHp ? 'stat-up' : '';
   let hpLine = `<div class="hp-line"><img src="assets/hp-icon.png" class="stat-icon"> ${Math.ceil(f.hp)}/<span class="${maxHpClass}">${f.maxHp}</span></div>`;
   const shieldParts = [];
-  if (f.shield > 0) shieldParts.push(`<span class="shield-val">🛡${Math.ceil(f.shield)}</span>`);
+  if (f.shield > 0) shieldParts.push(`<span class="shield-val"><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">${Math.ceil(f.shield)}</span>`);
   if (f.bubbleShieldVal > 0) shieldParts.push(`<span class="bubble-val"><img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${Math.ceil(f.bubbleShieldVal)} <small>${f.bubbleShieldTurns}回合</small></span>`);
   const shieldLine = shieldParts.length ? `<div class="shield-line">${shieldParts.join(' ')}</div>` : '';
   card.querySelector('.hp-text').innerHTML = hpLine + shieldLine;
@@ -355,7 +355,7 @@ function renderStatusIcons(f) {
   if (!box) return;
   // Only debuff icons — passive is now shown in stats row
   box.innerHTML = f.buffs.map(b => {
-    if (b.type === 'dot')     return `<span class="status-dot" title="持续伤害${b.value}/回合 剩${b.turns}回合">🔥${b.turns}</span>`;
+    if (b.type === 'dot')     return `<span class="status-dot" title="诅咒${b.value}/回合 剩${b.turns}回合"><img src="assets/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'phoenixBurnDot') return `<span class="status-dot" title="灼烧(${b.value}+${b.hpPct}%HP)/回合 剩${b.turns}回合"><img src="assets/burn-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'atkDown') return `<span class="status-atkdown" title="攻击-${b.value}% 剩${b.turns}回合">⬇攻${b.turns}</span>`;
     if (b.type === 'defDown') return `<span class="status-defdown" title="防御-${b.value}% 剩${b.turns}回合">⬇防${b.turns}</span>`;
@@ -367,7 +367,7 @@ function renderStatusIcons(f) {
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
     if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：真实+${b.pierceBonusPct}% 魔伤+${b.normalBonusPct}% 剩${b.turns}回合">🌀${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转真实 剩${b.turns}回合">🗡${b.turns}</span>`;
-    if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP">🛡${b.turns}</span>`;
+    if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP"><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动">💫眩晕</span>`;
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合">☠️-${b.value}%治疗${b.turns}</span>`;
@@ -777,7 +777,8 @@ function renderActionButtons(f) {
   const box = document.getElementById('actionButtons');
   box.innerHTML = f.skills.map((s,i) => {
     const ready = s.cdLeft === 0;
-    const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:'🛡',bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:'🛡',hidingCommand:'🫣'};
+    const shieldImg = '<img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">';
+    const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';
     const hitsLabel = s.hits > 1 ? ` ×${s.hits}` : '';
 
@@ -814,17 +815,17 @@ function buildSkillDetail(s, f) {
 
   // ── Type label ──
   const typeMap = {
-    physical:'⚔️ 物理', magic:'✨ 魔法', heal:'💚 治疗', shield:'🛡 护盾',
+    physical:'⚔️ 物理', magic:'✨ 魔法', heal:'💚 治疗', shield:'<img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle"> 护盾',
     bubbleShield:'<img src=\"assets/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡盾', bubbleBind:'<img src=\"assets/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡束缚',
     hunterShot:'🏹 猎人射击', hunterBarrage:'🏹 箭雨', hunterStealth:'🏹 隐蔽',
     ninjaShuriken:'🥷 飞镖', ninjaTrap:'🥷 陷阱', ninjaBomb:'🥷 炸弹',
     phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
     lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
     fortuneDice:'<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 骰子', fortuneAllIn:'<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 梭哈',
-    hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
+    hidingDefend:'<img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle"> 缩头防御', hidingCommand:'🫣 指挥',
     angelBless:'😇 祝福', angelEquality:'⚖️ 平等',
     iceSpike:'❄️ 冰锥', iceFrost:'❄️ 冰霜',
-    turtleShieldBash:'🛡 龟盾', basicBarrage:'🐢 打击',
+    turtleShieldBash:'<img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle"> 龟盾', basicBarrage:'🐢 打击',
   };
   lines.push(`<b>类型</b> ${typeMap[s.type] || s.type}`);
 
@@ -906,7 +907,7 @@ function buildSkillDetail(s, f) {
     const dv = f?Math.round(atk*s.dmgScale):'?'; const sv = f?Math.round(atk*s.shieldScale):'?';
     lines.push(`<b>伤害</b> ${s.dmgScale}×ATK = ${N(dv)}`);
     lines.push(`<b>💨闪避</b> ${B('+'+s.dodgePct+'%')} ${s.dodgeTurns}回合`);
-    lines.push(`<b>🛡护盾</b> ${s.shieldScale}×ATK = ${S(sv)}`);
+    lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> ${s.shieldScale}×ATK = ${S(sv)}`);
   }
   if (s.type === 'ninjaShuriken') {
     const v = f?Math.round(atk*s.atkScale):'?';
@@ -957,7 +958,7 @@ function buildSkillDetail(s, f) {
   }
   if (s.type === 'hidingDefend') {
     const v = f?Math.round(maxHp*s.shieldHpPct/100):'?';
-    lines.push(`<b>🛡护盾</b> ${S(v)} ${s.shieldDuration}回合`);
+    lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> ${S(v)} ${s.shieldDuration}回合`);
     lines.push(`<b>💚到期</b> 剩余盾×${s.shieldHealPct}%→HP`);
   }
   if (s.type === 'hidingCommand') {
@@ -969,7 +970,7 @@ function buildSkillDetail(s, f) {
   if (s.selfAtkUpPct) lines.push(`<b>⬆自身攻击</b> <span class="log-passive">+${s.selfAtkUpPct.pct}%</span> ${s.selfAtkUpPct.turns}回合`);
   if (s.type === 'turtleShieldBash') {
     lines.push(`<b>⚔️伤害</b> ${s.atkScale}×ATK 物理伤害`);
-    lines.push(`<b>🛡护盾</b> 获得造成伤害${s.shieldFromDmgPct}%的永久护盾`);
+    lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> 获得造成伤害${s.shieldFromDmgPct}%的永久护盾`);
   }
   if (s.type === 'basicBarrage') {
     lines.push(`<b>🐢分布</b> ${s.hits}段随机命中敌方，共${s.atkScale}×ATK`);
@@ -986,12 +987,12 @@ function buildSkillDetail(s, f) {
     lines.push(`<b>💜真实</b> <span class="detail-pierce">${s.atkScale}×ATK真实伤害（无视护甲和魔抗）</span>`);
   }
   if (s.shieldAtkScale) {
-    lines.push(`<b>🛡护盾</b> ${s.shieldAtkScale}×ATK`);
+    lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> ${s.shieldAtkScale}×ATK`);
   }
 
   // Angel turtle
   if (s.type === 'angelBless') {
-    lines.push(`<b>🛡护盾</b> ${s.shieldScale}×ATK 持续${s.shieldTurns}回合`);
+    lines.push(`<b><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">护盾</b> ${s.shieldScale}×ATK 持续${s.shieldTurns}回合`);
     lines.push(`<b>⬆防御</b> +${s.defBoostScale}×ATK ${s.defBoostTurns}回合`);
   }
   if (s.type === 'angelEquality') {
@@ -1057,7 +1058,7 @@ function updateDmgStats() {
   body.innerHTML =
     `<div class="ds-section-title"><img src="assets/atk-icon.png" class="stat-icon">造成总伤害</div>` +
     byDealt.map(f => dmgRow(f, maxDealt, true)).join('') +
-    `<div class="ds-section-title ds-section-gap">🛡承受总伤害</div>` +
+    `<div class="ds-section-title ds-section-gap"><img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">承受总伤害</div>` +
     byTaken.map(f => dmgRow(f, maxTaken, false)).join('');
 }
 
