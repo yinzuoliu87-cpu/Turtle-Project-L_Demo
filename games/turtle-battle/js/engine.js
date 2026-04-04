@@ -2145,6 +2145,19 @@ function aiAction(f) {
       }
     }
   }
+  // Star turtle AI: only use meteor when energy is full
+  if (f.passive && f.passive.type === 'starEnergy') {
+    const meteorS = ready.find(s => s.type === 'starMeteor');
+    if (meteorS) {
+      const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+      if ((f._starEnergy || 0) < maxE) {
+        const other = ready.filter(s => s.type !== 'starMeteor');
+        if (other.length) skill = other.sort((a,b) => (b.cd||0) - (a.cd||0))[0];
+      } else {
+        skill = meteorS;
+      }
+    }
+  }
   // Fortune turtle AI: dice×3 → allIn R4 → dice → alternate
   if (!skill) skill = ready[0];
   if (f.passive && f.passive.type === 'fortuneGold') {

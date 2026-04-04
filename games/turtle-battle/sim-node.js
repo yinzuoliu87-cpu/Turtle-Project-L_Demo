@@ -327,6 +327,21 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
 
+      // Star turtle AI: only use meteor when energy is full
+      if (f.passive && f.passive.type === 'starEnergy') {
+        const meteorS = ready.find(s => s.type === 'starMeteor');
+        if (meteorS) {
+          const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+          if ((f._starEnergy || 0) < maxE) {
+            // Not full: use beam or wormhole only
+            const other = ready.filter(s => s.type !== 'starMeteor');
+            if (other.length) skill = other.sort((a,b) => (b.cd||0) - (a.cd||0))[0];
+          } else {
+            skill = meteorS; // Full energy: fire meteor for burst
+          }
+        }
+      }
+
       // Fortune AI: fixed rotation — dice×3 → allIn R4 → dice R5 → alternate
       if (f.passive && f.passive.type === 'fortuneGold') {
         const allInS = ready.find(s => s.type === 'fortuneAllIn');
