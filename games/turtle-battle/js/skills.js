@@ -2141,8 +2141,9 @@ async function doShellStrike(attacker, target, skill) {
 async function doShellCopy(caster, _skill) {
   // Blacklist: skills that make no sense when copied
   const COPY_BLACKLIST = ['shellCopy','twoHeadSteal','cyberDeploy','cyberBuff','hidingDefend',
-    'hidingCommand','diceFate','fortuneDice','bambooHeal','bambooLeaf','ghostPhase',
-    'diamondFortify','iceShield','twoHeadSwitch','mechAttack','chestOpen'];
+    'hidingCommand','diceFate','fortuneDice','fortuneAllIn','bambooHeal','bambooLeaf','ghostPhase',
+    'diamondFortify','iceShield','twoHeadSwitch','mechAttack','chestOpen',
+    'gamblerDraw','gamblerBet','chestCount','chestSmash','starWormhole'];
 
   const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   if (!enemies.length) { await sleep(500); return; }
@@ -2201,8 +2202,9 @@ async function doShellCopy(caster, _skill) {
 
     // Target selection: auto, no picker
     const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
-    const AOE_TYPES_SET = new Set(['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage','starMeteor','diceAllIn']);
-    const SELF_TYPES_SET = new Set(['phoenixShield','lightningBuff','gamblerDraw']);
+    const AOE_TYPES_SET = new Set(['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage','starMeteor','diceAllIn',
+      'lavaQuake','volcanoErupt','rainbowStorm','pirateCannonBarrage','chestStorm','crystalBurst','soulReap','candyBarrage']);
+    const SELF_TYPES_SET = new Set(['phoenixShield','lightningBuff','gamblerDraw','volcanoArmor','crystalBarrier']);
 
     let copyTarget;
     const isAlly = ALLY_TYPES.includes(copied.type);
