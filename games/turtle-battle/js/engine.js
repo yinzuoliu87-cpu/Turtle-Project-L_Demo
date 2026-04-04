@@ -2063,7 +2063,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
   if (!_floatStacks[elId]) _floatStacks[elId] = 0;
   const autoOffset = _floatStacks[elId] * 22;
   _floatStacks[elId]++;
-  setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 400);
+  setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 800);
 
   setTimeout(() => {
     const parent = document.getElementById(elId);

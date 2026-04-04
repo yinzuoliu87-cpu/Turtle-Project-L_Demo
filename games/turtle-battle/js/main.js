@@ -494,6 +494,24 @@ function startBattle(seed) {
           summon._twoHeadHalfTriggered = false;
         }
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">召唤了 ${summon.emoji}${summon.name} 作为随从！(${sHp}HP)</span>`);
+        // Summon one-time entry passives
+        if (summon.passive && summon.passive.type === 'frostAura') {
+          const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+          for (const e of enemies) {
+            e.buffs.push({ type:'atkDown', value:summon.passive.atkDownPct, turns:summon.passive.atkDownTurns });
+          }
+          recalcStats();
+          addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${summon.passive.atkDownPct}% ${summon.passive.atkDownTurns}回合</span>`);
+        }
+        // Two-head dual: init form state + meleeSkills
+        if (summon.passive && summon.passive.type === 'twoHeadDual') {
+          summon._twoHeadForm = 'ranged';
+          const petDef = ALL_PETS.find(p => p.id === summon.id);
+          if (petDef && petDef.meleeSkills) {
+            summon._rangedSkills = summon.skills.map(s => ({...s}));
+            summon._meleeSkills = petDef.meleeSkills.map(s => ({...s, cdLeft:0}));
+          }
+        }
       }
     }
   });
