@@ -1149,7 +1149,15 @@ async function doStarWormhole(attacker, target, skill) {
   });
   spawnFloatingNum(tElId, '🌀虫洞', 'debuff-label', 0, 0);
   renderStatusIcons(target);
-  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% 魔伤+${skill.normalBonusPct}% ${skill.duration}回合</span>`);
+  // Permanent magic pen gain
+  if (skill.magicPenAtkPct) {
+    const penGain = Math.round(attacker.atk * skill.magicPenAtkPct / 100);
+    attacker.magicPen = (attacker.magicPen || 0) + penGain;
+    const fElId = getFighterElId(attacker);
+    spawnFloatingNum(fElId, `+${penGain}魔穿`, 'passive-num', 200, 0);
+    updateFighterStats(attacker, fElId);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% ${skill.duration}回合</span>` + (skill.magicPenAtkPct ? ` + <span class="log-passive">+${Math.round(attacker.atk * skill.magicPenAtkPct / 100)}魔穿</span>` : ''));
   // Passive: fire 40% star energy after skill
   if (target.alive) await fireStarPassive(attacker, target);
   await sleep(800);
