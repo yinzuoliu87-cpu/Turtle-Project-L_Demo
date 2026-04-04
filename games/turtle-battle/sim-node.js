@@ -361,17 +361,42 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
 
+      // Line turtle AI: R1 link, R2-3 sketch, R4 finish, then freestyle
+      if (f.passive && f.passive.type === 'inkMark') {
+        if (!f._linePhase) f._linePhase = 0;
+        const linkS = ready.find(s => s.type === 'lineLink');
+        const finishS = ready.find(s => s.type === 'lineFinish');
+        const sketchS = ready.find(s => s.type === 'lineSketch');
+        if (f._linePhase === 0) { skill = linkS || sketchS || skill; f._linePhase = 1; }
+        else if (f._linePhase === 1) { skill = sketchS || skill; f._linePhase = 2; }
+        else if (f._linePhase === 2) { skill = sketchS || skill; f._linePhase = 3; }
+        else if (f._linePhase === 3) { skill = finishS || sketchS || skill; f._linePhase = 4; }
+        // Phase 4+: freestyle, prefer finish when stacks >= 4
+        else {
+          const highInkTarget = enemies.find(e => (e._inkStacks || 0) >= 4);
+          if (finishS && highInkTarget) skill = finishS;
+        }
+      }
+
       if (skill.cd > 0) skill.cdLeft = skill.cd;
 
-      // Target selection
+      // Target selection — line turtle prefers high-ink target for finish
       let target;
       if (SELF_TYPES.includes(skill.type) || skill.selfCast) {
         target = f;
       } else if (ALLY_TYPES.includes(skill.type)) {
         target = allies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
       } else {
+        // Line turtle: target highest ink stacks for finish, or focus one target
+        if (f.passive && f.passive.type === 'inkMark' && skill.type === 'lineFinish') {
+          target = enemies.slice().sort((a,b) => (b._inkStacks||0) - (a._inkStacks||0))[0];
+        } else if (f.passive && f.passive.type === 'inkMark' && (skill.type === 'lineSketch' || skill.type === 'lineLink')) {
+          // Focus the enemy with most ink stacks to build toward detonation
+          const withInk = enemies.filter(e => (e._inkStacks||0) > 0);
+          target = withInk.length ? withInk.sort((a,b) => (b._inkStacks||0) - (a._inkStacks||0))[0] : enemies[0];
+        }
         // Smart targeting: prefer low HP, avoid undead lock
-        if (enemies.length === 1) { target = enemies[0]; }
+        else if (enemies.length === 1) { target = enemies[0]; }
         else {
           const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
           const lowest = sorted[0];
@@ -502,7 +527,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 }
 
 // ── CLI Runner ──────────────────────────────────────────────
-const MATRIX_EXCLUDE = ['hiding','line']; // 模拟不准的龟排除矩阵
+const MATRIX_EXCLUDE = ['hiding']; // 模拟不准的龟排除矩阵
 
 async function runMatrix(N) {
   const ids = ALL_PETS.map(p => p.id).filter(id => !MATRIX_EXCLUDE.includes(id));

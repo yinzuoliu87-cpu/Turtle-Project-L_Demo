@@ -27,7 +27,7 @@ async function doGamblerDraw(caster, _skill) {
     updateHpBar(caster, fElId);
     addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
   } else if (roll === 1) {
-    // 2: Bomb card — 0.9ATK to all enemies
+    // 2: Bomb card — 0.9ATK to all enemies, triggers multi-hit
     spawnFloatingNum(fElId, `🃏炸弹牌`, 'crit-label', 0, -20);
     const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     const baseDmg = Math.round(caster.atk * 0.9);
@@ -39,6 +39,8 @@ async function doGamblerDraw(caster, _skill) {
       const eId = getFighterElId(e);
       spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
       updateHpBar(e, eId);
+      await triggerOnHitEffects(caster, e, dmg);
+      await tryGamblerMultiHit(caster, e, eId);
     }
     addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏炸弹牌！对全体敌方 <span class="log-direct">${baseDmg}伤害</span>`);
   } else {
@@ -59,13 +61,13 @@ async function doGamblerDraw(caster, _skill) {
 }
 
 async function doGamblerBet(attacker, target, skill) {
-  // Must have >50% HP
-  if (attacker.hp / attacker.maxHp <= 0.5) {
-    addLog(`${attacker.emoji}${attacker.name} <b>赌注</b>：HP不足50%，无法使用！`);
+  // Must have >40% HP
+  if (attacker.hp / attacker.maxHp <= 0.4) {
+    addLog(`${attacker.emoji}${attacker.name} <b>赌注</b>：HP不足40%，无法使用！`);
     await sleep(1000);
     return;
   }
-  // Cost 50% HP directly (not through shield)
+  // Cost 40% HP directly (not through shield)
   const hpCost = Math.round(attacker.hp * skill.hpCostPct / 100);
   attacker.hp -= hpCost;
   const fElId = getFighterElId(attacker);
@@ -90,9 +92,7 @@ async function doGamblerBet(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(dmgPer * critMult * (1 - defRed)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    const hitIcon = '<img src="assets/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
-    const critIcon = isCrit ? '<img src="assets/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
-    spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28, { atkSide: attacker.side, amount: dmg });
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -103,7 +103,7 @@ async function doGamblerBet(attacker, target, skill) {
     // Multi-hit passive (boosted to 60% for this skill)
     await tryGamblerMultiHit(attacker, target, tElId);
   }
-  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}物理伤害</span>（消耗${hpCost}HP÷6段）`);
+  addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}物理伤害</span>（消耗${hpCost}HP÷${skill.hits}段）`);
 
   // Remove temporary multi-hit bonus after this skill
   attacker._multiBonus = Math.max(0, (attacker._multiBonus || 0) - skill.multiBonus);
@@ -2276,13 +2276,14 @@ async function doLineFinish(attacker, target, skill) {
   // Pierce damage per stack (ignores DEF)
   const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks * critMult);
 
+  applyRawDmg(attacker, target, normalDmg, false, false, 'physical');
+  if (pierceDmg > 0) applyRawDmg(attacker, target, pierceDmg, false, false, 'true');
   const totalDmg = normalDmg + pierceDmg;
-  applyRawDmg(attacker, target, totalDmg, false, false, 'physical');
 
-  // Floating numbers
+  // Floating numbers: physical on bottom, true on top
   if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
-  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 0);
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 22);
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -2717,6 +2718,7 @@ async function doChestSmash(attacker, target, skill) {
   const perHitBase = Math.round(totalBasePower / hits);
   let totalDmg = 0;
 
+  const hasThunder = hasChestEquip(attacker, 'thunder');
   for (let i = 0; i < hits; i++) {
     if (!target.alive) break;
     const {isCrit, critMult} = calcCrit(attacker);
@@ -2728,6 +2730,21 @@ async function doChestSmash(attacker, target, skill) {
     const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
     spawnFloatingNum(tElId, `-${dmg}`, cls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: dmg });
     await triggerOnHitEffects(attacker, target, dmg);
+    // Thunder equip: stack per hit
+    if (hasThunder && target.alive) {
+      target._goldLightning = (target._goldLightning || 0) + 1;
+      spawnFloatingNum(tElId, `⚡${target._goldLightning}/8`, 'passive-num', 100, (i % 3) * 28 + 50);
+      if (target._goldLightning >= 8) {
+        target._goldLightning = 0;
+        const thunderDmg = Math.round(attacker.atk * 1.0);
+        applyRawDmg(attacker, target, thunderDmg, false, false, 'true');
+        spawnFloatingNum(tElId, `-${thunderDmg}⚡`, 'true-dmg', 150, 0, { atkSide: attacker.side, amount: thunderDmg });
+        updateHpBar(target, tElId);
+      }
+      renderStatusIcons(target);
+    }
+    // Update treasure display in real-time
+    renderStatusIcons(attacker);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -2748,25 +2765,22 @@ async function doChestSmash(attacker, target, skill) {
       spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 100, 0, { atkSide: attacker.side, amount: chainDmg });
       updateHpBar(secondary, sElId);
       await triggerOnHitEffects(attacker, secondary, chainDmg);
-      attacker._chestHitTargets.push(secondary);
-      await sleep(300);
-    }
-  }
-  // Thunder equip: stack gold lightning on hit targets
-  if (hasChestEquip(attacker, 'thunder')) {
-    for (const t of attacker._chestHitTargets) {
-      if (!t.alive) continue;
-      t._goldLightning = (t._goldLightning || 0) + 1;
-      const teElId = getFighterElId(t);
-      spawnFloatingNum(teElId, `⚡${t._goldLightning}/8`, 'passive-num', 300, 10);
-      if (t._goldLightning >= 8) {
-        t._goldLightning = 0;
-        const thunderDmg = Math.round(attacker.atk * 1.0);
-        applyRawDmg(attacker, t, thunderDmg, false, false, 'true');
-        spawnFloatingNum(teElId, `-${thunderDmg}⚡`, 'true-dmg', 350, 0, { atkSide: attacker.side, amount: thunderDmg });
-        updateHpBar(t, teElId);
+      // Chain hit also stacks thunder
+      if (hasThunder && secondary.alive) {
+        secondary._goldLightning = (secondary._goldLightning || 0) + 1;
+        spawnFloatingNum(sElId, `⚡${secondary._goldLightning}/8`, 'passive-num', 200, 10);
+        if (secondary._goldLightning >= 8) {
+          secondary._goldLightning = 0;
+          const thunderDmg = Math.round(attacker.atk * 1.0);
+          applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
+          spawnFloatingNum(sElId, `-${thunderDmg}⚡`, 'true-dmg', 250, 0, { atkSide: attacker.side, amount: thunderDmg });
+          updateHpBar(secondary, sElId);
+        }
+        renderStatusIcons(secondary);
       }
-      renderStatusIcons(t);
+      attacker._chestHitTargets.push(secondary);
+      renderStatusIcons(attacker);
+      await sleep(300);
     }
   }
   // Post-skill: fire stone burn
@@ -2820,6 +2834,7 @@ async function doChestStorm(attacker, skill) {
   const hits = skill.hits || 6;
   const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
   const trueType = 'true';
+  const hasThunder = hasChestEquip(attacker, 'thunder');
   let totalAll = 0;
   attacker._chestHitTargets = [...enemies.filter(e => e.alive)];
 
@@ -2843,31 +2858,29 @@ async function doChestStorm(attacker, skill) {
       spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28 + 20, { atkSide: attacker.side, amount: physDmg });
       if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28, { atkSide: attacker.side, amount: trueDmg });
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
+      // Thunder equip: stack per hit
+      if (hasThunder && enemy.alive) {
+        enemy._goldLightning = (enemy._goldLightning || 0) + 1;
+        spawnFloatingNum(eElId, `⚡${enemy._goldLightning}/8`, 'passive-num', 50, (i % 3) * 28 + 70);
+        if (enemy._goldLightning >= 8) {
+          enemy._goldLightning = 0;
+          const thunderDmg = Math.round(attacker.atk * 1.0);
+          applyRawDmg(attacker, enemy, thunderDmg, false, false, 'true');
+          spawnFloatingNum(eElId, `-${thunderDmg}⚡`, 'true-dmg', 100, 0, { atkSide: attacker.side, amount: thunderDmg });
+          updateHpBar(enemy, eElId);
+        }
+        renderStatusIcons(enemy);
+      }
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');
     }
+    // Update treasure display in real-time
+    renderStatusIcons(attacker);
     await sleep(350);
     for (const enemy of enemies) {
       const eEl = document.getElementById(getFighterElId(enemy));
       if (eEl) eEl.classList.remove('hit-shake');
-    }
-  }
-  // Thunder equip: stack per hit
-  if (hasChestEquip(attacker, 'thunder')) {
-    for (const t of enemies) {
-      if (!t.alive) continue;
-      t._goldLightning = (t._goldLightning || 0) + hits;
-      const teElId = getFighterElId(t);
-      while (t._goldLightning >= 8) {
-        t._goldLightning -= 8;
-        const thunderDmg = Math.round(attacker.atk * 1.0);
-        applyRawDmg(attacker, t, thunderDmg, false, false, 'true');
-        spawnFloatingNum(teElId, `-${thunderDmg}⚡`, 'true-dmg', 350, 0, { atkSide: attacker.side, amount: thunderDmg });
-        updateHpBar(t, teElId);
-      }
-      if (t._goldLightning > 0) spawnFloatingNum(teElId, `⚡${t._goldLightning}/8`, 'passive-num', 300, 10);
-      renderStatusIcons(t);
     }
   }
   // Post-skill: fire stone burn
