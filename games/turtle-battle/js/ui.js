@@ -877,7 +877,9 @@ function showActionPanel(f) {
 function renderActionButtons(f) {
   const box = document.getElementById('actionButtons');
   box.innerHTML = f.skills.map((s,i) => {
-    const ready = s.cdLeft === 0;
+    let ready = s.cdLeft === 0;
+    // Disable 指挥 if summon is dead
+    if (s.type === 'hidingCommand' && (!f._summon || !f._summon.alive)) ready = false;
     const shieldImg = '<img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">';
     const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';

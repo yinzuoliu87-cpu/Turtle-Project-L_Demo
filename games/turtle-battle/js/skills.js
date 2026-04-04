@@ -520,7 +520,14 @@ async function summonAutoAction(summon, owner) {
   if (sCard) sCard.classList.add('attack-anim');
 
   try {
+    // Prevent executeAction from triggering next turn via onActionComplete/nextAction
+    const savedNextAction = typeof nextAction !== 'undefined' ? nextAction : null;
+    const savedOnActionComplete = typeof onActionComplete !== 'undefined' ? onActionComplete : null;
+    if (typeof nextAction !== 'undefined') nextAction = () => {};
+    if (typeof onActionComplete !== 'undefined') onActionComplete = () => {};
     await executeAction(action);
+    if (savedNextAction) nextAction = savedNextAction;
+    if (savedOnActionComplete) onActionComplete = savedOnActionComplete;
   } catch(e) {
     // Fallback: use old method
     await summonUseRandomSkill(summon, owner);
