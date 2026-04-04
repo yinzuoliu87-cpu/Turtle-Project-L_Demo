@@ -1874,9 +1874,16 @@ async function doPhoenixScald(attacker, target, skill) {
 
   // Apply debuffs
   if (target.alive) {
-    applySkillDebuffs(skill, target);
+    applySkillDebuffs(skill, target, attacker);
+    // Heal reduce
+    if (skill.healReduce) {
+      const existing = target.buffs.find(b => b.type === 'healReduce');
+      if (existing) { existing.turns = 4; } else target.buffs.push({ type:'healReduce', value:50, turns:4 });
+      spawnFloatingNum(tElId, '☠️治疗削减', 'debuff-label', 400, -10);
+      renderStatusIcons(target);
+    }
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>烫伤</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>烫伤</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span> + 攻击力/护甲/魔抗-15% + 灼烧 + 治疗削减`);
   await sleep(80);
 }
 
