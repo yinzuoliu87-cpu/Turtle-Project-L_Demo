@@ -177,6 +177,11 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
       // Chest turtle rum HoT
+      // Undead lock countdown
+      if (f._undeadLockTurns > 0) {
+        f._undeadLockTurns--;
+        if (f._undeadLockTurns <= 0) f.hp = 1;
+      }
       // Lava countdown
       if (p.type === 'lavaRage' && f._lavaTransformed) {
         f._lavaTransformTurns--;
@@ -273,10 +278,10 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 
       const SELF_TYPES = ['fortuneDice','phoenixShield','gamblerDraw','hidingDefend','hidingCommand',
         'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestOpen','chestCount','bambooHeal',
-        'lightningBuff','iceShield','volcanoArmor'];
+        'lightningBuff','iceShield','volcanoArmor','crystalBarrier'];
       const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
       const AOE_TYPES = ['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage',
-        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm','chestStorm','lavaQuake','volcanoErupt','candyBarrage','soulReap'];
+        'starMeteor','diceAllIn','pirateCannonBarrage','rainbowStorm','chestStorm','lavaQuake','volcanoErupt','candyBarrage','soulReap','crystalBurst'];
 
       const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
       const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield');
@@ -322,18 +327,22 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         }
       }
 
-      // Fortune AI: use fortuneAllIn if can kill or enough coins
-      const allInS = ready.find(s => s.type === 'fortuneAllIn');
-      if (allInS && f._goldCoins > 0) {
-        const perCoinDmg = Math.round(f.atk * 0.4);
-        const totalAllIn = perCoinDmg * f._goldCoins;
-        const weakest = enemies.sort((a,b) => (a.hp+a.shield) - (b.hp+b.shield))[0];
-        const canKill = weakest && totalAllIn >= (weakest.hp + weakest.shield) * 0.7;
-        if (canKill || f._goldCoins >= 18) {
-          skill = allInS;
-        } else if (skill === allInS) {
-          const other = ready.filter(s => s.type !== 'fortuneAllIn');
-          skill = other.length ? other[Math.floor(Math.random() * other.length)] : ready[0];
+      // Fortune AI: fixed rotation — dice×3 → allIn R4 → dice R5 → alternate
+      if (f.passive && f.passive.type === 'fortuneGold') {
+        const allInS = ready.find(s => s.type === 'fortuneAllIn');
+        const diceS = ready.find(s => s.type === 'fortuneDice');
+        const atkS = ready.find(s => s.type === 'physical');
+        if (allInS) {
+          // AllIn not used yet
+          if (turnNum <= 3) { skill = diceS || atkS; } // R1-3: dice
+          else if (turnNum === 4) { skill = allInS; }   // R4: allIn
+          else { skill = diceS || atkS; }                // R5+: shouldn't reach here normally
+        } else {
+          // AllIn used: R5 dice, then alternate 1/2 skills
+          if (!f._fortunePostAllIn) f._fortunePostAllIn = 0;
+          f._fortunePostAllIn++;
+          if (f._fortunePostAllIn === 1) { skill = diceS || atkS; } // R5: dice
+          else { skill = (f._fortunePostAllIn % 2 === 0) ? (atkS || diceS) : (diceS || atkS); } // alternate
         }
       }
 
@@ -346,7 +355,17 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       } else if (ALLY_TYPES.includes(skill.type)) {
         target = allies.sort((a, b) => (a.hp / a.maxHp) - (b.hp / b.maxHp))[0];
       } else {
-        target = enemies.sort((a, b) => a.hp - b.hp)[0];
+        // Smart targeting: prefer low HP, avoid undead lock
+        if (enemies.length === 1) { target = enemies[0]; }
+        else {
+          const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+          const lowest = sorted[0];
+          const lowestRatio = lowest.hp / lowest.maxHp;
+          if (lowest._undeadLockTurns > 0) { const nonLocked = sorted.find(e => !e._undeadLockTurns); target = nonLocked || lowest; }
+          else if (lowestRatio < 0.2 && Math.random() < 0.9) target = lowest;
+          else if (Math.random() < 0.7) target = lowest;
+          else target = enemies[Math.floor(Math.random() * enemies.length)];
+        }
       }
 
       // Execute via real engine
@@ -468,7 +487,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
 }
 
 // ── CLI Runner ──────────────────────────────────────────────
-const MATRIX_EXCLUDE = ['space','hiding','fortune','line']; // 模拟不准的龟排除矩阵
+const MATRIX_EXCLUDE = ['hiding','line']; // 模拟不准的龟排除矩阵
 
 async function runMatrix(N) {
   const ids = ALL_PETS.map(p => p.id).filter(id => !MATRIX_EXCLUDE.includes(id));

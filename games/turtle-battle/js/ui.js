@@ -93,7 +93,7 @@ function updateSummonHpBar(summon) {
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
   lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'🛡',
-  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'🪙', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'⭐', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
+  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', crystalResonance:'crystal-resonance-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'fortune-gold-icon.png', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'🃏', summonAlly:'🫣', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'🐚', starEnergy:'star-energy-icon.png', inkMark:'✏️', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'👻', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
 };
 
 function updateFighterStats(f, elId) {
@@ -377,16 +377,16 @@ function renderStatusIcons(f) {
   if (f._starEnergy > 0) {
     const maxE = f.passive && f.passive.type === 'starEnergy' ? Math.round(f.maxHp * f.passive.maxChargePct / 100) : 100;
     const full = f._starEnergy >= maxE;
-    box.innerHTML += `<span style="color:${full?'#ffd700':'#ffa500'};background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="星能${Math.round(f._starEnergy)}/${maxE}${full?' 满能！下次攻击爆发！':''}">⭐${Math.round(f._starEnergy)}${full?'💥':''}</span>`;
+    box.innerHTML += `<span style="color:${full?'#ffd700':'#ffa500'};background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="星能${Math.round(f._starEnergy)}/${maxE}${full?' 满能！下次攻击爆发！':''}"><img src="assets/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">${Math.round(f._starEnergy)}${full?'💥':''}</span>`;
   }
   // Drone count indicator
   if (f._drones && f._drones.length > 0) {
     const oldest = Math.max(...f._drones.map(d => d.age));
-    box.innerHTML += `<span class="status-defup" title="浮游炮${f._drones.length}个，最老${oldest}回合" style="color:#4cc9f0;background:rgba(76,201,240,.15)">🛸${f._drones.length}</span>`;
+    box.innerHTML += `<span class="status-defup" title="浮游炮${f._drones.length}个，最老${oldest}回合" style="color:#4cc9f0;background:rgba(76,201,240,.15)"><img src="assets/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._drones.length}</span>`;
   }
   // Gold coins indicator
   if (f._goldCoins > 0) {
-    box.innerHTML += `<span class="status-defup" title="金币${f._goldCoins}" style="color:#ffd93d;background:rgba(255,217,61,.15)">🪙${f._goldCoins}</span>`;
+    box.innerHTML += `<span class="status-defup" title="金币${f._goldCoins}" style="color:#ffd93d;background:rgba(255,217,61,.15)"><img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._goldCoins}</span>`;
   }
   // Shock stacks indicator
   if (f._shockStacks > 0) {
@@ -407,6 +407,10 @@ function renderStatusIcons(f) {
   // Bamboo charge indicator with glow animation (hide after fired)
   if (f._bambooCharged && !f._bambooFired) {
     box.innerHTML += `<span class="bamboo-charge-ready" title="竹编充能：本回合技能后追加强化攻击"><img src="assets/bamboo-charge-icon.png" class="stat-icon">充能</span>`;
+  }
+  // Crystallize stacks indicator
+  if (f._crystallize > 0) {
+    box.innerHTML += `<span style="color:#c77dff;background:rgba(199,125,255,.15);padding:1px 5px;border-radius:6px" title="结晶${f._crystallize}/4，满4层引爆"><img src="assets/crystal-resonance-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._crystallize}/4</span>`;
   }
   // Diamond collide stacks indicator
   if (f._collideStacks > 0) {
@@ -754,13 +758,13 @@ function showActionPanel(f) {
   }
 
   const isPlayer =
-    (gameMode === 'pve' && f.side === 'left') ||
+    ((gameMode === 'pve' || gameMode === 'boss') && f.side === 'left') ||
     (gameMode === 'pvp-online' && f.side === onlineSide);
 
   if (isPlayer) {
     renderActionButtons(f);
     panel.classList.add('show');
-  } else if (gameMode === 'pve') {
+  } else if (gameMode === 'pve' || gameMode === 'boss') {
     panel.classList.remove('show');
     setTimeout(() => aiAction(f), 1200);
   } else {
@@ -816,7 +820,7 @@ function buildSkillDetail(s, f) {
     ninjaShuriken:'🥷 飞镖', ninjaTrap:'🥷 陷阱', ninjaBomb:'🥷 炸弹',
     phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
     lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
-    fortuneDice:'🪙 骰子', fortuneAllIn:'🪙 梭哈',
+    fortuneDice:'<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 骰子', fortuneAllIn:'<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 梭哈',
     hidingDefend:'🛡 缩头防御', hidingCommand:'🫣 指挥',
     angelBless:'😇 祝福', angelEquality:'⚖️ 平等',
     iceSpike:'❄️ 冰锥', iceFrost:'❄️ 冰霜',
@@ -948,7 +952,7 @@ function buildSkillDetail(s, f) {
   }
   if (s.type === 'fortuneAllIn') {
     const pp = f?Math.round(atk*s.perCoinAtkPierce):'?'; const np = f?Math.round(atk*s.perCoinAtkNormal):'?';
-    lines.push(`<b>🪙梭哈</b> 每币 ${N(np+'普')}+${P(pp+'穿')}`);
+    lines.push(`<b><img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">梭哈</b> 每币 ${N(np+'普')}+${P(pp+'穿')}`);
     lines.push(`<b>⚠</b> 一场限一次`);
   }
   if (s.type === 'hidingDefend') {

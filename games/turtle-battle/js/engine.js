@@ -79,6 +79,7 @@ function createFighter(petId, side) {
     _chestEquips: [],         // 宝箱龟已装备列表 [{id,icon,name,desc,stat,...}]
     _chestTier: 0,            // 宝箱龟当前装备层数
     _goldLightning: 0,        // 宝箱龟雷刃金闪电层数
+    _crystallize: 0,          // 水晶龟结晶层数(被标记方)
     _collideStacks: 0,        // 钻石龟碰撞标记(被标记方)
     skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
   };
@@ -201,7 +202,7 @@ async function beginTurn() {
       if (f._drones.length < f.passive.maxDrones) {
         f._drones.push({ age: 0 });
         const elId = getFighterElId(f);
-        spawnFloatingNum(elId, `+🛸`, 'passive-num', 0, 0);
+        spawnFloatingNum(elId, `+<img src="assets/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
       // Every drone fires every turn at random enemy — speed scales with count
@@ -220,7 +221,7 @@ async function beginTurn() {
         applyRawDmg(f, target, finalDmg, false, false, 'physical');
         totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}🛸`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
+        spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
         updateHpBar(target, tElId);
@@ -788,6 +789,12 @@ function recalcStats() {
       }
     }
   });
+  // Auto-refresh UI for all fighters after stat recalc
+  if (typeof updateFighterStats === 'function') {
+    allFighters.forEach(f => {
+      if (f.alive) updateFighterStats(f, getFighterElId(f));
+    });
+  }
 }
 
 function nextAction() {
@@ -808,7 +815,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
 
   // Self-cast: no target selection
-  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -907,7 +914,7 @@ async function executeAction(action) {
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
-  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap') {
+  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
@@ -1038,6 +1045,13 @@ async function executeAction(action) {
     await sleep(800);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
+  } else if (skill.type === 'crystalSpike') {
+    const target = allFighters[action.targetId];
+    await doCrystalSpike(f, target, skill);
+  } else if (skill.type === 'crystalBarrier') {
+    await doCrystalBarrier(f, skill);
+  } else if (skill.type === 'crystalBurst') {
+    await doCrystalBurst(f, skill);
   } else if (skill.type === 'soulReap') {
     await doSoulReap(f, skill);
   } else if (skill.type === 'candyBarrage') {
@@ -1503,13 +1517,15 @@ async function doDamage(attacker, target, skill) {
     const mainCls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
     const trueCls = isCrit ? 'crit-true' : 'true-dmg';
     const yOff = (i % 4) * 32;
-    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 16, { atkSide: attacker.side, amount: bubbleAbs });
-    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff, { atkSide: attacker.side, amount: shieldAbs });
+    // Floating numbers: top→bottom: true(white) → magic(blue) → physical(red), no overlap
+    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: bubbleAbs });
+    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff - 10, { atkSide: attacker.side, amount: shieldAbs });
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
       const trueHp = hpLoss - mainHp;
-      if (mainHp > 0) spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, yOff, { atkSide: attacker.side, amount: mainHp });
+      // True on top, main below
       if (trueHp > 0) spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, yOff, { atkSide: attacker.side, amount: trueHp });
+      if (mainHp > 0) spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, yOff + 20, { atkSide: attacker.side, amount: mainHp });
     } else if (hpLoss > 0) {
       spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, yOff, { atkSide: attacker.side, amount: hpLoss });
     }
@@ -1808,6 +1824,33 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     spawnFloatingNum(getFighterElId(attacker), `+${gained}🛡`, 'bubble-num', 200, 0);
     updateHpBar(attacker, getFighterElId(attacker));
   }
+  // Crystallize stacking (crystal turtle passive)
+  if (attacker.passive && attacker.passive.type === 'crystalResonance' && target.alive) {
+    target._crystallize = (target._crystallize || 0) + 1;
+    const maxStacks = attacker.passive.crystallizeMax || 4;
+    const tElCryst = getFighterElId(target);
+    if (target._crystallize >= maxStacks) {
+      // Detonate!
+      target._crystallize = 0;
+      const detonateDmg = Math.round(target.maxHp * attacker.passive.crystallizeHpPct / 100);
+      const effMr = calcEffDef(attacker, target, 'magic');
+      const mrRed = effMr / (effMr + DEF_CONSTANT);
+      const finalDmg = Math.max(1, Math.round(detonateDmg * (1 - mrRed)));
+      applyRawDmg(attacker, target, finalDmg, false, true, 'magic');
+      spawnFloatingNum(tElCryst, `-${finalDmg}💎`, 'crit-magic', 350, -15, {atkSide:attacker.side, amount:finalDmg});
+      updateHpBar(target, tElCryst);
+      // Apply MR shred
+      const mrDownExist = target.buffs.find(b => b.type === 'mrDown');
+      if (mrDownExist) { mrDownExist.value = Math.max(mrDownExist.value, attacker.passive.crystallizeMrDown); mrDownExist.turns = Math.max(mrDownExist.turns, attacker.passive.crystallizeMrTurns); }
+      else target.buffs.push({type:'mrDown', value:attacker.passive.crystallizeMrDown, turns:attacker.passive.crystallizeMrTurns});
+      spawnFloatingNum(tElCryst, '<img src="assets/crystal-resonance-icon.png" style="width:16px;height:16px;vertical-align:middle">引爆!', 'crit-label', 400, -30);
+      recalcStats();
+      addLog(`${target.emoji}${target.name} 结晶引爆！<span class="log-magic">${finalDmg}魔法伤害</span> + ⬇️魔抗`);
+    } else {
+      spawnFloatingNum(tElCryst, `<img src="assets/crystal-resonance-icon.png" style="width:12px;height:12px;vertical-align:middle">${target._crystallize}/${maxStacks}`, 'passive-num', 300, 10);
+    }
+    renderStatusIcons(target);
+  }
   // Trap
   const trapB = target.buffs.find(b => b.type === 'trap');
   if (trapB && attacker.alive) {
@@ -1947,7 +1990,15 @@ async function doGamblerCards(attacker, target, skill) {
 
 // ── FLOATING NUMBERS — persistent 2.5s ────────────────────
 // opts: { atkSide:'left'|'right', amount:number } — optional
+// Track active floating numbers per element to auto-stack
+const _floatStacks = {};
 function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
+  // Auto-stack: add offset based on how many floats are active on this element
+  if (!_floatStacks[elId]) _floatStacks[elId] = 0;
+  const autoOffset = _floatStacks[elId] * 22;
+  _floatStacks[elId]++;
+  setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 400);
+
   setTimeout(() => {
     const parent = document.getElementById(elId);
     if (!parent) return;
@@ -1973,7 +2024,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     // Determine animation type
     const isDmg = (cls.includes('dmg') || cls.includes('pierce') || cls.includes('crit-magic') || cls.includes('crit-true')) && cls !== 'shield-dmg';
     const ox = (Math.random() - 0.5) * 8;
-    const y0 = -(15 + (yOffset || 0));
+    const y0 = -(15 + (yOffset || 0) + autoOffset);
 
     if (isDmg) {
       // ── DAMAGE: jump away from attacker ──
@@ -2094,20 +2145,21 @@ function aiAction(f) {
       }
     }
   }
-  // Fortune turtle AI: use fortuneAllIn if coins can kill or enough coins saved
+  // Fortune turtle AI: dice×3 → allIn R4 → dice → alternate
   if (!skill) skill = ready[0];
-  const allInSkill = ready.find(s => s.type === 'fortuneAllIn');
-  if (allInSkill && f._goldCoins > 0) {
-    const perCoinDmg = Math.round(f.atk * 0.2) + Math.round(f.atk * 0.2);
-    const totalAllInDmg = perCoinDmg * f._goldCoins;
-    const weakest = enemies.sort((a,b) => (a.hp + a.shield) - (b.hp + b.shield))[0];
-    const canKill = weakest && totalAllInDmg >= (weakest.hp + weakest.shield) * 0.7;
-    const enoughCoins = f._goldCoins >= 18;
-    if (canKill || enoughCoins) {
-      skill = allInSkill;
-    } else if (skill === allInSkill) {
-      const other = ready.filter(s => s.type !== 'fortuneAllIn');
-      skill = other.length ? other[Math.floor(Math.random() * other.length)] : ready[0];
+  if (f.passive && f.passive.type === 'fortuneGold') {
+    const allInSkill = ready.find(s => s.type === 'fortuneAllIn');
+    const diceSkill = ready.find(s => s.type === 'fortuneDice');
+    const atkSkill = ready.filter(s => s.type === 'physical')[0];
+    if (allInSkill) {
+      if (turnNum <= 3) { skill = diceSkill || atkSkill || ready[0]; }
+      else if (turnNum === 4) { skill = allInSkill; }
+      else { skill = diceSkill || atkSkill || ready[0]; }
+    } else {
+      if (!f._fortunePostAllIn) f._fortunePostAllIn = 0;
+      f._fortunePostAllIn++;
+      if (f._fortunePostAllIn === 1) { skill = diceSkill || atkSkill || ready[0]; }
+      else { skill = (f._fortunePostAllIn % 2 === 0) ? (atkSkill || diceSkill || ready[0]) : (diceSkill || atkSkill || ready[0]); }
     }
   }
 
@@ -2119,7 +2171,28 @@ function aiAction(f) {
     if (skill.type==='bubbleBind') target = enemies.sort((a,b)=>a.hp-b.hp)[0]; // bubbleBind marks enemy
     else target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   }
-  else target = enemies.sort((a,b)=>a.hp-b.hp)[0];
+  else {
+    // Smart targeting: prefer low HP enemies, avoid undead lock
+    if (enemies.length === 1) {
+      target = enemies[0];
+    } else {
+      // Sort by HP ratio
+      const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+      const lowest = sorted[0];
+      const lowestRatio = lowest.hp / lowest.maxHp;
+      // Undead lock: always target teammate if available
+      if (lowest._undeadLockTurns > 0) {
+        const nonLocked = sorted.find(e => !e._undeadLockTurns);
+        if (nonLocked) { target = nonLocked; }
+        else { target = lowest; } // no choice
+      }
+      // HP < 20%: 90% chance to focus
+      else if (lowestRatio < 0.2 && Math.random() < 0.9) { target = lowest; }
+      // General: 70% chance to target lowest HP, 30% random
+      else if (Math.random() < 0.7) { target = lowest; }
+      else { target = enemies[Math.floor(Math.random() * enemies.length)]; }
+    }
+  }
 
   executeAction({ attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId:allFighters.indexOf(target) });
 }
@@ -2265,7 +2338,8 @@ function checkDeaths(attacker) {
         if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
           fg._goldCoins += 9;
           const fgElId = getFighterElId(fg);
-          spawnFloatingNum(fgElId, `+9🪙`, 'passive-num', 500, 0);
+          spawnFloatingNum(fgElId, `+9<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
+          renderStatusIcons(fg);
           addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+9（共${fg._goldCoins}）</span>`);
         }
       });
@@ -2509,7 +2583,8 @@ async function processFortuneGold() {
     const roll = 3 + Math.floor(Math.random() * 6); // 3~8
     f._goldCoins += roll;
     const fElId = getFighterElId(f);
-    spawnFloatingNum(fElId, `+${roll}🪙`, 'passive-num', 0, 0);
+    spawnFloatingNum(fElId, `+${roll}<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
+    renderStatusIcons(f);
     addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">获得${roll}金币（共${f._goldCoins}）</span>`);
     await sleep(300);
   }
@@ -2601,6 +2676,10 @@ function hasChestEquip(f, equipId) {
 function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   // Star equip: convert all damage to true
   if (source && hasChestEquip(source, 'star') && dmgType && dmgType !== 'true') dmgType = 'true';
+  // Crystal resonance: extra magic damage reduction
+  if (target.passive && target.passive.type === 'crystalResonance' && dmgType === 'magic') {
+    amount = Math.round(amount * (1 - target.passive.magicAbsorb / 100));
+  }
   // Undead lock: still takes damage normally but HP cannot go below 1 (won't die)
   if (target._undeadLockTurns > 0) {
     let rem2 = amount, shieldAbs2 = 0, bubbleAbs2 = 0;
@@ -2620,12 +2699,12 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   // Undead passive: first death triggers lock — HP stays at 1 but still takes damage visually
   if (target.hp <= 0 && target.passive && target.passive.type === 'undeadRage' && !target._undeadLockUsed) {
     target._undeadLockUsed = true;
-    target._undeadLockTurns = 1;
+    target._undeadLockTurns = 2;
     target.hp = 1;
     target.alive = true;
     const elId = getFighterElId(target);
     spawnFloatingNum(elId, '💀亡灵之力!', 'crit-label', 0, -30);
-    addLog(`${target.emoji}${target.name} <span class="log-passive">💀亡灵之力！锁血1HP 1回合！</span>`);
+    addLog(`${target.emoji}${target.name} <span class="log-passive">💀亡灵之力！锁血1HP 2回合！</span>`);
     renderStatusIcons(target);
   } else {
     // Only host determines death — guest waits for sync

@@ -37,7 +37,7 @@ function startMode(mode) {
     difficulty = 'hard';
     selecting = 'left';
     selectedIds = [];
-    showSelectScreen('👑 Boss挑战 — 选择你的队伍（选2只龟）');
+    showSelectScreen('<img src="assets/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选2只龟）');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -268,7 +268,7 @@ function handleOnlineMessage(msg) {
 
 // ── SELECT SCREEN ─────────────────────────────────────────
 function showSelectScreen(title) {
-  document.getElementById('selectTitle').textContent = title;
+  document.getElementById('selectTitle').innerHTML = title;
   renderPetGrid();
   updateSlots();
   document.getElementById('btnConfirmTeam').disabled = true;
@@ -370,12 +370,12 @@ function confirmTeam() {
     const boss = createFighter(bossPet.id, 'right');
     // Boss stat multipliers
     boss.maxHp = Math.round(boss.maxHp * 3.0); boss.hp = boss.maxHp;
-    boss.baseAtk = Math.round(boss.baseAtk * 1.8); boss.atk = boss.baseAtk;
+    boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
     boss.baseDef = Math.round(boss.baseDef * 1.5); boss.def = boss.baseDef;
     boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.5); boss.mr = boss.baseMr;
     boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
     boss._isBoss = true;
-    boss.name = '👑' + boss.name;
+    boss.name = 'BOSS ' + boss.name;
     rightTeam = [boss];
     startBattle();
   } else if (gameMode === 'pvp-online') {
@@ -414,7 +414,7 @@ function startBattle(seed) {
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
-  else if (gameMode === 'boss') { ll.textContent = '我方'; lr.textContent = '👑 BOSS'; }
+  else if (gameMode === 'boss') { ll.textContent = '我方'; lr.innerHTML = '<img src="assets/equip-crown-icon.png" style="width:20px;height:20px;vertical-align:middle"> BOSS'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
   // Boss mode: hide second enemy card
   const rf1 = document.getElementById('rightFighter1');

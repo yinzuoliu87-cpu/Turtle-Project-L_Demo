@@ -894,7 +894,7 @@ async function doFortuneDice(caster, skill) {
   const roll = 3 + Math.floor(Math.random() * 6); // 3~8
   caster._goldCoins += roll;
   const fElId = getFighterElId(caster);
-  spawnFloatingNum(fElId, `🎲${roll} +${roll}<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
+  spawnFloatingNum(fElId, `🎲${roll} +${roll}🪙`, 'passive-num', 0, 0);
   renderStatusIcons(caster);
   // Heal 10% max HP + 15% lost HP
   let healAmt = Math.round(caster.maxHp * skill.healPct / 100);
@@ -902,7 +902,7 @@ async function doFortuneDice(caster, skill) {
   const actual = applyHeal(caster, healAmt);
   if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 300, 0);
   // Post-allIn bonus shield
-  const allInUsed = caster.skills.some(s => s.type === 'fortuneAllIn' && s.cdLeft > 0);
+  const allInUsed = caster.skills.some(s => s.type === 'fortuneAllIn' && s.cdLeft > 0); if(caster.id==="fortune") console.log("    [dice] allInUsed="+allInUsed+" postPct="+skill.postAllInShieldPct+" shield_before="+caster.shield);
   let shieldStr = '';
   if (allInUsed && skill.postAllInShieldPct) {
     const shieldAmt = Math.round(caster.maxHp * skill.postAllInShieldPct / 100);
@@ -1054,43 +1054,23 @@ function addStarEnergy(f, dmg) {
   f._starEnergy = Math.min(maxE, (f._starEnergy || 0) + gain);
 }
 
-// Helper: passive star fire — after each skill, deal 40% stored energy as true damage to target
-async function fireStarPassive(f, target) {
-  if (!f.passive || f.passive.type !== 'starEnergy' || !target || !target.alive) return;
-  const energy = f._starEnergy || 0;
-  if (energy <= 0) return;
-  const firePct = f.passive.passiveFirePct || 40;
-  const fireDmg = Math.round(energy * firePct / 100);
-  if (fireDmg <= 0) return;
-  applyRawDmg(f, target, fireDmg, false, false, 'true');
-  const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${fireDmg}<img src="assets/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
-  updateHpBar(target, tElId);
-  renderStatusIcons(f);
-}
-
-// Helper: star meteor full energy burst — consume all energy, deal 80% as true AOE
-async function starMeteorBurst(f) {
-  if (!f.passive || f.passive.type !== 'starEnergy') return;
+// Helper: check and consume star energy burst
+function checkStarBurst(f, target) {
+  if (!f.passive || f.passive.type !== 'starEnergy') return 0;
   const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
-  if ((f._starEnergy || 0) < maxE) return;
-  const burstPct = f.passive.burstPct || 80;
-  const burstDmg = Math.round(f._starEnergy * burstPct / 100);
+  if (f._starEnergy < maxE) return 0;
+  // Full energy! Burst all as pierce damage
+  const burstDmg = Math.round(f._starEnergy);
   f._starEnergy = 0;
-  const enemies = getAliveEnemiesWithSummons(f.side);
-  for (const e of enemies) {
-    if (!e.alive) continue;
-    const wh = e.buffs ? e.buffs.find(b => b.type === 'wormhole') : null;
-    const finalDmg = wh ? Math.round(burstDmg * (1 + wh.pierceBonusPct / 100)) : burstDmg;
-    applyRawDmg(f, e, finalDmg, false, false, 'true');
-    const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${finalDmg}<img src="assets/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'crit-true', 300, 0, {atkSide:f.side, amount:finalDmg});
-    updateHpBar(e, eElId);
-  }
-  renderStatusIcons(f);
-  addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">星能爆发！</span>全体敌方 <span class="log-pierce">${burstDmg}真实伤害</span>`);
+  // Check wormhole bonus on target
+  const wh = target.buffs ? target.buffs.find(b => b.type === 'wormhole') : null;
+  const finalBurst = wh ? Math.round(burstDmg * (1 + wh.pierceBonusPct / 100)) : burstDmg;
+  applyRawDmg(f, target, finalBurst, true, false, 'true');
+  const tElId = getFighterElId(target);
+  spawnFloatingNum(tElId, `⭐${finalBurst}`, 'pierce-dmg', 200, -20);
+  addLog(`${f.emoji}${f.name} <span class="log-passive">⭐星能爆发！</span>${target.emoji}${target.name} ${finalBurst} <span class="log-pierce">真实伤害</span>`);
   try { sfxExplosion(); } catch(e) {}
-  await sleep(500);
+  return finalBurst;
 }
 
 // Star Beam: 3 hits, 40%ATK + 5% target current HP each
@@ -1126,10 +1106,10 @@ async function doStarBeam(attacker, target, skill) {
     await sleep(200);
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>星光射线</b> → ${target.emoji}${target.name}：<span class="log-magic">${totalDmg}魔法伤害</span>`);
+  addLog(`${attacker.emoji}${attacker.name} <b>星光射线</b> → ${target.emoji}${target.name}：<span class="log-direct">${totalDmg}魔法伤害</span>`);
 
-  // Passive: fire 40% star energy as true damage after skill
-  if (target.alive) await fireStarPassive(attacker, target);
+  // Check star burst after all hits
+  if (target.alive) checkStarBurst(attacker, target);
   renderStatusIcons(attacker);
 }
 
@@ -1148,8 +1128,6 @@ async function doStarWormhole(attacker, target, skill) {
   spawnFloatingNum(tElId, '🌀虫洞', 'debuff-label', 0, 0);
   renderStatusIcons(target);
   addLog(`${attacker.emoji}${attacker.name} <b>虫洞</b> → ${target.emoji}${target.name}：<span class="log-debuff">真实+${skill.pierceBonusPct}% 魔伤+${skill.normalBonusPct}% ${skill.duration}回合</span>`);
-  // Passive: fire 40% star energy after skill
-  if (target.alive) await fireStarPassive(attacker, target);
   await sleep(800);
 }
 
@@ -1159,6 +1137,9 @@ async function doStarMeteor(attacker, skill) {
   if (!enemies.length) return;
 
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  // Read 50% star energy as pierce (don't consume)
+  const readPct = skill.energyReadPct || skill.energyConsumePct || 50;
+  const piercePerTarget = Math.round((attacker._starEnergy || 0) * readPct / 100);
 
   for (const e of enemies) {
     if (!e.alive) continue;
@@ -1166,33 +1147,30 @@ async function doStarMeteor(attacker, skill) {
     const eDef = calcEffDef(attacker, e, 'magic');
     const defRed = eDef / (eDef + DEF_CONSTANT);
     const normalDmg = Math.max(1, Math.round(baseDmg * critMult * (1 - defRed)));
-    applyRawDmg(attacker, e, normalDmg, false, false, 'magic');
+    const pierceFinal = Math.round(piercePerTarget * critMult);
+    const totalDmg = normalDmg + pierceFinal;
+    applyRawDmg(attacker, e, totalDmg, false, false, 'magic');
     const eId = getFighterElId(e);
-    spawnFloatingNum(eId, `-${normalDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:normalDmg});
+    if (normalDmg > 0) spawnFloatingNum(eId, `-${normalDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+    if (pierceFinal > 0) spawnFloatingNum(eId, `-${pierceFinal}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 150, 0);
     updateHpBar(e, eId);
-    await triggerOnHitEffects(attacker, e, normalDmg);
+    await triggerOnHitEffects(attacker, e, totalDmg);
+
+    // Accumulate star energy from normal dmg
     addStarEnergy(attacker, normalDmg);
 
-    // Apply MR down
-    if (skill.mrDown) {
-      const existing = e.buffs.find(b => b.type === 'mrDown');
-      if (existing) { existing.value = Math.max(existing.value, skill.mrDown.pct); existing.turns = Math.max(existing.turns, skill.mrDown.turns); }
-      else e.buffs.push({ type: 'mrDown', value: skill.mrDown.pct, turns: skill.mrDown.turns });
+    // Apply def down
+    if (skill.defDown) {
+      const existing = e.buffs.find(b => b.type === 'defDown');
+      if (existing) { existing.value = Math.max(existing.value, skill.defDown.pct); existing.turns = Math.max(existing.turns, skill.defDown.turns); }
+      else e.buffs.push({ type: 'defDown', value: skill.defDown.pct, turns: skill.defDown.turns });
       renderStatusIcons(e);
     }
   }
-
-  // Full energy burst: consume all, deal 80% as true AOE
-  await starMeteorBurst(attacker);
-
-  // Passive fire on first alive enemy
-  const firstAlive = enemies.find(e => e.alive);
-  if (firstAlive) await fireStarPassive(attacker, firstAlive);
-
   recalcStats();
   renderStatusIcons(attacker);
-  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-magic">${baseDmg}魔法伤害</span> + ⬇️魔抗`);
-  await sleep(600);
+  addLog(`${attacker.emoji}${attacker.name} <b>流星暴击</b> → 全体敌方：<span class="log-direct">${baseDmg}魔法</span>${piercePerTarget > 0 ? ` + <span class="log-pierce">${piercePerTarget}真实(每人)</span>` : ''} + 防御-${skill.defDown.pct}%`);
+  await sleep(800);
 }
 
 // ── CYBER SKILLS ──────────────────────────────────────────
@@ -1284,8 +1262,8 @@ async function doCrystalBurst(attacker, skill) {
       applyRawDmg(attacker, enemy, magicDmg, false, false, 'magic');
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
@@ -1535,8 +1513,8 @@ async function doVolcanoErupt(attacker, skill) {
       applyRawDmg(attacker, enemy, magicDmg, false, false, 'magic');
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
@@ -1592,8 +1570,8 @@ async function doRainbowStorm(attacker, skill) {
       // Stagger numbers vertically to avoid overlap
       const magicCls = isCrit ? 'crit-magic' : 'magic-dmg';
       const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, (i % 3) * 28 + 20, { atkSide: attacker.side, amount: magicDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: magicDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
 
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       const eEl = document.getElementById(eElId);
@@ -2829,8 +2807,8 @@ async function doChestStorm(attacker, skill) {
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, trueType);
       totalAll += physDmg + trueDmg;
       const physCls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28 + 20, { atkSide: attacker.side, amount: physDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: physDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
