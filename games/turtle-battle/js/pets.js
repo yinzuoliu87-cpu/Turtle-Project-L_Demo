@@ -315,9 +315,9 @@ const ALL_PETS = [
     ]},
   { id:'bubble',    name:'泡泡龟',   emoji:'🫧🐢',    rarity:'A',   hp:350,  atk:39,  def:18, mr:19, spd:14, crit:0.25,
     img:'../../assets/pets/气泡龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
-    passive:{ type:'bubbleStore', name:'泡沫', pct:100, healPct:10, dmgPct:40,
-              brief:'泡泡龟受伤储存 <span class="val-atk">100%</span> 为泡泡值，每回合消耗 <span class="val-heal">10%</span> 回复生命 + <span class="val-magic">40%</span> 打击随机敌人',
-              desc:'泡泡龟受到的伤害储存 <span class="val-atk">100%</span> 为泡泡值。\n每回合消耗泡泡值的 <span class="val-heal">10%</span> 回复等量生命值。\n另外消耗泡泡值的 <span class="val-magic">40%</span> 作为魔法伤害打击随机敌人。' },
+    passive:{ type:'bubbleStore', name:'泡沫', pct:90, healPct:10, dmgPct:40,
+              brief:'泡泡龟受伤储存 <span class="val-atk">90%</span> 为泡泡值，每回合消耗 <span class="val-heal">10%</span> 回复生命 + <span class="val-magic">40%</span> 打击随机敌人',
+              desc:'泡泡龟受到的伤害储存 <span class="val-atk">90%</span> 为泡泡值。\n每回合消耗泡泡值的 <span class="val-heal">10%</span> 回复等量生命值。\n另外消耗泡泡值的 <span class="val-magic">40%</span> 作为魔法伤害打击随机敌人。' },
     skills:[
       { name:'泡泡攻击', type:'physical', hits:3, power:0, pierce:0, cd:0, atkScale:0.7,
         brief:'泡泡龟攻击3段，共（{N:0.7*ATK*3}）物理伤害',
