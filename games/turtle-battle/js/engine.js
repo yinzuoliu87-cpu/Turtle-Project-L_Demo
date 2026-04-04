@@ -914,7 +914,7 @@ async function executeAction(action) {
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
 
-  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst') {
+  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
