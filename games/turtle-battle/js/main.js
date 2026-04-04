@@ -203,19 +203,30 @@ function setupConn(conn) {
   });
 }
 
-// Disconnect overlay with retry
+// Disconnect overlay — opponent left = auto-win
 function showDisconnectOverlay() {
   if (document.getElementById('disconnectOverlay')) return;
   const overlay = document.createElement('div');
   overlay.id = 'disconnectOverlay';
   overlay.className = 'disconnect-overlay';
-  overlay.innerHTML = `
-    <div class="disconnect-box">
-      <div class="disconnect-icon">📡</div>
-      <div class="disconnect-title">连接已断开</div>
-      <div class="disconnect-msg">对手可能锁屏或网络中断</div>
-      <button class="btn btn-primary" onclick="location.reload()">返回大厅</button>
-    </div>`;
+  if (!battleOver) {
+    // Opponent disconnected during battle = you win
+    overlay.innerHTML = `
+      <div class="disconnect-box">
+        <div class="disconnect-icon">🏆</div>
+        <div class="disconnect-title">对手已退出</div>
+        <div class="disconnect-msg">对手断开连接，你获得胜利！</div>
+        <button class="btn btn-primary" onclick="document.getElementById('disconnectOverlay').remove(); battleOver=true; showResult(true)">领取奖励</button>
+      </div>`;
+  } else {
+    overlay.innerHTML = `
+      <div class="disconnect-box">
+        <div class="disconnect-icon">📡</div>
+        <div class="disconnect-title">连接已断开</div>
+        <div class="disconnect-msg">对战已结束</div>
+        <button class="btn btn-primary" onclick="location.reload()">返回大厅</button>
+      </div>`;
+  }
   document.body.appendChild(overlay);
   animating = false;
   battleOver = true;
@@ -368,11 +379,11 @@ function confirmTeam() {
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
     const boss = createFighter(bossPet.id, 'right');
-    // Boss stat multipliers
-    boss.maxHp = Math.round(boss.maxHp * 3.0); boss.hp = boss.maxHp;
-    boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
-    boss.baseDef = Math.round(boss.baseDef * 1.5); boss.def = boss.baseDef;
-    boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.5); boss.mr = boss.baseMr;
+    // Boss stat multipliers (2v1 balanced)
+    boss.maxHp = Math.round(boss.maxHp * 2.5); boss.hp = boss.maxHp;
+    boss.baseAtk = Math.round(boss.baseAtk * 1.1); boss.atk = boss.baseAtk;
+    boss.baseDef = Math.round(boss.baseDef * 1.3); boss.def = boss.baseDef;
+    boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.3); boss.mr = boss.baseMr;
     boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
     boss._isBoss = true;
     boss.name = 'BOSS ' + boss.name;
@@ -573,18 +584,41 @@ function showResult(leftWon) {
   } else if (isWin) {
     icon.textContent = '🏆';
     title.textContent = '胜利！';
-    const coins = 30 + turnNum*2;
     sub.textContent = `历经 ${turnNum} 回合`;
-    rewards.innerHTML = `<div class="reward-line">🪙 +${coins} 龟币</div>`;
+    // Daily first win bonus
+    const today = new Date().toDateString();
+    const dailyKey = gameMode === 'boss' ? 'dailyBossWin' : 'dailyPveWin';
+    const lastWin = localStorage.getItem(dailyKey);
+    const isFirstWin = lastWin !== today;
+    let coins = 10 + turnNum;
+    let rewardLines = [];
+    if (isFirstWin) {
+      coins += 50;
+      localStorage.setItem(dailyKey, today);
+      rewardLines.push(`<div class="reward-line">🪙 +50 龟币 <span style="color:#ffd93d">（每日首胜）</span></div>`);
+    }
+    if (gameMode === 'pvp-online') {
+      coins = 100; // winner takes all (50 entry × 2)
+      rewardLines = [`<div class="reward-line">🪙 +100 龟币 <span style="color:#ffd93d">（赢家通吃）</span></div>`];
+    } else {
+      rewardLines.push(`<div class="reward-line">🪙 +${10 + turnNum} 龟币</div>`);
+    }
+    rewards.innerHTML = rewardLines.join('');
     addCoins(coins); saveRecord(true);
     try { sfxVictory(); } catch(e) {}
   } else {
     icon.textContent = '💔';
     title.textContent = '失败…';
     sub.textContent = `坚持了 ${turnNum} 回合`;
-    rewards.innerHTML = `<div class="reward-line">🪙 +5 龟币</div>`;
+    if (gameMode === 'pvp-online') {
+      rewards.innerHTML = `<div class="reward-line">🪙 -50 龟币 <span style="color:#ff6b6b">（门票费）</span></div>`;
+      addCoins(-50);
+    } else {
+      rewards.innerHTML = `<div class="reward-line">🪙 +5 龟币</div>`;
+      addCoins(5);
+    }
     try { sfxDefeat(); } catch(e) {}
-    addCoins(5); saveRecord(false);
+    saveRecord(false);
   }
   showScreen('screenResult');
 }

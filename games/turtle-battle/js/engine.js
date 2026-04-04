@@ -507,6 +507,47 @@ let isFirstRound = true;
 let sidesActedThisRound = 0;  // 0, 1, or 2
 let _processingEndOfRound = false; // prevent re-entry during summon actions
 
+// ── TURN TIMER (40s countdown, auto-pick on timeout) ──────
+let _turnTimerId = null;
+let _turnTimerInterval = null;
+function startTurnTimer(seconds, canAct) {
+  clearTurnTimer();
+  // Show timer UI
+  let timerEl = document.getElementById('turnTimer');
+  if (!timerEl) {
+    timerEl = document.createElement('div');
+    timerEl.id = 'turnTimer';
+    timerEl.className = 'turn-timer';
+    document.body.appendChild(timerEl);
+  }
+  let remaining = seconds;
+  timerEl.textContent = remaining + 's';
+  timerEl.style.display = 'block';
+  timerEl.classList.remove('timer-urgent');
+  _turnTimerInterval = setInterval(() => {
+    remaining--;
+    timerEl.textContent = remaining + 's';
+    if (remaining <= 10) timerEl.classList.add('timer-urgent');
+    if (remaining <= 0) {
+      clearTurnTimer();
+      autoPickAction(canAct);
+    }
+  }, 1000);
+}
+function clearTurnTimer() {
+  if (_turnTimerInterval) { clearInterval(_turnTimerInterval); _turnTimerInterval = null; }
+  const el = document.getElementById('turnTimer');
+  if (el) el.style.display = 'none';
+}
+function autoPickAction(canAct) {
+  // Auto-select: pick first alive fighter, use first available skill on lowest HP enemy
+  const f = canAct && canAct.find(ff => ff.alive);
+  if (!f || battleOver) return;
+  actedThisSide.add(allFighters.indexOf(f));
+  addLog(`<span style="color:#ffd93d">⏰ ${f.name} 超时！自动出招</span>`);
+  aiAction(f);
+}
+
 function resetTurnState() {
   activeSide = 'left';
   actedThisSide = new Set(); _bossActionsThisRound = 0;
@@ -576,6 +617,8 @@ async function nextSideAction() {
       // Show turtle picker
       showTurtlePicker(canAct);
     }
+    // Start 40s turn timer (auto-pick if timeout)
+    startTurnTimer(40, canAct);
   } else if (gameMode === 'pvp-online') {
     // Online PVP: wait for opponent's action via network — hide UI, do nothing
     const panel = document.getElementById('actionPanel');
@@ -955,6 +998,7 @@ let _actionQueue = [];
 
 async function executeAction(action) {
   if (battleOver) return;
+  clearTurnTimer(); // player acted, stop countdown
   // Queue actions that arrive while animating (e.g. online opponent's action)
   if (animating) {
     _actionQueue.push(action);

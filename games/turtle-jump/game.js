@@ -67,8 +67,8 @@ let currentParticles = [];  // current-zone visual particles
 // =====================================================
 // PETS — synced from main site petState (localStorage)
 // =====================================================
-// Rarity → lives: C/B/A=10, S=12, SS/SSS=14, TEST=∞
-const RARITY_LIVES = { C: 10, B: 10, A: 10, S: 12, SS: 14, SSS: 14 };
+// Rarity → lives: C/B/A=18, S=19, SS/SSS=20, TEST=∞
+const RARITY_LIVES = { C: 18, B: 18, A: 18, S: 19, SS: 20, SSS: 20 };
 // Rarity → turtle color
 const RARITY_COLORS = {
   C: '#06d6a0', B: '#4cc9f0', A: '#3a9abf',
