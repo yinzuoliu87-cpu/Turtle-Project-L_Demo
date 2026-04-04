@@ -246,6 +246,28 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
         if (f.hp <= 0) { f.alive = false; f._deathProcessed = true; }
       });
       f.buffs.filter(b => b.type === 'hot').forEach(h => { f.hp = Math.min(f.maxHp, f.hp + h.value); });
+      // BubbleStore passive: heal + damage
+      if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
+        const healAmt = Math.round(f.bubbleStore * (f.passive.healPct || 5) / 100);
+        f.bubbleStore -= healAmt;
+        f.hp = Math.min(f.maxHp, f.hp + healAmt);
+        if (f.passive.dmgPct) {
+          const dmgAmt = Math.round(f.bubbleStore * f.passive.dmgPct / 100);
+          f.bubbleStore -= dmgAmt;
+          if (dmgAmt > 0) {
+            const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+            if (enemies.length) {
+              const t = enemies[Math.floor(Math.random() * enemies.length)];
+              const effMr = calcEffMr(f, t);
+              const mrRed = effMr / (effMr + DEF_CONSTANT);
+              const finalDmg = Math.max(1, Math.round(dmgAmt * (1 - mrRed)));
+              applyRawDmg(f, t, finalDmg, false, false, 'magic');
+              if (t.hp <= 0) { t.alive = false; t._deathProcessed = true; }
+            }
+          }
+        }
+        if (f.bubbleStore < 1) f.bubbleStore = 0;
+      }
       // Ink link tick-down
       if (f._inkLink && f._inkLink.turns > 0) {
         f._inkLink.turns--;
