@@ -942,6 +942,9 @@ function pickSkill(idx) {
 }
 
 function showTargetSelect(targets) {
+  // Hide skill panel, show target panel
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
   const box = document.getElementById('targetButtons');
   box.innerHTML = targets.map(t => {
     const hpPct = Math.round(t.hp/t.maxHp*100);
@@ -949,7 +952,7 @@ function showTargetSelect(targets) {
       ${t.emoji} ${t.name} (HP${hpPct}%${t.shield>0?' 🛡'+Math.ceil(t.shield):''})
     </button>`;
   }).join('');
-  document.getElementById('targetSelect').style.display = 'block';
+  document.getElementById('targetSelect').style.display = 'flex';
 }
 
 function selectTarget(fi) {
@@ -959,7 +962,13 @@ function selectTarget(fi) {
   const skill = f.skills[pendingSkillIdx];
   executePlayerAction(f, skill, allFighters[fi]);
 }
-function cancelTarget() { document.getElementById('targetSelect').style.display='none'; pendingSkillIdx=null; }
+function cancelTarget() {
+  document.getElementById('targetSelect').style.display='none';
+  pendingSkillIdx=null;
+  // Re-show skill panel
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.add('show');
+}
 
 function executePlayerAction(f, skill, target) {
   document.getElementById('targetSelect').style.display = 'none';

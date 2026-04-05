@@ -566,7 +566,7 @@ body{
 .detail-debuff{color:#ff9f43;font-weight:700}
 
 /* ── TARGET SELECT ── */
-.target-select{margin-top:12px;padding-top:12px;border-top:1px solid rgba(255,255,255,.08)}
+.target-select{margin-top:12px;padding:12px;border-top:1px solid rgba(255,255,255,.08);flex-direction:column;gap:8px;align-items:stretch}
 .target-select p{font-size:13px;color:var(--fg2);margin-bottom:8px}
 .target-buttons{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:8px}
 
@@ -840,7 +840,20 @@ body{
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
   }
-  /* Target select: horizontal wrap */
+  /* Target select: fixed bottom panel (separate from action panel) */
+  .target-select {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 200;
+    border-radius: 12px 12px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.6);
+    padding: 12px 10px calc(12px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    margin: 0;
+    border-top: none;
+  }
   .target-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
   .target-buttons .btn-target { flex: 1; min-width: 100px; min-height: 44px; text-align: center; }
 
