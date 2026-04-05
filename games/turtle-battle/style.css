@@ -783,7 +783,14 @@ body{
     background: rgba(10,10,20,.97);
     font-size: 12px;
   }
-  .dmg-stats-panel.mobile-show { display: block; }
+  .dmg-stats-panel.mobile-show {
+    display: block;
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    width: 100vw;
+    max-height: 100vh;
+    z-index: 9999;
+  }
 
   /* Battle log: collapsible */
   .battle-log-wrapper { flex-shrink: 0; }
@@ -1061,12 +1068,7 @@ body{
     min-height: 44px;
   }
 
-  /* -- Battle log -- */
-  .battle-log {
-    font-size: 12px;
-    max-height: 160px;
-    padding: 10px;
-  }
+  /* -- Battle log: handled by collapsible wrapper on mobile -- */
 
   /* -- Result screen -- */
   .result-icon {
@@ -1194,7 +1196,6 @@ body{
     font-size: 8px;
   }
   .fighter-card .sprite-wrap { flex-shrink: 0; }
-  .battle-log { max-height: 50px; font-size: 9px; }
   .summon-mini { padding: 4px 5px; }
   .summon-name { font-size: 9px; }
   .summon-hp-bar { height: 5px; }
@@ -1415,13 +1416,7 @@ body{
     font-size: 16px;
   }
 
-  /* -- Battle log compact -- */
-  .battle-log {
-    font-size: 11px;
-    max-height: 120px;
-    line-height: 1.6;
-    padding: 8px;
-  }
+  /* -- Battle log: collapsible on mobile, handled by wrapper -- */
 
   /* -- Passive popup -- */
   .passive-popup {
