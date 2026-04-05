@@ -12,7 +12,8 @@ function renderFighterCard(f, elId) {
   if (!card) return;
   const avatarEl = card.querySelector('.fighter-emoji');
   if (f.img) {
-    avatarEl.innerHTML = buildPetImgHTML(f, 72);
+    const avatarSize = window.innerWidth <= 768 ? 48 : 72;
+    avatarEl.innerHTML = buildPetImgHTML(f, avatarSize);
   } else {
     avatarEl.textContent = f.emoji;
   }
