@@ -55,22 +55,35 @@ function cleanupPeer() {
 let PEER_CONFIG = { debug: 1, config: { iceServers: [] } };
 let _turnReady = false;
 
-// Fetch TURN credentials from metered.ca (API Key, safe for frontend)
+// Fetch TURN credentials from metered.ca, with multiple fallbacks
 let _turnPromise = (async function loadTurnServers() {
+  // Try metered.ca API first
   try {
     const resp = await fetch('https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917');
-    const servers = await resp.json();
-    PEER_CONFIG.config.iceServers = servers;
-    console.log('TURN servers loaded:', servers.length, servers);
+    if (resp.ok) {
+      const servers = await resp.json();
+      if (servers && servers.length > 0) {
+        PEER_CONFIG.config.iceServers = servers;
+        console.log('TURN servers loaded:', servers.length, servers);
+        _turnReady = true;
+        return;
+      }
+    }
   } catch(e) {
-    console.warn('Failed to load TURN servers, using fallback:', e);
-    PEER_CONFIG.config.iceServers = [
-      { urls: 'stun:stun.l.google.com:19302' },
-      { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
-      { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
-    ];
+    console.warn('Metered TURN API failed:', e.message);
   }
+  // Fallback: public STUN + free TURN relays
+  console.log('Using fallback STUN/TURN servers');
+  PEER_CONFIG.config.iceServers = [
+    { urls: 'stun:stun.l.google.com:19302' },
+    { urls: 'stun:stun1.l.google.com:19302' },
+    { urls: 'stun:stun2.l.google.com:19302' },
+    { urls: 'stun:stun3.l.google.com:19302' },
+    { urls: 'stun:stun4.l.google.com:19302' },
+    { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+  ];
   _turnReady = true;
 })();
 
@@ -88,16 +101,17 @@ async function createRoom() {
   status.textContent = '正在连接PeerJS服务器…';
 
   onlinePeer = new Peer(peerId, PEER_CONFIG);
+  status.textContent = '正在连接信令服务器… (ICE: ' + PEER_CONFIG.config.iceServers.length + '个)';
 
   const timeout = setTimeout(() => {
-    status.textContent = '连接超时，PeerJS服务器可能不可用。请重试。';
+    status.textContent = '❌ 连接超时（10秒）。PeerJS公共服务器可能不可用，请稍后重试。';
   }, 10000);
 
   onlinePeer.on('open', (id) => {
     clearTimeout(timeout);
     document.getElementById('roomCodeDisplay').style.display = 'flex';
     document.getElementById('roomCodeText').textContent = code;
-    status.textContent = '房间已创建！等待对手加入… (房间号: ' + code + ')';
+    status.textContent = '✅ 房间已创建！等待对手加入… (房间号: ' + code + ')';
   });
   onlinePeer.on('connection', (conn) => {
     onlineConn = conn;
@@ -137,42 +151,41 @@ async function joinRoom() {
   status.textContent = '正在连接PeerJS服务器…';
 
   onlinePeer = new Peer(null, PEER_CONFIG);
+  status.textContent = '正在连接信令服务器… (ICE: ' + PEER_CONFIG.config.iceServers.length + '个)';
 
   const timeout = setTimeout(() => {
-    status.textContent = '连接PeerJS服务器超时，请检查网络后重试';
+    status.textContent = '❌ 连接信令服务器超时（10秒）。请检查网络或稍后重试。';
   }, 10000);
 
   onlinePeer.on('open', (myId) => {
     clearTimeout(timeout);
     console.log('Guest peer open, my ID:', myId);
-    status.textContent = '正在连接房间 ' + code + ' …';
+    status.textContent = '✅ 信令已连接，正在查找房间 ' + code + ' …';
     const conn = onlinePeer.connect('turtle-battle-' + code, { reliable: true, serialization: 'json' });
     onlineConn = conn;
     setupConn(conn);
 
     const connTimeout = setTimeout(() => {
-      // Check if peer was found but WebRTC failed
-      console.log('Connection state:', conn.open, conn.peerConnection?.connectionState);
-      status.textContent = '连接超时。可能原因：1)房间不存在 2)双方网络NAT穿透失败。请确认房间号正确且房主在线。';
+      status.textContent = '❌ 连接房间超时（12秒）。\n可能原因：\n1) 房间号不正确\n2) 房主已离开\n3) 双方网络NAT穿透失败';
     }, 12000);
 
     conn.on('open', () => {
       clearTimeout(connTimeout);
-      status.textContent = '已连接！等待房主开始…';
+      status.textContent = '✅ 已连接！等待房主开始…';
     });
     conn.on('error', (err) => {
       clearTimeout(connTimeout);
       console.error('Connection error:', err);
-      status.textContent = '连接房间失败：' + (err.message || err.type || err);
+      status.textContent = '❌ 连接房间失败：' + (err.message || err.type || err);
     });
   });
   onlinePeer.on('error', (err) => {
     clearTimeout(timeout);
     console.error('PeerJS error:', err);
     if (err.type === 'peer-unavailable') {
-      status.textContent = '房间 ' + code + ' 不存在或已关闭';
+      status.textContent = '❌ 房间 ' + code + ' 不存在或已关闭。请确认房主在线且房间号正确。';
     } else if (err.type === 'network') {
-      status.textContent = '网络错误，PeerJS服务器可能被防火墙拦截';
+      status.textContent = '❌ 网络错误。PeerJS信令服务器可能被防火墙拦截。';
     } else {
       status.textContent = '连接失败：' + err.type + ' (' + (err.message||'') + ')';
     }
