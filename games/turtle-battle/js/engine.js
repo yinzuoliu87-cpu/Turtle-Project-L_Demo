@@ -140,7 +140,7 @@ function getFighterElId(f) {
 // ── TURN SYSTEM ───────────────────────────────────────────
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
-  // With seeded random, guest processes all logic identically to host
+  if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] beginTurn T${turnNum} seed=${_rngSeed}`);
   // Reduce cooldowns
   allFighters.forEach(f => {
     f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
@@ -1432,9 +1432,14 @@ async function executeAction(action) {
   // Host: send action to guest (guest re-executes with same seeded random)
   if (gameMode === 'pvp-online' && onlineSide === 'left') {
     sendOnline({ type:'action', action });
-    // Debug: send state hash for desync detection
+    // Debug: send state hash + seed for desync detection
     const hash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
-    sendOnline({ type:'debug-hash', hash, seed: _rngSeed });
+    sendOnline({ type:'debug-hash', hash, seed: _rngSeed, turn: turnNum });
+    console.log(`[HOST] action done T${turnNum} seed=${_rngSeed}`, hash);
+  }
+  if (gameMode === 'pvp-online' && onlineSide === 'right') {
+    const hash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
+    console.log(`[GUEST] action done T${turnNum} seed=${_rngSeed}`, hash);
   }
 
   // Drain queued actions (online opponent sent action while we were animating)

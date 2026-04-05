@@ -271,7 +271,20 @@ function handleOnlineMessage(msg) {
       if (onlineSide === 'right') {
         const myHash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
         if (myHash !== msg.hash) {
-          console.warn('[DESYNC] Host:', msg.hash, '\nGuest:', myHash, '\nSeed host:', msg.seed, 'guest:', _rngSeed);
+          console.warn('[DESYNC] Host:', msg.hash);
+          console.warn('[DESYNC] Guest:', myHash);
+          console.warn('[DESYNC] Seed host:', msg.seed, 'guest:', _rngSeed);
+          // Detail per fighter
+          allFighters.forEach((f,i) => {
+            const hParts = msg.hash.split('|');
+            if (hParts[i]) {
+              const [hId, hHpMax, hAlive] = hParts[i].split(':');
+              const gHpMax = `${Math.round(f.hp)}/${f.maxHp}`;
+              if (hHpMax !== gHpMax) console.warn(`  [DESYNC] Fighter ${i} ${f.name}: host=${hHpMax} guest=${gHpMax}`);
+            }
+          });
+        } else {
+          console.log('[SYNC OK] seed:', _rngSeed);
         }
       }
       break;
