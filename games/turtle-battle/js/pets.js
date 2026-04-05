@@ -49,7 +49,7 @@ const ALL_PETS = [
   { id:'basic',     name:'小龟',     emoji:'🐢',      rarity:'C',   hp:350,  atk:40,  def:14, mr:13, spd:10, crit:0.25,
     img:'../../assets/pets/基础小龟v1.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     passive:{ type:'basicTurtle', name:'不屈', bonusMap:{C:20,B:23,A:26,S:29,SS:32,SSS:34},
-              brief:'攻击越强的敌人，造成的伤害越高。对C级敌人额外 <span class="val-atk">+20%</span> 伤害，对SSS级高达 <span class="val-atk">+34%</span>',
+              brief:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度造成额外伤害：C <span class="val-atk">+20%</span>　B <span class="val-atk">+23%</span>　A <span class="val-atk">+26%</span>　S <span class="val-atk">+29%</span>　SS <span class="val-atk">+32%</span>　SSS <span class="val-atk">+34%</span>',
               desc:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度获得增伤：\n<span style="color:#06d6a0">C</span> <span class="val-atk">+20%</span>　<span style="color:#4cc9f0">B</span> <span class="val-atk">+23%</span>　<span style="color:#3a9abf">A</span> <span class="val-atk">+26%</span>\n<span style="color:#c77dff">S</span> <span class="val-atk">+29%</span>　<span style="color:#ffd93d">SS</span> <span class="val-atk">+32%</span>　<span style="color:#ff6b6b">SSS</span> <span class="val-atk">+34%</span>' },
     skills:[
       { name:'攻击', type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.7, selfAtkUpPct:{pct:20, turns:2},
@@ -65,7 +65,7 @@ const ALL_PETS = [
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:36,  def:18, mr:15, spd:6, crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'stoneWall', name:'坚壁', defGain:3, maxDef:16, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
-              brief:'打得越久越硬，每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+3</span>（最多叠 <span class="val-atk">+16</span>）。被打时会把一部分伤害弹回给攻击者',
+              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+3</span>（上限<span class="val-atk">+16</span>）；受伤时反弹部分伤害给攻击者（基于<span class="val-def">护甲</span>和<span class="val-magic">魔抗</span>）。',
               desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+3</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skills:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.75, mrScale:0.4,
@@ -81,7 +81,7 @@ const ALL_PETS = [
   { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, mr:11, spd:12, crit:0.25,
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
     passive:{ type:'bambooCharge', name:'生长', atkPct:85, selfHpPct:12, healSelfHpPct:8, hpGainAtkPct:45, chargeDmgType:'magic',
-              brief:'每隔1回合蓄力，蓄力完成后技能释放后追加一发强力攻击，同时回复 <span class="val-heal">8%</span> 生命值并永久增加最大生命值，越打越肉',
+              brief:'竹叶龟每隔1回合蓄力充能。充能后释放技能时追加一发强化攻击（<span class="val-magic">85%攻击力+12%最大HP</span> 魔法伤害），回复 <span class="val-heal">8%</span> 生命值，永久增加最大生命值。',
               desc:'竹叶龟每隔1回合充能被动<img src="assets/bamboo-charge-icon.png" class="stat-icon">「生长」，充能完毕时，技能释放后追加一发强化普攻：\n\n造成 {M:ATK*0.85+HP*0.12} 魔法伤害（85%攻击力 + 12%<span class="val-heal">最大HP</span>）\n回复 {H:HP*0.08} <span class="val-heal">HP</span>（8%<span class="val-heal">最大HP</span>）\n永久增加 {H:ATK*0.45} <span class="val-heal">最大生命值</span>（45%攻击力）\n\n已通过被动累计获得 {H:bambooGainedHp} <span class="val-heal">最大生命值</span>' },
     skills:[
       { name:'一叶刃', type:'bambooLeaf', hits:3, power:0, pierce:0, cd:0, atkScale:0.21, selfHpPct:6,
@@ -95,7 +95,7 @@ const ALL_PETS = [
   { id:'angel',     name:'天使龟',   emoji:'😇🐢',    rarity:'B',   hp:340,  atk:41,  def:13, mr:16, spd:11, crit:0.25,
     img:'../../assets/pets/天使龟v1.png', sprite:{frames:8,frameW:248,frameH:200,duration:800},
     passive:{ type:'judgement', name:'审判', hpPct:11,
-              brief:'天使龟的审判之力。每段攻击额外造成目标当前生命值 <span class="val-magic">11%</span> 的魔法伤害，敌人生命值越高，额外伤害越多。',
+              brief:'天使龟的审判之力。每段攻击额外造成目标当前生命值 <span class="val-magic">11%</span> 的魔法伤害。',
               desc:'每段攻击附带目标当前11%HP的魔法伤害' },
     skills:[
       { name:'裁决', type:'physical', hits:4, power:0, pierce:0, cd:0, atkScale:0.35,
@@ -176,7 +176,7 @@ const ALL_PETS = [
   { id:'ghost',     name:'幽灵龟',   emoji:'👻🐢',    rarity:'B',   hp:319,  atk:43,  def:10, mr:10, spd:14, crit:0.25,
     img:'../../assets/pets/幽灵龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
     passive:{ type:'ghostCurse', name:'怨灵', hpPct:9, turns:3,
-              brief:'死后诅咒全体敌人3回合，每回合造成敌人最大生命值 <span class="val-atk">9%</span> 的无视防御伤害。杀了它反而吃亏',
+              brief:'幽灵龟死亡时诅咒全体敌人3回合，每回合造成目标最大生命值 <span class="val-atk">9%</span> 的真实伤害。',
               desc:'幽灵龟的怨灵诅咒。\n\n幽灵龟死亡时，诅咒全体敌人3回合。\n每回合对每个敌人造成其 <span class="val-true">9%</span> 最大生命值的真实持续伤害。' },
     skills:[
       { name:'幽魂触碰', type:'ghostTouch', hits:1, power:0, pierce:0, cd:0, normalScale:0.4, pierceScale:0.9,
@@ -192,7 +192,7 @@ const ALL_PETS = [
   { id:'diamond',   name:'钻石龟',   emoji:'💎🐢',    rarity:'B',   hp:361,  atk:38,  def:21, mr:18, spd:8, crit:0.25,
     img:'../../assets/pets/钻石龟.png',
     passive:{ type:'diamondStructure', name:'钻石结构', defBuffAmp:50, flatReductionPct:20,
-              brief:'全队获得的防御加成额外放大 <span class="val-atk">50%</span>。自身每次受伤都固定减免一部分（基于 <span class="val-def">护甲</span> 的 <span class="val-atk">20%</span>），无视防御的伤害不受此效果影响',
+              brief:'全队获得的防御加成额外放大 <span class="val-atk">50%</span>。自身每次受伤都固定减免一部分（基于 <span class="val-def">护甲</span> 的 <span class="val-atk">20%</span>），真实伤害不受此效果影响。',
               desc:'钻石龟的结构强化全队防御体系。\n\n全队所有护甲和魔抗加成效果额外放大 <span class="val-atk">+50%</span>\n\n每段受到伤害时固定减免（15%×护甲({DEF}) = {D:DEF*0.15}）伤害\n真实伤害不受此减免影响。' },
     skills:[
       { name:'钻石切割', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.7, defScale:0.7, mrScale:0.7,
@@ -257,7 +257,7 @@ const ALL_PETS = [
   { id:'gambler',   name:'赌神龟',   emoji:'🃏🐢',    rarity:'A',   hp:329,  atk:47,  def:11, mr:11, spd:14, crit:0.25,
     img:'../../assets/pets/赌神龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
     passive:{ type:'gamblerMultiHit', name:'多重打击', chance:40, dmgScale:0.6,
-              brief:'每段攻击有 <span class="val-atk">40%</span> 概率追加一次额外打击（60%攻击力伤害），追加的打击还能再次触发，运气好可以连续追击多次',
+              brief:'赌神龟每段攻击有 <span class="val-atk">40%</span> 概率追加一次额外打击（<span class="val-atk">60%</span>攻击力伤害），可连锁触发，每次概率递减 <span class="val-atk">20%</span>。',
               desc:'赌神龟的多重打击本能。\n\n每段攻击有 <span class="val-atk">40%</span> 概率触发额外打击：\n造成（60%×攻击力({ATK}) = {N:ATK*0.6}）物理伤害。\n\n额外打击可继续连锁触发，每次触发概率递减 <span class="val-atk">20%</span>（40% → 32% → 25.6% → ...）。\n「赌注」期间多重打击概率提升至 <span class="val-atk">60%</span>。' },
     skills:[
       { name:'卡牌射击', type:'gamblerCards', hits:3, power:0, pierce:0, cd:0, minScale:0.3, maxScale:0.6,
@@ -273,7 +273,7 @@ const ALL_PETS = [
   { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',    rarity:'A',   hp:339,  atk:43,  def:13, mr:11, spd:15, crit:0.25,
     img:'../../assets/pets/猎人龟v1.png', sprite:{frames:15,frameW:500,frameH:500,duration:1500},
     passive:{ type:'hunterKill', name:'猎杀', hpThresh:18, stealPct:20, lifesteal:10,
-              brief:'残血敌人（低于 <span class="val-atk">18%</span> 血量）会被直接处决。每击杀一个敌人，偷走对方 <span class="val-atk">20%</span> 属性并永久获得 <span class="val-heal">10%</span> 吸血效果，越杀越强',
+              brief:'猎人龟每次行动后检查，生命值低于 <span class="val-atk">18%</span> 的敌人直接斩杀。击杀敌人时窃取对方 <span class="val-atk">20%</span> 基础属性，并叠加 <span class="val-heal">10%</span> 生命偷取。',
               desc:'猎人龟的猎杀本能。\n\n每次行动后检查，生命值低于 <span class="val-atk">18%</span> 的敌人直接斩杀。\n斩杀或击杀敌人时，窃取对方 <span class="val-atk">20%</span> 基础属性（攻击力/护甲/魔抗/最大生命值），并叠加 <span class="val-heal">10%</span> 生命偷取。\n\n已猎杀 <span class="val-atk">{B:hunterKills}</span> 只敌方\n累计获得：攻击力+{N:hunterStolenAtk} 护甲+{D:hunterStolenDef} 魔抗+{M:hunterStolenMr} 最大生命值+{H:hunterStolenHp} 生命偷取{B:lifesteal}%' },
     skills:[
       { name:'射箭',     type:'hunterShot', hits:3, power:0, pierce:0, cd:0, atkScale:0.55, execThresh:40, execCrit:40, execCritDmg:20,
@@ -289,7 +289,7 @@ const ALL_PETS = [
   { id:'pirate',    name:'海盗龟',   emoji:'🏴‍☠️🐢',  rarity:'A',   hp:371,  atk:41,  def:15, mr:13, spd:12, crit:0.25,
     img:'../../assets/pets/海盗龟.png',
     passive:{ type:'pirateBarrage', name:'掠夺', bombardPct:25, deathHookPct:25,
-              brief:'开局炮击一个随机敌人，造成自身 <span class="val-atk">25%</span> 最大生命值的无视防御伤害。死亡时钩住击杀者，再造成同等伤害拉对方垫背',
+              brief:'海盗龟开局轰击随机敌人，造成自身 <span class="val-atk">25%</span> 最大生命值的真实伤害。死亡时钩锁击杀者，造成等量伤害。',
               desc:'海盗龟开局轰击随机敌人 25%×(最大HP={HP}) = {T:HP*0.25} 真实伤害。\n死亡时钩锁击杀者 25%×(最大HP={HP}) = {T:HP*0.25} 真实伤害。' },
     skills:[
       { name:'弯刀',     type:'physical', hits:4, power:0, pierce:0, cd:0, atkScale:0.35,
@@ -337,7 +337,7 @@ const ALL_PETS = [
   { id:'line',      name:'线条龟',   emoji:'✏️🐢',    rarity:'A',   hp:332,  atk:46,  def:10, mr:11, spd:16, crit:0.25,
     img:'../../assets/pets/线条龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'inkMark', name:'墨迹', pctPerStack:5, maxStacks:5,
-              brief:'每次攻击给敌人叠1层墨迹标记（最多5层），每层使敌人多受 <span class="val-atk">5%</span> 伤害。叠满5层后敌人多受 <span class="val-atk">25%</span> 伤害，还可以引爆墨迹造成大量无视防御的伤害',
+              brief:'线条龟的攻击为目标叠加墨迹（上限5层），每层使目标受到所有伤害 <span class="val-atk">+5%</span>，满层 <span class="val-atk">+25%</span>。「画龙点睛」可引爆墨迹造成大量真实伤害。',
               desc:'线条龟的墨迹印记。\n\n每段攻击命中敌人叠加1层墨迹（上限5层）。\n每层墨迹使目标受到的所有伤害增加 <span class="val-atk">5%</span>。\n满5层时目标额外承受 <span class="val-atk">25%</span> 伤害。\n\n「连笔」连接的两个敌人共享墨迹层数。\n「画龙点睛」引爆目标墨迹，造成大量真实伤害。' },
     skills:[
       { name:'素描', type:'lineSketch', hits:3, power:0, pierce:0, cd:0, atkScale:0.45,
@@ -353,7 +353,7 @@ const ALL_PETS = [
   { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:329,  atk:42,  def:10, mr:13, spd:18, crit:0.25,
     img:'../../assets/pets/闪电龟.png',
     passive:{ type:'lightningStorm', name:'雷电', shockScale:0.82, stackMax:8,
-              brief:'每回合自动电击一个随机敌人造成 <span class="val-atk">82%</span> 攻击力的无视防御伤害。攻击会叠加电击标记，叠满 <span class="val-atk">8</span> 层时引爆雷暴，再造成一次等量伤害',
+              brief:'每回合自动电击一个随机敌人造成 <span class="val-atk">82%</span> 攻击力的真实伤害。攻击会叠加电击标记，叠满 <span class="val-atk">8</span> 层时引爆雷暴，再造成一次等量伤害',
               desc:'闪电龟周身环绕雷电之力。\n\n每回合自动电击随机敌人，造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害。\n\n每段攻击命中敌人叠加1层电击标记，满{stackMax}层时引爆雷暴，\n造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害并清零层数。' },
     skills:[
       { name:'闪电打击', type:'lightningStrike', dmgType:'magic', hits:5, power:0, pierce:0, cd:0, atkScale:0.23, splashPct:25,
@@ -370,7 +370,7 @@ const ALL_PETS = [
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:330,  atk:42,  def:12, mr:15, spd:14, crit:0.25,
     img:'../../assets/pets/凤凰龟.png',
     passive:{ type:'phoenixRebirth', name:'涅槃', revivePct:30,
-              brief:'第一次被打死时会浴火重生，以 <span class="val-heal">30%</span> 最大生命值复活，同时让全体敌人着火（持续掉血）并降低敌人的回复效果',
+              brief:'凤凰龟首次死亡时浴火重生，以 <span class="val-heal">30%</span> 最大生命值复活，并对全体敌人施加灼烧（持续魔法伤害）和治疗削减效果。',
               desc:'凤凰龟拥有涅槃之力。\n\n首次死亡时浴火重生，以（25%×最大生命值({HP}) = {H:HP*0.25}）HP复活。\n复活后保留所有增益和减益效果。\n并对全体敌人施加<span style="color:#ff6600">灼烧</span>4回合与治疗削减3回合（<span class="val-atk">-50%</span>）。' },
     skills:[
       { name:'灼烧',   type:'phoenixBurn', dmgType:'magic', hits:1, power:0, pierce:0, cd:0, atkScale:0.9,
@@ -492,7 +492,7 @@ const ALL_PETS = [
   { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:349,  atk:45,  def:13, mr:15, spd:17, crit:0.25,
     img:'../../assets/pets/星际龟v1.png', sprite:{frames:12,frameW:500,frameH:500,duration:1200},
     passive:{ type:'starEnergy', name:'星能', chargeRate:62, maxChargePct:40, passiveFirePct:30, burstPct:100,
-              brief:'造成伤害会充能星能条。每次释放技能后自动用 <span class="val-atk">30%</span> 星能追加一次无视防御伤害。星能充满后大招可消耗全部星能，对全体敌人造成额外 <span class="val-atk">100%</span> 无视防御伤害',
+              brief:'造成伤害会充能星能条。每次释放技能后自动用 <span class="val-atk">30%</span> 星能追加一次真实伤害。星能充满后大招可消耗全部星能，对全体敌人造成额外 <span class="val-atk">100%</span> 真实伤害',
               desc:'星际龟的星能核心。\n\n造成伤害的 <span class="val-atk">65%</span> 转化为星能，上限（40%×最大生命值({HP}) = {B:HP*0.4}）。\n\n每次释放技能后，额外打出相当于储存星能 <span class="val-atk">30%</span> 的真实伤害（对攻击目标）。\n\n流星暴击时，若星能已满，消耗全部星能，对全体敌人附加星能 <span class="val-atk">100%</span> 的真实伤害。' },
     skills:[
       { name:'星光射线', type:'starBeam', dmgType:'magic', hits:3, power:0, pierce:0, cd:0, atkScale:0.4, currentHpPct:6,
@@ -509,7 +509,7 @@ const ALL_PETS = [
   { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:426,  atk:39,  def:25, mr:24, spd:6, crit:0.25,
     img:'../../assets/pets/缩头乌龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'summonAlly', name:'喊龟', hpPct:40, maxRarity:'A',
-              brief:'开局随机召唤一只A级以下的龟当小弟（拥有 <span class="val-atk">40%</span> 血量），小弟会自动释放技能帮忙打架。小弟躲在身后不会被敌人单独选中攻击',
+              brief:'缩头乌龟开局随机召唤一只A级以下的龟作为随从（<span class="val-atk">40%</span> HP）。随从每回合末自动释放技能，躲在缩头乌龟身后，敌方单体技能无法选中随从。',
               desc:'缩头乌龟躲在壳里喊龟帮忙。\n\n开局随机召唤一只A级以下的龟作为随从：\n随从拥有 <span class="val-atk">40%</span> 最大生命值，属性和被动正常生效。\n\n随从每回合末自动释放一个技能（有独立CD和AI）。\n随从躲在缩头乌龟身后，敌方单体技能无法选中随从，但会受到AOE伤害和敌方回合被动伤害。\n\n缩头乌龟阵亡时，随从也会一同阵亡。\n随从阵亡会触发自身的死亡被动。' },
     skills:[
       { name:'攻击', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.0, selfDefUpPct:{pct:20,turns:2},
@@ -525,7 +525,7 @@ const ALL_PETS = [
   { id:'headless',  name:'无头龟',   emoji:'💀🐢',    rarity:'SS',  hp:350,  atk:39,  def:13, mr:12, spd:16, crit:0.25,
     img:'../../assets/pets/无头龟v1.png', sprite:{frames:17,frameW:500,frameH:500,duration:1700},
     passive:{ type:'undeadRage', name:'亡灵', lifestealBase:22, atkPerLostPct:1.0, atkMaxBonus:100,
-              brief:'自带 <span class="val-heal">22%</span> 吸血效果，血量越低攻击力越高（最高翻倍）。第一次被打到没血时不会死，锁定1点血量撑 <span class="val-atk">2</span> 回合',
+              brief:'无头龟登场获得 <span class="val-heal">22%</span> 生命偷取。每损失1%生命值，攻击力 <span class="val-atk">+1%</span>（最高<span class="val-atk">+100%</span>）。首次濒死时锁血1HP持续 <span class="val-atk">2</span> 回合。',
               desc:'无头龟的亡灵之力。\n\n登场获得 <span class="val-heal">22%</span> 生命偷取。\n生命值越低攻击力越高：每损失1%生命值 → 攻击力 <span class="val-atk">+1%</span>（最高 <span class="val-atk">+100%</span>）。\n\n首次生命值归零时，触发亡灵之力：锁血1HP持续2回合。\n锁血期间不会死亡，敌人会优先攻击无头龟的队友。\n锁血结束后恢复为1HP，可以被正常击杀。' },
     skills:[
       { name:'撕咬',   type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.65, hpPct:4,
