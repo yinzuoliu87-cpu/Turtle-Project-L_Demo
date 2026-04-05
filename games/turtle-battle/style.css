@@ -1561,3 +1561,5 @@ body{
 .turn-timer{display:none;color:#ffd93d;font-size:14px;font-weight:700;margin-left:8px;transition:color .3s}
 .turn-timer.timer-urgent{color:#ff6b6b;border-color:#ff6b6b;animation:timerPulse 1s infinite}
 @keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
+
+.select-btn{padding:10px 20px;font-size:14px;min-height:44px;flex:1;max-width:160px}
