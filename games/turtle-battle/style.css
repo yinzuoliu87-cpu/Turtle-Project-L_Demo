@@ -833,26 +833,45 @@ body{
   }
   .action-header { font-size: 11px; margin-bottom: 4px; }
 
-  /* -- Pet selection grid: 2 columns -- */
+  /* -- Pet selection grid: 2 columns, no clipping -- */
   .pet-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
+    gap: 8px;
+    padding: 4px;
   }
   .pet-card {
-    padding: 14px 10px;
+    padding: 10px 8px;
+    overflow: visible;
   }
   .pet-name {
-    font-size: 15px;
+    font-size: 13px;
   }
   .pet-avatar {
-    min-height: 80px;
+    min-height: 64px;
+    overflow: visible;
+  }
+  .pet-avatar img, .pet-avatar .sprite-wrap {
+    max-height: 64px;
+    object-fit: contain;
   }
   .pet-passive-icon {
-    width: 44px;
-    height: 44px;
+    width: 32px;
+    height: 32px;
+    top: -4px;
+    right: -4px;
+  }
+  .pet-passive-icon img.stat-icon {
+    width: 22px;
+    height: 22px;
+  }
+  .pet-rarity {
+    font-size: 11px;
+    top: 2px;
+    left: 2px;
+    padding: 1px 4px;
   }
   .pet-stats-mini {
-    font-size: 12px;
+    font-size: 11px;
   }
 
   /* -- Team slots -- */
@@ -1113,21 +1132,26 @@ body{
   /* -- Pet grid: 2 columns tighter -- */
   .pet-grid {
     grid-template-columns: repeat(2, 1fr);
-    gap: 6px;
-    padding: 4px;
+    gap: 5px;
+    padding: 2px;
   }
   .pet-card {
-    padding: 10px 6px;
+    padding: 8px 5px;
     border-radius: 8px;
+    overflow: visible;
   }
   .pet-emoji {
-    font-size: 32px;
+    font-size: 28px;
   }
   .pet-avatar {
-    min-height: 64px;
+    min-height: 52px;
+    overflow: visible;
+  }
+  .pet-avatar img, .pet-avatar .sprite-wrap {
+    max-height: 52px;
   }
   .pet-name {
-    font-size: 13px;
+    font-size: 12px;
   }
   .pet-rarity {
     font-size: 10px;
