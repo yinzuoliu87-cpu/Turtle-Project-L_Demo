@@ -1584,6 +1584,6 @@ body{
 }
 
 /* ── TURN TIMER ── */
-.turn-timer{display:none;background:rgba(0,0,0,.5);color:#fff;font-size:14px;font-weight:700;padding:4px 10px;border-radius:8px;border:1px solid rgba(255,255,255,.2);transition:color .3s,border-color .3s;margin-left:auto}
+.turn-timer{display:none;color:#ffd93d;font-size:14px;font-weight:700;margin-left:8px;transition:color .3s}
 .turn-timer.timer-urgent{color:#ff6b6b;border-color:#ff6b6b;animation:timerPulse 1s infinite}
 @keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}

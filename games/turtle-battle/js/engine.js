@@ -503,11 +503,11 @@ function startTurnTimer(seconds, canAct) {
   // Show timer UI
   let timerEl = document.getElementById('turnTimer');
   if (!timerEl) {
-    timerEl = document.createElement('div');
+    timerEl = document.createElement('span');
     timerEl.id = 'turnTimer';
     timerEl.className = 'turn-timer';
-    const bannerRow = document.querySelector('.turn-banner-row');
-    if (bannerRow) bannerRow.appendChild(timerEl);
+    const banner = document.getElementById('turnBanner');
+    if (banner) banner.appendChild(timerEl);
     else document.body.appendChild(timerEl);
   }
   let remaining = seconds;
