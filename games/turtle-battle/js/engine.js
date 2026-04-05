@@ -944,9 +944,12 @@ function pickSkill(idx) {
 }
 
 function showTargetSelect(targets) {
-  // Hide skill panel, show target panel
-  const panel = document.getElementById('actionPanel');
-  if (panel) panel.classList.remove('show');
+  // Mobile: hide skill panel, show target panel separately
+  // Desktop: keep skill panel, show target select inside
+  if (window.innerWidth <= 768) {
+    const panel = document.getElementById('actionPanel');
+    if (panel) panel.classList.remove('show');
+  }
   const box = document.getElementById('targetButtons');
   box.innerHTML = targets.map(t => {
     const hpPct = Math.round(t.hp/t.maxHp*100);
@@ -967,9 +970,11 @@ function selectTarget(fi) {
 function cancelTarget() {
   document.getElementById('targetSelect').style.display='none';
   pendingSkillIdx=null;
-  // Re-show skill panel
-  const panel = document.getElementById('actionPanel');
-  if (panel) panel.classList.add('show');
+  // Mobile: re-show skill panel
+  if (window.innerWidth <= 768) {
+    const panel = document.getElementById('actionPanel');
+    if (panel) panel.classList.add('show');
+  }
 }
 
 function executePlayerAction(f, skill, target) {
