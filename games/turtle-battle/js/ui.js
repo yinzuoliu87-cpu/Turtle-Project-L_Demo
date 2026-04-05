@@ -862,14 +862,18 @@ function showActionPanel(f) {
     ((gameMode === 'pve' || gameMode === 'boss') && f.side === 'left') ||
     (gameMode === 'pvp-online' && f.side === onlineSide);
 
+  const battle = document.getElementById('screenBattle');
   if (isPlayer) {
     renderActionButtons(f);
     panel.classList.add('show');
+    if (battle) battle.classList.add('action-visible');
   } else if (gameMode === 'pve' || gameMode === 'boss') {
     panel.classList.remove('show');
+    if (battle) battle.classList.remove('action-visible');
     setTimeout(() => aiAction(f), 1200);
   } else {
     panel.classList.remove('show');
+    if (battle) battle.classList.remove('action-visible');
     addLog('等待对手操作…','sys');
   }
 }

@@ -320,9 +320,14 @@
     </div>
   </div>
 
-  <!-- BATTLE LOG -->
-  <div class="battle-log" id="battleLog">
-    <div class="log-entry">战斗开始！</div>
+  <!-- BATTLE LOG (collapsible on mobile) -->
+  <div class="battle-log-wrapper" id="battleLogWrapper">
+    <div class="battle-log-toggle" onclick="document.getElementById('battleLogWrapper').classList.toggle('expanded')">
+      <span>战斗日志</span><span class="log-toggle-arrow">▴</span>
+    </div>
+    <div class="battle-log" id="battleLog">
+      <div class="log-entry">战斗开始！</div>
+    </div>
   </div>
 </section>
 

@@ -966,6 +966,8 @@ function executePlayerAction(f, skill, target) {
   // Hide action panel immediately to prevent double-click
   const panel = document.getElementById('actionPanel');
   if (panel) panel.classList.remove('show');
+  const battle = document.getElementById('screenBattle');
+  if (battle) battle.classList.remove('action-visible');
   const action = { attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId: target ? allFighters.indexOf(target) : -1, aoe:!!skill.aoe };
   if (gameMode === 'pvp-online') {
     if (onlineSide === 'left') {
