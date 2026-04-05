@@ -140,17 +140,7 @@ function getFighterElId(f) {
 // ── TURN SYSTEM ───────────────────────────────────────────
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
-  // Guest: skip logic processing — host will send sync
-  const isOnlineGuest = gameMode === 'pvp-online' && onlineSide === 'right';
-  if (isOnlineGuest) {
-    addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
-    try { sfxTurnStart(); } catch(e) {}
-    activeSide = 'left';
-    actedThisSide = new Set(); _bossActionsThisRound = 0;
-    sidesActedThisRound = 0;
-    nextSideAction();
-    return;
-  }
+  // With seeded random, guest processes all logic identically to host
   // Reduce cooldowns
   allFighters.forEach(f => {
     f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
@@ -485,10 +475,7 @@ async function beginTurn() {
   recalcStats();
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
   try { sfxTurnStart(); } catch(e) {}
-  // Host: sync state after turn-start passives/buffs
-  if (gameMode === 'pvp-online' && onlineSide === 'left') {
-    sendOnline({ type:'sync', state: buildStateSync() });
-  }
+  // Seeded random ensures both sides compute identical results — no sync needed
   // Start new round: left acts first
   activeSide = 'left';
   actedThisSide = new Set(); _bossActionsThisRound = 0;
@@ -1443,9 +1430,11 @@ async function executeAction(action) {
   animating = false;
 
   // Host: send action to guest (guest re-executes with same seeded random)
-  // Sync only at turn boundaries (beginTurn) to avoid mid-animation HP overwrites
   if (gameMode === 'pvp-online' && onlineSide === 'left') {
     sendOnline({ type:'action', action });
+    // Debug: send state hash for desync detection
+    const hash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
+    sendOnline({ type:'debug-hash', hash, seed: _rngSeed });
   }
 
   // Drain queued actions (online opponent sent action while we were animating)
@@ -2574,7 +2563,6 @@ function checkBattleEnd() {
     document.getElementById('actionPanel').classList.remove('show');
     // Host: notify guest of battle end
     if (gameMode === 'pvp-online' && onlineSide === 'left') {
-      sendOnline({ type:'sync', state: buildStateSync() });
       sendOnline({ type:'battle-end', leftWon: lA });
     }
     setTimeout(() => showResult(lA), 1200);

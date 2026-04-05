@@ -263,9 +263,17 @@ function handleOnlineMessage(msg) {
       if (onlineSide === 'right') executeAction(msg.action);
       break;
     case 'sync':
-      // Guest receives authoritative state from host → overwrite all values
-      // This corrects any differences from Math.random() (crit, damage amounts)
+      // Sync kept as fallback — normally seeded random keeps both in sync
       if (onlineSide === 'right') applyStateSync(msg.state);
+      break;
+    case 'debug-hash':
+      // Guest: compare state hash to detect desync
+      if (onlineSide === 'right') {
+        const myHash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
+        if (myHash !== msg.hash) {
+          console.warn('[DESYNC] Host:', msg.hash, '\nGuest:', myHash, '\nSeed host:', msg.seed, 'guest:', _rngSeed);
+        }
+      }
       break;
     case 'battle-end':
       // Guest receives battle end from host
