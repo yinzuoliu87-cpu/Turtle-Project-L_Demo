@@ -872,7 +872,7 @@ function gameOver() {
     lives--;
     sfxShield(); triggerShake(4, 8);
     spawnParticles(w2sx(turtle.x), w2sy(turtle.y), 12, 0);
-    gToast('复活！剩余 ' + (lives >= 999 ? '∞' : lives) + ' 次');
+    gToast('复活！');
     // Return to current bubble
     if (currentBubble >= 0) {
       const b = bubbles[currentBubble];
