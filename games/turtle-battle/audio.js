@@ -43,7 +43,7 @@ function _noise(dur, vol) {
   const c = ensureAudio(), t = c.currentTime;
   const buf = c.createBuffer(1, c.sampleRate * dur, c.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * (1 - i / d.length);
+  for (let i = 0; i < d.length; i++) d[i] = ((_origMathRandom ? _origMathRandom() : Math.random()) * 2 - 1) * (1 - i / d.length);
   const n = c.createBufferSource(), g = c.createGain();
   n.buffer = buf;
   g.gain.setValueAtTime(vol, t);
@@ -235,7 +235,7 @@ function sfxBambooCharge() {
   // Whoosh: rising filtered noise
   const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = (Math.random() * 2 - 1) * Math.sin(i / d.length * Math.PI);
+  for (let i = 0; i < d.length; i++) d[i] = ((_origMathRandom ? _origMathRandom() : Math.random()) * 2 - 1) * Math.sin(i / d.length * Math.PI);
   const n = c.createBufferSource(), gn = c.createGain(), flt = c.createBiquadFilter();
   n.buffer = buf;
   flt.type = 'bandpass'; flt.frequency.setValueAtTime(400, t); flt.frequency.exponentialRampToValueAtTime(2000, t + 0.35); flt.Q.value = 2;
