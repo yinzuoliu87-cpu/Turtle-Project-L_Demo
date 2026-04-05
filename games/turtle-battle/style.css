@@ -734,7 +734,7 @@ body{
   }
 
   /* -- Battle area: fit one screen on mobile -- */
-  #screenBattle {
+  #screenBattle.active {
     max-width: 100%;
     padding: 4px 4px;
     overflow: hidden;
@@ -855,9 +855,7 @@ body{
     object-fit: contain;
   }
   .pet-avatar .sprite-wrap {
-    max-height: 64px;
-    overflow: hidden;
-    transform: scale(0.8);
+    transform: scale(0.65);
     transform-origin: center center;
   }
   .pet-passive-icon {
@@ -1157,9 +1155,7 @@ body{
     max-height: 52px;
   }
   .pet-avatar .sprite-wrap {
-    max-height: 52px;
-    overflow: hidden;
-    transform: scale(0.7);
+    transform: scale(0.55);
     transform-origin: center center;
   }
   .pet-name {
