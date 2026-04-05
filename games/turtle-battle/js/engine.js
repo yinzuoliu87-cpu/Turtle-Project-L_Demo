@@ -2891,6 +2891,11 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     const hpBefore = target.hp;
     target.hp = Math.max(1, target.hp - rem2); // can't go below 1
     const hpLoss2 = Math.round(hpBefore - target.hp);
+    // Show "无法死亡" floating text when HP would have dropped to 0
+    if (hpBefore - rem2 <= 0) {
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, '💀无法死亡', 'crit-label', 0, -25);
+    }
     if (source && source._dmgDealt !== undefined) { source._dmgDealt += amount; }
     if (target._dmgTaken !== undefined) { target._dmgTaken += amount; }
     updateDmgStats();
