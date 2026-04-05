@@ -636,6 +636,7 @@ async function finishSide() {
     if (_processingEndOfRound) return;
     _processingEndOfRound = true;
     // Both sides acted → end of round (guest processes identically via seeded random)
+    if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] finishSide pre-endOfRound seed=${_rngSeed}`);
     {
       // Summon auto-action at end of turn (once per summon)
       for (const f of allFighters) {
@@ -987,6 +988,12 @@ let _isGuestReplay = false;
 async function executeAction(action) {
   if (battleOver) return;
   clearTurnTimer(); // player acted, stop countdown
+  // Debug: log seed BEFORE action for desync tracking
+  if (gameMode === 'pvp-online') {
+    const f = allFighters[action.attackerId];
+    const s = f && f.skills[action.skillIdx];
+    console.log(`[${onlineSide.toUpperCase()}] pre-action T${turnNum} ${f?f.name:'?'} ${s?s.name:'?'} seed=${_rngSeed}`);
+  }
   // Queue actions that arrive while animating (e.g. online opponent's action)
   if (animating) {
     _actionQueue.push(action);
