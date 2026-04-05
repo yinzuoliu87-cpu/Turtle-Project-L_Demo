@@ -766,8 +766,20 @@ body{
   .summon-hp-text { font-size: 7px; }
   .summon-stats { font-size: 7px; }
 
-  /* Damage stats panel: hidden */
-  .dmg-stats-panel { display: none; }
+  /* Damage stats panel: collapsed, tap to expand */
+  .dmg-stats-panel {
+    display: none;
+    position: fixed;
+    top: 44px;
+    right: 0;
+    width: 200px;
+    max-height: 60vh;
+    overflow-y: auto;
+    z-index: 150;
+    border-radius: 0 0 0 12px;
+    box-shadow: -4px 4px 20px rgba(0,0,0,.6);
+  }
+  .dmg-stats-panel.mobile-show { display: block; }
 
   /* Battle log: collapsible */
   .battle-log-wrapper { flex-shrink: 0; }
