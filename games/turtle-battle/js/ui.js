@@ -931,6 +931,20 @@ function renderActionButtons(f) {
   document.getElementById('targetSelect').style.display = 'none';
 }
 
+function toggleBattleLog() {
+  const wrapper = document.getElementById('battleLogWrapper');
+  if (!wrapper) return;
+  const showing = wrapper.classList.toggle('mobile-show');
+  if (showing && !wrapper.querySelector('.log-close-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm log-close-btn';
+    btn.textContent = '✕ 关闭日志';
+    btn.style.cssText = 'position:sticky;top:0;z-index:10;margin-bottom:8px;width:100%';
+    btn.onclick = () => wrapper.classList.remove('mobile-show');
+    wrapper.insertBefore(btn, wrapper.firstChild);
+  }
+}
+
 function toggleDmgStats() {
   const panel = document.querySelector('.dmg-stats-panel');
   if (!panel) return;
@@ -1216,9 +1230,10 @@ function updateDmgStats() {
     byTaken.map(f => dmgRow(f, maxTaken, false)).join('');
 }
 
-function toggleDmgStats() {
+function _toggleDmgStatsDesktop() {
   const body = document.getElementById('dmgStatsBody');
   const toggle = document.querySelector('.dmg-toggle');
+  if (!body || !toggle) return;
   const hidden = body.classList.toggle('ds-hidden');
   toggle.textContent = hidden ? '▶' : '▼';
   if (!hidden) updateDmgStats();
