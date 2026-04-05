@@ -746,7 +746,7 @@ body{
     border-radius: 8px;
   }
   .fighter-emoji { font-size: 24px; min-height: 30px; flex-shrink: 0; }
-  .fighter-card .sprite-wrap { max-height: 44px; overflow: hidden; flex-shrink: 0; }
+  .fighter-card .sprite-wrap { flex-shrink: 1; transform: scale(0.5); transform-origin: top center; margin-bottom: -20px; }
   .fighter-name { font-size: 10px; margin-bottom: 1px; flex-shrink: 0; }
   .hp-bar { height: 7px; flex-shrink: 0; }
   .hp-text { font-size: 8px; flex-shrink: 0; }
@@ -1140,7 +1140,7 @@ body{
   .fighter-stats {
     font-size: 8px;
   }
-  .fighter-card .sprite-wrap { max-height: 40px; }
+  .fighter-card .sprite-wrap { transform: scale(0.4); transform-origin: top center; margin-bottom: -30px; }
   .battle-log { max-height: 50px; font-size: 9px; }
   .summon-mini { padding: 4px 5px; }
   .summon-name { font-size: 9px; }
