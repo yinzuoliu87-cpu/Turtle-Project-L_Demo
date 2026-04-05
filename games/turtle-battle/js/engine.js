@@ -631,14 +631,12 @@ async function nextSideAction() {
 async function finishSide() {
   if (battleOver) return;
   sidesActedThisRound++;
-  const isOnlineGuest = gameMode === 'pvp-online' && onlineSide === 'right';
-
   if (sidesActedThisRound >= 2) {
     // Prevent re-entry (summon executeAction could trigger finishSide again)
     if (_processingEndOfRound) return;
     _processingEndOfRound = true;
-    // Both sides acted → end of round
-    if (!isOnlineGuest) {
+    // Both sides acted → end of round (guest processes identically via seeded random)
+    {
       // Summon auto-action at end of turn (once per summon)
       for (const f of allFighters) {
         if (battleOver) break;
@@ -2557,8 +2555,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
 }
 
 function checkBattleEnd() {
-  // Guest: never end battle locally — host sends result via sync
-  if (gameMode === 'pvp-online' && onlineSide === 'right') return false;
+  // Both sides check battle end identically (seeded random ensures same state)
   // Don't end battle if a mech transform is pending
   if (allFighters.some(f => f._pendingMech)) return false;
   const lA = leftTeam.some(f=>f.alive), rA = rightTeam.some(f=>f.alive);
@@ -2907,9 +2904,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     addLog(`${target.emoji}${target.name} <span class="log-passive">💀亡灵之力！锁血1HP 2回合！</span>`);
     renderStatusIcons(target);
   } else {
-    // Only host determines death — guest waits for sync
-    const isGuest = gameMode === 'pvp-online' && onlineSide === 'right';
-    if (target.hp <= 0 && !isGuest) target.alive = false;
+    if (target.hp <= 0) target.alive = false;
   }
   // Real-time tracking by damage type
   if (source && source._dmgDealt !== undefined) {
