@@ -64,7 +64,7 @@ const ALL_PETS = [
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:36,  def:18, mr:15, spd:6, crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'stoneWall', name:'坚壁', defGain:3, maxDef:16, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
-              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+3</span>（上限<span class="val-atk">+16</span>）；受伤反弹 <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害',
+              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+3</span>（上限<span class="val-atk">+16</span>）；受伤反弹伤害（基于护甲+魔抗）',
               desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+3</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skills:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.75, mrScale:0.4,
@@ -80,7 +80,7 @@ const ALL_PETS = [
   { id:'bamboo',    name:'竹叶龟',   emoji:'🎋🐢',    rarity:'C',   hp:300,  atk:40,  def:10, mr:11, spd:12, crit:0.25,
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
     passive:{ type:'bambooCharge', name:'生长', atkPct:85, selfHpPct:12, healSelfHpPct:8, hpGainAtkPct:45, chargeDmgType:'magic',
-              brief:'竹叶龟每隔1回合充能<img src="assets/bamboo-charge-icon.png" class="stat-icon">，充能完毕时，技能释放后追加一发强化普攻：\n\n造成 {M:ATK*0.85+HP*0.12} 魔法伤害\n回复 {H:HP*0.08} <span class="val-heal">HP</span>\n永久增加 {H:ATK*0.45} <span class="val-heal">最大生命值</span>',
+              brief:'竹叶龟每隔1回合充能，充能后追加强化普攻：85%攻击力+12%最大HP 魔法伤害，回复8%HP，永久+45%攻击力的最大生命值',
               desc:'竹叶龟每隔1回合充能被动<img src="assets/bamboo-charge-icon.png" class="stat-icon">「生长」，充能完毕时，技能释放后追加一发强化普攻：\n\n造成 {M:ATK*0.85+HP*0.12} 魔法伤害（85%攻击力 + 12%<span class="val-heal">最大HP</span>）\n回复 {H:HP*0.08} <span class="val-heal">HP</span>（8%<span class="val-heal">最大HP</span>）\n永久增加 {H:ATK*0.45} <span class="val-heal">最大生命值</span>（45%攻击力）\n\n已通过被动累计获得 {H:bambooGainedHp} <span class="val-heal">最大生命值</span>' },
     skills:[
       { name:'一叶刃', type:'bambooLeaf', hits:3, power:0, pierce:0, cd:0, atkScale:0.21, selfHpPct:6,
@@ -188,7 +188,7 @@ const ALL_PETS = [
   { id:'diamond',   name:'钻石龟',   emoji:'💎🐢',    rarity:'B',   hp:361,  atk:38,  def:21, mr:18, spd:8, crit:0.25,
     img:'../../assets/pets/钻石龟.png',
     passive:{ type:'diamondStructure', name:'钻石结构', defBuffAmp:50, flatReductionPct:20,
-              brief:'钻石龟全队护甲/魔抗加成额外 <span class="val-atk">+50%</span>；每段受伤固定减免 {D:DEF*0.15}（真实伤害除外）',
+              brief:'钻石龟全队护甲/魔抗加成额外 <span class="val-atk">+50%</span>；每段受伤固定减免 <span class="val-def">20%护甲</span>（真实伤害除外）',
               desc:'钻石龟的结构强化全队防御体系。\n\n全队所有护甲和魔抗加成效果额外放大 <span class="val-atk">+50%</span>\n\n每段受到伤害时固定减免（15%×护甲({DEF}) = {D:DEF*0.15}）伤害\n真实伤害不受此减免影响。' },
     skills:[
       { name:'钻石切割', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.7, defScale:0.7, mrScale:0.7,
@@ -252,7 +252,7 @@ const ALL_PETS = [
   { id:'gambler',   name:'赌神龟',   emoji:'🃏🐢',    rarity:'A',   hp:329,  atk:47,  def:11, mr:11, spd:14, crit:0.25,
     img:'../../assets/pets/赌神龟v1.png', sprite:{frames:8,frameW:500,frameH:500,duration:800},
     passive:{ type:'gamblerMultiHit', name:'多重打击', chance:40, dmgScale:0.6,
-              brief:'赌神龟每段攻击有 <span class="val-atk">40%</span> 概率触发额外（{N:ATK*0.6}）物理打击，可连锁触发（每次概率递减20%）',
+              brief:'赌神龟每段攻击有 <span class="val-atk">40%</span> 概率触发额外 <span class="val-atk">60%攻击力</span> 物理打击，可连锁触发（每次概率递减20%）',
               desc:'赌神龟的多重打击本能。\n\n每段攻击有 <span class="val-atk">40%</span> 概率触发额外打击：\n造成（60%×攻击力({ATK}) = {N:ATK*0.6}）物理伤害。\n\n额外打击可继续连锁触发，每次触发概率递减 <span class="val-atk">20%</span>（40% → 32% → 25.6% → ...）。\n「赌注」期间多重打击概率提升至 <span class="val-atk">60%</span>。' },
     skills:[
       { name:'卡牌射击', type:'gamblerCards', hits:3, power:0, pierce:0, cd:0, minScale:0.3, maxScale:0.6,
@@ -284,7 +284,7 @@ const ALL_PETS = [
   { id:'pirate',    name:'海盗龟',   emoji:'🏴‍☠️🐢',  rarity:'A',   hp:371,  atk:41,  def:15, mr:13, spd:12, crit:0.25,
     img:'../../assets/pets/海盗龟.png',
     passive:{ type:'pirateBarrage', name:'掠夺', bombardPct:25, deathHookPct:25,
-              brief:'海盗龟开局轰击随机敌人 {T:HP*0.25} 真实伤害；死亡时钩锁击杀者 {T:HP*0.25} 真实伤害',
+              brief:'海盗龟开局轰击随机敌人 <span class="val-atk">25%最大HP</span> 真实伤害；死亡时钩锁击杀者 <span class="val-atk">25%最大HP</span> 真实伤害',
               desc:'海盗龟开局轰击随机敌人 25%×(最大HP={HP}) = {T:HP*0.25} 真实伤害。\n死亡时钩锁击杀者 25%×(最大HP={HP}) = {T:HP*0.25} 真实伤害。' },
     skills:[
       { name:'弯刀',     type:'physical', hits:4, power:0, pierce:0, cd:0, atkScale:0.35,
@@ -348,7 +348,7 @@ const ALL_PETS = [
   { id:'lightning', name:'闪电龟',   emoji:'⚡🐢',    rarity:'A',   hp:329,  atk:42,  def:10, mr:13, spd:18, crit:0.25,
     img:'../../assets/pets/闪电龟.png',
     passive:{ type:'lightningStorm', name:'雷电', shockScale:0.82, stackMax:8,
-              brief:'闪电龟每回合电击随机敌人 {T:ATK*0.82} 真实伤害；攻击叠电击层，满8层引爆 {T:ATK*0.82} 真实伤害',
+              brief:'闪电龟每回合电击随机敌人 <span class="val-atk">82%攻击力</span> 真实伤害；攻击叠电击层，满8层引爆 <span class="val-atk">82%攻击力</span> 真实伤害',
               desc:'闪电龟周身环绕雷电之力。\n\n每回合自动电击随机敌人，造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害。\n\n每段攻击命中敌人叠加1层电击标记，满{stackMax}层时引爆雷暴，\n造成（82%×攻击力({ATK}) = {T:ATK*0.82}）真实伤害并清零层数。' },
     skills:[
       { name:'闪电打击', type:'lightningStrike', dmgType:'magic', hits:5, power:0, pierce:0, cd:0, atkScale:0.23, splashPct:25,
@@ -365,7 +365,7 @@ const ALL_PETS = [
   { id:'phoenix',   name:'凤凰龟',   emoji:'🔥🐢',    rarity:'S',   hp:330,  atk:42,  def:12, mr:15, spd:14, crit:0.25,
     img:'../../assets/pets/凤凰龟.png',
     passive:{ type:'phoenixRebirth', name:'涅槃', revivePct:30,
-              brief:'凤凰龟首次死亡时浴火重生，以 {H:HP*0.25} HP复活，并对全体敌人施加<span style="color:#ff6600">灼烧</span>与治疗削减',
+              brief:'凤凰龟首次死亡时浴火重生，以 <span class="val-heal">30%最大HP</span> 复活，并对全体敌人施加<span style="color:#ff6600">灼烧</span>与治疗削减',
               desc:'凤凰龟拥有涅槃之力。\n\n首次死亡时浴火重生，以（25%×最大生命值({HP}) = {H:HP*0.25}）HP复活。\n复活后保留所有增益和减益效果。\n并对全体敌人施加<span style="color:#ff6600">灼烧</span>4回合与治疗削减3回合（<span class="val-atk">-50%</span>）。' },
     skills:[
       { name:'灼烧',   type:'phoenixBurn', dmgType:'magic', hits:1, power:0, pierce:0, cd:0, atkScale:0.9,
@@ -412,7 +412,7 @@ const ALL_PETS = [
   { id:'cyber',     name:'赛博龟',   emoji:'🤖🐢',    rarity:'S',   hp:360,  atk:47,  def:14, mr:13, spd:16, crit:0.25,
     img:'../../assets/pets/赛博龟.png',
     passive:{ type:'cyberDrone', name:'浮游炮', droneScale:0.18, droneMaxAge:5, maxDrones:10, mechHpPer:35, mechAtkPer:5,
-              brief:'赛博龟每回合生成浮游炮（上限10），每个每回合造成（{N:ATK*0.14}）物理伤害。阵亡时浮游炮组装为机甲',
+              brief:'赛博龟每回合生成浮游炮（上限10），每个每回合造成 <span class="val-atk">18%攻击力</span> 物理伤害。阵亡时浮游炮组装为机甲',
               desc:'赛博龟每回合自动生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成（14%×攻击力({ATK}) = {N:ATK*0.14}）物理伤害。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n最大生命值 = 30 × {B:droneCount} = <span class="val-heal">{H:mechHp}</span>\n攻击力 = 5 × {B:droneCount} = <span class="val-normal">{N:mechAtk}</span>\n暴击率 = <span class="val-atk">25%</span>（护甲/魔抗 = 0）\n\n机甲每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = {N:mechAtk*1.5}）物理伤害。' },
     skills:[
       { name:'激光枪', type:'physical', hits:5, power:0, pierce:0, cd:0, atkScale:0.15, hpPct:2.4,
