@@ -897,6 +897,14 @@ body{
     padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
   }
+  /* Passive popup: scrollable fullwidth */
+  .passive-popup {
+    max-width: calc(100vw - 24px);
+    max-height: 75vh;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+
   /* Target select: inline at bottom */
   .target-select {
     flex-shrink: 0;
@@ -1411,8 +1419,14 @@ body{
   /* -- Passive popup -- */
   .passive-popup {
     max-width: calc(100vw - 24px);
+    max-height: 80vh;
     padding: 12px 14px;
     font-size: 13px;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+    top: 10vh !important;
+    left: 12px !important;
+    right: 12px !important;
   }
   .passive-popup-title {
     font-size: 14px;

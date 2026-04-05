@@ -166,8 +166,10 @@ async function joinRoom() {
     setupConn(conn);
 
     const connTimeout = setTimeout(() => {
-      status.textContent = '❌ 连接房间超时（12秒）。\n可能原因：\n1) 房间号不正确\n2) 房主已离开\n3) 双方网络NAT穿透失败';
-    }, 12000);
+      const pc = conn.peerConnection;
+      const iceState = pc ? pc.iceConnectionState : 'unknown';
+      status.textContent = '❌ 连接房间超时（15秒）。ICE状态: ' + iceState + '\n可能原因：房间不存在 / 房主已离开 / NAT穿透失败';
+    }, 15000);
 
     conn.on('open', () => {
       clearTimeout(connTimeout);
@@ -178,6 +180,20 @@ async function joinRoom() {
       console.error('Connection error:', err);
       status.textContent = '❌ 连接房间失败：' + (err.message || err.type || err);
     });
+    // Monitor ICE state for debugging
+    const iceCheck = setInterval(() => {
+      const pc = conn.peerConnection;
+      if (pc) {
+        status.textContent = '🔄 正在建立连接… ICE: ' + pc.iceConnectionState;
+        if (pc.iceConnectionState === 'connected' || pc.iceConnectionState === 'completed') {
+          clearInterval(iceCheck);
+        } else if (pc.iceConnectionState === 'failed') {
+          clearInterval(iceCheck);
+          clearTimeout(connTimeout);
+          status.textContent = '❌ P2P连接失败（ICE failed）。两台设备网络可能无法直连，需要TURN中继服务器。';
+        }
+      }
+    }, 1000);
   });
   onlinePeer.on('error', (err) => {
     clearTimeout(timeout);
