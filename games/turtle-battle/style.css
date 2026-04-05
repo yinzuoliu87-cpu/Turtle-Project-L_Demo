@@ -717,6 +717,8 @@ body{
     flex: 1;
     min-height: 0;
     overflow: hidden;
+    margin-bottom: 0;
+    align-items: stretch;
   }
   .battle-field {
     flex-direction: row;
@@ -732,7 +734,7 @@ body{
     gap: 4px;
     min-height: 0;
   }
-  .vs-badge { font-size: 14px; padding: 0 2px; align-self: center; }
+  .vs-badge { font-size: 14px; padding: 0 2px; align-self: center; margin-top: 0; }
   .team-label { font-size: 10px; padding: 1px 0; margin-bottom: 1px; }
 
   /* Fighter cards: compact, flex-fill */
