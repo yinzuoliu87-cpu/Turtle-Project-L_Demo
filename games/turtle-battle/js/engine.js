@@ -506,12 +506,14 @@ function startTurnTimer(seconds, canAct) {
     timerEl = document.createElement('div');
     timerEl.id = 'turnTimer';
     timerEl.className = 'turn-timer';
-    document.body.appendChild(timerEl);
+    const bannerRow = document.querySelector('.turn-banner-row');
+    if (bannerRow) bannerRow.appendChild(timerEl);
+    else document.body.appendChild(timerEl);
   }
   let remaining = seconds;
   const fmtTime = (s) => s >= 60 ? Math.floor(s/60) + ':' + String(s%60).padStart(2,'0') : s + 's';
   timerEl.textContent = fmtTime(remaining);
-  timerEl.style.display = 'block';
+  timerEl.style.display = 'inline-block';
   timerEl.classList.remove('timer-urgent');
   _turnTimerInterval = setInterval(() => {
     remaining--;
