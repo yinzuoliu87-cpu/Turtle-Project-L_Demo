@@ -140,7 +140,8 @@ function getFighterElId(f) {
 // ── TURN SYSTEM ───────────────────────────────────────────
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
-  if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] beginTurn T${turnNum} seed=${_rngSeed}`);
+  // Debug: verify seed sync at turn boundaries (can remove in production)
+  if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] T${turnNum} seed=${_rngSeed}`);
   // Reduce cooldowns
   allFighters.forEach(f => {
     f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
@@ -636,7 +637,6 @@ async function finishSide() {
     if (_processingEndOfRound) return;
     _processingEndOfRound = true;
     // Both sides acted → end of round (guest processes identically via seeded random)
-    if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] finishSide pre-endOfRound seed=${_rngSeed}`);
     {
       // Summon auto-action at end of turn (once per summon)
       for (const f of allFighters) {
@@ -988,12 +988,6 @@ let _isGuestReplay = false;
 async function executeAction(action) {
   if (battleOver) return;
   clearTurnTimer(); // player acted, stop countdown
-  // Debug: log seed BEFORE action for desync tracking
-  if (gameMode === 'pvp-online') {
-    const f = allFighters[action.attackerId];
-    const s = f && f.skills[action.skillIdx];
-    console.log(`[${onlineSide.toUpperCase()}] pre-action T${turnNum} ${f?f.name:'?'} ${s?s.name:'?'} seed=${_rngSeed}`);
-  }
   // Queue actions that arrive while animating (e.g. online opponent's action)
   if (animating) {
     _actionQueue.push(action);
@@ -1437,14 +1431,6 @@ async function executeAction(action) {
   // Host: send action to guest (guest re-executes with same seeded random)
   if (gameMode === 'pvp-online' && onlineSide === 'left') {
     sendOnline({ type:'action', action });
-    // Debug: send state hash + seed for desync detection
-    const hash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
-    sendOnline({ type:'debug-hash', hash, seed: _rngSeed, turn: turnNum });
-    console.log(`[HOST] action done T${turnNum} seed=${_rngSeed}`, hash);
-  }
-  if (gameMode === 'pvp-online' && onlineSide === 'right') {
-    const hash = allFighters.map(f => `${f.id}:${Math.round(f.hp)}/${f.maxHp}:${f.alive?1:0}`).join('|');
-    console.log(`[GUEST] action done T${turnNum} seed=${_rngSeed}`, hash);
   }
 
   // Drain queued actions (online opponent sent action while we were animating)
