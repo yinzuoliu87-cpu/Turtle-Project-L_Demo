@@ -1562,4 +1562,4 @@ body{
 .turn-timer.timer-urgent{color:#ff6b6b;border-color:#ff6b6b;animation:timerPulse 1s infinite}
 @keyframes timerPulse{0%,100%{transform:scale(1)}50%{transform:scale(1.1)}}
 
-.btn.select-btn{padding:10px 20px !important;font-size:14px !important;min-height:44px;height:44px;flex:1;max-width:160px;margin-top:0 !important;box-sizing:border-box}
+.btn.select-btn{padding:10px 20px !important;font-size:14px !important;height:44px;flex:1;max-width:160px;margin-top:0 !important;box-sizing:border-box;display:flex;align-items:center;justify-content:center;white-space:nowrap}
