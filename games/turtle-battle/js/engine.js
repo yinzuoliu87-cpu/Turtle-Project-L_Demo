@@ -1277,7 +1277,7 @@ async function executeAction(action) {
           p.style.background = '#ff9f43';
           p.style.boxShadow = '0 0 8px #ff6600';
           const angle = (i / 8) * Math.PI * 2;
-          const dist = 60 + Math.random() * 40;
+          const dist = 60 + _origMathRandom() * 40;
           p.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px';
           p.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px';
           document.body.appendChild(p);
@@ -1337,7 +1337,7 @@ async function executeAction(action) {
           const particle = document.createElement('div');
           particle.className = 'mech-drone-particle';
           const angle = (di / dc) * Math.PI * 2;
-          const dist = 80 + Math.random() * 60;
+          const dist = 80 + _origMathRandom() * 60;
           particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px';
           particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px';
           document.body.appendChild(particle);
@@ -2060,7 +2060,7 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
     if (!tElId) tElId = getFighterElId(target);
     const hitIcon = '<img src="assets/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
     const critIcon = isCrit ? '<img src="assets/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
-    spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${critFinal}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (Math.random()-0.5)*30);
+    spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${critFinal}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (_origMathRandom()-0.5)*30);
     updateHpBar(target, tElId);
 
     // All on-hit effects
@@ -2137,7 +2137,9 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
 
     // Determine animation type
     const isDmg = (cls.includes('dmg') || cls.includes('pierce') || cls.includes('crit-magic') || cls.includes('crit-true')) && cls !== 'shield-dmg';
-    const ox = (Math.random() - 0.5) * 8;
+    // Use original random for visual offsets (don't consume seeded RNG)
+    const _vr = _origMathRandom;
+    const ox = (_vr() - 0.5) * 8;
     const y0 = -(15 + (yOffset || 0) + autoOffset);
 
     if (isDmg) {
@@ -2150,8 +2152,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       } else {
         try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
       }
-      const jumpX = dir * (15 + Math.random() * 10);
-      const jumpY = -(12 + Math.random() * 8); // upward
+      const jumpX = dir * (15 + _vr() * 10);
+      const jumpY = -(12 + _vr() * 8); // upward
       const gravity = 150;
       const totalDur = 1400;
       const start = performance.now();
