@@ -521,12 +521,13 @@ function startTurnTimer(seconds, canAct) {
     document.body.appendChild(timerEl);
   }
   let remaining = seconds;
-  timerEl.textContent = remaining + 's';
+  const fmtTime = (s) => s >= 60 ? Math.floor(s/60) + ':' + String(s%60).padStart(2,'0') : s + 's';
+  timerEl.textContent = fmtTime(remaining);
   timerEl.style.display = 'block';
   timerEl.classList.remove('timer-urgent');
   _turnTimerInterval = setInterval(() => {
     remaining--;
-    timerEl.textContent = remaining + 's';
+    timerEl.textContent = fmtTime(remaining);
     if (remaining <= 10) timerEl.classList.add('timer-urgent');
     if (remaining <= 0) {
       clearTurnTimer();
@@ -617,8 +618,8 @@ async function nextSideAction() {
       // Show turtle picker
       showTurtlePicker(canAct);
     }
-    // Start 40s turn timer (auto-pick if timeout)
-    startTurnTimer(40, canAct);
+    // Start 3-minute turn timer (auto-pick if timeout)
+    startTurnTimer(180, canAct);
   } else if (gameMode === 'pvp-online') {
     // Online PVP: wait for opponent's action via network — hide UI, do nothing
     const panel = document.getElementById('actionPanel');
@@ -1441,12 +1442,10 @@ async function executeAction(action) {
 
   animating = false;
 
-  // Host: send action + full state sync to guest after execution
-  // Guest will replay action for animation but sync overwrites all state (authoritative)
+  // Host: send action to guest (guest re-executes with same seeded random)
+  // Sync only at turn boundaries (beginTurn) to avoid mid-animation HP overwrites
   if (gameMode === 'pvp-online' && onlineSide === 'left') {
-    const syncState = buildStateSync();
     sendOnline({ type:'action', action });
-    sendOnline({ type:'sync', state: syncState });
   }
 
   // Drain queued actions (online opponent sent action while we were animating)
