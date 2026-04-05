@@ -783,7 +783,7 @@ body{
   .passive-icon { width: 20px; height: 20px; }
   .passive-icon .stat-icon { width: 16px; height: 16px; }
   .status-icons { font-size: 9px; gap: 2px; }
-  .sprite-wrap { max-height: 50px; overflow: hidden; }
+  .fighter-card .sprite-wrap { max-height: 50px; overflow: hidden; }
 
   /* -- Damage stats panel: hide on mobile to save space -- */
   .dmg-stats-panel {
@@ -850,9 +850,15 @@ body{
     min-height: 64px;
     overflow: visible;
   }
-  .pet-avatar img, .pet-avatar .sprite-wrap {
+  .pet-avatar img {
     max-height: 64px;
     object-fit: contain;
+  }
+  .pet-avatar .sprite-wrap {
+    max-height: 64px;
+    overflow: hidden;
+    transform: scale(0.8);
+    transform-origin: center center;
   }
   .pet-passive-icon {
     width: 32px;
@@ -1121,7 +1127,7 @@ body{
   .fighter-stats {
     font-size: 8px;
   }
-  .sprite-wrap { max-height: 40px; }
+  .fighter-card .sprite-wrap { max-height: 40px; }
   .battle-log { max-height: 50px; font-size: 9px; }
   .summon-mini { padding: 4px 5px; }
   .summon-name { font-size: 9px; }
@@ -1147,8 +1153,14 @@ body{
     min-height: 52px;
     overflow: visible;
   }
-  .pet-avatar img, .pet-avatar .sprite-wrap {
+  .pet-avatar img {
     max-height: 52px;
+  }
+  .pet-avatar .sprite-wrap {
+    max-height: 52px;
+    overflow: hidden;
+    transform: scale(0.7);
+    transform-origin: center center;
   }
   .pet-name {
     font-size: 12px;
