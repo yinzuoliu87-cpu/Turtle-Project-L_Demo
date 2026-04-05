@@ -835,10 +835,61 @@ body{
     flex-direction: column;
     gap: 4px;
   }
+
+  /* Mobile skill buttons: compact name buttons + info toggle */
+  .skill-card-mobile { width: 100%; }
+  .skill-btn-row {
+    display: flex;
+    gap: 4px;
+    align-items: stretch;
+  }
+  .skill-name-btn {
+    flex: 1;
+    padding: 10px 12px;
+    min-height: 44px;
+    font-size: 14px;
+    font-weight: 700;
+    border: 2px solid var(--accent);
+    border-radius: 8px;
+    background: var(--bg2);
+    color: var(--fg);
+    cursor: pointer;
+    text-align: left;
+    transition: .15s;
+  }
+  .skill-name-btn:active { transform: scale(0.97); background: rgba(88,166,255,.15); }
+  .skill-name-btn.disabled { opacity: 0.4; border-color: rgba(255,255,255,.1); pointer-events: none; }
+  .skill-name-btn .cd-tag { font-size: 11px; }
+  .skill-name-btn .skill-cd-info { font-size: 10px; color: var(--fg2); margin-left: 6px; }
+  .skill-info-btn {
+    width: 36px;
+    min-height: 44px;
+    border: 2px solid rgba(255,255,255,.15);
+    border-radius: 8px;
+    background: var(--bg2);
+    color: var(--fg2);
+    font-size: 16px;
+    cursor: pointer;
+    flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .skill-info-btn:active { background: rgba(255,255,255,.1); }
+  .skill-mobile-detail {
+    margin-top: 4px;
+    padding: 8px 10px;
+    background: rgba(255,255,255,.04);
+    border-radius: 6px;
+    font-size: 11px;
+    color: var(--fg2);
+    line-height: 1.5;
+  }
+  .skill-card-mobile.disabled .skill-name-btn { opacity: 0.4; pointer-events: none; }
+
+  /* Hide desktop skill cards on mobile */
+  .skill-card { display: none; }
   .skill-btn-wrap { flex: 1 1 100%; min-width: 0; }
-  .skill-card { padding: 8px 10px; min-height: 44px; }
-  .skill-header { font-size: 12px; margin-bottom: 2px; }
-  .skill-body-brief, .skill-body-detail { font-size: 10px; }
 
   /* Turtle picker: fixed bottom too */
   #turtlePicker {

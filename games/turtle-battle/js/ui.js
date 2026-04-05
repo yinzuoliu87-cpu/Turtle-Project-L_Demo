@@ -880,18 +880,39 @@ function showActionPanel(f) {
 
 function renderActionButtons(f) {
   const box = document.getElementById('actionButtons');
+  const isMobile = window.innerWidth <= 768;
+
   box.innerHTML = f.skills.map((s,i) => {
     let ready = s.cdLeft === 0;
-    // Disable 指挥 if summon is dead
     if (s.type === 'hidingCommand' && (!f._summon || !f._summon.alive)) ready = false;
     const shieldImg = '<img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">';
     const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';
     const hitsLabel = s.hits > 1 ? ` ×${s.hits}` : '';
+    const cdStr = !ready ? ` <span class="cd-tag">CD${s.cdLeft}</span>` : '';
 
+    if (isMobile) {
+      // Mobile: compact button, tap to expand detail
+      const brief = buildSkillBrief(f, s);
+      const cdLine = s.cd > 0 && s.cd < 100 ? `<span class="skill-cd-info">CD${s.cd}</span>` : '';
+      return `<div class="skill-btn-wrap" id="skillWrap${i}">
+        <div class="skill-card-mobile ${ready?'':'disabled'}">
+          <div class="skill-btn-row">
+            <button class="skill-name-btn ${ready?'':'disabled'}" ${ready?`onclick="pickSkill(${i})"`:''}>
+              ${icon} ${s.name}${hitsLabel}${cdStr} ${cdLine}
+            </button>
+            <button class="skill-info-btn" onclick="toggleMobileSkillDetail(event,${i})">ℹ</button>
+          </div>
+          <div class="skill-mobile-detail" id="skillMobileDetail${i}" style="display:none">
+            <div class="skill-mobile-brief">${brief}</div>
+          </div>
+        </div>
+      </div>`;
+    }
+
+    // Desktop: full card
     const brief = buildSkillBrief(f, s);
     const detail = buildSkillDetailDesc(f, s);
-    const cdStr = !ready ? ` <span class="cd-tag">CD${s.cdLeft}</span>` : '';
     const cdLine = s.cd > 0 && s.cd < 100 ? `<span class="skill-cd-info">冷却 ${s.cd}回合</span>` : '';
     return `<div class="skill-btn-wrap" id="skillWrap${i}">
       <div class="skill-card ${ready?'':'disabled'}">
@@ -907,6 +928,16 @@ function renderActionButtons(f) {
     </div>`;
   }).join('');
   document.getElementById('targetSelect').style.display = 'none';
+}
+
+function toggleMobileSkillDetail(e, idx) {
+  e.stopPropagation();
+  const el = document.getElementById('skillMobileDetail' + idx);
+  if (!el) return;
+  const wasOpen = el.style.display !== 'none';
+  // Close all
+  document.querySelectorAll('.skill-mobile-detail').forEach(d => d.style.display = 'none');
+  if (!wasOpen) el.style.display = 'block';
 }
 
 function buildSkillDetail(s, f) {
