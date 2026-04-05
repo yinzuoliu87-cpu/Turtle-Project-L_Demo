@@ -64,8 +64,8 @@ const ALL_PETS = [
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:36,  def:18, mr:15, spd:6, crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'stoneWall', name:'坚壁', defGain:3, maxDef:16, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
-              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+2</span>（上限<span class="val-atk">+16</span>）；受伤反弹 <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害',
-              desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+2</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
+              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+3</span>（上限<span class="val-atk">+16</span>）；受伤反弹 <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害',
+              desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+3</span>（上限 <span class="val-atk">+16</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skills:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.75, mrScale:0.4,
         brief:'石头龟打击2段，共 {N:0.35*ATK*2}+{D:0.7*DEF*2}+{M:0.4*MR*2} 物理伤害',
@@ -237,7 +237,7 @@ const ALL_PETS = [
   { id:'rainbow',   name:'彩虹龟',   emoji:'🌈🐢',    rarity:'A',   hp:360,  atk:40,  def:15, mr:17, spd:13, crit:0.25,
     img:'../../assets/pets/彩虹龟.png',
     passive:{ type:'rainbowPrism', name:'棱镜', atkPct:12, defPct:12, healPct:5,
-              desc:'彩虹龟的棱镜每回合折射出随机光芒，为全体友方附加增益1回合：\n🔴红光：攻击力 <span class="val-atk">+15%</span>\n🔵蓝光：护甲 <span class="val-atk">+15%</span> + 魔抗 <span class="val-atk">+15%</span>\n🟢绿光：回复 <span class="val-heal">7%</span> 最大生命值\n\n首回合不会抽到绿光。' },
+              desc:'彩虹龟的棱镜每回合折射出随机光芒，为全体友方附加增益1回合：\n🔴红光：攻击力 <span class="val-atk">+12%</span>\n🔵蓝光：护甲 <span class="val-atk">+12%</span> + 魔抗 <span class="val-atk">+12%</span>\n🟢绿光：回复 <span class="val-heal">5%</span> 最大生命值\n\n首回合不会抽到绿光。' },
     skills:[
       { name:'七彩光束', type:'magic', dmgType:'magic', hits:2, power:0, pierce:0, cd:0, atkScale:0.7, prismBonus:true,
         brief:'彩虹龟射出光束2段，共 {M:0.7*ATK*2} 魔法伤害，根据当前棱镜颜色附加效果',
