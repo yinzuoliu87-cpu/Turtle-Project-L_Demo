@@ -930,6 +930,21 @@ function renderActionButtons(f) {
   document.getElementById('targetSelect').style.display = 'none';
 }
 
+function toggleDmgStats() {
+  const panel = document.querySelector('.dmg-stats-panel');
+  if (!panel) return;
+  const showing = panel.classList.toggle('mobile-show');
+  // Add close button if not exists
+  if (showing && !panel.querySelector('.dmg-close-btn')) {
+    const btn = document.createElement('button');
+    btn.className = 'btn btn-sm dmg-close-btn';
+    btn.textContent = '✕ 关闭';
+    btn.style.cssText = 'position:sticky;top:0;z-index:10;margin-bottom:8px;width:100%';
+    btn.onclick = () => panel.classList.remove('mobile-show');
+    panel.insertBefore(btn, panel.firstChild);
+  }
+}
+
 function toggleMobileSkillDetail(e, idx) {
   e.stopPropagation();
   const el = document.getElementById('skillMobileDetail' + idx);
