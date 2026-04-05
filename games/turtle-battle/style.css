@@ -733,43 +733,82 @@ body{
     min-height: 44px;
   }
 
-  /* -- Battle area single column -- */
+  /* -- Battle area: fit one screen on mobile -- */
   #screenBattle {
     max-width: 100%;
-    padding: 10px 8px;
+    padding: 4px 4px;
+    overflow: hidden;
+    height: calc(100vh - 44px);
+    display: flex;
+    flex-direction: column;
   }
   .battle-main-row {
-    flex-direction: column;
-    gap: 10px;
+    flex-direction: row;
+    gap: 6px;
+    flex: 1;
+    min-height: 0;
+    overflow: hidden;
   }
   .battle-field {
-    gap: 10px;
+    gap: 4px;
+    flex-direction: row;
+    flex: 1;
   }
   .battle-side {
-    max-width: 100%;
+    max-width: 50%;
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
   }
 
-  /* -- Fighter cards -- */
+  /* -- Fighter cards: ultra compact -- */
   .fighter-card {
-    padding: 10px 8px;
+    padding: 6px 5px;
+    flex: 1;
+    overflow: hidden;
   }
   .fighter-emoji {
-    font-size: 36px;
-    min-height: 60px;
+    font-size: 28px;
+    min-height: 36px;
   }
   .fighter-name {
-    font-size: 13px;
+    font-size: 11px;
   }
+  .hp-bar { height: 8px; }
+  .hp-text { font-size: 9px; }
+  .fighter-stats { font-size: 9px; gap: 2px; }
+  .stats-brief { font-size: 9px; gap: 2px; }
+  .stats-brief .stat-icon { width: 10px; height: 10px; }
+  .passive-icon { width: 20px; height: 20px; }
+  .passive-icon .stat-icon { width: 16px; height: 16px; }
+  .status-icons { font-size: 9px; gap: 2px; }
+  .sprite-wrap { max-height: 50px; overflow: hidden; }
 
-  /* -- Damage stats panel -- */
+  /* -- Damage stats panel: hide on mobile to save space -- */
   .dmg-stats-panel {
-    width: 100%;
-    max-height: 160px;
+    display: none;
   }
 
-  /* -- Action panel: full width buttons, larger touch targets -- */
+  /* -- Battle log: collapsed, tap to expand -- */
+  .battle-log {
+    max-height: 60px;
+    font-size: 10px;
+    padding: 4px 6px;
+    flex-shrink: 0;
+  }
+
+  /* -- Action panel: fixed bottom, compact -- */
   .action-panel {
-    padding: 12px 10px;
+    padding: 6px 6px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    z-index: 50;
+    max-height: 45vh;
+    overflow-y: auto;
+    border-radius: 12px 12px 0 0;
   }
   .skill-btn-wrap {
     flex: 1 1 100%;
@@ -777,21 +816,22 @@ body{
     max-width: 100%;
   }
   .skill-card {
-    padding: 12px 14px;
-    min-height: 44px;
+    padding: 8px 10px;
+    min-height: 40px;
   }
   .skill-header {
-    font-size: 14px;
-    margin-bottom: 6px;
+    font-size: 13px;
+    margin-bottom: 2px;
   }
   .skill-body-brief,
   .skill-body-detail {
-    font-size: 12px;
+    font-size: 11px;
   }
   .action-buttons {
     flex-direction: column;
-    gap: 8px;
+    gap: 4px;
   }
+  .action-header { font-size: 11px; margin-bottom: 4px; }
 
   /* -- Pet selection grid: 2 columns -- */
   .pet-grid {
@@ -1041,27 +1081,34 @@ body{
     font-size: 11px;
   }
 
-  /* -- Battle: very compact cards -- */
+  /* -- Battle: micro cards for small phones -- */
   .fighter-card {
-    padding: 6px 4px;
-    border-radius: 8px;
+    padding: 4px 3px;
+    border-radius: 6px;
   }
   .fighter-emoji {
-    font-size: 28px;
-    min-height: 48px;
+    font-size: 22px;
+    min-height: 28px;
   }
   .fighter-name {
-    font-size: 11px;
+    font-size: 10px;
   }
   .hp-bar {
-    height: 10px;
+    height: 6px;
   }
   .hp-text {
-    font-size: 9px;
+    font-size: 8px;
   }
   .fighter-stats {
-    font-size: 9px;
+    font-size: 8px;
   }
+  .sprite-wrap { max-height: 40px; }
+  .battle-log { max-height: 50px; font-size: 9px; }
+  .summon-mini { padding: 4px 5px; }
+  .summon-name { font-size: 9px; }
+  .summon-hp-bar { height: 5px; }
+  .summon-hp-text { font-size: 8px; }
+  .summon-stats { font-size: 8px; }
 
   /* -- Pet grid: 2 columns tighter -- */
   .pet-grid {
