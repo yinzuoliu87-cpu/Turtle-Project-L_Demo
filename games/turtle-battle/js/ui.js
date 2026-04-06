@@ -1,33 +1,172 @@
 function renderFighters() {
-  leftTeam.forEach((f,i)  => renderFighterCard(f,'leftFighter'+i));
-  rightTeam.forEach((f,i) => renderFighterCard(f,'rightFighter'+i));
-  // Render summon mini-cards
+  renderScene();
+}
+
+function renderScene() {
+  const scene = document.getElementById('battleScene');
+  if (!scene) return;
+  // Remove old scene turtles (keep labels and bubbles)
+  scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
+
+  // Render each fighter as a scene turtle
+  const renderTurtle = (f, posClass) => {
+    const el = document.createElement('div');
+    el.className = 'scene-turtle ' + posClass;
+    el.id = getFighterElId(f);
+    el.onclick = () => showFighterDetail(f);
+
+    const spriteSize = window.innerWidth <= 768 ? 48 : 64;
+    const spriteHTML = buildPetImgHTML(f, spriteSize);
+    const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+    const shieldPct = f.shield > 0 ? Math.min(100, f.shield / f.maxHp * 100) : 0;
+
+    el.innerHTML = `
+      <div class="st-hp-wrap">
+        <div class="st-hp-bar"><div class="st-hp-fill" style="width:${hpPct}%"></div></div>
+        ${f.shield > 0 ? `<div class="st-shield-bar"><div class="st-shield-fill" style="width:${shieldPct}%"></div></div>` : ''}
+        <div class="st-hp-text">${Math.ceil(f.hp)}/${f.maxHp}</div>
+      </div>
+      <div class="st-sprite">${spriteHTML}</div>
+      <div class="st-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
+      <div class="st-buffs"></div>
+    `;
+
+    if (!f.alive) el.classList.add('dead');
+    if (f._isBoss) el.style.transform = 'scale(1.3)';
+    scene.appendChild(el);
+    renderSceneBuffs(f);
+  };
+
+  leftTeam.forEach((f, i) => renderTurtle(f, 'pos-left-' + i));
+  rightTeam.forEach((f, i) => renderTurtle(f, 'pos-right-' + i));
+
+  // Summons
   allFighters.forEach(f => {
-    if (f._summon) renderSummonMiniCard(f);
+    if (f._summon && f._summon.alive) {
+      renderSummonMiniCard(f);
+    }
   });
 }
 
-function renderFighterCard(f, elId) {
-  const card = document.getElementById(elId);
-  if (!card) return;
-  const avatarEl = card.querySelector('.fighter-emoji');
-  if (f.img) {
-    const avatarSize = window.innerWidth <= 768 ? 48 : 72;
-    avatarEl.innerHTML = buildPetImgHTML(f, avatarSize);
-  } else {
-    avatarEl.textContent = f.emoji;
+function renderSceneBuffs(f) {
+  const el = document.getElementById(getFighterElId(f));
+  if (!el) return;
+  const box = el.querySelector('.st-buffs');
+  if (!box) return;
+  const icons = [];
+  for (const b of (f.buffs || [])) {
+    if (b.type === 'phoenixBurnDot') icons.push('🔥');
+    else if (b.type === 'dot') icons.push('💀');
+    else if (b.type === 'atkUp') icons.push('⬆');
+    else if (b.type === 'atkDown') icons.push('⬇');
+    else if (b.type === 'defUp') icons.push('🛡');
+    else if (b.type === 'dodge') icons.push('💨');
+    else if (b.type === 'stun') icons.push('💫');
+    else if (b.type === 'healReduce') icons.push('☠');
   }
-  card.querySelector('.fighter-name').textContent = f.name;
-  card.querySelector('.fighter-name').style.color = RARITY_COLORS[f.rarity];
-  card.classList.toggle('boss-card', !!f._isBoss);
-  // Clear all death states on render
-  card._pendingDead = false;
-  card.classList.remove('dead', 'death-anim');
-  updateFighterStats(f, elId);
-  updateHpBar(f, elId);
-  if (!f.alive) card.classList.add('dead');
-  renderStatusIcons(f);
+  box.innerHTML = icons.slice(0, 5).map(i => `<span>${i}</span>`).join('');
 }
+
+// Update HP bar for a scene turtle
+function updateSceneHp(f) {
+  const el = document.getElementById(getFighterElId(f));
+  if (!el) return;
+  const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+  const hpFill = el.querySelector('.st-hp-fill');
+  if (hpFill) {
+    hpFill.style.width = hpPct + '%';
+    hpFill.style.background = hpPct > 50 ? 'var(--green)' : hpPct > 25 ? '#ffd93d' : '#ff6b6b';
+  }
+  const hpText = el.querySelector('.st-hp-text');
+  if (hpText) hpText.textContent = Math.ceil(f.hp) + '/' + f.maxHp;
+  // Shield bar
+  let shieldBar = el.querySelector('.st-shield-bar');
+  if (f.shield > 0) {
+    if (!shieldBar) {
+      shieldBar = document.createElement('div');
+      shieldBar.className = 'st-shield-bar';
+      shieldBar.innerHTML = '<div class="st-shield-fill"></div>';
+      const wrap = el.querySelector('.st-hp-wrap');
+      if (wrap) wrap.insertBefore(shieldBar, wrap.querySelector('.st-hp-text'));
+    }
+    const sFill = shieldBar.querySelector('.st-shield-fill');
+    if (sFill) sFill.style.width = Math.min(100, f.shield / f.maxHp * 100) + '%';
+  } else if (shieldBar) {
+    shieldBar.remove();
+  }
+  // Death state
+  el.classList.toggle('dead', !f.alive);
+  el._pendingDead = false;
+  el.classList.remove('death-anim');
+}
+
+// Fighter detail panel (click turtle to show)
+function showFighterDetail(f) {
+  const panel = document.getElementById('fighterDetailPanel');
+  if (!panel) return;
+  const fIdx = allFighters.indexOf(f);
+  document.getElementById('fdpName').textContent = f.emoji + ' ' + f.name;
+  document.getElementById('fdpName').style.color = RARITY_COLORS[f.rarity];
+
+  const ic = (name) => `<img src="assets/${name}" class="stat-icon" style="width:14px;height:14px">`;
+  const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
+  const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
+  const critPct = Math.min(100, Math.round((f.crit||0) * 100));
+
+  let html = `<div class="fdp-stats">
+    <div class="fdp-stat">${ic('hp-icon.png')}HP ${Math.ceil(f.hp)}/${f.maxHp}${f.shield>0?' +'+Math.ceil(f.shield)+'盾':''}</div>
+    <div class="fdp-stat">${ic('atk-icon.png')}攻击力 ${f.atk}</div>
+    <div class="fdp-stat">${ic('def-icon.png')}护甲 ${f.def} (物伤-${defPct}%)</div>
+    <div class="fdp-stat">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} (魔伤-${mrPct}%)</div>
+    <div class="fdp-stat">${ic('crit-icon.png')}暴击 ${critPct}%</div>
+    <div class="fdp-stat">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}</div>
+    <div class="fdp-stat">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</div>
+    ${f._lifestealPct ? `<div class="fdp-stat">${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct}%</div>` : ''}
+  </div>`;
+
+  // Buffs
+  if (f.buffs && f.buffs.length) {
+    html += '<div class="fdp-buffs">';
+    f.buffs.forEach(b => {
+      if (b.type === 'phoenixBurnDot') html += `<span style="color:#ff6600">🔥灼烧${b.turns}回合</span> `;
+      else if (b.type === 'dot') html += `<span style="color:#9b59b6">💀诅咒${b.turns}回合</span> `;
+      else if (b.type === 'atkUp') html += `<span style="color:var(--green)">⬆攻+${b.value} ${b.turns}回合</span> `;
+      else if (b.type === 'atkDown') html += `<span style="color:var(--red)">⬇攻-${b.value}% ${b.turns}回合</span> `;
+      else if (b.type === 'defUp') html += `<span style="color:var(--green)">⬆护+${b.value} ${b.turns}回合</span> `;
+      else if (b.type === 'defDown') html += `<span style="color:var(--red)">⬇护-${b.value}% ${b.turns}回合</span> `;
+      else if (b.type === 'dodge') html += `<span>💨闪避${b.value}% ${b.turns}回合</span> `;
+      else if (b.type === 'stun') html += `<span style="color:#ff0">💫眩晕</span> `;
+      else if (b.type === 'healReduce') html += `<span style="color:#6b8e23">☠治疗-${b.value}%</span> `;
+    });
+    html += '</div>';
+  }
+
+  // Passive
+  if (f.passive) {
+    const passiveBrief = f.passive.brief || f.passive.desc || '';
+    html += `<div style="margin-top:8px;padding:8px;background:var(--bg2);border-radius:8px;font-size:11px">
+      <b>被动：${f.passive.name || ''}</b><br>${passiveBrief}
+    </div>`;
+  }
+
+  // Equipment
+  if (f._equips && f._equips.length) {
+    html += `<div class="fdp-equips"><b>装备：</b>${f._equips.map(e => e.icon + e.name).join('、')}</div>`;
+  }
+
+  document.getElementById('fdpBody').innerHTML = html;
+  panel.style.display = 'block';
+  panel.classList.add('show');
+}
+
+function closeFighterDetail() {
+  const panel = document.getElementById('fighterDetailPanel');
+  if (panel) { panel.classList.remove('show'); panel.style.display = 'none'; }
+}
+
+// Legacy compatibility — redirect old card-based functions
+function renderFighterCard(f, elId) { /* no-op, scene-based now */ }
+
 
 function renderSummonMiniCard(owner) {
   const summon = owner._summon;
@@ -285,6 +424,9 @@ function buildPetImgHTML(pet, size) {
 function updateHpBar(f, elId) {
   // Summon: use dedicated mini-card HP bar
   if (f._isSummon) { updateSummonHpBar(f); return; }
+  // Scene-based: update floating HP bar
+  updateSceneHp(f);
+  renderSceneBuffs(f);
   const card = document.getElementById(elId);
   // Scale bar to fit HP + all shields
   const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
@@ -453,6 +595,8 @@ function updateHpBar(f, elId) {
 
 function renderStatusIcons(f) {
   if (f._isSummon) { renderSummonStatusIcons(f); return; }
+  // Scene-based: update buff icons
+  renderSceneBuffs(f);
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;

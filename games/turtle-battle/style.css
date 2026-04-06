@@ -1678,3 +1678,71 @@ body{
 .equip-pick-item{padding:14px 12px;border-radius:12px;border:2px solid rgba(255,255,255,.1);background:var(--bg2);cursor:pointer;transition:.2s;min-width:120px;flex:1;max-width:160px}
 .equip-pick-item:hover{border-color:var(--accent);transform:translateY(-2px)}
 .equip-pick-item.selected{border-color:#ffd93d;background:rgba(255,215,0,.1)}
+
+/* ── BATTLE SCENE (replaces card layout) ── */
+.battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:55vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-size:cover;background-position:center;background-color:#0a1628}
+.battle-scene .scene-labels{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:5;pointer-events:none}
+.battle-scene .team-label{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.5)}
+.battle-scene .team-label-left{color:var(--green)}
+.battle-scene .team-label-right{color:var(--red)}
+
+/* Scene turtle (positioned on the battlefield) */
+.scene-turtle{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;z-index:2}
+.scene-turtle:hover{transform:scale(1.08)}
+.scene-turtle.active-turn{filter:drop-shadow(0 0 8px rgba(88,166,255,.8))}
+.scene-turtle.dead{opacity:.3;filter:grayscale(.8);pointer-events:none}
+
+/* Turtle sprite */
+.scene-turtle .st-sprite{image-rendering:pixelated}
+
+/* Name label */
+.scene-turtle .st-name{font-size:10px;font-weight:600;color:#fff;text-shadow:0 1px 3px rgba(0,0,0,.8);margin-top:2px}
+
+/* Floating HP bar above turtle */
+.scene-turtle .st-hp-wrap{width:60px;display:flex;flex-direction:column;align-items:center;margin-bottom:3px}
+.scene-turtle .st-hp-bar{width:100%;height:5px;background:rgba(0,0,0,.5);border-radius:3px;overflow:hidden;border:1px solid rgba(255,255,255,.2)}
+.scene-turtle .st-hp-fill{height:100%;background:var(--green);border-radius:2px;transition:width .3s}
+.scene-turtle .st-shield-bar{width:100%;height:3px;background:rgba(0,0,0,.3);border-radius:2px;overflow:hidden;margin-top:1px}
+.scene-turtle .st-shield-fill{height:100%;background:rgba(255,255,255,.7);border-radius:2px;transition:width .3s}
+.scene-turtle .st-hp-text{font-size:8px;color:rgba(255,255,255,.8);text-shadow:0 1px 2px rgba(0,0,0,.8)}
+
+/* Buff icons below name */
+.scene-turtle .st-buffs{display:flex;gap:2px;margin-top:1px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center}
+
+/* Left team positions (face right) */
+.scene-turtle.pos-left-0{left:8%;bottom:45%}
+.scene-turtle.pos-left-1{left:18%;bottom:25%}
+/* Right team positions (face left, flip sprite) */
+.scene-turtle.pos-right-0{right:8%;bottom:45%}
+.scene-turtle.pos-right-1{right:18%;bottom:25%}
+.scene-turtle.pos-right-0 .st-sprite,.scene-turtle.pos-right-1 .st-sprite{transform:scaleX(-1)}
+
+/* Hit animations on scene turtles */
+.scene-turtle.hit-shake{animation:shake .3s ease}
+.scene-turtle.hit-physical{animation:hitPhysical .4s ease}
+.scene-turtle.hit-magic{animation:hitMagic .4s ease}
+.scene-turtle.hit-true{animation:hitTrue .4s ease}
+.scene-turtle.hit-crit{animation:hitCrit .5s ease}
+.scene-turtle.attack-anim.pos-left-0,.scene-turtle.attack-anim.pos-left-1{animation:attackLungeRight .5s ease}
+.scene-turtle.attack-anim.pos-right-0,.scene-turtle.attack-anim.pos-right-1{animation:attackLungeLeft .5s ease}
+
+/* Fighter detail panel (click to show) */
+.fighter-detail-panel{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--bg);border-radius:14px 14px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.6);padding:14px 16px;max-height:45vh;overflow-y:auto;display:none;animation:fadeUp .2s ease}
+.fighter-detail-panel.show{display:block}
+.fdp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.fdp-name{font-size:18px;font-weight:700}
+.fdp-close{background:none;border:none;color:var(--fg2);font-size:20px;cursor:pointer;padding:4px 8px}
+.fdp-body{font-size:12px;line-height:1.7;color:var(--fg2)}
+.fdp-stats{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:8px}
+.fdp-stat{display:flex;align-items:center;gap:4px;font-size:12px}
+.fdp-stat .stat-icon{width:14px;height:14px}
+.fdp-buffs{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:8px}
+.fdp-equips{margin-top:6px;font-size:11px}
+@keyframes fadeUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
+
+@media(max-width:768px){
+  .battle-scene{aspect-ratio:4/3;max-height:50vh}
+  .scene-turtle .st-hp-wrap{width:48px}
+  .scene-turtle .st-hp-bar{height:4px}
+  .scene-turtle .st-name{font-size:9px}
+}

@@ -534,14 +534,15 @@ function startBattle(seed) {
   if (gameMode === 'boss') bgFile = 'assets/bg-cave.png';
   else if (gameMode === 'pvp-online') bgFile = 'assets/bg-shipwreck.png';
   else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg-cave.png' : 'assets/bg-cave-alt.png';
-  const battleScreen = document.getElementById('screenBattle');
-  battleScreen.style.backgroundImage = 'url(' + bgFile + ')';
-  // Spawn underwater bubble particles
-  let bubbleContainer = battleScreen.querySelector('.battle-bubbles');
-  if (!bubbleContainer) {
+  const battleScene = document.getElementById('battleScene');
+  if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
+  document.getElementById('screenBattle').style.backgroundImage = 'none';
+  // Spawn underwater bubble particles inside scene
+  let bubbleContainer = battleScene ? battleScene.querySelector('.battle-bubbles') : null;
+  if (battleScene && !bubbleContainer) {
     bubbleContainer = document.createElement('div');
     bubbleContainer.className = 'battle-bubbles';
-    battleScreen.insertBefore(bubbleContainer, battleScreen.firstChild);
+    battleScene.appendChild(bubbleContainer);
   }
   bubbleContainer.innerHTML = '';
   for (let i = 0; i < 12; i++) {

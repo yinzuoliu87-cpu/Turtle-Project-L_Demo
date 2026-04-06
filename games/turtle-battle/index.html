@@ -256,55 +256,28 @@
   <!-- Side indicator -->
   <div class="side-indicator" id="sideIndicator"></div>
 
-  <div class="battle-main-row">
-    <!-- BATTLE FIELD (center) -->
-    <div class="battle-field">
-      <div class="battle-side side-left">
-        <div class="team-label team-label-left" id="teamLabelLeft">我方</div>
-        <div class="fighter-card" id="leftFighter0">
-          <div class="fighter-emoji"></div>
-          <div class="fighter-name"></div>
-          <div class="fighter-stats"></div>
-          <div class="hp-bar"><div class="hp-fill"></div></div>
-          <div class="hp-text"></div>
-          <div class="status-icons"></div>
-        </div>
-        <div class="fighter-card" id="leftFighter1">
-          <div class="fighter-emoji"></div>
-          <div class="fighter-name"></div>
-          <div class="fighter-stats"></div>
-          <div class="hp-bar"><div class="hp-fill"></div></div>
-          <div class="hp-text"></div>
-          <div class="status-icons"></div>
-        </div>
-      </div>
-      <div class="vs-badge">VS</div>
-      <div class="battle-side side-right">
-        <div class="team-label team-label-right" id="teamLabelRight">敌方</div>
-        <div class="fighter-card" id="rightFighter0">
-          <div class="fighter-emoji"></div>
-          <div class="fighter-name"></div>
-          <div class="fighter-stats"></div>
-          <div class="hp-bar"><div class="hp-fill"></div></div>
-          <div class="hp-text"></div>
-          <div class="status-icons"></div>
-        </div>
-        <div class="fighter-card" id="rightFighter1">
-          <div class="fighter-emoji"></div>
-          <div class="fighter-name"></div>
-          <div class="fighter-stats"></div>
-          <div class="hp-bar"><div class="hp-fill"></div></div>
-          <div class="hp-text"></div>
-          <div class="status-icons"></div>
-        </div>
-      </div>
+  <!-- BATTLE SCENE (replaces card layout) -->
+  <div class="battle-scene" id="battleScene">
+    <div class="scene-labels">
+      <span class="team-label team-label-left" id="teamLabelLeft">我方</span>
+      <span class="team-label team-label-right" id="teamLabelRight">敌方</span>
     </div>
+    <!-- Turtles are dynamically rendered by renderScene() -->
+  </div>
 
-    <!-- DAMAGE STATS (right side) -->
-    <div class="dmg-stats-panel" id="dmgStatsPanel">
-      <div class="dmg-stats-header">伤害统计</div>
-      <div class="dmg-stats-body" id="dmgStatsBody"></div>
+  <!-- FIGHTER DETAIL PANEL (shows on turtle click) -->
+  <div class="fighter-detail-panel" id="fighterDetailPanel" style="display:none">
+    <div class="fdp-header">
+      <span class="fdp-name" id="fdpName"></span>
+      <button class="fdp-close" onclick="closeFighterDetail()">✕</button>
     </div>
+    <div class="fdp-body" id="fdpBody"></div>
+  </div>
+
+  <!-- DAMAGE STATS (hidden on mobile, toggle via 📊) -->
+  <div class="dmg-stats-panel" id="dmgStatsPanel">
+    <div class="dmg-stats-header">伤害统计</div>
+    <div class="dmg-stats-body" id="dmgStatsBody"></div>
   </div>
 
   <!-- PASSIVE DETAIL POPUP -->
