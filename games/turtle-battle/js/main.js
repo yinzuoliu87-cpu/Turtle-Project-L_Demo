@@ -470,6 +470,50 @@ function goBackFromSelect() {
 
 
 let _battleSeed = 0;
+let _battleRule = null;
+
+// ── BATTLE RULES ─────────────────────────────────────────
+const BATTLE_RULES = [
+  { id:'fire', icon:'🔥', name:'烈焰之日', desc:'所有伤害附带灼烧（4回合）',
+    apply(fighters) { /* handled in triggerOnHitEffects via _battleRule check */ } },
+  { id:'thunder', icon:'⚡', name:'雷暴之日', desc:'全体暴击率 +30%',
+    apply(fighters) { fighters.forEach(f => { f.crit += 0.3; }); } },
+  { id:'undead', icon:'💀', name:'亡灵之日', desc:'所有龟首次死亡以15%HP复活',
+    apply(fighters) { fighters.forEach(f => { f._ruleRevive = true; }); } },
+  { id:'shield', icon:'🛡️', name:'铁壁之日', desc:'所有护盾效果 +100%',
+    apply(fighters) { /* handled in doShield/applyRawDmg via _battleRule check */ } },
+  { id:'rage', icon:'⚔️', name:'狂暴之日', desc:'全体攻击力 +40%，护甲 -20%',
+    apply(fighters) { fighters.forEach(f => { f.baseAtk = Math.round(f.baseAtk * 1.4); f.atk = f.baseAtk; f.baseDef = Math.round(f.baseDef * 0.8); f.def = f.baseDef; }); } },
+  { id:'ocean', icon:'💧', name:'深海之日', desc:'全体魔抗 +30%，魔法伤害 -20%',
+    apply(fighters) { fighters.forEach(f => { f.baseMr = Math.round((f.baseMr || f.baseDef) * 1.3); f.mr = f.baseMr; }); } },
+  { id:'equip', icon:'🎁', name:'装备之日', desc:'每3回合双方各选1件装备',
+    apply(fighters) { /* handled in beginTurn via _battleRule check */ } },
+  { id:'normal', icon:'🎲', name:'正常对局', desc:'无额外规则',
+    apply(fighters) { } },
+];
+
+function rollBattleRule() {
+  const idx = Math.floor(Math.random() * BATTLE_RULES.length);
+  return BATTLE_RULES[idx];
+}
+
+function showRuleBanner(rule, callback) {
+  const banner = document.createElement('div');
+  banner.className = 'rule-banner';
+  banner.innerHTML = `
+    <div class="rule-banner-icon">${rule.icon}</div>
+    <div class="rule-banner-name">${rule.name}</div>
+    <div class="rule-banner-desc">${rule.desc}</div>
+  `;
+  document.body.appendChild(banner);
+  setTimeout(() => {
+    banner.classList.add('rule-banner-show');
+    setTimeout(() => {
+      banner.classList.remove('rule-banner-show');
+      setTimeout(() => { banner.remove(); if (callback) callback(); }, 400);
+    }, 2000);
+  }, 100);
+}
 
 function startBattle(seed) {
   allFighters = [...leftTeam, ...rightTeam];
@@ -622,8 +666,22 @@ function startBattle(seed) {
   // Snapshot initial stats (BEFORE one-time passives, for UI color comparison)
   // Passives like ninjaInstinct that boost stats should show as green
   // Snapshot was already set in createFighter with raw values
+  // Roll and apply battle rule (not in dungeon mode)
+  if (gameMode === 'dungeon') {
+    _battleRule = { id:'normal', icon:'🎲', name:'正常对局', desc:'无额外规则', apply(){} };
+  } else {
+    _battleRule = rollBattleRule();
+  }
+  if (_battleRule.apply) _battleRule.apply(allFighters);
+  recalcStats();
+
   renderFighters();
   updateDmgStats();
+
+  // Show rule banner animation then log
+  showRuleBanner(_battleRule, () => {
+    addLog(`<span style="color:#ffd93d;font-weight:700">${_battleRule.icon} ${_battleRule.name}：${_battleRule.desc}</span>`, 'round-sep');
+  });
 
   // Pirate barrage: opening bombardment (after render so player sees it)
   const pirates = allFighters.filter(f => f.alive && f.passive && f.passive.type === 'pirateBarrage');
