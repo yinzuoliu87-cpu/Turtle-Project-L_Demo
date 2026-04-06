@@ -55,6 +55,17 @@ global.clearTimeout = (id) => { if (id) _realClearTimeout(id); };
  'sfxExplosion','sfxCounter','sfxTrap','sfxBattleStart','sfxVictory','sfxDefeat',
  'sfxClick','sfxTurnStart','sfxBambooCharge','sfxBambooHit','toggleSound','ensureAudio'
 ].forEach(name => { global[name] = _noop; });
+// Mock BGM functions
+global.playBgm = _noop;
+global.stopBgm = _noop;
+global.setBgmVolume = _noop;
+// Mock battle rule/equip functions
+global._battleRule = { id:'normal', icon:'🎲', name:'正常对局', desc:'', apply:_noop };
+global.showRuleBanner = (r, cb) => { if (cb) cb(); };
+global.triggerEquipPick = _noop;
+global.closeFighterDetail = _noop;
+global.showFighterDetail = _noop;
+global.autoAssignPositions = function(team) { team.forEach((f,i) => { f._position = i < 2 ? 'front' : 'back'; }); };
 
 // ── Load Real Engine Code ──────────────────────────────────
 const dir = path.join(__dirname, 'js');
@@ -98,6 +109,8 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
   onlineSide = null;
   leftTeam = leftIds.map(id => createFighter(id, 'left'));
   rightTeam = rightIds.map(id => createFighter(id, 'right'));
+  autoAssignPositions(leftTeam);
+  autoAssignPositions(rightTeam);
   allFighters = [...leftTeam, ...rightTeam];
   battleOver = false;
   turnNum = 1;
@@ -645,23 +658,31 @@ async function runMixed(partnersPerTurtle, matchesPerPartner) {
     const partners = otherIds.sort(() => Math.random() - 0.5).slice(0, partnersPerTurtle);
 
     for (const partnerId of partners) {
-      // Pick random enemy teams
+      // Pick random enemy teams (3v3)
       for (let m = 0; m < matchesPerPartner; m++) {
         const enemyPool = ids.filter(id => id !== myId && id !== partnerId);
         const shuffled = enemyPool.sort(() => Math.random() - 0.5);
-        const e1 = shuffled[0], e2 = shuffled[1];
+        // Pick a 3rd ally and 3 enemies
+        const ally2 = shuffled.find(id => id !== myId && id !== partnerId) || shuffled[0];
+        const ePool = shuffled.filter(id => id !== ally2);
+        const e1 = ePool[0], e2 = ePool[1], e3 = ePool[2] || ePool[0];
 
-        const r = await simBattle([myId, partnerId], [e1, e2]);
+        const r = await simBattle([myId, partnerId, ally2], [e1, e2, e3]);
         const won = r.winner === 'left';
 
-        // Track stats for all 4 participants
-        st[myId].g++; st[partnerId].g++; st[e1].g++; st[e2].g++;
-        if (won) { st[myId].w++; st[partnerId].w++; }
-        else { st[e1].w++; st[e2].w++; }
-        st[myId].dd += r.left[0].dd; st[myId].dt += r.left[0].dt;
-        st[partnerId].dd += r.left[1].dd; st[partnerId].dt += r.left[1].dt;
-        st[e1].dd += r.right[0].dd; st[e1].dt += r.right[0].dt;
-        st[e2].dd += r.right[1].dd; st[e2].dt += r.right[1].dt;
+        // Track stats for all 6 participants
+        const allIds = [myId, partnerId, ally2, e1, e2, e3];
+        allIds.forEach(id => { if (st[id]) st[id].g++; });
+        if (won) { [myId, partnerId, ally2].forEach(id => { if (st[id]) st[id].w++; }); }
+        else { [e1, e2, e3].forEach(id => { if (st[id]) st[id].w++; }); }
+        for (let li = 0; li < r.left.length; li++) {
+          const lid = [myId, partnerId, ally2][li];
+          if (st[lid] && r.left[li]) { st[lid].dd += r.left[li].dd; st[lid].dt += r.left[li].dt; }
+        }
+        for (let ri = 0; ri < r.right.length; ri++) {
+          const rid = [e1, e2, e3][ri];
+          if (st[rid] && r.right[ri]) { st[rid].dd += r.right[ri].dd; st[rid].dt += r.right[ri].dt; }
+        }
 
         done++;
         if (done % 50 === 0) process.stdout.write(`  ${done}/${totalMatches} (${Math.round(done / totalMatches * 100)}%)\r`);
