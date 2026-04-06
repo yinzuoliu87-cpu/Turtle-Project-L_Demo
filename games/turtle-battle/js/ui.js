@@ -428,6 +428,7 @@ function updateHpBar(f, elId) {
   updateSceneHp(f);
   renderSceneBuffs(f);
   const card = document.getElementById(elId);
+  if (!card || !card.querySelector('.hp-fill')) return; // scene-based, no card
   // Scale bar to fit HP + all shields
   const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
   const barMax = Math.max(f.maxHp, totalEff); // expand bar if shields overflow
@@ -995,7 +996,7 @@ function showActionPanel(f) {
   const panel = document.getElementById('actionPanel');
   document.getElementById('actingName').textContent = f.name;
   document.getElementById('actingName').style.color = RARITY_COLORS[f.rarity];
-  document.querySelectorAll('.fighter-card').forEach(c => c.classList.remove('active-turn'));
+  document.querySelectorAll('.fighter-card,.scene-turtle').forEach(c => c.classList.remove('active-turn'));
   const activeEl = document.getElementById(getFighterElId(f));
   if (activeEl) activeEl.classList.add('active-turn');
 

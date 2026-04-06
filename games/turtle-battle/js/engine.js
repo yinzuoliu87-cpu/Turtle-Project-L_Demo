@@ -94,7 +94,7 @@ function resetBattleState() {
   pendingSkillIdx = null;
   resetTurnState();
   // Clean up DOM state from previous battle
-  document.querySelectorAll('.fighter-card').forEach(el => {
+  document.querySelectorAll('.fighter-card,.scene-turtle').forEach(el => {
     el.classList.remove('dead','death-anim','hit-shake','attack-anim','mech-transform-anim');
     el.style.opacity = '';
     el.style.display = '';
