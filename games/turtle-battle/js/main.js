@@ -451,6 +451,16 @@ function startBattle(seed) {
     seedBattleRng(seed);
   }
   showScreen('screenBattle');
+  // Set battle background based on mode
+  const battleScreen = document.getElementById('screenBattle');
+  let existingBg = battleScreen.querySelector('.battle-bg');
+  if (!existingBg) {
+    existingBg = document.createElement('div');
+    existingBg.className = 'battle-bg';
+    battleScreen.insertBefore(existingBg, battleScreen.firstChild);
+  }
+  const bgMap = { pve: 'assets/bg-cave-alt.png', boss: 'assets/bg-cave.png', 'pvp-online': 'assets/bg-shipwreck.png' };
+  existingBg.style.backgroundImage = 'url(' + (bgMap[gameMode] || bgMap.pve) + ')';
   // Set team labels
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
