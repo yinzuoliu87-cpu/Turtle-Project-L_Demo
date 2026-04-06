@@ -1709,13 +1709,15 @@ body{
 /* Buff icons below name */
 .scene-turtle .st-buffs{display:flex;gap:2px;margin-top:1px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center}
 
-/* Left team positions (face right) */
-.scene-turtle.pos-left-0{left:8%;bottom:45%}
-.scene-turtle.pos-left-1{left:18%;bottom:25%}
+/* Left team positions (face right) — 3v3 staggered */
+.scene-turtle.pos-left-0{left:15%;bottom:50%}
+.scene-turtle.pos-left-1{left:8%;bottom:30%}
+.scene-turtle.pos-left-2{left:22%;bottom:15%}
 /* Right team positions (face left, flip sprite) */
-.scene-turtle.pos-right-0{right:8%;bottom:45%}
-.scene-turtle.pos-right-1{right:18%;bottom:25%}
-.scene-turtle.pos-right-0 .st-sprite,.scene-turtle.pos-right-1 .st-sprite{transform:scaleX(-1)}
+.scene-turtle.pos-right-0{right:15%;bottom:50%}
+.scene-turtle.pos-right-1{right:8%;bottom:30%}
+.scene-turtle.pos-right-2{right:22%;bottom:15%}
+.scene-turtle[class*="pos-right"] .st-sprite{transform:scaleX(-1)}
 
 /* Hit animations on scene turtles */
 .scene-turtle.hit-shake{animation:shake .3s ease}
@@ -1723,8 +1725,8 @@ body{
 .scene-turtle.hit-magic{animation:hitMagic .4s ease}
 .scene-turtle.hit-true{animation:hitTrue .4s ease}
 .scene-turtle.hit-crit{animation:hitCrit .5s ease}
-.scene-turtle.attack-anim.pos-left-0,.scene-turtle.attack-anim.pos-left-1{animation:attackLungeRight .5s ease}
-.scene-turtle.attack-anim.pos-right-0,.scene-turtle.attack-anim.pos-right-1{animation:attackLungeLeft .5s ease}
+.scene-turtle.attack-anim[class*="pos-left"]{animation:attackLungeRight .5s ease}
+.scene-turtle.attack-anim[class*="pos-right"]{animation:attackLungeLeft .5s ease}
 
 /* Fighter detail panel (click to show) */
 .fighter-detail-panel{position:fixed;bottom:0;left:0;right:0;z-index:250;background:var(--bg);border-radius:14px 14px 0 0;box-shadow:0 -4px 20px rgba(0,0,0,.6);padding:14px 16px;max-height:45vh;overflow-y:auto;display:none;animation:fadeUp .2s ease}

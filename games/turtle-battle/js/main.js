@@ -32,12 +32,12 @@ function startMode(mode) {
     difficulty = 'normal';
     selecting = 'left';
     selectedIds = [];
-    showSelectScreen('选择你的队伍（选2只龟）');
+    showSelectScreen('选择你的队伍（选3只龟）');
   } else if (mode === 'boss') {
     difficulty = 'hard';
     selecting = 'left';
     selectedIds = [];
-    showSelectScreen('<img src="assets/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选2只龟）');
+    showSelectScreen('<img src="assets/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选3只龟）');
   } else if (mode === 'dungeon') {
     difficulty = 'normal';
     selecting = 'left';
@@ -356,7 +356,7 @@ function renderPetGrid() {
 
 function togglePet(e, id) {
   if (e && e.target && e.target.closest('.pet-passive-icon')) return;
-  const maxPets = gameMode === 'dungeon' ? 3 : 2;
+  const maxPets = 3;
   const idx = selectedIds.indexOf(id);
   if (idx >= 0) selectedIds.splice(idx,1);
   else { if (selectedIds.length >= maxPets) return showToast('最多选' + maxPets + '只'); selectedIds.push(id); }
@@ -391,7 +391,7 @@ function showPetPassive(e, petId) {
 }
 
 function updateSlots() {
-  const maxSlots = gameMode === 'dungeon' ? 3 : 2;
+  const maxSlots = 3;
   const slotsContainer = document.querySelector('.team-slots');
   // Ensure correct number of slot elements
   if (slotsContainer) {
@@ -419,8 +419,7 @@ function updateSlots() {
 }
 
 function confirmTeam() {
-  const requiredCount = gameMode === 'dungeon' ? 3 : 2;
-  if (selectedIds.length !== requiredCount) return;
+  if (selectedIds.length !== 3) return;
   if (gameMode === 'dungeon') {
     dungeonState.stage = 1;
     dungeonState.teamIds = [...selectedIds];
@@ -435,22 +434,27 @@ function confirmTeam() {
     leftTeam = selectedIds.map(id => createFighter(id,'left'));
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
-    rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right')];
+    rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right'), createFighter(shuffled[2].id,'right')];
+    // Auto-assign positions: first 2 front, 3rd back
+    autoAssignPositions(leftTeam);
+    autoAssignPositions(rightTeam);
     startBattle();
   } else if (gameMode === 'boss') {
     leftTeam = selectedIds.map(id => createFighter(id,'left'));
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
     const boss = createFighter(bossPet.id, 'right');
-    // Boss stat multipliers (2v1 balanced)
-    boss.maxHp = Math.round(boss.maxHp * 2.5); boss.hp = boss.maxHp;
-    boss.baseAtk = Math.round(boss.baseAtk * 1.1); boss.atk = boss.baseAtk;
-    boss.baseDef = Math.round(boss.baseDef * 1.3); boss.def = boss.baseDef;
-    boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.3); boss.mr = boss.baseMr;
+    // Boss stat multipliers (3v1 balanced)
+    boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
+    boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
+    boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
+    boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
     boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
     boss._isBoss = true;
     boss.name = 'BOSS ' + boss.name;
     rightTeam = [boss];
+    autoAssignPositions(leftTeam);
+    boss._position = 'front';
     startBattle();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
@@ -461,6 +465,14 @@ function confirmTeam() {
     // Only host starts battle (generates seed); guest waits for battle-seed message
     if (leftTeam.length === 2 && rightTeam.length === 2 && onlineSide === 'left') startBattle();
   }
+}
+
+function autoAssignPositions(team) {
+  // Sort by DEF descending — highest DEF go front
+  const sorted = [...team].sort((a,b) => b.def - a.def);
+  sorted.forEach((f, i) => {
+    f._position = i < 2 ? 'front' : 'back';
+  });
 }
 
 function goBackFromSelect() {
@@ -870,6 +882,8 @@ function dungeonStartStage() {
     rightTeam.push(e);
   }
 
+  autoAssignPositions(leftTeam);
+  autoAssignPositions(rightTeam);
   gameMode = 'dungeon';
   startBattle();
 }

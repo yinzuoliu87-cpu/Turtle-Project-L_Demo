@@ -33,6 +33,7 @@ function createFighter(petId, side) {
     magicPenPct: 0,  // 百分比魔抗穿透
     passive: b.passive || null,
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
+    _position: 'front', // front or back (set by player in formation screen)
     alive:true,
     buffs: [],
     bubbleStore: 0,      // 泡泡龟被动储存值
@@ -712,14 +713,14 @@ async function nextSideAction() {
   let canAct;
   if (isBossSide) {
     if (!_bossActionsThisRound) _bossActionsThisRound = 0;
-    canAct = (_bossActionsThisRound < 2) ? sideTeam.filter(f => f.alive) : [];
+    canAct = (_bossActionsThisRound < 3) ? sideTeam.filter(f => f.alive) : [];
   } else {
     canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
   }
 
   // First round: left only sends 1
   const totalAlive = sideTeam.filter(f => f.alive).length;
-  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 2 : totalAlive);
+  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 3 : totalAlive);
   const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
@@ -1095,7 +1096,12 @@ function pickSkill(idx) {
 
   // bubbleBind targets enemies
   const targetsFromSide = (isAlly ? (f.side==='left'?leftTeam:rightTeam) : (f.side==='left'?rightTeam:leftTeam));
-  const targets = targetsFromSide.filter(a => a.alive);
+  let targets = targetsFromSide.filter(a => a.alive);
+  // Front row priority for enemy single-target skills
+  if (!isAlly) {
+    const frontTargets = targets.filter(t => t._position === 'front');
+    if (frontTargets.length > 0) targets = frontTargets;
+  }
   if (targets.length === 1) executePlayerAction(f, skill, targets[0]);
   else showTargetSelect(targets, f, skill);
 }
@@ -2501,25 +2507,26 @@ function aiAction(f) {
     else target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   }
   else {
-    // Smart targeting: prefer low HP enemies, avoid undead lock
-    if (enemies.length === 1) {
-      target = enemies[0];
+    // Smart targeting: front row priority, prefer low HP, avoid undead lock
+    // Filter to front row if any alive front row exists
+    const frontEnemies = enemies.filter(e => e._position === 'front');
+    const targetPool = frontEnemies.length > 0 ? frontEnemies : enemies; // back row only if front all dead
+    if (targetPool.length === 1) {
+      target = targetPool[0];
     } else {
-      // Sort by HP ratio
-      const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+      const sorted = targetPool.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
       const lowest = sorted[0];
       const lowestRatio = lowest.hp / lowest.maxHp;
-      // Undead lock: always target teammate if available
+      // Undead lock: avoid locked target
       if (lowest._undeadLockTurns > 0) {
         const nonLocked = sorted.find(e => !e._undeadLockTurns);
-        if (nonLocked) { target = nonLocked; }
-        else { target = lowest; } // no choice
+        target = nonLocked || lowest;
       }
       // HP < 20%: 90% chance to focus
       else if (lowestRatio < 0.2 && Math.random() < 0.9) { target = lowest; }
       // General: 70% chance to target lowest HP, 30% random
       else if (Math.random() < 0.7) { target = lowest; }
-      else { target = enemies[Math.floor(Math.random() * enemies.length)]; }
+      else { target = targetPool[Math.floor(Math.random() * targetPool.length)]; }
     }
   }
 
