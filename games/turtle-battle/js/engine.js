@@ -579,7 +579,7 @@ async function nextSideAction() {
   // Get alive fighters for active side that haven't acted yet
   const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
   // Boss mode: boss can act twice per round, use counter instead of Set
-  const isBossSide = gameMode === 'boss' && activeSide === 'right';
+  const isBossSide = (gameMode === 'boss' || (gameMode === 'dungeon' && dungeonState && dungeonState.stage >= 5)) && activeSide === 'right';
   let canAct;
   if (isBossSide) {
     if (!_bossActionsThisRound) _bossActionsThisRound = 0;
@@ -605,6 +605,7 @@ async function nextSideAction() {
   const isPlayer =
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'boss' && activeSide === 'left') ||
+    (gameMode === 'dungeon' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
   // Check for stunned fighters — auto-skip them (only once per stun)
@@ -1339,7 +1340,7 @@ async function executeAction(action) {
       ff.hp = Math.round(ff.maxHp * revivePct / 100);
       ff.alive = true;
       ff._deathProcessed = false;
-      if (el) el.classList.remove('dead');
+      if (el) { el._pendingDead = false; el.classList.remove('dead','death-anim'); }
       updateHpBar(ff, elId);
       renderStatusIcons(ff);
       spawnFloatingNum(elId, '🐦凤凰重生!', 'crit-label', 0, -25);
@@ -2362,7 +2363,10 @@ function checkDeaths(attacker) {
         f._rebirthUsed = true;
         f.hp = Math.round(f.maxHp * f.passive.revivePct / 100);
         f.alive = true;
+        f._deathProcessed = false;
         const elId = getFighterElId(f);
+        const card = document.getElementById(elId);
+        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
         spawnFloatingNum(elId, '涅槃重生!', 'crit-label', 0, -25);
         spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
         updateHpBar(f, elId);
@@ -2408,7 +2412,10 @@ function checkDeaths(attacker) {
       const deadEl = document.getElementById(elId);
       if (deadEl) {
         deadEl.classList.add('death-anim');
-        deadEl.addEventListener('animationend', () => deadEl.classList.add('dead'), { once:true });
+        deadEl._pendingDead = true;
+        deadEl.addEventListener('animationend', () => {
+          if (deadEl._pendingDead) deadEl.classList.add('dead');
+        }, { once:true });
       }
       // Screen flash
       const flash = document.createElement('div');
@@ -2519,7 +2526,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
   summon.hp = 0;
   const sElId = getFighterElId(summon);
   const sCard = document.getElementById(sElId);
-  if (sCard) { sCard.classList.add('death-anim'); sCard.addEventListener('animationend', () => sCard.classList.add('dead'), { once:true }); }
+  if (sCard) { sCard._pendingDead = true; sCard.classList.add('death-anim'); sCard.addEventListener('animationend', () => { if (sCard._pendingDead) sCard.classList.add('dead'); }, { once:true }); }
   updateSummonHpBar(summon);
   addLog(`${summon.emoji}${summon.name}(随从) ${extraMsg || '被击败！'}`,'death');
 
@@ -2695,9 +2702,10 @@ function processLavaCountdown(f) {
   if (!f.passive || f.passive.type !== 'lavaRage' || !f._lavaTransformed) return;
   f._lavaTransformTurns--;
   if (f._lavaTransformTurns <= 0) {
-    // Revert to small form
+    // Revert to small form — can rage again
     f._lavaTransformed = false;
-    f._lavaSpent = true;
+    f._lavaSpent = false;
+    f._lavaRage = 0;
     // Revert stats
     const oldMax = f.maxHp;
     f.maxHp -= f._lavaHpGain;

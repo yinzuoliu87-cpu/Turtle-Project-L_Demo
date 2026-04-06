@@ -20,9 +20,12 @@ function renderFighterCard(f, elId) {
   card.querySelector('.fighter-name').textContent = f.name;
   card.querySelector('.fighter-name').style.color = RARITY_COLORS[f.rarity];
   card.classList.toggle('boss-card', !!f._isBoss);
+  // Clear all death states on render
+  card._pendingDead = false;
+  card.classList.remove('dead', 'death-anim');
   updateFighterStats(f, elId);
   updateHpBar(f, elId);
-  card.classList.toggle('dead', !f.alive);
+  if (!f.alive) card.classList.add('dead');
   renderStatusIcons(f);
 }
 
@@ -860,7 +863,7 @@ function showActionPanel(f) {
   }
 
   const isPlayer =
-    ((gameMode === 'pve' || gameMode === 'boss') && f.side === 'left') ||
+    ((gameMode === 'pve' || gameMode === 'boss' || gameMode === 'dungeon') && f.side === 'left') ||
     (gameMode === 'pvp-online' && f.side === onlineSide);
 
   const battle = document.getElementById('screenBattle');
@@ -886,6 +889,8 @@ function renderActionButtons(f) {
   box.innerHTML = f.skills.map((s,i) => {
     let ready = s.cdLeft === 0;
     if (s.type === 'hidingCommand' && (!f._summon || !f._summon.alive)) ready = false;
+    if (s.type === 'gamblerBet' && f.hp / f.maxHp <= 0.4) ready = false;
+    if (s.type === 'fortuneAllIn' && (f._goldCoins || 0) <= 0) ready = false;
     const shieldImg = '<img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">';
     const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';

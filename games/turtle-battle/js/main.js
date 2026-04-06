@@ -38,6 +38,12 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     showSelectScreen('<img src="assets/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选2只龟）');
+  } else if (mode === 'dungeon') {
+    difficulty = 'normal';
+    selecting = 'left';
+    selectedIds = [];
+    dungeonState = { stage: 0, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [] };
+    showSelectScreen('🏰 深海闯关 — 选择3只龟组成队伍');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -350,12 +356,13 @@ function renderPetGrid() {
 
 function togglePet(e, id) {
   if (e && e.target && e.target.closest('.pet-passive-icon')) return;
+  const maxPets = gameMode === 'dungeon' ? 3 : 2;
   const idx = selectedIds.indexOf(id);
   if (idx >= 0) selectedIds.splice(idx,1);
-  else { if (selectedIds.length >= 2) return showToast('最多选2只'); selectedIds.push(id); }
+  else { if (selectedIds.length >= maxPets) return showToast('最多选' + maxPets + '只'); selectedIds.push(id); }
   renderPetGrid();
   updateSlots();
-  document.getElementById('btnConfirmTeam').disabled = selectedIds.length !== 2;
+  document.getElementById('btnConfirmTeam').disabled = selectedIds.length !== maxPets;
 }
 
 function showPetPassive(e, petId) {
@@ -384,8 +391,23 @@ function showPetPassive(e, petId) {
 }
 
 function updateSlots() {
-  for (let i = 0; i < 2; i++) {
+  const maxSlots = gameMode === 'dungeon' ? 3 : 2;
+  const slotsContainer = document.querySelector('.team-slots');
+  // Ensure correct number of slot elements
+  if (slotsContainer) {
+    while (slotsContainer.children.length < maxSlots) {
+      const s = document.createElement('div');
+      s.className = 'team-slot';
+      s.id = 'slot' + slotsContainer.children.length;
+      slotsContainer.appendChild(s);
+    }
+    while (slotsContainer.children.length > maxSlots) {
+      slotsContainer.removeChild(slotsContainer.lastChild);
+    }
+  }
+  for (let i = 0; i < maxSlots; i++) {
     const slot = document.getElementById('slot'+i);
+    if (!slot) continue;
     if (selectedIds[i]) {
       const p = ALL_PETS.find(x => x.id === selectedIds[i]);
       slot.innerHTML = `<div class="slot-filled" style="border-color:${RARITY_COLORS[p.rarity]}">
@@ -397,7 +419,18 @@ function updateSlots() {
 }
 
 function confirmTeam() {
-  if (selectedIds.length !== 2) return;
+  const requiredCount = gameMode === 'dungeon' ? 3 : 2;
+  if (selectedIds.length !== requiredCount) return;
+  if (gameMode === 'dungeon') {
+    dungeonState.stage = 1;
+    dungeonState.teamIds = [...selectedIds];
+    dungeonState.teamHp = {};
+    dungeonState.deadIds = [];
+    dungeonState.rewards = 0;
+    dungeonState.buffs = [];
+    dungeonStartStage();
+    return;
+  }
   if (gameMode === 'pve') {
     leftTeam = selectedIds.map(id => createFighter(id,'left'));
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
@@ -453,9 +486,12 @@ function startBattle(seed) {
   }
   showScreen('screenBattle');
   // Set battle background based on mode
-  const bgMap = { pve: 'assets/bg-cave-alt.png', boss: 'assets/bg-cave.png', 'pvp-online': 'assets/bg-shipwreck.png' };
+  let bgFile = 'assets/bg-cave-alt.png';
+  if (gameMode === 'boss') bgFile = 'assets/bg-cave.png';
+  else if (gameMode === 'pvp-online') bgFile = 'assets/bg-shipwreck.png';
+  else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg-cave.png' : 'assets/bg-cave-alt.png';
   const battleScreen = document.getElementById('screenBattle');
-  battleScreen.style.backgroundImage = 'url(' + (bgMap[gameMode] || bgMap.pve) + ')';
+  battleScreen.style.backgroundImage = 'url(' + bgFile + ')';
   // Spawn underwater bubble particles
   let bubbleContainer = battleScreen.querySelector('.battle-bubbles');
   if (!bubbleContainer) {
@@ -480,13 +516,15 @@ function startBattle(seed) {
   const lr = document.getElementById('teamLabelRight');
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
   else if (gameMode === 'boss') { ll.textContent = '我方'; lr.innerHTML = '<img src="assets/equip-crown-icon.png" style="width:20px;height:20px;vertical-align:middle"> BOSS'; }
+  else if (gameMode === 'dungeon') { ll.textContent = '我方'; lr.textContent = dungeonState.stage >= 5 ? '👑 BOSS' : '第' + dungeonState.stage + '关'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
   // Boss mode: hide second enemy card
   const rf1 = document.getElementById('rightFighter1');
   if (rf1) rf1.style.display = (gameMode === 'boss') ? 'none' : '';
   document.getElementById('battleLog').innerHTML = '';
   try { sfxBattleStart(); } catch(e) {}
-  playBgm(gameMode === 'boss' ? 'boss' : 'battle');
+  const isBossStage = gameMode === 'boss' || (gameMode === 'dungeon' && dungeonState.stage >= 5);
+  playBgm(isBossStage ? 'boss' : 'battle');
   // Apply one-time passives (like ninjaInstinct)
   allFighters.forEach(f => {
     if (f.passive && f.passive.type === 'ninjaInstinct') {
@@ -622,6 +660,12 @@ function startBattle(seed) {
 // ── RESULT ────────────────────────────────────────────────
 function showResult(leftWon) {
   stopBgm();
+  // Dungeon mode: route to dungeon handler
+  if (gameMode === 'dungeon') {
+    if (leftWon) dungeonOnStageClear();
+    else dungeonOnStageFail();
+    return;
+  }
   let isWin;
   if (gameMode==='pve' || gameMode==='boss') isWin = leftWon;
   else if (gameMode==='pvp-online') isWin = (leftWon&&onlineSide==='left')||(!leftWon&&onlineSide==='right');
@@ -711,6 +755,241 @@ function loadCoins() {
     const ps = JSON.parse(localStorage.getItem('petState')||'{}');
     document.getElementById('coinDisplay').textContent = '🪙 ' + (ps.coins||0);
   } catch(e){}
+}
+
+// ── DUNGEON MODE ─────────────────────────────────────────
+let dungeonState = { stage:0, maxStage:5, teamIds:[], teamHp:{}, deadIds:[], rewards:0, buffs:[] };
+let _dungeonChoicePicked = null;
+
+// Stage config: enemies and multipliers
+const DUNGEON_STAGES = [
+  { enemies:2, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第1关' },
+  { enemies:2, hpMult:1.15, atkMult:1.1, defMult:1.1, label:'第2关' },
+  { enemies:2, hpMult:1.3, atkMult:1.2, defMult:1.2, label:'第3关 · 精英' },
+  { enemies:2, hpMult:1.5, atkMult:1.3, defMult:1.3, label:'第4关' },
+  { enemies:1, hpMult:3.0, atkMult:1.3, defMult:1.5, boss:true, label:'第5关 · Boss' },
+];
+
+function dungeonStartStage() {
+  const ds = dungeonState;
+  const stageIdx = ds.stage - 1;
+  const cfg = DUNGEON_STAGES[stageIdx];
+
+  // Create player team (alive only, restore HP from saved state)
+  const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
+  if (aliveIds.length === 0) { dungeonOnStageFail(); return; }
+  // Pick 2 for battle (or 1 if only 1 left)
+  const battleIds = aliveIds.slice(0, 2);
+  leftTeam = battleIds.map(id => {
+    const f = createFighter(id, 'left');
+    // Restore HP from previous stage
+    if (ds.teamHp[id] !== undefined) {
+      f.hp = Math.min(f.maxHp, ds.teamHp[id]);
+    }
+    // Apply dungeon buffs
+    for (const buff of ds.buffs) {
+      if (buff.type === 'atk') { f.baseAtk += buff.value; f.atk = f.baseAtk; }
+      if (buff.type === 'def') { f.baseDef += buff.value; f.def = f.baseDef; }
+      if (buff.type === 'crit') { f.crit += buff.value / 100; }
+      if (buff.type === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + buff.value; }
+    }
+    return f;
+  });
+
+  // Create enemies
+  const pool = ALL_PETS.filter(p => !ds.teamIds.includes(p.id));
+  const shuffled = pool.sort(() => _origMathRandom() - 0.5);
+  rightTeam = [];
+  for (let i = 0; i < cfg.enemies && i < shuffled.length; i++) {
+    const e = createFighter(shuffled[i].id, 'right');
+    e.maxHp = Math.round(e.maxHp * cfg.hpMult); e.hp = e.maxHp;
+    e.baseAtk = Math.round(e.baseAtk * cfg.atkMult); e.atk = e.baseAtk;
+    e.baseDef = Math.round(e.baseDef * cfg.defMult); e.def = e.baseDef;
+    e.baseMr = Math.round((e.baseMr || e.baseDef) * cfg.defMult); e.mr = e.baseMr;
+    e._initHp = e.maxHp; e._initAtk = e.baseAtk; e._initDef = e.baseDef; e._initMr = e.baseMr;
+    if (cfg.boss) { e._isBoss = true; e.name = 'BOSS ' + e.name; }
+    rightTeam.push(e);
+  }
+
+  gameMode = 'dungeon';
+  startBattle();
+}
+
+function dungeonOnStageClear() {
+  const ds = dungeonState;
+  // Save HP of alive team members
+  for (const f of leftTeam) {
+    if (f.alive) ds.teamHp[f.id] = f.hp;
+    else if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
+  }
+  // Stage rewards
+  const stageCoins = [10, 20, 40, 70, 120];
+  ds.rewards += stageCoins[ds.stage - 1] || 10;
+
+  if (ds.stage >= ds.maxStage) {
+    // All stages cleared!
+    dungeonComplete(true);
+    return;
+  }
+
+  // Show stage clear screen with choices
+  showDungeonClearScreen();
+}
+
+function dungeonOnStageFail() {
+  const ds = dungeonState;
+  // Save state
+  for (const f of leftTeam) {
+    if (f.alive) ds.teamHp[f.id] = f.hp;
+    else if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
+  }
+  // Check if any alive turtles remain
+  const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
+  if (aliveIds.length > 0 && leftTeam.some(f => f.alive)) {
+    // Still have turtles, lost this battle but can retry? No — stage fail = show result
+    dungeonComplete(false);
+  } else {
+    dungeonComplete(false);
+  }
+}
+
+function dungeonComplete(cleared) {
+  const ds = dungeonState;
+  playBgm('menu');
+  const icon = document.getElementById('dungeonResultIcon');
+  const title = document.getElementById('dungeonResultTitle');
+  const sub = document.getElementById('dungeonResultSub');
+  const rewards = document.getElementById('dungeonResultRewards');
+  if (cleared) {
+    icon.textContent = '🏆';
+    title.textContent = '闯关成功！';
+    sub.textContent = `通过全部 ${ds.maxStage} 关！`;
+    const today = new Date().toDateString();
+    const isFirst = localStorage.getItem('dailyDungeonClear') !== today;
+    let totalCoins = ds.rewards;
+    let lines = [`<div class="reward-line">🪙 +${ds.rewards} 龟币（关卡奖励）</div>`];
+    if (isFirst) {
+      totalCoins += 50;
+      localStorage.setItem('dailyDungeonClear', today);
+      lines.push(`<div class="reward-line">🪙 +50 龟币 <span style="color:#ffd93d">（每日首通）</span></div>`);
+    }
+    rewards.innerHTML = lines.join('');
+    addCoins(totalCoins);
+    try { sfxVictory(); } catch(e) {}
+  } else {
+    icon.textContent = '💀';
+    title.textContent = '闯关失败…';
+    sub.textContent = `止步于第 ${ds.stage} 关`;
+    const partialCoins = Math.max(5, Math.round(ds.rewards * 0.5));
+    rewards.innerHTML = `<div class="reward-line">🪙 +${partialCoins} 龟币（部分奖励）</div>`;
+    addCoins(partialCoins);
+    try { sfxDefeat(); } catch(e) {}
+  }
+  showScreen('screenDungeonResult');
+}
+
+function showDungeonClearScreen() {
+  const ds = dungeonState;
+  // Render progress dots
+  const progressEl = document.getElementById('dungeonProgress');
+  progressEl.innerHTML = '';
+  for (let i = 1; i <= ds.maxStage; i++) {
+    const cls = i < ds.stage ? 'cleared' : i === ds.stage ? 'cleared current' : '';
+    const boss = i === ds.maxStage ? ' boss' : '';
+    progressEl.innerHTML += `<div class="dp-dot ${cls}${boss}">${i === ds.maxStage ? '👑' : i}</div>`;
+  }
+  // Title
+  document.getElementById('dungeonClearTitle').textContent = DUNGEON_STAGES[ds.stage-1].label + ' 通过！';
+  // Team status
+  const statusEl = document.getElementById('dungeonTeamStatus');
+  statusEl.innerHTML = ds.teamIds.map(id => {
+    const p = ALL_PETS.find(x => x.id === id);
+    const dead = ds.deadIds.includes(id);
+    const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
+    const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
+    const hpPct = Math.round(hp / maxHp * 100);
+    return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
+      <div class="dts-emoji">${p.emoji}</div>
+      <div class="dts-name">${p.name}</div>
+      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
+    </div>`;
+  }).join('');
+  // Generate 3 choices
+  _dungeonChoicePicked = null;
+  document.getElementById('dungeonNextBtn').disabled = true;
+  renderDungeonChoices();
+  showScreen('screenDungeonClear');
+}
+
+function renderDungeonChoices() {
+  const ds = dungeonState;
+  const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
+  const hasDead = ds.deadIds.length > 0;
+
+  const choicePool = [
+    { icon:'💚', title:'生命恢复', desc:'全队回复 40% 最大生命值', apply() { for (const id of aliveIds) { const p = ALL_PETS.find(x=>x.id===id); const max = Math.round(p.hp*(RARITY_MULT[p.rarity]||1)); ds.teamHp[id] = Math.min(max, (ds.teamHp[id]||max) + Math.round(max*0.4)); } } },
+    { icon:'⚔️', title:'攻击强化', desc:'全队攻击力永久 +6', apply() { ds.buffs.push({type:'atk',value:6}); } },
+    { icon:'🛡️', title:'防御强化', desc:'全队护甲永久 +4', apply() { ds.buffs.push({type:'def',value:4}); } },
+    { icon:'💥', title:'暴击提升', desc:'全队暴击率永久 +12%', apply() { ds.buffs.push({type:'crit',value:12}); } },
+    { icon:'🩸', title:'生命偷取', desc:'全队获得 8% 生命偷取', apply() { ds.buffs.push({type:'lifesteal',value:8}); } },
+    { icon:'💰', title:'龟币宝箱', desc:'立即获得 30 龟币', apply() { ds.rewards += 30; } },
+  ];
+  if (hasDead) {
+    choicePool.push({ icon:'✨', title:'复活队友', desc:'复活一只已阵亡的龟（30%HP）', apply() {
+      const revId = ds.deadIds.shift();
+      if (revId) { const p = ALL_PETS.find(x=>x.id===revId); const max = Math.round(p.hp*(RARITY_MULT[p.rarity]||1)); ds.teamHp[revId] = Math.round(max*0.3); }
+    }});
+  }
+
+  // Pick 3 random choices
+  const shuffled = choicePool.sort(() => _origMathRandom() - 0.5).slice(0, 3);
+  const el = document.getElementById('dungeonChoices');
+  el.innerHTML = shuffled.map((c, i) => `
+    <div class="dungeon-choice" onclick="pickDungeonChoice(${i})" id="dchoice${i}">
+      <div class="dungeon-choice-icon">${c.icon}</div>
+      <div class="dungeon-choice-title">${c.title}</div>
+      <div class="dungeon-choice-desc">${c.desc}</div>
+    </div>
+  `).join('');
+  // Store choices for later
+  el._choices = shuffled;
+}
+
+function pickDungeonChoice(idx) {
+  _dungeonChoicePicked = idx;
+  document.querySelectorAll('.dungeon-choice').forEach((c, i) => {
+    c.classList.toggle('selected', i === idx);
+  });
+  document.getElementById('dungeonNextBtn').disabled = false;
+}
+
+function dungeonNextStage() {
+  if (_dungeonChoicePicked === null) return;
+  const el = document.getElementById('dungeonChoices');
+  const choice = el._choices[_dungeonChoicePicked];
+  if (choice && choice.apply) choice.apply();
+  // Refresh team status display to show effect of choice (e.g. revive)
+  showDungeonTeamStatus();
+  dungeonState.stage++;
+  setTimeout(() => dungeonStartStage(), 500);
+}
+
+function showDungeonTeamStatus() {
+  const ds = dungeonState;
+  const statusEl = document.getElementById('dungeonTeamStatus');
+  if (!statusEl) return;
+  statusEl.innerHTML = ds.teamIds.map(id => {
+    const p = ALL_PETS.find(x => x.id === id);
+    const dead = ds.deadIds.includes(id);
+    const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
+    const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
+    const hpPct = Math.round(hp / maxHp * 100);
+    return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
+      <div class="dts-emoji">${p.emoji}</div>
+      <div class="dts-name">${p.name}</div>
+      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
+    </div>`;
+  }).join('');
 }
 
 // ── INIT ──────────────────────────────────────────────────

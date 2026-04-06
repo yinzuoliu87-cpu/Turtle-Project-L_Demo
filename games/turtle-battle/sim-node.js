@@ -186,7 +186,7 @@ async function simBattle(leftIds, rightIds, maxTurns = 40) {
       if (p.type === 'lavaRage' && f._lavaTransformed) {
         f._lavaTransformTurns--;
         if (f._lavaTransformTurns <= 0) {
-          f._lavaTransformed = false; f._lavaSpent = true;
+          f._lavaTransformed = false; f._lavaSpent = false; f._lavaRage = 0;
           const oldMax = f.maxHp;
           f.maxHp -= f._lavaHpGain; f.hp = Math.max(1, Math.round(f.hp * f.maxHp / oldMax));
           f.baseAtk -= f._lavaAtkGain; f.baseDef -= f._lavaDefGain;
