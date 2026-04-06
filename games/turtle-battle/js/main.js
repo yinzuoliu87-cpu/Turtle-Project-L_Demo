@@ -282,7 +282,9 @@ function handleOnlineMessage(msg) {
       if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left'));
       if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right'));
       // Only host (left) starts battle — it will generate seed and send it
-      if (leftTeam.length === 2 && rightTeam.length === 2 && onlineSide === 'left') startBattle();
+      if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
+      autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
+    }
       break;
     case 'battle-seed':
       // Guest receives seed from host, now start battle
@@ -435,10 +437,8 @@ function confirmTeam() {
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
     rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right'), createFighter(shuffled[2].id,'right')];
-    // Auto-assign positions: first 2 front, 3rd back
-    autoAssignPositions(leftTeam);
     autoAssignPositions(rightTeam);
-    startBattle();
+    showFormationScreen();
   } else if (gameMode === 'boss') {
     leftTeam = selectedIds.map(id => createFighter(id,'left'));
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
@@ -453,9 +453,8 @@ function confirmTeam() {
     boss._isBoss = true;
     boss.name = 'BOSS ' + boss.name;
     rightTeam = [boss];
-    autoAssignPositions(leftTeam);
     boss._position = 'front';
-    startBattle();
+    showFormationScreen();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
     if (side === 'left')  leftTeam  = team.map(id => createFighter(id,'left'));
@@ -463,8 +462,93 @@ function confirmTeam() {
     sendOnline({ type:'team-ready', side, team });
     showToast('等待对手选择…');
     // Only host starts battle (generates seed); guest waits for battle-seed message
-    if (leftTeam.length === 2 && rightTeam.length === 2 && onlineSide === 'left') startBattle();
+    if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
+      autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
+    }
   }
+}
+
+// ── FORMATION SCREEN ─────────────────────────────────────
+let _formationPlacements = {}; // { 'front-0': fighterIdx, 'front-1': fighterIdx, 'back-0': fighterIdx }
+let _formationSelectedBench = null; // index in leftTeam
+
+function showFormationScreen() {
+  _formationPlacements = {};
+  _formationSelectedBench = null;
+  // Render bench (unplaced turtles)
+  renderFormationBench();
+  // Clear slots
+  ['front-0','front-1','back-0'].forEach(key => {
+    const slot = document.getElementById('fslot-' + key);
+    if (slot) { slot.innerHTML = ''; slot.classList.remove('filled','selected'); }
+  });
+  document.getElementById('btnConfirmFormation').disabled = true;
+  showScreen('screenFormation');
+}
+
+function renderFormationBench() {
+  const bench = document.getElementById('formationBench');
+  const placedIndices = Object.values(_formationPlacements);
+  bench.innerHTML = leftTeam.map((f, i) => {
+    const placed = placedIndices.includes(i);
+    const selected = _formationSelectedBench === i;
+    return `<div class="formation-bench-turtle ${placed ? 'placed' : ''} ${selected ? 'bench-selected' : ''}" onclick="formationBenchClick(${i})">
+      <div class="fb-emoji">${f.emoji}</div>
+      <div class="fb-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
+    </div>`;
+  }).join('');
+}
+
+function formationBenchClick(idx) {
+  if (Object.values(_formationPlacements).includes(idx)) return; // already placed
+  _formationSelectedBench = idx;
+  renderFormationBench();
+}
+
+function formationSlotClick(row, col) {
+  const key = row + '-' + col;
+  const slot = document.getElementById('fslot-' + key);
+
+  // If slot already has a turtle, remove it
+  if (_formationPlacements[key] !== undefined) {
+    delete _formationPlacements[key];
+    slot.innerHTML = '';
+    slot.classList.remove('filled');
+    renderFormationBench();
+    checkFormationComplete();
+    return;
+  }
+
+  // If no bench turtle selected, do nothing
+  if (_formationSelectedBench === null) return;
+
+  // Place selected turtle
+  const f = leftTeam[_formationSelectedBench];
+  _formationPlacements[key] = _formationSelectedBench;
+  slot.innerHTML = `<div class="fs-emoji">${f.emoji}</div><div class="fs-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>`;
+  slot.classList.add('filled');
+
+  _formationSelectedBench = null;
+  renderFormationBench();
+  checkFormationComplete();
+}
+
+function checkFormationComplete() {
+  const placed = Object.keys(_formationPlacements).length;
+  document.getElementById('btnConfirmFormation').disabled = placed !== leftTeam.length;
+}
+
+function confirmFormation() {
+  // Apply positions to leftTeam fighters
+  for (const [key, idx] of Object.entries(_formationPlacements)) {
+    const row = key.startsWith('front') ? 'front' : 'back';
+    leftTeam[idx]._position = row;
+  }
+  startBattle();
+}
+
+function formationBack() {
+  showScreen('screenSelect');
 }
 
 function autoAssignPositions(team) {

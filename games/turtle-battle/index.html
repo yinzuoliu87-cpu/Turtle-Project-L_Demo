@@ -160,6 +160,28 @@
   <div class="pet-grid" id="petGrid"></div>
 </section>
 
+<!-- ══════ SCREEN: FORMATION ══════ -->
+<section id="screenFormation" class="screen">
+  <h2 class="screen-title">选择阵型</h2>
+  <p style="text-align:center;color:var(--fg2);font-size:13px;margin-bottom:12px">点击龟头像，再点击位置来安排前后排</p>
+  <div class="formation-field" id="formationField">
+    <div class="formation-row formation-front">
+      <div class="formation-label">前排</div>
+      <div class="formation-slot" id="fslot-front-0" onclick="formationSlotClick('front',0)"></div>
+      <div class="formation-slot" id="fslot-front-1" onclick="formationSlotClick('front',1)"></div>
+    </div>
+    <div class="formation-row formation-back">
+      <div class="formation-label">后排</div>
+      <div class="formation-slot" id="fslot-back-0" onclick="formationSlotClick('back',0)"></div>
+    </div>
+  </div>
+  <div class="formation-bench" id="formationBench"></div>
+  <div style="text-align:center;margin-top:12px">
+    <button class="btn btn-secondary select-btn" onclick="formationBack()">← 重新选龟</button>
+    <button class="btn btn-primary select-btn" id="btnConfirmFormation" onclick="confirmFormation()" disabled>开战！</button>
+  </div>
+</section>
+
 <!-- ══════ SCREEN: BATTLE ══════ -->
 <section id="screenBattle" class="screen">
   <!-- Turn indicator + help -->
