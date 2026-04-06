@@ -432,6 +432,7 @@ function confirmTeam() {
 
 function goBackFromSelect() {
   showScreen('screenMenu');
+  // menu BGM already playing, don't restart
 }
 
 
@@ -452,15 +453,28 @@ function startBattle(seed) {
   }
   showScreen('screenBattle');
   // Set battle background based on mode
-  const battleScreen = document.getElementById('screenBattle');
-  let existingBg = battleScreen.querySelector('.battle-bg');
-  if (!existingBg) {
-    existingBg = document.createElement('div');
-    existingBg.className = 'battle-bg';
-    battleScreen.insertBefore(existingBg, battleScreen.firstChild);
-  }
   const bgMap = { pve: 'assets/bg-cave-alt.png', boss: 'assets/bg-cave.png', 'pvp-online': 'assets/bg-shipwreck.png' };
-  existingBg.style.backgroundImage = 'url(' + (bgMap[gameMode] || bgMap.pve) + ')';
+  const battleScreen = document.getElementById('screenBattle');
+  battleScreen.style.backgroundImage = 'url(' + (bgMap[gameMode] || bgMap.pve) + ')';
+  // Spawn underwater bubble particles
+  let bubbleContainer = battleScreen.querySelector('.battle-bubbles');
+  if (!bubbleContainer) {
+    bubbleContainer = document.createElement('div');
+    bubbleContainer.className = 'battle-bubbles';
+    battleScreen.insertBefore(bubbleContainer, battleScreen.firstChild);
+  }
+  bubbleContainer.innerHTML = '';
+  for (let i = 0; i < 12; i++) {
+    const b = document.createElement('div');
+    b.className = 'bubble-particle';
+    const size = 4 + _origMathRandom() * 10;
+    b.style.width = size + 'px';
+    b.style.height = size + 'px';
+    b.style.left = (_origMathRandom() * 100) + '%';
+    b.style.animationDuration = (6 + _origMathRandom() * 8) + 's';
+    b.style.animationDelay = (_origMathRandom() * 10) + 's';
+    bubbleContainer.appendChild(b);
+  }
   // Set team labels
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
@@ -472,6 +486,7 @@ function startBattle(seed) {
   if (rf1) rf1.style.display = (gameMode === 'boss') ? 'none' : '';
   document.getElementById('battleLog').innerHTML = '';
   try { sfxBattleStart(); } catch(e) {}
+  playBgm(gameMode === 'boss' ? 'boss' : 'battle');
   // Apply one-time passives (like ninjaInstinct)
   allFighters.forEach(f => {
     if (f.passive && f.passive.type === 'ninjaInstinct') {
@@ -606,6 +621,7 @@ function startBattle(seed) {
 
 // ── RESULT ────────────────────────────────────────────────
 function showResult(leftWon) {
+  stopBgm();
   let isWin;
   if (gameMode==='pve' || gameMode==='boss') isWin = leftWon;
   else if (gameMode==='pvp-online') isWin = (leftWon&&onlineSide==='left')||(!leftWon&&onlineSide==='right');
@@ -664,6 +680,7 @@ function showResult(leftWon) {
 }
 
 function rematch() {
+  playBgm('menu');
   if (gameMode==='pvp-online') showScreen('screenLobby');
   else startMode(gameMode);
 }
@@ -699,5 +716,10 @@ function loadCoins() {
 // ── INIT ──────────────────────────────────────────────────
 loadCoins();
 updateRecordDisplay();
+// Start menu BGM on first user interaction (browsers block autoplay)
+document.addEventListener('click', function _startMenuBgm() {
+  playBgm('menu');
+  document.removeEventListener('click', _startMenuBgm);
+}, { once: true });
 
 

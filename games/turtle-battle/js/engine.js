@@ -121,6 +121,33 @@ function resetBattleState() {
 }
 
 
+// ── HIT ANIMATION HELPER ──────────────────────────────────
+function playHitAnim(elId, dmgType, isCrit) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  // Remove all hit classes
+  el.classList.remove('hit-shake','hit-physical','hit-magic','hit-true','hit-crit');
+  void el.offsetWidth; // reflow to restart animation
+  if (isCrit) {
+    el.classList.add('hit-crit');
+    // Screen flash for crits
+    const flash = document.createElement('div');
+    flash.className = 'screen-flash flash-crit';
+    document.body.appendChild(flash);
+    flash.addEventListener('animationend', () => flash.remove());
+  } else if (dmgType === 'magic') {
+    el.classList.add('hit-magic');
+  } else if (dmgType === 'true') {
+    el.classList.add('hit-true');
+  } else {
+    el.classList.add('hit-physical');
+  }
+  // Auto-remove after animation
+  setTimeout(() => {
+    el.classList.remove('hit-shake','hit-physical','hit-magic','hit-true','hit-crit');
+  }, 500);
+}
+
 function getAliveEnemiesWithSummons(side) {
   const team = side === 'left' ? rightTeam : leftTeam;
   const targets = team.filter(e => e.alive);
@@ -1665,13 +1692,10 @@ async function doDamage(attacker, target, skill) {
       await sleep(200);
     }
 
-    // Shake
-    const tEl = document.getElementById(tElId);
-    tEl.classList.add('hit-shake');
+    // Hit animation based on damage type
+    playHitAnim(tElId, dmgType, isCrit);
     updateHpBar(target, tElId);
-    await sleep(700);
-    tEl.classList.remove('hit-shake');
-    await sleep(200);
+    await sleep(500);
 
     // Passive: gamblerMultiHit
     await tryGamblerMultiHit(attacker, target, tElId);
