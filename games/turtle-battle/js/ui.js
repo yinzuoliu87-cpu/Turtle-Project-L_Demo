@@ -48,6 +48,8 @@ function renderScene() {
           <div class="st-hp-ticks">${ticksHtml}</div>
         </div>
         ${f.passive && f.passive.type === 'bubbleStore' ? `<div class="st-bubble-store-bar"><div class="st-bubble-store-fill" style="width:0%"></div></div>` : ''}
+        ${f.passive && f.passive.type === 'lavaRage' ? `<div class="st-rage-bar"><div class="st-rage-fill" style="width:0%"></div></div>` : ''}
+        ${f.passive && f.passive.type === 'starEnergy' ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
       </div>
       <div class="st-sprite">${spriteHTML}</div>
       <div class="st-buffs"></div>
@@ -208,6 +210,21 @@ function updateSceneHp(f) {
     } else {
       bBar.style.display = 'none';
     }
+  }
+
+  // ── Rage bar (lava turtle) ──
+  const rageBar = el.querySelector('.st-rage-fill');
+  if (rageBar && f.passive && f.passive.type === 'lavaRage') {
+    const ragePct = f._lavaTransformed ? 100 : Math.min(100, (f._lavaRage || 0) / f.passive.rageMax * 100);
+    rageBar.style.width = ragePct + '%';
+  }
+
+  // ── Energy bar (star turtle) ──
+  const energyBar = el.querySelector('.st-energy-fill');
+  if (energyBar && f.passive && f.passive.type === 'starEnergy') {
+    const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+    const ePct = Math.min(100, (f._starEnergy || 0) / maxE * 100);
+    energyBar.style.width = ePct + '%';
   }
 
   // ── Death state ──
@@ -1210,9 +1227,10 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>');
   result = result.replace(/(?<!\">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
   result = result.replace(/(?<!\">)反伤(?!<)/g, '<span class="val-reflect">反伤</span>');
-  // Extra/bonus damage
+  result = result.replace(/(?<!\">)暴击率(?!<)/g, '<span class="val-crit">暴击率</span>');
+  result = result.replace(/(?<!\">)暴击伤害(?!<)/g, '<span class="val-crit-dmg">暴击伤害</span>');
+  // Extra/bonus damage — only color "额外伤害" as a whole, not standalone "额外"
   result = result.replace(/(?<!\">)额外伤害(?!<)/g, '<span class="val-extra">额外伤害</span>');
-  result = result.replace(/(?<!\">)额外(?!伤害|<)/g, '<span class="val-extra">额外</span>');
   return result;
 }
 
@@ -1247,7 +1265,8 @@ function colorDmgKeywords(text) {
     .replace(/(?<!"val-[^"]*">)物理(?!伤害|<)/g, '<span class="val-normal">物理</span>')
     .replace(/(?<!"val-[^"]*">)魔法(?!伤害|<)/g, '<span class="val-magic">魔法</span>')
     .replace(/(?<!"val-[^"]*">)额外伤害(?!<)/g, '<span class="val-extra">额外伤害</span>')
-    .replace(/(?<!"val-[^"]*">)额外(?!伤害|<)/g, '<span class="val-extra">额外</span>')
+    .replace(/(?<!"val-[^"]*">)暴击率(?!<)/g, '<span class="val-crit">暴击率</span>')
+    .replace(/(?<!"val-[^"]*">)暴击伤害(?!<)/g, '<span class="val-crit-dmg">暴击伤害</span>')
     .replace(/(?<!"val-[^"]*">)灼烧(?!<)/g, '<span class="val-burn">灼烧</span>')
     .replace(/(?<!"val-[^"]*">)治疗削减(?!<)/g, '<span class="val-heal-reduce">治疗削减</span>')
     .replace(/(?<!"val-[^"]*">)吸血(?!<)/g, '<span class="val-lifesteal">吸血</span>')

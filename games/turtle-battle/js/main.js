@@ -603,6 +603,13 @@ function fgTouchEnd(e) {
 
 function renderFgSlots() {
   const isMobile = window.innerWidth <= 768;
+  const isDungeon = gameMode === 'dungeon';
+  // Update row labels for dungeon mode
+  const labels = document.querySelectorAll('.fg-label');
+  if (labels.length >= 2) {
+    labels[0].textContent = isDungeon ? '上场' : '前排';
+    labels[1].textContent = isDungeon ? '替补' : '后排';
+  }
   for (const key of FG_SLOT_KEYS) {
     const slot = document.getElementById('fgSlot-' + key);
     if (!slot) continue;
@@ -674,10 +681,9 @@ function confirmTeam() {
   const requiredCount = gameMode === 'dungeon' ? 6 : 3;
   if (selectedIds.length !== requiredCount) return;
   if (gameMode === 'dungeon') {
-    // First 3 placed slots = battle team, rest = bench
-    const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]);
-    const battleIds = placed.slice(0, 3).map(k => _fgSlots[k]);
-    const benchIds = placed.slice(3).map(k => _fgSlots[k]);
+    // Front row = battle team, back row = bench
+    const battleIds = ['front-0','front-1','front-2'].map(k => _fgSlots[k]).filter(Boolean);
+    const benchIds = ['back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
     dungeonState.stage = 1;
     dungeonState.teamIds = [...selectedIds];
     dungeonState.battleIds = battleIds;
@@ -801,6 +807,7 @@ function showRuleBanner(rule, callback) {
 function startBattle(seed) {
   allFighters = [...leftTeam, ...rightTeam];
   battleOver = false; turnNum = 1;
+  resetTurnState();
   // Seeded random for online sync
   if (gameMode === 'pvp-online') {
     if (!seed) {
