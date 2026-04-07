@@ -1585,18 +1585,20 @@ function renderActionButtons(f) {
   }).join('');
 
   // Combo skill buttons
-  const combos = getAvailableCombos(f.side);
-  const comboPartner = (c) => { const otherId = c.ids.find(id => id !== f.id); return allFighters.find(a => a.id === otherId && a.side === f.side && a.alive); };
-  const myCombo = combos.filter(c => c.ids.includes(f.id));
-  if (myCombo.length) {
-    myCombo.forEach((c, ci) => {
-      const partner = comboPartner(c);
+  if (typeof COMBO_SKILLS !== 'undefined') {
+    const team = f.side === 'left' ? leftTeam : rightTeam;
+    const aliveIds = team.filter(t => t.alive).map(t => t.id);
+    COMBO_SKILLS.forEach((c, ci) => {
+      if (!c.ids.includes(f.id)) return;
+      if (!c.ids.every(id => aliveIds.includes(id))) return;
+      const partner = team.find(t => t.id === c.ids.find(id => id !== f.id) && t.alive);
       if (!partner) return;
       const partnerActed = actedThisSide.has(allFighters.indexOf(partner));
-      if (partnerActed) return; // partner already acted this round
+      const onCd = _comboCdLeft[ci] > 0;
+      const canUse = !partnerActed && !onCd;
       box.innerHTML += `<div class="skill-btn-wrap">
-        <div class="skill-card combo-card" onclick="useCombo(${COMBO_SKILLS.indexOf(c)})">
-          <div class="skill-header" style="color:#ffd93d">🤝 ${c.name}</div>
+        <div class="skill-card combo-card ${canUse ? '' : 'disabled'}" ${canUse ? `onclick="useCombo(${ci})"` : ''}>
+          <div class="skill-header" style="color:#ffd93d">🤝 ${c.name}${onCd ? ` <span class="cd-tag">CD${_comboCdLeft[ci]}</span>` : ''}${partnerActed ? ' <span class="cd-tag">搭档已行动</span>' : ''}</div>
           <div class="skill-body-brief">${c.icon} ${f.name} + ${partner.name}：${c.desc}</div>
         </div>
       </div>`;

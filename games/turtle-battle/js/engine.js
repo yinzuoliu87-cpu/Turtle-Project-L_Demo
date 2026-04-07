@@ -130,11 +130,13 @@ function aiPickSkills(petId) {
 }
 
 // ── COMBO SKILLS ─────────────────────────────────────────
+let _comboCdLeft = {}; // { comboIdx: turnsLeft }
+
 function getAvailableCombos(side) {
   if (typeof COMBO_SKILLS === 'undefined') return [];
   const team = side === 'left' ? leftTeam : rightTeam;
   const aliveIds = team.filter(f => f.alive).map(f => f.id);
-  return COMBO_SKILLS.filter(c => c.ids.every(id => aliveIds.includes(id)));
+  return COMBO_SKILLS.filter((c, i) => c.ids.every(id => aliveIds.includes(id)) && !(_comboCdLeft[i] > 0));
 }
 
 async function executeCombo(combo, side) {
@@ -145,6 +147,10 @@ async function executeCombo(combo, side) {
 
   // Mark both fighters as acted
   fighters.forEach(f => actedThisSide.add(allFighters.indexOf(f)));
+
+  // Set combo CD
+  const comboIdx = COMBO_SKILLS.indexOf(combo);
+  if (comboIdx >= 0 && combo.cd) _comboCdLeft[comboIdx] = combo.cd;
 
   // Announce
   showSkillAnnounce(fighters[0], { name: combo.name });
@@ -205,6 +211,7 @@ function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
   allFighters=[]; turnQueue=[]; battleOver=false; animating=false;
   _actionQueue=[]; _bossActionsThisRound=0;
+  _comboCdLeft = {};
   currentActingFighter = null;
   pendingSkillIdx = null;
   resetTurnState();
@@ -742,6 +749,9 @@ async function beginTurn() {
 
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
   try { sfxTurnStart(); } catch(e) {}
+
+  // Tick down combo CDs
+  for (const k in _comboCdLeft) { if (_comboCdLeft[k] > 0) _comboCdLeft[k]--; }
 
   // Equipment day: pick equip every 3 turns
   if (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'equip' && turnNum > 1 && turnNum % 3 === 1) {
