@@ -1844,6 +1844,7 @@ body{
 .fdp-passive-title{font-size:14px;font-weight:700;margin-bottom:5px}
 .fdp-passive-brief,.fdp-passive-detail{font-size:12px;line-height:1.6;color:var(--fg2)}
 .fdp-passive-toggle{display:inline-block;margin-top:4px;font-size:10px;color:var(--accent);cursor:pointer}
+.fdp-passive-state{margin-top:6px;padding:6px 8px;background:rgba(255,255,255,.03);border-radius:6px;font-size:11px;line-height:1.7;color:var(--fg2);border-left:2px solid var(--accent)}
 /* Skills in panel */
 .fdp-skills{margin-bottom:6px}
 .fdp-skill{padding:8px 10px;background:rgba(255,255,255,.03);border-radius:6px;border:1px solid rgba(255,255,255,.06);margin-bottom:5px}
