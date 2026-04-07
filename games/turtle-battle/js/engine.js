@@ -144,6 +144,14 @@ function applyPassiveSkills(f) {
       f._ghostCurseOnSpawn = true;
       f._ghostCurseDmgMult = 1.5;
     }
+    // 凤凰龟 强化涅槃: revive at 100% HP + ATK boost
+    if (ps.type === 'phoenixEnhancedRebirth') {
+      f._phoenixEnhancedRebirth = true;
+    }
+    // 熔岩龟 强化熔岩之心: start with 100 rage (instant transform)
+    if (ps.type === 'lavaEnhancedRage') {
+      f._lavaStartFull = true;
+    }
     // 线条龟 速写: ink cap 7 + convert to true damage
     if (ps.type === 'lineSpeedWrite') {
       f._inkCapOverride = 7;
@@ -2803,7 +2811,14 @@ function checkDeaths(attacker) {
       // Phoenix rebirth: revive once
       if (f.passive && f.passive.type === 'phoenixRebirth' && !f._rebirthUsed) {
         f._rebirthUsed = true;
-        f.hp = Math.round(f.maxHp * f.passive.revivePct / 100);
+        const revivePct = f._phoenixEnhancedRebirth ? 100 : f.passive.revivePct;
+        f.hp = Math.round(f.maxHp * revivePct / 100);
+        // Enhanced rebirth: +20% ATK
+        if (f._phoenixEnhancedRebirth) {
+          const atkBoost = Math.round(f.baseAtk * 0.2);
+          f.baseAtk += atkBoost; f.atk += atkBoost;
+          spawnFloatingNum(getFighterElId(f), `+${atkBoost}ATK`, 'passive-num', 400, 0);
+        }
         f.alive = true;
         f._deathProcessed = false;
         const elId = getFighterElId(f);

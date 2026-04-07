@@ -1052,6 +1052,12 @@ function startBattle(seed) {
   playBgm(isBossStage ? 'boss' : 'battle');
   // Apply passive skills (equipped but not actively used)
   allFighters.forEach(f => { if (typeof applyPassiveSkills === 'function') applyPassiveSkills(f); });
+  // Lava enhanced rage: start with full rage
+  allFighters.forEach(f => {
+    if (f._lavaStartFull && f.passive && f.passive.type === 'lavaRage') {
+      f._lavaRage = f.passive.rageMax;
+    }
+  });
   // Apply one-time passives (like ninjaInstinct)
   allFighters.forEach(f => {
     if (f.passive && f.passive.type === 'ninjaInstinct') {
