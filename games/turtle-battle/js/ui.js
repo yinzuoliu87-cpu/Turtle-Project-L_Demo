@@ -107,7 +107,14 @@ function renderSceneBuffs(f) {
     else if (b.type === 'gamblerPierceConvert') icons.push('<span style="color:#ffd93d">🎰</span>');
     else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
   }
-  box.innerHTML = icons.slice(0, 6).map(i => i).join('');
+  // Equipment icons
+  if (f._equips && f._equips.length) {
+    for (const eq of f._equips) {
+      const eIcon = eq.icon && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:12px;height:12px" title="${eq.name}">` : (eq.icon||'');
+      icons.push(`<span style="background:rgba(255,215,0,.15);border-radius:3px;padding:0 1px" title="${eq.name}">${eIcon}</span>`);
+    }
+  }
+  box.innerHTML = icons.slice(0, 8).map(i => i).join('');
 }
 
 // Update HP bar for a scene turtle

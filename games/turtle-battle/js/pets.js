@@ -486,7 +486,7 @@ const ALL_PETS = [
         brief:'宝箱龟回复 {H:HP*0.15} HP + {S:0.7*ATK} 护盾，每100点财宝值强度+14%',
         detail:'宝箱龟清点财宝，回复（15%×最大生命值({HP}) = {H:HP*0.15}）HP。\n获得（70%×攻击力({ATK}) = {S:0.7*ATK}）护盾。\n每拥有100点财宝值，技能强度增加 <span class="val-atk">14%</span>。\n冷却{cd}回合。' },
       { name:'财宝风暴', type:'chestStorm', hits:10, power:0, pierce:0, cd:4, aoe:true, atkScale:0.09, pierceScale:0.04,
-        brief:'宝箱龟对每个敌人飞射10段，每段（{N:0.09*ATK}）物理+（{T:0.04*ATK}）真实',
+        brief:'宝箱龟对每个敌人飞射10段，共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害',
         detail:'宝箱龟对每个敌人飞射10段财宝。\n每段造成（9%×攻击力({ATK}) = {N:0.09*ATK}）物理 +（4%×攻击力({ATK}) = {T:0.04*ATK}）真实伤害。\n共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害（每个敌人）。\n冷却{cd}回合。' },
     ]},
   { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:349,  atk:45,  def:13, mr:15, spd:17, crit:0.25,

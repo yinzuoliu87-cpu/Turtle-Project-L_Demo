@@ -826,6 +826,20 @@ body{
   .scene-turtle.active-turn{transform:scale(.5)}
   .scene-turtle .st-buffs{max-width:50px;font-size:7px}
 
+  /* Mobile position adjustments — spread out slightly */
+  .scene-turtle.pos-left-front-0{left:30%;bottom:42%}
+  .scene-turtle.pos-left-front-1{left:27%;bottom:27%}
+  .scene-turtle.pos-left-front-2{left:33%;bottom:14%}
+  .scene-turtle.pos-left-back-0{left:12%;bottom:40%}
+  .scene-turtle.pos-left-back-1{left:9%;bottom:26%}
+  .scene-turtle.pos-left-back-2{left:15%;bottom:14%}
+  .scene-turtle.pos-right-front-0{right:30%;bottom:42%}
+  .scene-turtle.pos-right-front-1{right:27%;bottom:27%}
+  .scene-turtle.pos-right-front-2{right:33%;bottom:14%}
+  .scene-turtle.pos-right-back-0{right:12%;bottom:40%}
+  .scene-turtle.pos-right-back-1{right:9%;bottom:26%}
+  .scene-turtle.pos-right-back-2{right:15%;bottom:14%}
+
   /* Attack anim: preserve mobile scale */
   .scene-turtle.attack-anim[class*="pos-left"]{animation:mobileAttackRight .5s ease}
   .scene-turtle.attack-anim[class*="pos-right"]{animation:mobileAttackLeft .5s ease}
