@@ -2268,8 +2268,9 @@ async function doShellCopy(caster, _skill) {
 }
 
 // ── LINE TURTLE (线条龟) ─────────────────────────────────
-function addInkStack(target, count) {
-  const max = 5;
+function addInkStack(target, count, attacker) {
+  // Check if attacker has ink cap override from passive skill
+  const max = (attacker && attacker._inkCapOverride) ? attacker._inkCapOverride : 5;
   const before = target._inkStacks || 0;
   target._inkStacks = Math.min(max, before + count);
   const gained = target._inkStacks - before;
@@ -2307,7 +2308,7 @@ async function doLineSketch(attacker, target, skill) {
 
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    addInkStack(target, 1);
+    addInkStack(target, 1, attacker);
 
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
     await triggerOnHitEffects(attacker, target, dmg);

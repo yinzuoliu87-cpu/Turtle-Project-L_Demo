@@ -1026,6 +1026,8 @@ function startBattle(seed) {
   try { sfxBattleStart(); } catch(e) {}
   const isBossStage = gameMode === 'boss' || (gameMode === 'dungeon' && dungeonState.stage >= 5);
   playBgm(isBossStage ? 'boss' : 'battle');
+  // Apply passive skills (equipped but not actively used)
+  allFighters.forEach(f => { if (typeof applyPassiveSkills === 'function') applyPassiveSkills(f); });
   // Apply one-time passives (like ninjaInstinct)
   allFighters.forEach(f => {
     if (f.passive && f.passive.type === 'ninjaInstinct') {
@@ -1050,6 +1052,15 @@ function startBattle(seed) {
       }
       recalcStats();
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${f.passive.atkDownPct}% ${f.passive.atkDownTurns}回合</span>`);
+    }
+    // Ghost enhanced curse on spawn (passive skill)
+    if (f._ghostCurseOnSpawn) {
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      const curseDmgPct = f.passive ? f.passive.hpPct : 9;
+      for (const e of enemies) {
+        e.buffs.push({ type:'dot', dmg: Math.round(e.maxHp * curseDmgPct / 100 * (f._ghostCurseDmgMult||1)), turns:3 });
+      }
+      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">👻强化怨灵！开场诅咒全体敌人3回合！</span>`);
     }
     // (Pirate barrage moved to after renderFighters for visual effect)
     // Summon ally: create a random C/B/A turtle as summon

@@ -83,13 +83,78 @@ function createFighter(petId, side, equippedIdxs) {
     _crystallize: 0,          // 水晶龟结晶层数(被标记方)
     _collideStacks: 0,        // 钻石龟碰撞标记(被标记方)
     skills: (function() {
+      let equipped;
       if (b.skillPool && b.skillPool.length > 0) {
         const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
-        return idxs.map(i => ({ ...b.skillPool[i], cdLeft:0 }));
+        equipped = idxs.map(i => ({ ...b.skillPool[i], cdLeft:0 }));
+      } else {
+        equipped = b.skills.map(s => ({ ...s, cdLeft:0 }));
       }
-      return b.skills.map(s => ({ ...s, cdLeft:0 }));
+      // Separate passive skills (carried but not actively used)
+      return equipped.filter(s => !s.passiveSkill);
+    })(),
+    _passiveSkills: (function() {
+      let equipped;
+      if (b.skillPool && b.skillPool.length > 0) {
+        const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
+        equipped = idxs.map(i => ({ ...b.skillPool[i] }));
+      } else {
+        equipped = b.skills.map(s => ({ ...s }));
+      }
+      return equipped.filter(s => s.passiveSkill);
     })(),
   };
+}
+
+// Apply passive skill effects at battle start
+function applyPassiveSkills(f) {
+  if (!f._passiveSkills || !f._passiveSkills.length) return;
+  for (const ps of f._passiveSkills) {
+    // 竹叶龟 强化生长: enhance charge values
+    if (ps.type === 'bambooCharged') {
+      if (f.passive && f.passive.type === 'bambooCharge') {
+        f.passive = { ...f.passive, atkPct:100, selfHpPct:16, healSelfHpPct:12, hpGainAtkPct:130 };
+      }
+    }
+    // 天使龟 圣光(重生): grant revive
+    if (ps.type === 'angelRevive') {
+      f._angelRevive = true;
+    }
+    // 寒冰龟 极寒: burn immune + bonus vs fire types
+    if (ps.type === 'iceBurnImmune') {
+      f._burnImmune = true;
+      f._bonusDmgTargets = ['lava','phoenix'];
+      f._bonusDmgPct = 40;
+    }
+    // 忍者龟 忍者足: extra dodge + crit
+    if (ps.type === 'ninjaFeet') {
+      f._extraDodge = (f._extraDodge||0) + 25;
+      f.crit += 0.40;
+    }
+    // 双头龟 融合: gain melee form stats without switching
+    if (ps.type === 'twoHeadFusion') {
+      f._fusionMode = true;
+      if (f.passive && f.passive.type === 'twoHeadDual') {
+        const hpGain = Math.round(f.atk * f.passive.hpScale);
+        const defGain = Math.round(f.atk * f.passive.defScale);
+        f.maxHp += hpGain; f.hp += hpGain;
+        f.baseDef += defGain; f.def += defGain;
+        f.baseMr += defGain; f.mr += defGain;
+      }
+      // Remove switch skills from active skills
+      f.skills = f.skills.filter(s => s.type !== 'twoHeadSwitch');
+    }
+    // 幽灵龟 强化怨灵: curse on spawn + 50% curse damage
+    if (ps.type === 'ghostEnhancedCurse') {
+      f._ghostCurseOnSpawn = true;
+      f._ghostCurseDmgMult = 1.5;
+    }
+    // 线条龟 速写: ink cap 7 + convert to true damage
+    if (ps.type === 'lineSpeedWrite') {
+      f._inkCapOverride = 7;
+      f._inkTrueDmg = true;
+    }
+  }
 }
 
 function getSkillPool(petId) {
@@ -1895,7 +1960,8 @@ async function doDamage(attacker, target, skill) {
 
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
-    if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
+    const totalDodge = (dodgeBuff ? dodgeBuff.value : 0) + (target._extraDodge || 0);
+    if (totalDodge > 0 && Math.random() < totalDodge / 100) {
       const yOff = i * 28;
       spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, yOff);
       await sleep(280);
@@ -1945,6 +2011,10 @@ async function doDamage(attacker, target, skill) {
     // Passive: frostAura bonus vs specific targets
     if (attacker.passive && attacker.passive.type === 'frostAura' && attacker.passive.bonusTargets && attacker.passive.bonusTargets.includes(target.id)) {
       mainDmg = Math.round(mainDmg * (1 + attacker.passive.bonusDmgPct / 100));
+    }
+    // Passive skill bonus damage (e.g. ice burn immune skill)
+    if (attacker._bonusDmgTargets && attacker._bonusDmgTargets.includes(target.id)) {
+      mainDmg = Math.round(mainDmg * (1 + (attacker._bonusDmgPct||0) / 100));
     }
     // Passive: basicTurtle — bonus damage based on target rarity
     if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
@@ -2124,7 +2194,7 @@ function applySkillDebuffs(skill, target, attacker) {
   if (skill.mrDown)  debuffs.push({ type:'mrDown',  value:skill.mrDown.pct,  turns:skill.mrDown.turns });
 
   // Unified burn: 0.4*ATK + 8%maxHP, magic damage, 4 turns, no stack (refresh)
-  if (skill.burn && target.alive && attacker && !(target.passive && target.passive.burnImmune)) {
+  if (skill.burn && target.alive && attacker && !((target.passive && target.passive.burnImmune) || target._burnImmune)) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const burnHp = 8;
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
@@ -2404,7 +2474,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     }
   }
   // Equipment: burn on hit
-  if (attacker._equipBurn && target.alive && !(target.passive && target.passive.burnImmune)) {
+  if (attacker._equipBurn && target.alive && !((target.passive && target.passive.burnImmune) || target._burnImmune)) {
     const burnVal = Math.round(attacker.atk * 0.4);
     const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
     if (existing) { existing.turns = Math.max(existing.turns, 4); }
@@ -2439,7 +2509,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   }
   // Battle rule: 烈焰之日 — all hits apply burn
   if (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'fire' && target.alive && attacker) {
-    if (!(target.passive && target.passive.burnImmune)) {
+    if (!((target.passive && target.passive.burnImmune) || target._burnImmune)) {
       const burnVal = Math.round(attacker.atk * 0.4);
       const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
       if (existing) { existing.turns = Math.max(existing.turns, 4); }
@@ -2762,6 +2832,22 @@ function checkDeaths(attacker) {
         addLog(`${f.emoji}${f.name} 涅槃之火灼烧全体敌人！`);
         try { sfxRebirth(); } catch(e) {}
         return; // skip death processing
+      }
+
+      // Angel passive skill revive (圣光)
+      if (f._angelRevive && !f._angelReviveUsed) {
+        f._angelReviveUsed = true;
+        f.hp = Math.round(f.maxHp * 0.25);
+        f.alive = true;
+        f._deathProcessed = false;
+        const elId = getFighterElId(f);
+        const card = document.getElementById(elId);
+        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
+        spawnFloatingNum(elId, '😇圣光重生!', 'crit-label', 0, -25);
+        updateHpBar(f, elId);
+        addLog(`${f.emoji}${f.name} <span class="log-passive">😇圣光之力！以25%HP重生！</span>`);
+        try { sfxRebirth(); } catch(e) {}
+        return;
       }
 
       // Chest phoenix equip: mark for pending revive (animated in executeAction)
