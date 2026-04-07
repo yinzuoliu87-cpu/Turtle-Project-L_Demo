@@ -86,6 +86,21 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 .ability-item .ico{font-size:18px;flex-shrink:0;}
 .ability-item .desc{color:var(--ink2);}
 .ability-item .desc strong{color:var(--y);font-weight:700;}
+/* ── SKILL LOADOUT ── */
+.skill-loadout-passive{padding:8px 10px;background:var(--surface2);border:1px solid var(--border);border-radius:10px;margin-bottom:10px;font-size:12px;line-height:1.5;}
+.sl-passive-name{font-size:12px;font-weight:700;color:var(--g);margin-bottom:3px;}
+.sl-passive-desc{color:var(--ink2);font-size:11px;}
+.skill-loadout-grid{display:flex;flex-direction:column;gap:6px;}
+.sl-card{padding:10px 12px;background:var(--surface2);border:1.5px solid var(--border);border-radius:10px;position:relative;transition:.15s;}
+.sl-card.sl-selectable{cursor:pointer;}
+.sl-card.sl-selectable:hover{border-color:var(--b);background:rgba(76,201,240,.05);}
+.sl-card.sl-equipped{border-color:var(--y);background:rgba(255,217,61,.06);}
+.sl-header{font-size:13px;margin-bottom:3px;display:flex;align-items:center;gap:6px;}
+.sl-cd{font-size:10px;color:var(--muted);background:var(--surface3);padding:1px 5px;border-radius:3px;}
+.sl-brief{font-size:11px;color:var(--ink2);line-height:1.5;}
+.sl-check{position:absolute;top:8px;right:10px;font-size:11px;color:var(--y);font-weight:700;}
+.sl-hint{font-size:11px;color:var(--muted);margin-top:8px;text-align:center;}
+
 .stamina-section{background:var(--surface);border:1.5px solid var(--border);border-radius:14px;padding:16px;margin-bottom:12px;}
 .stamina-big{display:flex;align-items:center;gap:12px;margin-bottom:10px;}
 .stamina-big-num{font-family:'Fredoka';font-size:32px;font-weight:700;color:var(--g);}
@@ -465,6 +480,8 @@ body::before{content:'';position:fixed;inset:0;pointer-events:none;z-index:0;
 <!-- TOAST -->
 <div class="toast" id="tst"><span id="tico">🎉</span><span id="tmsg"></span></div>
 
+<!-- Battle module data (for skill loadout) -->
+<script src="games/turtle-battle/js/pets.js"></script>
 <script>
 // ═══════════════════════════════
 // DATA: 28 TURTLES (v3.3)
@@ -969,7 +986,7 @@ function renderAbilityTab() {
     : pet.ability === 'shrink' ? '🔬 体积缩小 30%'
     : '🐢 下海捕捞（无额外加成）';
 
-  el.innerHTML = '<div class="ability-card">'
+  let html = '<div class="ability-card">'
     + '<div class="ability-header">'
     + '<div class="ability-pet-ico">' + petImgHTML(pet, 40) + '</div>'
     + '<div><div class="ability-pet-name">' + pet.name + '</div><div class="ability-pet-rarity ' + rarityCSS[pet.rarity] + '">' + pet.rarity + '</div></div>'
@@ -983,6 +1000,76 @@ function renderAbilityTab() {
     + '<div class="ability-item"><span class="ico">✨</span><span class="desc">' + pet.special + '</span></div>'
     + '</div>'
     + '</div>';
+
+  // ── Skill Loadout Section ──
+  if (typeof ALL_PETS !== 'undefined') {
+    const battlePet = ALL_PETS.find(p => p.id === pet.id);
+    if (battlePet) {
+      const pool = battlePet.skillPool || battlePet.skills || [];
+      const hasPool = battlePet.skillPool && battlePet.skillPool.length > 3;
+      // Load saved loadout
+      let savedIdxs = null;
+      try { const d = JSON.parse(localStorage.getItem('skillLoadouts')||'{}'); savedIdxs = d[pet.id]; } catch(e){}
+      const equippedIdxs = savedIdxs || (battlePet.defaultSkills || [0,1,2]);
+
+      html += '<div class="divider"></div>';
+      html += '<div class="ability-card">';
+      html += '<div class="ability-section-title">⚔ 对战技能' + (hasPool ? ' <span style="color:var(--g);font-size:11px">（可装配）</span>' : '') + '</div>';
+
+      // Passive
+      if (battlePet.passive) {
+        html += '<div class="skill-loadout-passive">';
+        html += '<div class="sl-passive-name">被动：' + (battlePet.passive.name||'') + '</div>';
+        html += '<div class="sl-passive-desc">' + (battlePet.passive.brief||battlePet.passive.desc||'') + '</div>';
+        html += '</div>';
+      }
+
+      // Skills
+      html += '<div class="skill-loadout-grid">';
+      pool.forEach((s, i) => {
+        const isEquipped = equippedIdxs.includes(i);
+        const cdText = s.cd ? 'CD' + s.cd : '';
+        html += '<div class="sl-card ' + (isEquipped ? 'sl-equipped' : '') + (hasPool ? ' sl-selectable' : '') + '" '
+          + (hasPool ? 'onclick="toggleSkillLoadout(\'' + pet.id + '\',' + i + ')"' : '') + '>';
+        html += '<div class="sl-header"><b>' + s.name + '</b>' + (cdText ? ' <span class="sl-cd">' + cdText + '</span>' : '') + '</div>';
+        html += '<div class="sl-brief">' + (s.brief||'') + '</div>';
+        if (isEquipped) html += '<div class="sl-check">✓ 已装配</div>';
+        html += '</div>';
+      });
+      html += '</div>';
+
+      if (hasPool) {
+        html += '<div class="sl-hint">点击技能卡片切换装配（最多3个） · 已装配 <span id="slCount">' + equippedIdxs.length + '</span>/3</div>';
+      }
+      html += '</div>';
+    }
+  }
+
+  el.innerHTML = html;
+}
+
+function toggleSkillLoadout(petId, idx) {
+  let data = {};
+  try { data = JSON.parse(localStorage.getItem('skillLoadouts')||'{}'); } catch(e){}
+  const battlePet = ALL_PETS.find(p => p.id === petId);
+  if (!battlePet || !battlePet.skillPool) return;
+  let current = data[petId] || [...(battlePet.defaultSkills || [0,1,2])];
+
+  if (current.includes(idx)) {
+    // Remove
+    current = current.filter(x => x !== idx);
+  } else if (current.length < 3) {
+    // Add
+    current.push(idx);
+  } else {
+    toast('⚠️', '已装配3个技能，先移除一个');
+    return;
+  }
+  current.sort((a,b) => a-b);
+  data[petId] = current;
+  localStorage.setItem('skillLoadouts', JSON.stringify(data));
+  renderAbilityTab();
+  toast('⚔', current.length === 3 ? '技能已保存' : '已选 ' + current.length + '/3');
 }
 
 // ═══════════════════════════════

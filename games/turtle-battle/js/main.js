@@ -317,8 +317,9 @@ function handleOnlineMessage(msg) {
       showSelectScreen('你是右方 — 选择队伍');
       break;
     case 'team-ready':
-      if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left'));
-      if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right'));
+      const opLoadouts = msg.loadouts || {};
+      if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left', opLoadouts[id]||null));
+      if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right', opLoadouts[id]||null));
       // Only host (left) starts battle — it will generate seed and send it
       if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
       autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
@@ -789,18 +790,22 @@ function confirmTeam() {
   const requiredCount = gameMode === 'dungeon' ? 6 : 3;
   if (selectedIds.length !== requiredCount) return;
   if (gameMode === 'dungeon') {
-    // Front row = battle team, back row = bench
     const battleIds = ['front-0','front-1','front-2'].map(k => _fgSlots[k]).filter(Boolean);
     const benchIds = ['back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
-    dungeonState.stage = 1;
-    dungeonState.teamIds = [...selectedIds];
-    dungeonState.battleIds = battleIds;
-    dungeonState.benchIds = benchIds;
-    dungeonState.teamHp = {};
-    dungeonState.deadIds = [];
-    dungeonState.rewards = 0;
-    dungeonState.buffs = [];
-    dungeonStartStage();
+    const needsPickDg = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
+    const doDungeon = () => {
+      dungeonState.stage = 1;
+      dungeonState.teamIds = [...selectedIds];
+      dungeonState.battleIds = battleIds;
+      dungeonState.benchIds = benchIds;
+      dungeonState.teamHp = {};
+      dungeonState.deadIds = [];
+      dungeonState.rewards = 0;
+      dungeonState.buffs = [];
+      dungeonStartStage();
+    };
+    if (needsPickDg.length > 0) { showSkillPickChain(needsPickDg, 0, doDungeon); return; }
+    doDungeon();
     return;
   }
   if (gameMode === 'pve') {
@@ -845,15 +850,23 @@ function confirmTeam() {
     if (needsPick2.length > 0) { showSkillPickChain(needsPick2, 0, doBoss); return; }
     doBoss();
   } else if (gameMode === 'pvp-online') {
-    const side = onlineSide, team = selectedIds.slice();
-    if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
-    if (side === 'right') rightTeam = _buildTeamFromSlots('right');
-    sendOnline({ type:'team-ready', side, team });
-    showToast('等待对手选择…');
-    // Only host starts battle (generates seed); guest waits for battle-seed message
-    if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
-      autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
-    }
+    const needsPickPvp = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
+    const doPvp = () => {
+      const side = onlineSide, team = selectedIds.slice();
+      // Build loadout map to send
+      const loadouts = {};
+      team.forEach(id => { const s = getSavedLoadout(id); if (s) loadouts[id] = s; });
+      if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
+      if (side === 'right') rightTeam = _buildTeamFromSlots('right');
+      sendOnline({ type:'team-ready', side, team, loadouts });
+      showToast('等待对手选择…');
+      // Only host starts battle (generates seed); guest waits for battle-seed message
+      if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
+        autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
+      }
+    };
+    if (needsPickPvp.length > 0) { showSkillPickChain(needsPickPvp, 0, doPvp); return; }
+    doPvp();
   }
 }
 
@@ -1254,7 +1267,7 @@ function dungeonStartStage() {
   const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
   if (aliveBattle.length === 0) { dungeonOnStageFail(); return; }
   leftTeam = aliveBattle.map(id => {
-    const f = createFighter(id, 'left');
+    const f = createFighter(id, 'left', getSavedLoadout(id));
     // Restore HP from previous stage
     if (ds.teamHp[id] !== undefined) {
       f.hp = Math.min(f.maxHp, ds.teamHp[id]);
@@ -1274,7 +1287,7 @@ function dungeonStartStage() {
   const shuffled = pool.sort(() => _origMathRandom() - 0.5);
   rightTeam = [];
   for (let i = 0; i < cfg.enemies && i < shuffled.length; i++) {
-    const e = createFighter(shuffled[i].id, 'right');
+    const e = _createAiFighter(shuffled[i].id, 'right');
     e.maxHp = Math.round(e.maxHp * cfg.hpMult); e.hp = e.maxHp;
     e.baseAtk = Math.round(e.baseAtk * cfg.atkMult); e.atk = e.baseAtk;
     e.baseDef = Math.round(e.baseDef * cfg.defMult); e.def = e.baseDef;
