@@ -42,8 +42,8 @@ function startMode(mode) {
     difficulty = 'normal';
     selecting = 'left';
     selectedIds = [];
-    dungeonState = { stage: 0, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [] };
-    showSelectScreen('🏰 深海闯关 — 选择3只龟组成队伍');
+    dungeonState = { stage: 0, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [], battleIds: [], benchIds: [] };
+    showSelectScreen('🏰 深海闯关 — 选择6只龟（3上场 + 3替补）');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -316,10 +316,62 @@ function handleOnlineMessage(msg) {
 }
 
 // ── SELECT SCREEN ─────────────────────────────────────────
+const MODE_GUIDES = {
+  pve: {
+    icon: '🌿',
+    title: '普通对战',
+    tips: [
+      '选择3只龟组成队伍，对战随机AI敌方',
+      '前排龟优先承受单体攻击，后排更安全',
+      '先手方首回合只能行动2只龟',
+      '合理搭配物理/魔法/辅助龟'
+    ]
+  },
+  boss: {
+    icon: '👑',
+    title: 'Boss挑战',
+    tips: [
+      '3只龟挑战1只超强Boss',
+      'Boss拥有 ×3.5 HP、×1.2 攻击、×1.4 护甲/魔抗',
+      'Boss每回合行动3次',
+      '建议带治疗/护盾龟'
+    ]
+  },
+  dungeon: {
+    icon: '🏰',
+    title: '深海闯关',
+    tips: [
+      '选择6只龟：3只上场 + 3只替补',
+      '5层连续3v3闯关，HP不会回满',
+      '每层通关后可选增益奖励，并可用替补换下阵亡龟',
+      '最终Boss在第5层等待'
+    ]
+  },
+  'pvp-online': {
+    icon: '🌐',
+    title: '在线对战',
+    tips: [
+      '与真人玩家实时对战',
+      '双方各选3只龟，前后排自行安排',
+      '每回合限时3分钟'
+    ]
+  }
+};
+
 function showSelectScreen(title) {
   _fgSlots = {};
   selectedIds = [];
+  _fgSelectedSlot = null;
   document.getElementById('selectTitle').innerHTML = title;
+  // Render mode guide
+  const guide = document.getElementById('modeGuide');
+  const info = MODE_GUIDES[gameMode];
+  if (guide && info) {
+    guide.innerHTML = `<div class="guide-header">${info.icon} ${info.title}</div><ul class="guide-tips">${info.tips.map(t => `<li>${t}</li>`).join('')}</ul>`;
+    guide.style.display = '';
+  } else if (guide) {
+    guide.style.display = 'none';
+  }
   renderPetGrid();
   renderFgSlots();
   updateConfirmBtn();
@@ -377,9 +429,10 @@ function togglePet(e, id) {
       return;
     }
   }
-  // If already 3 placed, can't add more
+  // Check cap
+  const maxPets = gameMode === 'dungeon' ? 6 : 3;
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
-  if (placed >= 3) { showToast('已选3只，点击龟或格子可移除'); return; }
+  if (placed >= maxPets) { showToast(`已选${maxPets}只，点击龟或格子可移除`); return; }
   // Place in next empty front slot first, then back
   for (const key of FG_SLOT_KEYS) {
     if (!_fgSlots[key]) {
@@ -580,7 +633,8 @@ function renderFgSlots() {
 
 function updateConfirmBtn() {
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
-  document.getElementById('btnConfirmTeam').disabled = placed !== 3;
+  const required = gameMode === 'dungeon' ? 6 : 3;
+  document.getElementById('btnConfirmTeam').disabled = placed !== required;
 }
 
 function showPetPassive(e, petId) {
@@ -617,10 +671,17 @@ function _buildTeamFromSlots(side) {
 }
 
 function confirmTeam() {
-  if (selectedIds.length !== 3) return;
+  const requiredCount = gameMode === 'dungeon' ? 6 : 3;
+  if (selectedIds.length !== requiredCount) return;
   if (gameMode === 'dungeon') {
+    // First 3 placed slots = battle team, rest = bench
+    const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]);
+    const battleIds = placed.slice(0, 3).map(k => _fgSlots[k]);
+    const benchIds = placed.slice(3).map(k => _fgSlots[k]);
     dungeonState.stage = 1;
     dungeonState.teamIds = [...selectedIds];
+    dungeonState.battleIds = battleIds;
+    dungeonState.benchIds = benchIds;
     dungeonState.teamHp = {};
     dungeonState.deadIds = [];
     dungeonState.rewards = 0;
@@ -1044,11 +1105,11 @@ let _dungeonChoicePicked = null;
 
 // Stage config: enemies and multipliers
 const DUNGEON_STAGES = [
-  { enemies:2, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第1关' },
-  { enemies:2, hpMult:1.15, atkMult:1.1, defMult:1.1, label:'第2关' },
-  { enemies:2, hpMult:1.3, atkMult:1.2, defMult:1.2, label:'第3关 · 精英' },
-  { enemies:2, hpMult:1.5, atkMult:1.3, defMult:1.3, label:'第4关' },
-  { enemies:1, hpMult:3.0, atkMult:1.3, defMult:1.5, boss:true, label:'第5关 · Boss' },
+  { enemies:3, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第1关' },
+  { enemies:3, hpMult:1.15, atkMult:1.1, defMult:1.1, label:'第2关' },
+  { enemies:3, hpMult:1.3, atkMult:1.2, defMult:1.2, label:'第3关 · 精英' },
+  { enemies:3, hpMult:1.5, atkMult:1.3, defMult:1.3, label:'第4关' },
+  { enemies:1, hpMult:3.5, atkMult:1.3, defMult:1.5, boss:true, label:'第5关 · Boss' },
 ];
 
 function dungeonStartStage() {
@@ -1056,12 +1117,10 @@ function dungeonStartStage() {
   const stageIdx = ds.stage - 1;
   const cfg = DUNGEON_STAGES[stageIdx];
 
-  // Create player team (alive only, restore HP from saved state)
-  const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
-  if (aliveIds.length === 0) { dungeonOnStageFail(); return; }
-  // Pick 2 for battle (or 1 if only 1 left)
-  const battleIds = aliveIds.slice(0, 2);
-  leftTeam = battleIds.map(id => {
+  // Create player team: use battleIds (alive only)
+  const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
+  if (aliveBattle.length === 0) { dungeonOnStageFail(); return; }
+  leftTeam = aliveBattle.map(id => {
     const f = createFighter(id, 'left');
     // Restore HP from previous stage
     if (ds.teamHp[id] !== undefined) {
@@ -1183,20 +1242,8 @@ function showDungeonClearScreen() {
   }
   // Title
   document.getElementById('dungeonClearTitle').textContent = DUNGEON_STAGES[ds.stage-1].label + ' 通过！';
-  // Team status
-  const statusEl = document.getElementById('dungeonTeamStatus');
-  statusEl.innerHTML = ds.teamIds.map(id => {
-    const p = ALL_PETS.find(x => x.id === id);
-    const dead = ds.deadIds.includes(id);
-    const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
-    const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
-    const hpPct = Math.round(hp / maxHp * 100);
-    return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
-      <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
-      <div class="dts-name">${p.name}</div>
-      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
-    </div>`;
-  }).join('');
+  // Team status: battle team + bench with swap
+  renderDungeonTeamSwap();
   // Generate 3 choices
   _dungeonChoicePicked = null;
   document.getElementById('dungeonNextBtn').disabled = true;
@@ -1273,6 +1320,68 @@ function showDungeonTeamStatus() {
       <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
     </div>`;
   }).join('');
+}
+
+function renderDungeonTeamSwap() {
+  const ds = dungeonState;
+  const statusEl = document.getElementById('dungeonTeamStatus');
+  if (!statusEl) return;
+
+  const renderTurtle = (id, label) => {
+    const p = ALL_PETS.find(x => x.id === id);
+    const dead = ds.deadIds.includes(id);
+    const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
+    const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
+    const hpPct = Math.round(hp / maxHp * 100);
+    return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
+      <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
+      <div class="dts-name">${p.name}</div>
+      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
+      ${label ? `<div class="dts-label">${label}</div>` : ''}
+    </div>`;
+  };
+
+  // Check if any battle turtle is dead and bench has alive replacements
+  const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
+  const aliveBench = ds.benchIds.filter(id => !ds.deadIds.includes(id));
+  const canSwap = deadBattle.length > 0 && aliveBench.length > 0;
+
+  let html = '<div class="dts-section-label">⚔ 上场</div><div class="dts-row">';
+  html += ds.battleIds.map(id => renderTurtle(id, '')).join('');
+  html += '</div>';
+  html += '<div class="dts-section-label">🪑 替补</div><div class="dts-row">';
+  html += ds.benchIds.map(id => renderTurtle(id, '')).join('');
+  html += '</div>';
+
+  if (canSwap) {
+    html += `<div class="dts-swap-area">`;
+    html += `<div class="dts-swap-hint">可替换阵亡龟：</div>`;
+    for (const deadId of deadBattle) {
+      const dp = ALL_PETS.find(x => x.id === deadId);
+      for (const benchId of aliveBench) {
+        const bp = ALL_PETS.find(x => x.id === benchId);
+        html += `<button class="btn btn-sm dts-swap-btn" onclick="dungeonSwap('${deadId}','${benchId}')">
+          💀${dp.name} → ${bp.name}
+        </button>`;
+      }
+    }
+    html += `</div>`;
+  }
+
+  statusEl.innerHTML = html;
+}
+
+function dungeonSwap(deadId, benchId) {
+  const ds = dungeonState;
+  // Swap: benchId replaces deadId in battle team
+  const idx = ds.battleIds.indexOf(deadId);
+  if (idx === -1) return;
+  ds.battleIds[idx] = benchId;
+  // Move deadId to bench
+  const bIdx = ds.benchIds.indexOf(benchId);
+  if (bIdx !== -1) ds.benchIds[bIdx] = deadId;
+  showToast(`${ALL_PETS.find(x=>x.id===benchId).name} 替换上场！`);
+  renderDungeonTeamSwap();
 }
 
 // ── INIT ──────────────────────────────────────────────────
