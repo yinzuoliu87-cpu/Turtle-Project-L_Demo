@@ -274,7 +274,7 @@ const ALL_PETS = [
     img:'../../assets/pets/猎人龟v1.png', sprite:{frames:15,frameW:500,frameH:500,duration:1500},
     passive:{ type:'hunterKill', name:'猎杀', hpThresh:18, stealPct:20, lifesteal:10,
               brief:'猎人龟每次行动后检查，斩杀生命值低于 <span class="val-atk">18%</span> 的敌人。击杀敌人时窃取对方 <span class="val-atk">20%</span> 基础属性，并叠加 <span class="val-heal">10%</span> 生命偷取。',
-              desc:'猎人龟的猎杀本能。\n\n每次行动后检查，生命值低于 <span class="val-atk">18%</span> 的敌人直接斩杀。\n斩杀或击杀敌人时，窃取对方 <span class="val-atk">20%</span> 基础属性（攻击力/护甲/魔抗/最大生命值），并叠加 <span class="val-heal">10%</span> 生命偷取。\n\n已猎杀 <span class="val-atk">{B:hunterKills}</span> 只敌方\n累计获得：攻击力+{N:hunterStolenAtk} 护甲+{D:hunterStolenDef} 魔抗+{M:hunterStolenMr} 最大生命值+{H:hunterStolenHp} 生命偷取{B:lifesteal}%' },
+              desc:'猎人龟的猎杀本能。\n\n每次行动后检查，生命值低于 <span class="val-atk">18%</span> 的敌人直接斩杀。\n斩杀或击杀敌人时，窃取对方 <span class="val-atk">20%</span> 基础属性，并叠加 <span class="val-heal">10%</span> 生命偷取。\n\n已猎杀 <span class="val-atk">{B:hunterKills}</span> 只敌方，累计获得：\n· 攻击力 +{N:hunterStolenAtk}\n· 护甲 +{D:hunterStolenDef}\n· 魔抗 +{M:hunterStolenMr}\n· 最大生命值 +{H:hunterStolenHp}\n· 生命偷取 {B:lifesteal}%' },
     skills:[
       { name:'射箭',     type:'hunterShot', hits:3, power:0, pierce:0, cd:0, atkScale:0.55, execThresh:40, execCrit:40, execCritDmg:20,
         brief:'猎人龟射击3段，共（{N:0.5*ATK*3}）物理伤害，目标HP低于40%时额外暴击',
@@ -389,7 +389,7 @@ const ALL_PETS = [
               transformHpScale:2.5, transformAtkScale:0.2, transformDefScale:0.2, transformMrScale:0.2,
               transformAoeDmgScale:0.5, transformDuration:6,
               brief:'熔岩龟将造成伤害的 <span class="val-atk">25%</span> 和承受伤害的 <span class="val-atk">20%</span> 转化为怒气。满 <span class="val-atk">100</span> 怒气时变身为火山龟，全属性提升并获得新技能组，持续6回合。',
-              desc:'熔岩龟体内蕴含炽热岩浆，积蓄怒气。\n\n造成伤害的 <span class="val-atk">25%</span> + 承受伤害的 <span class="val-atk">20%</span> 转化为怒气。\n怒气满100时自动变身为火山龟，获得以下加成：\n最大生命值增加（250%×攻击力({ATK}) = {H:ATK*2.5}）→ 变身后最大生命值 {H:HP+ATK*2.5}\n攻击力增加（20%×攻击力({ATK}) = {N:ATK*0.2}）→ 变身后攻击力 {N:ATK+ATK*0.2}\n护甲增加（20%×攻击力({ATK}) = {D:ATK*0.2}）→ 变身后护甲 {D:DEF+ATK*0.2}\n魔抗增加（20%×攻击力({ATK}) = {M:ATK*0.2}）→ 变身后魔抗 {M:MR+ATK*0.2}\n\n变身时对全体敌人造成（120%×变身后攻击力 = {M:ATK*1.2+ATK*0.2*1.2}）魔法伤害，并施加<span style="color:#ff6600">灼烧</span>。\n每给一名敌人挂上灼烧，回复 <span class="val-heal">8%</span> 已损生命值。\n\n火山形态持续7回合后变回小形态，之后不再积攒怒气。',
+              desc:'熔岩龟体内蕴含炽热岩浆，积蓄怒气。\n\n造成伤害的 <span class="val-atk">25%</span> + 承受伤害的 <span class="val-atk">20%</span> 转化为怒气。\n怒气满100时自动变身为火山龟，获得以下加成：\n· 最大生命值 +（250%×攻击力 = {H:ATK*2.5}）\n· 攻击力 +（20%×攻击力 = {N:ATK*0.2}）\n· 护甲 +（20%×攻击力 = {D:ATK*0.2}）\n· 魔抗 +（20%×攻击力 = {M:ATK*0.2}）\n\n变身时对全体敌人造成（{M:ATK*1.2+ATK*0.2*1.2}）魔法伤害 + 灼烧。\n每给一名敌人挂上灼烧，回复 <span class="val-heal">8%</span> 已损生命值。\n火山形态持续6回合后变回小形态。',
               descVolcano:'熔岩龟已变身为火山龟！\n\n已获得加成：\n最大生命值 <span class="val-heal">+{H:ATK*2.5}</span>\n攻击力 <span class="val-atk">+{N:ATK*0.2}</span>\n护甲 <span class="val-atk">+{D:ATK*0.2}</span>\n魔抗 <span class="val-atk">+{M:ATK*0.2}</span>\n\n拥有更强大的火山技能组。\n剩余 <span class="val-atk">{lavaTransformTurns}</span> 回合后恢复小形态。' },
     skills:[
       { name:'熔岩弹', type:'lavaBolt', dmgType:'magic', hits:1, power:0, pierce:0, cd:0, atkScale:0.9, targetHpPct:8, burn:true,
@@ -418,7 +418,7 @@ const ALL_PETS = [
     img:'../../assets/pets/赛博龟.png',
     passive:{ type:'cyberDrone', name:'浮游炮', droneScale:0.18, droneMaxAge:5, maxDrones:10, mechHpPer:35, mechAtkPer:5,
               brief:'赛博龟每回合自动生成浮游炮（上限 <span class="val-atk">10</span> 个），每个浮游炮在每回合对随机敌人造成 <span class="val-atk">18%攻击力</span> 物理伤害。阵亡时浮游炮组装为机甲继续战斗。',
-              desc:'赛博龟每回合自动生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成（14%×攻击力({ATK}) = {N:ATK*0.14}）物理伤害。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n最大生命值 = 30 × {B:droneCount} = <span class="val-heal">{H:mechHp}</span>\n攻击力 = 5 × {B:droneCount} = <span class="val-normal">{N:mechAtk}</span>\n暴击率 = <span class="val-atk">25%</span>（护甲/魔抗 = 0）\n\n机甲每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = {N:mechAtk*1.5}）物理伤害。' },
+              desc:'赛博龟每回合自动生成1个浮游炮（当前 {B:droneCount} 个，上限10个）。\n每个浮游炮每回合对随机敌人造成（18%×攻击力({ATK}) = {N:ATK*0.18}）物理伤害。\n\n赛博龟阵亡时，所有浮游炮自动组装为机甲：\n· 生命值 = 35 × {B:droneCount} = {H:mechHp}\n· 攻击力 = 5 × {B:droneCount} = {N:mechAtk}\n· 暴击率 = <span class="val-atk">25%</span>\n· 护甲 / 魔抗 = 0\n\n机甲每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = {N:mechAtk*1.5}）物理伤害。' },
     skills:[
       { name:'激光枪', type:'physical', hits:5, power:0, pierce:0, cd:0, atkScale:0.15, hpPct:2.4,
         brief:'赛博龟发射激光5段，共（{N:0.15*ATK*5}）+ 12%目标最大生命值 物理伤害',
@@ -548,7 +548,7 @@ const ALL_PETS = [
               energyStore:true, energyReleaseTurn:4,
               energyDmgScale:0.008, energyShieldScale:0.01, energyShieldTurns:3,
               brief:'龟壳涌动强大的能量，在第4回合全面觉醒，使攻击力/护甲/生命值/生命偷取/反伤/穿甲各提升 <span class="val-atk">12%</span>。受伤时储存能量，并在每4回合消耗全部能量来释放冲击波，造成基于储能×<span class="val-atk">0.8%×攻击力</span>的物理伤害，并获得储能×<span class="val-atk">1%×攻击力</span>的护盾。',
-              desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n生命偷取 <span class="val-heal">+12%</span>\n反伤 <span class="val-atk">+12%</span>\n护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值。\n每4回合消耗全部储能，对全体敌方造成伤害并为自身获得护盾。' },
+              desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n· 攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n· 护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n· 最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n· 生命偷取 <span class="val-heal">+12%</span>\n· 反伤 <span class="val-atk">+12%</span>\n· 护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值。\n每4回合消耗全部储能，对全体敌方造成伤害并为自身获得护盾。' },
     skills:[
       { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0, cd:0, totalScale:1.2, splashPct:25,
         brief:'龟壳打击6段，物理/真实交替，共（{N:1.2*ATK}）混合伤害，每段溅射 <span class="val-atk">25%</span>',

@@ -1597,6 +1597,7 @@ async function executeAction(action) {
       ff.alive = true; ff._deathProcessed = false;
       ff.name = '机甲';
       ff.emoji = '🤖';
+      ff.id = 'mech'; // for CSS flip exception
       ff.img = 'assets/mech-form-icon.png';
       ff.buffs = [];
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成，机甲具有：\n生命值 = 30 × ${dc} = {H:${finalHp}}\n攻击力 = 5 × ${dc} = {N:${finalAtk}}\n护甲 = 0，暴击率 = 25%\n每回合自动攻击生命值最低的敌人，造成150%×攻击力 = {N:${Math.round(finalAtk*1.5)}} 物理伤害。` };

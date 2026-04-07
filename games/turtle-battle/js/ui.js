@@ -598,11 +598,13 @@ function renderFighterCard(f, elId) {
   // Update scene turtle sprite + name on transform
   const el = document.getElementById(elId || getFighterElId(f));
   if (!el) return;
-  const spriteSize = window.innerWidth <= 768 ? 48 : 80;
+  const spriteSize = 80;
   const spriteEl = el.querySelector('.st-sprite');
   if (spriteEl) spriteEl.innerHTML = buildPetImgHTML(f, spriteSize);
   const nameEl = el.querySelector('.st-name');
   if (nameEl) { nameEl.textContent = f.name; nameEl.style.color = RARITY_COLORS[f.rarity] || '#fff'; }
+  // Update data-pid for CSS flip rules
+  el.dataset.pid = f.id || '';
 }
 
 
