@@ -171,7 +171,14 @@ async function doTwoHeadSwitch(caster, target, skill) {
     // Switch skills
     caster._rangedSkills = caster.skills;
     const pet = ALL_PETS.find(p => p.id === caster.id);
-    caster.skills = (pet && pet.meleeSkills) ? pet.meleeSkills.map(s => ({...s, cdLeft: s.type === 'twoHeadSwitch' ? skill.cd : 0})) : caster.skills;
+    if (pet && pet.meleeSkills) {
+      // Use paired melee skills matching equipped ranged skill indices
+      const equippedIdxs = caster._equippedIdxs || pet.defaultSkills || [0,1,2];
+      const pairedMelee = equippedIdxs
+        .filter(i => i < pet.meleeSkills.length && !pet.meleeSkills[i].passiveSkill)
+        .map(i => ({...pet.meleeSkills[i], cdLeft: pet.meleeSkills[i].type === 'twoHeadSwitch' ? skill.cd : 0}));
+      caster.skills = pairedMelee.length ? pairedMelee : pet.meleeSkills.map(s => ({...s, cdLeft: 0}));
+    }
     caster._twoHeadForm = 'melee';
     caster.name = '双头龟(近战)';
     updateHpBar(caster, fElId);

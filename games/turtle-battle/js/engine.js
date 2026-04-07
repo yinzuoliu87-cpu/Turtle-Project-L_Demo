@@ -20,6 +20,7 @@ function createFighter(petId, side, equippedIdxs) {
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
+    _equippedIdxs: equippedIdxs || (b.defaultSkills) || [0,1,2],
     maxHp:hp, hp:hp, shield:0,
     baseAtk:atk, baseDef:def, baseMr:mr,
     atk, def, mr,

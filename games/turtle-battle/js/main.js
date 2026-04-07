@@ -717,14 +717,23 @@ function showSkillPickModal(petId, onDone) {
   function render() {
     const fakeFighter = { atk:pet.atk, def:pet.def, mr:pet.mr||pet.def, maxHp:pet.hp, hp:pet.hp, crit:pet.crit||0.25, buffs:[], passive:pet.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
     const uniqueCount = pet.skillPool ? pet.skillPool.length : (pet.skills||[]).length;
+    const hasMelee = pet.meleeSkills && pet.meleeSkills.length > 0;
     const renderCard = (s, i) => {
       const isSel = selected.includes(i);
       const brief = renderSkillTemplate(s.brief || '', fakeFighter, s);
       const cdText = s.cd ? `CD${s.cd}` : '';
       const isPassive = s.passiveSkill ? '<span class="spc-passive-tag">被动</span>' : '';
+      // Paired melee skill for two_head
+      let pairedHtml = '';
+      if (hasMelee && i < pet.meleeSkills.length && !s._isCommon) {
+        const ms = pet.meleeSkills[i];
+        const mBrief = renderSkillTemplate(ms.brief || '', fakeFighter, ms);
+        pairedHtml = `<div class="spc-paired"><span class="spc-paired-label">近战：</span><b>${ms.name}</b> — ${mBrief}</div>`;
+      }
       return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${!isSel && selected.length >= 3 ? 'locked' : ''} ${s._isCommon ? 'spc-common' : ''}" onclick="window._skillPickToggle(${i})">
-        <div class="spc-header"><b>${s.name}</b> ${isPassive} ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}</div>
+        <div class="spc-header"><b>${s.name}</b> ${isPassive} ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}${hasMelee && !s._isCommon ? ' <span class="spc-paired-label">远程</span>' : ''}</div>
         <div class="spc-brief">${brief}</div>
+        ${pairedHtml}
         ${isSel ? '<div class="spc-check">✓</div>' : ''}
       </div>`;
     };
