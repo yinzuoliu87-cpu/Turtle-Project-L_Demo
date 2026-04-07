@@ -99,13 +99,6 @@
         <small>2v1 挑战强化Boss</small>
       </span>
     </button>
-    <button class="btn btn-lg" onclick="startMode('dungeon')" style="background:linear-gradient(135deg,#1a1a4e,#4a2080);border:2px solid #8b5cf6">
-      <span class="btn-icon">🏰</span>
-      <span class="btn-text">
-        <strong>深海闯关</strong>
-        <small>5关挑战 · 血量延续</small>
-      </span>
-    </button>
   </div>
   <!-- Battle Record -->
   <div class="record-box" id="recordBox">
@@ -158,28 +151,6 @@
     </div>
   </div>
   <div class="pet-grid" id="petGrid"></div>
-</section>
-
-<!-- ══════ SCREEN: FORMATION ══════ -->
-<section id="screenFormation" class="screen">
-  <h2 class="screen-title">选择阵型</h2>
-  <p style="text-align:center;color:var(--fg2);font-size:13px;margin-bottom:12px">点击龟头像，再点击位置来安排前后排</p>
-  <div class="formation-field" id="formationField">
-    <div class="formation-row formation-front">
-      <div class="formation-label">前排</div>
-      <div class="formation-slot" id="fslot-front-0" onclick="formationSlotClick('front',0)"></div>
-      <div class="formation-slot" id="fslot-front-1" onclick="formationSlotClick('front',1)"></div>
-    </div>
-    <div class="formation-row formation-back">
-      <div class="formation-label">后排</div>
-      <div class="formation-slot" id="fslot-back-0" onclick="formationSlotClick('back',0)"></div>
-    </div>
-  </div>
-  <div class="formation-bench" id="formationBench"></div>
-  <div style="text-align:center;margin-top:12px">
-    <button class="btn btn-secondary select-btn" onclick="formationBack()">← 重新选龟</button>
-    <button class="btn btn-primary select-btn" id="btnConfirmFormation" onclick="confirmFormation()" disabled>开战！</button>
-  </div>
 </section>
 
 <!-- ══════ SCREEN: BATTLE ══════ -->
@@ -278,28 +249,55 @@
   <!-- Side indicator -->
   <div class="side-indicator" id="sideIndicator"></div>
 
-  <!-- BATTLE SCENE (replaces card layout) -->
-  <div class="battle-scene" id="battleScene">
-    <div class="scene-labels">
-      <span class="team-label team-label-left" id="teamLabelLeft">我方</span>
-      <span class="team-label team-label-right" id="teamLabelRight">敌方</span>
+  <div class="battle-main-row">
+    <!-- BATTLE FIELD (center) -->
+    <div class="battle-field">
+      <div class="battle-side side-left">
+        <div class="team-label team-label-left" id="teamLabelLeft">我方</div>
+        <div class="fighter-card" id="leftFighter0">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+        <div class="fighter-card" id="leftFighter1">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+      </div>
+      <div class="vs-badge">VS</div>
+      <div class="battle-side side-right">
+        <div class="team-label team-label-right" id="teamLabelRight">敌方</div>
+        <div class="fighter-card" id="rightFighter0">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+        <div class="fighter-card" id="rightFighter1">
+          <div class="fighter-emoji"></div>
+          <div class="fighter-name"></div>
+          <div class="fighter-stats"></div>
+          <div class="hp-bar"><div class="hp-fill"></div></div>
+          <div class="hp-text"></div>
+          <div class="status-icons"></div>
+        </div>
+      </div>
     </div>
-    <!-- Turtles are dynamically rendered by renderScene() -->
-  </div>
 
-  <!-- FIGHTER DETAIL PANEL (shows on turtle click) -->
-  <div class="fighter-detail-panel" id="fighterDetailPanel" style="display:none">
-    <div class="fdp-header">
-      <span class="fdp-name" id="fdpName"></span>
-      <button class="fdp-close" onclick="closeFighterDetail()">✕</button>
+    <!-- DAMAGE STATS (right side) -->
+    <div class="dmg-stats-panel" id="dmgStatsPanel">
+      <div class="dmg-stats-header">伤害统计</div>
+      <div class="dmg-stats-body" id="dmgStatsBody"></div>
     </div>
-    <div class="fdp-body" id="fdpBody"></div>
-  </div>
-
-  <!-- DAMAGE STATS (hidden on mobile, toggle via 📊) -->
-  <div class="dmg-stats-panel" id="dmgStatsPanel">
-    <div class="dmg-stats-header">伤害统计</div>
-    <div class="dmg-stats-body" id="dmgStatsBody"></div>
   </div>
 
   <!-- PASSIVE DETAIL POPUP -->
@@ -332,32 +330,6 @@
     </div>
     <div class="battle-log" id="battleLog">
       <div class="log-entry">战斗开始！</div>
-    </div>
-  </div>
-</section>
-
-<!-- ══════ SCREEN: DUNGEON STAGE CLEAR ══════ -->
-<section id="screenDungeonClear" class="screen">
-  <div class="dungeon-clear-box">
-    <div class="dungeon-progress" id="dungeonProgress"></div>
-    <h2 class="dungeon-clear-title" id="dungeonClearTitle">第1关 通过！</h2>
-    <div class="dungeon-team-status" id="dungeonTeamStatus"></div>
-    <h3 style="color:var(--accent);margin:12px 0 8px">选择一项奖励</h3>
-    <div class="dungeon-choices" id="dungeonChoices"></div>
-    <button class="btn btn-primary" id="dungeonNextBtn" onclick="dungeonNextStage()" disabled>下一关 →</button>
-  </div>
-</section>
-
-<!-- ══════ SCREEN: DUNGEON RESULT ══════ -->
-<section id="screenDungeonResult" class="screen">
-  <div class="result-box">
-    <div class="result-icon" id="dungeonResultIcon">🏰</div>
-    <h2 id="dungeonResultTitle">闯关结束</h2>
-    <p id="dungeonResultSub"></p>
-    <div class="result-rewards" id="dungeonResultRewards"></div>
-    <div class="result-actions">
-      <button class="btn btn-primary" onclick="startMode('dungeon')">再次挑战</button>
-      <button class="btn btn-secondary" onclick="showScreen('screenMenu');playBgm('menu')">返回大厅</button>
     </div>
   </div>
 </section>

@@ -33,7 +33,6 @@ function createFighter(petId, side) {
     magicPenPct: 0,  // 百分比魔抗穿透
     passive: b.passive || null,
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
-    _position: 'front', // front or back (set by player in formation screen)
     alive:true,
     buffs: [],
     bubbleStore: 0,      // 泡泡龟被动储存值
@@ -95,7 +94,7 @@ function resetBattleState() {
   pendingSkillIdx = null;
   resetTurnState();
   // Clean up DOM state from previous battle
-  document.querySelectorAll('.fighter-card,.scene-turtle').forEach(el => {
+  document.querySelectorAll('.fighter-card').forEach(el => {
     el.classList.remove('dead','death-anim','hit-shake','attack-anim','mech-transform-anim');
     el.style.opacity = '';
     el.style.display = '';
@@ -121,140 +120,6 @@ function resetBattleState() {
   unseedBattleRng();
 }
 
-
-// ── HIT ANIMATION HELPER ──────────────────────────────────
-function playHitAnim(elId, dmgType, isCrit) {
-  const el = document.getElementById(elId);
-  if (!el) return;
-  // Remove all hit classes
-  el.classList.remove('hit-shake','hit-physical','hit-magic','hit-true','hit-crit');
-  void el.offsetWidth; // reflow to restart animation
-  if (isCrit) {
-    el.classList.add('hit-crit');
-    // Screen flash for crits
-    const flash = document.createElement('div');
-    flash.className = 'screen-flash flash-crit';
-    document.body.appendChild(flash);
-    flash.addEventListener('animationend', () => flash.remove());
-  } else if (dmgType === 'magic') {
-    el.classList.add('hit-magic');
-  } else if (dmgType === 'true') {
-    el.classList.add('hit-true');
-  } else {
-    el.classList.add('hit-physical');
-  }
-  // Auto-remove after animation
-  setTimeout(() => {
-    el.classList.remove('hit-shake','hit-physical','hit-magic','hit-true','hit-crit');
-  }, 500);
-}
-
-// Shield multiplier for battle rules (铁壁之日 = ×2)
-function getShieldMult() {
-  return (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'shield') ? 2 : 1;
-}
-// Magic damage multiplier for battle rules (深海之日 = ×0.8)
-function getMagicDmgMult() {
-  return (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'ocean') ? 0.8 : 1;
-}
-
-// ── EQUIPMENT SYSTEM (装备之日) ──────────────────────────
-const EQUIP_POOL = [
-  // Stat boost (8)
-  { id:'e_blade', name:'海藻短刃', icon:'⚔️', desc:'攻击力 +15%', apply(f) { f.baseAtk = Math.round(f.baseAtk * 1.15); f.atk = f.baseAtk; } },
-  { id:'e_armor', name:'珊瑚护甲', icon:'🛡️', desc:'护甲 +20%', apply(f) { f.baseDef = Math.round(f.baseDef * 1.2); f.def = f.baseDef; } },
-  { id:'e_shell', name:'深海贝壳', icon:'🐚', desc:'魔抗 +20%', apply(f) { f.baseMr = Math.round((f.baseMr||f.baseDef) * 1.2); f.mr = f.baseMr; } },
-  { id:'e_pearl', name:'生命珍珠', icon:'💎', desc:'最大生命值 +60', apply(f) { f.maxHp += 60; f.hp += 60; } },
-  { id:'e_tooth', name:'锋利鲨齿', icon:'🦷', desc:'暴击率 +20%', apply(f) { f.crit += 0.2; } },
-  { id:'e_hammer', name:'重击锤', icon:'🔨', desc:'暴击伤害 +25%', apply(f) { f._extraCritDmgPerm = (f._extraCritDmgPerm||0) + 0.25; } },
-  { id:'e_spike', name:'穿甲珊瑚刺', icon:'📌', desc:'护甲穿透 +6', apply(f) { f.armorPen += 6; } },
-  { id:'e_crystal', name:'灵能水晶', icon:'🔮', desc:'魔法穿透 +6', apply(f) { f.magicPen = (f.magicPen||0) + 6; } },
-  // Special effect (10)
-  { id:'e_star', name:'吸血海星', icon:'🩸', desc:'生命偷取 +12%', apply(f) { f._lifestealPct = (f._lifestealPct||0) + 12; } },
-  { id:'e_urchin', name:'荆棘海胆', icon:'🌵', desc:'受伤反弹 10%', apply(f) { f._equipReflect = (f._equipReflect||0) + 10; } },
-  { id:'e_fire', name:'灼热火珊瑚', icon:'🔥', desc:'攻击附带灼烧4回合', apply(f) { f._equipBurn = true; } },
-  { id:'e_jelly', name:'冰封水母', icon:'❄️', desc:'攻击15%概率眩晕1回合', apply(f) { f._equipStun = 15; } },
-  { id:'e_anemone', name:'治愈海葵', icon:'💚', desc:'每回合回复5%最大HP', apply(f) { f._equipHot = 5; } },
-  { id:'e_ghost', name:'幽灵墨鱼', icon:'👻', desc:'闪避率 +15%', apply(f) { f.buffs.push({type:'dodge',value:15,turns:999}); } },
-  { id:'e_puffer', name:'愤怒河豚', icon:'🐡', desc:'HP低于30%时攻击力翻倍', apply(f) { f._equipRage = true; } },
-  { id:'e_tshell', name:'坚韧龟壳', icon:'🐢', desc:'每段受伤固定减免5点', apply(f) { f._equipFlatReduce = (f._equipFlatReduce||0) + 5; } },
-  { id:'e_octo', name:'连击章鱼爪', icon:'🐙', desc:'20%概率追加50%攻击力打击', apply(f) { f._equipMultiHit = 20; } },
-  { id:'e_conch', name:'复活海螺', icon:'🐌', desc:'首次死亡以20%HP复活', apply(f) { f._equipRevive = true; } },
-];
-
-let _equipPickPending = false;
-let _equipPickCallback = null;
-
-function triggerEquipPick() {
-  if (_equipPickPending) return;
-  _equipPickPending = true;
-  // Pause battle, show equip pick UI
-  const pool = EQUIP_POOL.sort(() => _origMathRandom() - 0.5).slice(0, 3);
-  const overlay = document.createElement('div');
-  overlay.id = 'equipPickOverlay';
-  overlay.className = 'equip-pick-overlay';
-  overlay.innerHTML = `
-    <div class="equip-pick-box">
-      <h3 style="color:#ffd93d;margin-bottom:12px">🎁 选择一件装备</h3>
-      <div class="equip-pick-items">${pool.map((e, i) => `
-        <div class="equip-pick-item" onclick="pickEquipItem(${i})">
-          <div style="font-size:32px">${e.icon}</div>
-          <div style="font-weight:700;font-size:14px">${e.name}</div>
-          <div style="font-size:11px;color:var(--fg2)">${e.desc}</div>
-        </div>
-      `).join('')}</div>
-      <div class="equip-pick-targets" id="equipPickTargets" style="display:none">
-        <p style="color:var(--fg2);font-size:12px;margin-bottom:8px">装给谁？</p>
-        <div id="equipTargetBtns"></div>
-      </div>
-    </div>
-  `;
-  overlay._pool = pool;
-  document.body.appendChild(overlay);
-  setTimeout(() => overlay.classList.add('show'), 50);
-}
-
-function pickEquipItem(idx) {
-  const overlay = document.getElementById('equipPickOverlay');
-  if (!overlay) return;
-  overlay._selectedIdx = idx;
-  // Highlight selected
-  overlay.querySelectorAll('.equip-pick-item').forEach((el, i) => {
-    el.classList.toggle('selected', i === idx);
-  });
-  // Show target selection
-  const allies = leftTeam.filter(f => f.alive && (!f._equips || f._equips.length < 2));
-  const targetsEl = document.getElementById('equipTargetBtns');
-  targetsEl.innerHTML = allies.map(f => {
-    const equipCount = f._equips ? f._equips.length : 0;
-    return `<button class="btn btn-target" onclick="applyEquipToFighter(${allFighters.indexOf(f)})" style="margin:4px">
-      ${f.emoji} ${f.name} (${equipCount}/2)
-    </button>`;
-  }).join('');
-  document.getElementById('equipPickTargets').style.display = 'block';
-}
-
-function applyEquipToFighter(fIdx) {
-  const overlay = document.getElementById('equipPickOverlay');
-  if (!overlay) return;
-  const equip = overlay._pool[overlay._selectedIdx];
-  const f = allFighters[fIdx];
-  if (!f || !equip) return;
-  // Apply
-  if (!f._equips) f._equips = [];
-  f._equips.push(equip);
-  equip.apply(f);
-  recalcStats();
-  updateFighterStats(f, getFighterElId(f));
-  updateHpBar(f, getFighterElId(f));
-  renderStatusIcons(f);
-  addLog(`${f.emoji}${f.name} 装备了 <span style="color:#ffd93d">${equip.icon} ${equip.name}</span>：${equip.desc}`);
-  spawnFloatingNum(getFighterElId(f), `${equip.icon}${equip.name}`, 'crit-label', 0, -20);
-  // Close overlay
-  overlay.classList.remove('show');
-  setTimeout(() => overlay.remove(), 300);
-  _equipPickPending = false;
-}
 
 function getAliveEnemiesWithSummons(side) {
   const team = side === 'left' ? rightTeam : leftTeam;
@@ -609,31 +474,9 @@ async function beginTurn() {
   await processBuffs();
   // Recalculate stats after buff changes
   recalcStats();
-  // Equipment rule: trigger equip pick for player every 3 turns
-  // Also apply equipment passive effects (HOT, rage, flat reduce)
-  for (const f of allFighters) {
-    if (!f.alive) continue;
-    if (f._equipHot) {
-      const heal = Math.round(f.maxHp * f._equipHot / 100);
-      const actual = applyHeal(f, heal);
-      if (actual > 0) { spawnFloatingNum(getFighterElId(f), `+${actual}💚`, 'heal-num', 0, 0); updateHpBar(f, getFighterElId(f)); }
-    }
-    if (f._equipRage && f.hp / f.maxHp < 0.3 && !f._equipRageActive) {
-      f._equipRageActive = true;
-      f.baseAtk = Math.round(f.baseAtk * 2); f.atk = f.baseAtk;
-      spawnFloatingNum(getFighterElId(f), '🐡暴怒!', 'crit-label', 0, -20);
-      recalcStats(); updateFighterStats(f, getFighterElId(f));
-    }
-  }
-
   addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
   try { sfxTurnStart(); } catch(e) {}
-
-  // Equipment day: pick equip every 3 turns
-  if (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'equip' && turnNum > 1 && turnNum % 3 === 1) {
-    triggerEquipPick();
-  }
-
+  // Seeded random ensures both sides compute identical results — no sync needed
   // Start new round: left acts first
   activeSide = 'left';
   actedThisSide = new Set(); _bossActionsThisRound = 0;
@@ -709,18 +552,18 @@ async function nextSideAction() {
   // Get alive fighters for active side that haven't acted yet
   const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
   // Boss mode: boss can act twice per round, use counter instead of Set
-  const isBossSide = (gameMode === 'boss' || (gameMode === 'dungeon' && dungeonState && dungeonState.stage >= 5)) && activeSide === 'right';
+  const isBossSide = gameMode === 'boss' && activeSide === 'right';
   let canAct;
   if (isBossSide) {
     if (!_bossActionsThisRound) _bossActionsThisRound = 0;
-    canAct = (_bossActionsThisRound < 3) ? sideTeam.filter(f => f.alive) : [];
+    canAct = (_bossActionsThisRound < 2) ? sideTeam.filter(f => f.alive) : [];
   } else {
     canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
   }
 
   // First round: left only sends 1
   const totalAlive = sideTeam.filter(f => f.alive).length;
-  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 3 : totalAlive);
+  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 2 : totalAlive);
   const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
@@ -735,7 +578,6 @@ async function nextSideAction() {
   const isPlayer =
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'boss' && activeSide === 'left') ||
-    (gameMode === 'dungeon' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
   // Check for stunned fighters — auto-skip them (only once per stun)
@@ -1096,12 +938,7 @@ function pickSkill(idx) {
 
   // bubbleBind targets enemies
   const targetsFromSide = (isAlly ? (f.side==='left'?leftTeam:rightTeam) : (f.side==='left'?rightTeam:leftTeam));
-  let targets = targetsFromSide.filter(a => a.alive);
-  // Front row priority for enemy single-target skills
-  if (!isAlly) {
-    const frontTargets = targets.filter(t => t._position === 'front');
-    if (frontTargets.length > 0) targets = frontTargets;
-  }
+  const targets = targetsFromSide.filter(a => a.alive);
   if (targets.length === 1) executePlayerAction(f, skill, targets[0]);
   else showTargetSelect(targets, f, skill);
 }
@@ -1475,7 +1312,7 @@ async function executeAction(action) {
       ff.hp = Math.round(ff.maxHp * revivePct / 100);
       ff.alive = true;
       ff._deathProcessed = false;
-      if (el) { el._pendingDead = false; el.classList.remove('dead','death-anim'); }
+      if (el) el.classList.remove('dead');
       updateHpBar(ff, elId);
       renderStatusIcons(ff);
       spawnFloatingNum(elId, '🐦凤凰重生!', 'crit-label', 0, -25);
@@ -1828,10 +1665,13 @@ async function doDamage(attacker, target, skill) {
       await sleep(200);
     }
 
-    // Hit animation based on damage type
-    playHitAnim(tElId, dmgType, isCrit);
+    // Shake
+    const tEl = document.getElementById(tElId);
+    tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
-    await sleep(500);
+    await sleep(700);
+    tEl.classList.remove('hit-shake');
+    await sleep(200);
 
     // Passive: gamblerMultiHit
     await tryGamblerMultiHit(attacker, target, tElId);
@@ -2043,7 +1883,6 @@ async function doShield(caster, target, skill) {
   if (skill.shieldFlat) amount += skill.shieldFlat;
   if (skill.shieldHpPct) amount += Math.round(caster.maxHp * skill.shieldHpPct / 100);
   if (skill.shieldAtkScale) amount += Math.round(caster.atk * skill.shieldAtkScale);
-  amount = Math.round(amount * getShieldMult()); // 铁壁之日: ×2
   target.shield += amount;
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `+${amount}🛡`, 'shield-num', 0, 0);
@@ -2204,49 +2043,6 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}反伤`, 'counter-dmg', 400, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
-    }
-  }
-  // Equipment: burn on hit
-  if (attacker._equipBurn && target.alive && !(target.passive && target.passive.burnImmune)) {
-    const burnVal = Math.round(attacker.atk * 0.4);
-    const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
-    if (existing) { existing.turns = Math.max(existing.turns, 4); }
-    else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:8, turns:4, sourceSide:attacker.side, sourceIdx:allFighters.indexOf(attacker), dmgType:'magic' });
-  }
-  // Equipment: stun chance
-  if (attacker._equipStun && target.alive && Math.random() < attacker._equipStun / 100) {
-    if (!target.buffs.find(b => b.type === 'stun')) {
-      target.buffs.push({ type:'stun', turns:1 });
-      spawnFloatingNum(tElId, '❄️眩晕!', 'debuff-label', 400, -10);
-    }
-  }
-  // Equipment: multi-hit chance
-  if (attacker._equipMultiHit && target.alive && Math.random() < attacker._equipMultiHit / 100) {
-    const extraDmg = Math.round(attacker.atk * 0.5);
-    const eDef = calcEffDef(attacker, target);
-    const defRed = eDef / (eDef + DEF_CONSTANT);
-    const finalDmg = Math.max(1, Math.round(extraDmg * (1 - defRed)));
-    applyRawDmg(attacker, target, finalDmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${finalDmg}🐙`, 'direct-dmg', 200, 0, {atkSide:attacker.side, amount:finalDmg});
-    updateHpBar(target, tElId);
-  }
-  // Equipment: reflect
-  if (target._equipReflect && target.alive && attacker.alive && dmg > 0) {
-    const reflDmg = Math.round(dmg * target._equipReflect / 100);
-    if (reflDmg > 0) {
-      attacker.hp = Math.max(0, attacker.hp - reflDmg);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}🌵`, 'counter-dmg', 300, 0);
-      updateHpBar(attacker, getFighterElId(attacker));
-      if (attacker.hp <= 0) attacker.alive = false;
-    }
-  }
-  // Battle rule: 烈焰之日 — all hits apply burn
-  if (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'fire' && target.alive && attacker) {
-    if (!(target.passive && target.passive.burnImmune)) {
-      const burnVal = Math.round(attacker.atk * 0.4);
-      const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
-      if (existing) { existing.turns = Math.max(existing.turns, 4); }
-      else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:8, turns:4, sourceSide:attacker.side, sourceIdx:allFighters.indexOf(attacker), dmgType:'magic' });
     }
   }
 }
@@ -2507,26 +2303,25 @@ function aiAction(f) {
     else target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   }
   else {
-    // Smart targeting: front row priority, prefer low HP, avoid undead lock
-    // Filter to front row if any alive front row exists
-    const frontEnemies = enemies.filter(e => e._position === 'front');
-    const targetPool = frontEnemies.length > 0 ? frontEnemies : enemies; // back row only if front all dead
-    if (targetPool.length === 1) {
-      target = targetPool[0];
+    // Smart targeting: prefer low HP enemies, avoid undead lock
+    if (enemies.length === 1) {
+      target = enemies[0];
     } else {
-      const sorted = targetPool.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+      // Sort by HP ratio
+      const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
       const lowest = sorted[0];
       const lowestRatio = lowest.hp / lowest.maxHp;
-      // Undead lock: avoid locked target
+      // Undead lock: always target teammate if available
       if (lowest._undeadLockTurns > 0) {
         const nonLocked = sorted.find(e => !e._undeadLockTurns);
-        target = nonLocked || lowest;
+        if (nonLocked) { target = nonLocked; }
+        else { target = lowest; } // no choice
       }
       // HP < 20%: 90% chance to focus
       else if (lowestRatio < 0.2 && Math.random() < 0.9) { target = lowest; }
       // General: 70% chance to target lowest HP, 30% random
       else if (Math.random() < 0.7) { target = lowest; }
-      else { target = targetPool[Math.floor(Math.random() * targetPool.length)]; }
+      else { target = enemies[Math.floor(Math.random() * enemies.length)]; }
     }
   }
 
@@ -2543,10 +2338,7 @@ function checkDeaths(attacker) {
         f._rebirthUsed = true;
         f.hp = Math.round(f.maxHp * f.passive.revivePct / 100);
         f.alive = true;
-        f._deathProcessed = false;
         const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
         spawnFloatingNum(elId, '涅槃重生!', 'crit-label', 0, -25);
         spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
         updateHpBar(f, elId);
@@ -2576,36 +2368,6 @@ function checkDeaths(attacker) {
         return;
       }
 
-      // Equipment: 复活海螺 — revive with 20% HP once
-      if (f._equipRevive) {
-        f._equipRevive = false;
-        f.hp = Math.round(f.maxHp * 0.2);
-        f.alive = true;
-        f._deathProcessed = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '🐌复活!', 'crit-label', 0, -25);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">🐌复活海螺！以20%HP复活！</span>`);
-        return;
-      }
-
-      // Battle rule: 亡灵之日 — revive with 15% HP once
-      if (f._ruleRevive) {
-        f._ruleRevive = false;
-        f.hp = Math.round(f.maxHp * 0.15);
-        f.alive = true;
-        f._deathProcessed = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '💀亡灵复活!', 'crit-label', 0, -25);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">💀亡灵之日！以15%HP复活！</span>`);
-        return;
-      }
-
       // CyberDrone: transform drones into mech
       if (f.passive && f.passive.type === 'cyberDrone' && f._drones && f._drones.length > 0 && !f._isMech) {
         // Mark for pending mech transform (handled async in executeAction after checkDeaths)
@@ -2622,10 +2384,7 @@ function checkDeaths(attacker) {
       const deadEl = document.getElementById(elId);
       if (deadEl) {
         deadEl.classList.add('death-anim');
-        deadEl._pendingDead = true;
-        deadEl.addEventListener('animationend', () => {
-          if (deadEl._pendingDead) deadEl.classList.add('dead');
-        }, { once:true });
+        deadEl.addEventListener('animationend', () => deadEl.classList.add('dead'), { once:true });
       }
       // Screen flash
       const flash = document.createElement('div');
@@ -2736,7 +2495,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
   summon.hp = 0;
   const sElId = getFighterElId(summon);
   const sCard = document.getElementById(sElId);
-  if (sCard) { sCard._pendingDead = true; sCard.classList.add('death-anim'); sCard.addEventListener('animationend', () => { if (sCard._pendingDead) sCard.classList.add('dead'); }, { once:true }); }
+  if (sCard) { sCard.classList.add('death-anim'); sCard.addEventListener('animationend', () => sCard.classList.add('dead'), { once:true }); }
   updateSummonHpBar(summon);
   addLog(`${summon.emoji}${summon.name}(随从) ${extraMsg || '被击败！'}`,'death');
 
@@ -2912,10 +2671,9 @@ function processLavaCountdown(f) {
   if (!f.passive || f.passive.type !== 'lavaRage' || !f._lavaTransformed) return;
   f._lavaTransformTurns--;
   if (f._lavaTransformTurns <= 0) {
-    // Revert to small form — can rage again
+    // Revert to small form
     f._lavaTransformed = false;
-    f._lavaSpent = false;
-    f._lavaRage = 0;
+    f._lavaSpent = true;
     // Revert stats
     const oldMax = f.maxHp;
     f.maxHp -= f._lavaHpGain;
@@ -3123,12 +2881,6 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   // Ink mark amplification: all damage to marked target is increased
   if (target._inkStacks > 0 && amount > 0) {
     amount = Math.round(amount * (1 + target._inkStacks * 0.05));
-  }
-  // Battle rule: 深海之日 — magic damage -20%
-  if (dmgType === 'magic' && amount > 0) amount = Math.round(amount * getMagicDmgMult());
-  // Equipment: flat damage reduction
-  if (target._equipFlatReduce && amount > 0 && dmgType !== 'true') {
-    amount = Math.max(1, amount - target._equipFlatReduce);
   }
   // Star equip: convert all damage to true
   if (source && hasChestEquip(source, 'star') && dmgType && dmgType !== 'true') dmgType = 'true';
