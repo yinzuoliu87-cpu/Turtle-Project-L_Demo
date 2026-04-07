@@ -682,6 +682,69 @@ function updateConfirmBtn() {
   document.getElementById('btnConfirmTeam').disabled = placed !== required;
 }
 
+// ── SKILL PICK MODAL ──────────────────────────────────────
+function showSkillPickChain(petIds, idx, callback) {
+  if (idx >= petIds.length) { callback(); return; }
+  showSkillPickModal(petIds[idx], () => showSkillPickChain(petIds, idx + 1, callback));
+}
+
+function showSkillPickModal(petId, onDone) {
+  const pet = ALL_PETS.find(p => p.id === petId);
+  if (!pet || !pet.skillPool) { onDone(); return; }
+  const pool = pet.skillPool;
+  const saved = getSavedLoadout(petId) || pet.defaultSkills || [0,1,2];
+  let selected = [...saved];
+
+  let overlay = document.getElementById('skillPickOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'skillPickOverlay';
+    overlay.className = 'skill-pick-overlay';
+    document.body.appendChild(overlay);
+  }
+
+  function render() {
+    const fakeFighter = { atk:pet.atk, def:pet.def, mr:pet.mr||pet.def, maxHp:pet.hp, hp:pet.hp, crit:pet.crit||0.25, buffs:[], passive:pet.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
+    overlay.innerHTML = `
+      <div class="skill-pick-box">
+        <div class="skill-pick-title">${buildPetImgHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
+        <div class="skill-pick-grid">
+          ${pool.map((s, i) => {
+            const isSel = selected.includes(i);
+            const brief = renderSkillTemplate(s.brief || '', fakeFighter, s);
+            const cdText = s.cd ? `CD${s.cd}` : '';
+            return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${!isSel && selected.length >= 3 ? 'locked' : ''}" onclick="window._skillPickToggle(${i})">
+              <div class="spc-header"><b>${s.name}</b> ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}</div>
+              <div class="spc-brief">${brief}</div>
+              ${isSel ? '<div class="spc-check">✓</div>' : ''}
+            </div>`;
+          }).join('')}
+        </div>
+        <button class="btn btn-primary skill-pick-confirm" ${selected.length === 3 ? '' : 'disabled'} onclick="window._skillPickConfirm()">确认装配</button>
+      </div>
+    `;
+    overlay.style.display = 'flex';
+  }
+
+  window._skillPickToggle = (i) => {
+    if (selected.includes(i)) {
+      selected = selected.filter(x => x !== i);
+    } else if (selected.length < 3) {
+      selected.push(i);
+    }
+    render();
+  };
+
+  window._skillPickConfirm = () => {
+    if (selected.length !== 3) return;
+    saveLoadout(petId, selected.sort((a,b) => a-b));
+    overlay.style.display = 'none';
+    onDone();
+  };
+
+  render();
+}
+
 function showPetPassive(e, petId) {
   e.stopPropagation();
   const p = ALL_PETS.find(x => x.id === petId);
@@ -707,12 +770,19 @@ function showPetPassive(e, petId) {
   popup.style.display = 'block';
 }
 
-function _buildTeamFromSlots(side) {
+function _buildTeamFromSlots(side, loadoutMap) {
   return FG_SLOT_KEYS.filter(k => _fgSlots[k]).map(k => {
-    const f = createFighter(_fgSlots[k], side);
+    const petId = _fgSlots[k];
+    const idxs = (loadoutMap && loadoutMap[petId]) || getSavedLoadout(petId) || null;
+    const f = createFighter(petId, side, idxs);
     f._position = k.startsWith('front') ? 'front' : 'back';
     return f;
   });
+}
+
+function _createAiFighter(petId, side) {
+  const idxs = aiPickSkills(petId);
+  return createFighter(petId, side, idxs);
 }
 
 function confirmTeam() {
@@ -734,29 +804,46 @@ function confirmTeam() {
     return;
   }
   if (gameMode === 'pve') {
-    // Create fighters from occupied formation slots
+    // Check if any turtle needs skill selection
+    const needsPick = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
+    if (needsPick.length > 0) {
+      showSkillPickChain(needsPick, 0, () => {
+        leftTeam = _buildTeamFromSlots('left');
+        const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
+        const shuffled = pool.sort(() => Math.random() - 0.5);
+        rightTeam = [_createAiFighter(shuffled[0].id,'right'), _createAiFighter(shuffled[1].id,'right'), _createAiFighter(shuffled[2].id,'right')];
+        autoAssignPositions(rightTeam);
+        startBattle();
+      });
+      return;
+    }
     leftTeam = _buildTeamFromSlots('left');
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
-    rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right'), createFighter(shuffled[2].id,'right')];
+    rightTeam = [_createAiFighter(shuffled[0].id,'right'), _createAiFighter(shuffled[1].id,'right'), _createAiFighter(shuffled[2].id,'right')];
     autoAssignPositions(rightTeam);
     startBattle();
   } else if (gameMode === 'boss') {
-    leftTeam = _buildTeamFromSlots('left');
-    const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
-    const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
-    const boss = createFighter(bossPet.id, 'right');
+    const needsPick2 = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
+    const doBoss = () => {
+      leftTeam = _buildTeamFromSlots('left');
+      const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
+      const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
+      const boss = _createAiFighter(bossPet.id, 'right');
     // Boss stat multipliers (3v1 balanced)
     boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
     boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
     boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
     boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
     boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
-    boss._isBoss = true;
-    boss.name = 'BOSS ' + boss.name;
-    rightTeam = [boss];
-    boss._position = 'front';
-    startBattle();
+      boss._isBoss = true;
+      boss.name = 'BOSS ' + boss.name;
+      rightTeam = [boss];
+      boss._position = 'front';
+      startBattle();
+    };
+    if (needsPick2.length > 0) { showSkillPickChain(needsPick2, 0, doBoss); return; }
+    doBoss();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
     if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');

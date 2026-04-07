@@ -1694,6 +1694,22 @@ body{
 .rule-banner-desc{font-size:16px;color:var(--fg2);max-width:400px;text-align:center;animation:rulePop .5s ease .2s both}
 @keyframes rulePop{0%{transform:scale(0.3);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
 
+/* ── SKILL PICK OVERLAY ── */
+.skill-pick-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.skill-pick-box{background:var(--bg);border:2px solid rgba(88,166,255,.3);border-radius:16px;padding:20px 24px;max-width:600px;width:90%;max-height:80vh;overflow-y:auto}
+.skill-pick-title{font-size:18px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px}
+.skill-pick-count{font-size:14px;color:var(--fg2);font-weight:400}
+.skill-pick-grid{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.skill-pick-card{padding:12px 14px;border-radius:10px;border:2px solid rgba(255,255,255,.1);background:rgba(255,255,255,.03);cursor:pointer;transition:.2s;position:relative}
+.skill-pick-card:hover{border-color:var(--accent);background:rgba(88,166,255,.06)}
+.skill-pick-card.selected{border-color:#ffd93d;background:rgba(255,217,61,.08)}
+.skill-pick-card.locked{opacity:.35;pointer-events:none}
+.spc-header{font-size:14px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
+.spc-cd{font-size:11px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px}
+.spc-brief{font-size:12px;color:var(--fg2);line-height:1.5}
+.spc-check{position:absolute;top:10px;right:12px;font-size:16px;color:#ffd93d;font-weight:700}
+.skill-pick-confirm{width:100%;padding:12px;font-size:15px}
+
 /* ── EQUIPMENT PICK OVERLAY ── */
 .equip-pick-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .3s}
 .equip-pick-overlay.show{opacity:1}

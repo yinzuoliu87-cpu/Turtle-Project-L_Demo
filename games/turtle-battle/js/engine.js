@@ -11,7 +11,7 @@ function seedBattleRng(seed) {
 function unseedBattleRng() { Math.random = _origMathRandom; }
 
 // ── FIGHTER FACTORY ───────────────────────────────────────
-function createFighter(petId, side) {
+function createFighter(petId, side, equippedIdxs) {
   const b = ALL_PETS.find(p => p.id === petId);
   const hp  = b.hp;
   const atk = b.atk;
@@ -82,8 +82,51 @@ function createFighter(petId, side) {
     _goldLightning: 0,        // 宝箱龟雷刃金闪电层数
     _crystallize: 0,          // 水晶龟结晶层数(被标记方)
     _collideStacks: 0,        // 钻石龟碰撞标记(被标记方)
-    skills: b.skills.map(s => ({ ...s, cdLeft:0 })),
+    skills: (function() {
+      if (b.skillPool && b.skillPool.length > 0) {
+        const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
+        return idxs.map(i => ({ ...b.skillPool[i], cdLeft:0 }));
+      }
+      return b.skills.map(s => ({ ...s, cdLeft:0 }));
+    })(),
   };
+}
+
+function getSkillPool(petId) {
+  const b = ALL_PETS.find(p => p.id === petId);
+  return b ? (b.skillPool || b.skills || []) : [];
+}
+
+function getSavedLoadout(petId) {
+  try {
+    const data = JSON.parse(localStorage.getItem('skillLoadouts') || '{}');
+    return data[petId] || null;
+  } catch(e) { return null; }
+}
+
+function saveLoadout(petId, indices) {
+  try {
+    const data = JSON.parse(localStorage.getItem('skillLoadouts') || '{}');
+    data[petId] = indices;
+    localStorage.setItem('skillLoadouts', JSON.stringify(data));
+  } catch(e) {}
+}
+
+function aiPickSkills(petId) {
+  const b = ALL_PETS.find(p => p.id === petId);
+  if (!b || !b.skillPool || b.skillPool.length <= 3) return null;
+  const pool = b.skillPool;
+  const indices = [];
+  // Ensure at least 1 damage skill (not heal/shield/isAlly-only)
+  const dmgIdxs = pool.map((s,i) => i).filter(i => !pool[i].isAlly && pool[i].type !== 'heal' && pool[i].type !== 'shield');
+  if (dmgIdxs.length) indices.push(dmgIdxs[Math.floor(Math.random() * dmgIdxs.length)]);
+  // Fill remaining randomly
+  const remaining = pool.map((s,i) => i).filter(i => !indices.includes(i));
+  while (indices.length < 3 && remaining.length) {
+    const pick = remaining.splice(Math.floor(Math.random() * remaining.length), 1)[0];
+    indices.push(pick);
+  }
+  return indices.sort((a,b) => a-b);
 }
 
 // ── BATTLE START ──────────────────────────────────────────
