@@ -763,12 +763,30 @@ function showPetPassive(e, petId) {
     popup = document.createElement('div');
     popup.id = 'selectPassivePopup';
     popup.className = 'passive-popup';
-    popup.style.cssText = 'display:none;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%);animation:none';
     document.body.appendChild(popup);
   }
-  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div><div style="text-align:center;margin-top:8px;font-size:11px;color:var(--fg2);cursor:pointer" onclick="this.parentElement.style.display='none'">点击关闭</div>`;
-  popup.style.animation = 'none';
-  popup.style.display = 'block';
+  // Build skills preview
+  const battlePet = ALL_PETS ? ALL_PETS.find(x => x.id === p.id) : null;
+  let skillsHtml = '';
+  if (battlePet) {
+    const pool = battlePet.skillPool || battlePet.skills || [];
+    if (pool.length) {
+      skillsHtml = '<div style="margin-top:10px;border-top:1px solid rgba(255,255,255,.08);padding-top:8px"><div style="font-size:11px;font-weight:700;color:var(--fg2);margin-bottom:4px">技能</div>';
+      pool.forEach(s => {
+        const cdText = s.cd ? `<span style="font-size:9px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 4px;border-radius:3px">CD${s.cd}</span>` : '';
+        const briefR = renderSkillTemplate(s.brief || '', fakeFighter, s);
+        skillsHtml += `<div style="margin-bottom:4px;font-size:11px"><b>${s.name}</b> ${cdText}<br><span style="color:var(--fg2)">${briefR}</span></div>`;
+      });
+      skillsHtml += '</div>';
+    }
+  }
+  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>${skillsHtml}<div style="text-align:center;margin-top:10px;font-size:12px;color:var(--fg2);cursor:pointer;padding:6px" onclick="this.parentElement.style.display='none'">点击关闭</div>`;
+  // Mobile: bottom sheet; Desktop: centered
+  if (window.innerWidth <= 768) {
+    popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:0;right:0;bottom:0;top:auto;transform:none;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0;animation:none;width:100%';
+  } else {
+    popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%);animation:none';
+  }
 }
 
 function _buildTeamFromSlots(side, loadoutMap) {
