@@ -83,26 +83,20 @@ function createFighter(petId, side, equippedIdxs) {
     _crystallize: 0,          // 水晶龟结晶层数(被标记方)
     _collideStacks: 0,        // 钻石龟碰撞标记(被标记方)
     skills: (function() {
-      const fullPool = getSkillPool(petId);
-      let equipped;
-      if (fullPool.length > 0 && (b.skillPool || equippedIdxs)) {
+      const pool = b.skillPool || b.skills || [];
+      if (pool.length > 0) {
         const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
-        equipped = idxs.filter(i => i < fullPool.length).map(i => ({ ...fullPool[i], cdLeft:0 }));
-      } else {
-        equipped = (b.skills || []).map(s => ({ ...s, cdLeft:0 }));
+        return idxs.filter(i => i < pool.length).map(i => ({ ...pool[i], cdLeft:0 })).filter(s => !s.passiveSkill);
       }
-      return equipped.filter(s => !s.passiveSkill);
+      return (b.skills || []).map(s => ({ ...s, cdLeft:0 })).filter(s => !s.passiveSkill);
     })(),
     _passiveSkills: (function() {
-      const fullPool = getSkillPool(petId);
-      let equipped;
-      if (fullPool.length > 0 && (b.skillPool || equippedIdxs)) {
+      const pool = b.skillPool || b.skills || [];
+      if (pool.length > 0) {
         const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
-        equipped = idxs.filter(i => i < fullPool.length).map(i => ({ ...fullPool[i] }));
-      } else {
-        equipped = (b.skills || []).map(s => ({ ...s }));
+        return idxs.filter(i => i < pool.length).map(i => ({ ...pool[i] })).filter(s => s.passiveSkill);
       }
-      return equipped.filter(s => s.passiveSkill);
+      return (b.skills || []).map(s => ({ ...s })).filter(s => s.passiveSkill);
     })(),
   };
 }
@@ -160,16 +154,7 @@ function applyPassiveSkills(f) {
 
 function getSkillPool(petId) {
   const b = ALL_PETS.find(p => p.id === petId);
-  if (!b) return [];
-  const unique = b.skillPool || b.skills || [];
-  // Append common skills pool
-  const common = (typeof COMMON_SKILLS !== 'undefined') ? COMMON_SKILLS.map(s => ({ ...s, _isCommon:true })) : [];
-  return [...unique, ...common];
-}
-
-function getUniqueSkillCount(petId) {
-  const b = ALL_PETS.find(p => p.id === petId);
-  return b ? (b.skillPool || b.skills || []).length : 0;
+  return b ? (b.skillPool || b.skills || []) : [];
 }
 
 function getSavedLoadout(petId) {

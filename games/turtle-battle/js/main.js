@@ -716,7 +716,7 @@ function showSkillPickModal(petId, onDone) {
 
   function render() {
     const fakeFighter = { atk:pet.atk, def:pet.def, mr:pet.mr||pet.def, maxHp:pet.hp, hp:pet.hp, crit:pet.crit||0.25, buffs:[], passive:pet.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
-    const uniqueCount = pet.skillPool ? pet.skillPool.length : (pet.skills||[]).length;
+    const uniqueCount = pool.length;
     const hasMelee = pet.meleeSkills && pet.meleeSkills.length > 0;
     const renderCard = (s, i) => {
       const isSel = selected.includes(i);
@@ -740,10 +740,7 @@ function showSkillPickModal(petId, onDone) {
     overlay.innerHTML = `
       <div class="skill-pick-box">
         <div class="skill-pick-title">${buildPetImgHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
-        <div class="spc-section-label">⚔ 专属技能</div>
-        <div class="skill-pick-grid">${pool.slice(0, uniqueCount).map((s, i) => renderCard(s, i)).join('')}</div>
-        <div class="spc-section-label">📦 通用技能</div>
-        <div class="skill-pick-grid">${pool.slice(uniqueCount).map((s, i) => renderCard(s, i + uniqueCount)).join('')}</div>
+        <div class="skill-pick-grid">${pool.map((s, i) => renderCard(s, i)).join('')}</div>
         <div class="skill-pick-actions">
           <button class="btn btn-secondary skill-pick-back" onclick="window._skillPickBack()">← 返回选龟</button>
           <button class="btn btn-primary skill-pick-confirm" ${selected.length === 3 ? '' : 'disabled'} onclick="window._skillPickConfirm()">确认装配</button>
