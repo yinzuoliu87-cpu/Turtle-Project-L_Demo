@@ -142,45 +142,30 @@
 
 <!-- ══════ SCREEN: TEAM SELECT ══════ -->
 <section id="screenSelect" class="screen">
-  <h2 class="screen-title" id="selectTitle">选择你的队伍（选2只龟）</h2>
+  <h2 class="screen-title" id="selectTitle">选择你的队伍</h2>
   <div class="select-top">
-    <div class="team-slots">
-      <div class="team-slot" id="slot0">
-        <div class="slot-empty">空位 1</div>
+    <div class="formation-grid">
+      <div class="fg-row">
+        <div class="fg-label">前排</div>
+        <div class="fg-slot" id="fgSlot-front-0" ondrop="fgDrop(event,'front-0')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('front-0')"><span class="fg-empty">空</span></div>
+        <div class="fg-slot" id="fgSlot-front-1" ondrop="fgDrop(event,'front-1')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('front-1')"><span class="fg-empty">空</span></div>
+        <div class="fg-slot" id="fgSlot-front-2" ondrop="fgDrop(event,'front-2')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('front-2')"><span class="fg-empty">空</span></div>
       </div>
-      <div class="team-slot" id="slot1">
-        <div class="slot-empty">空位 2</div>
+      <div class="fg-row">
+        <div class="fg-label">后排</div>
+        <div class="fg-slot" id="fgSlot-back-0" ondrop="fgDrop(event,'back-0')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('back-0')"><span class="fg-empty">空</span></div>
+        <div class="fg-slot" id="fgSlot-back-1" ondrop="fgDrop(event,'back-1')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('back-1')"><span class="fg-empty">空</span></div>
+        <div class="fg-slot" id="fgSlot-back-2" ondrop="fgDrop(event,'back-2')" ondragover="fgDragOver(event)" ondragleave="fgDragLeave(event)" onclick="fgSlotClick('back-2')"><span class="fg-empty">空</span></div>
       </div>
     </div>
     <div class="select-actions">
       <button class="btn btn-secondary select-btn" onclick="goBackFromSelect()">返回</button>
-      <button class="btn btn-primary select-btn" id="btnConfirmTeam" onclick="confirmTeam()" disabled>确认出战</button>
+      <button class="btn btn-primary select-btn" id="btnConfirmTeam" onclick="confirmTeam()" disabled>开战！</button>
     </div>
   </div>
   <div class="pet-grid" id="petGrid"></div>
 </section>
 
-<!-- ══════ SCREEN: FORMATION ══════ -->
-<section id="screenFormation" class="screen">
-  <h2 class="screen-title">选择阵型</h2>
-  <p style="text-align:center;color:var(--fg2);font-size:13px;margin-bottom:12px">点击龟头像，再点击位置来安排前后排</p>
-  <div class="formation-field" id="formationField">
-    <div class="formation-row formation-front">
-      <div class="formation-label">前排</div>
-      <div class="formation-slot" id="fslot-front-0" onclick="formationSlotClick('front',0)"></div>
-      <div class="formation-slot" id="fslot-front-1" onclick="formationSlotClick('front',1)"></div>
-    </div>
-    <div class="formation-row formation-back">
-      <div class="formation-label">后排</div>
-      <div class="formation-slot" id="fslot-back-0" onclick="formationSlotClick('back',0)"></div>
-    </div>
-  </div>
-  <div class="formation-bench" id="formationBench"></div>
-  <div style="text-align:center;margin-top:12px">
-    <button class="btn btn-secondary select-btn" onclick="formationBack()">← 重新选龟</button>
-    <button class="btn btn-primary select-btn" id="btnConfirmFormation" onclick="confirmFormation()" disabled>开战！</button>
-  </div>
-</section>
 
 <!-- ══════ SCREEN: BATTLE ══════ -->
 <section id="screenBattle" class="screen">
@@ -190,6 +175,7 @@
     <button class="btn-help" onclick="toggleHelp()" title="术语说明">?</button>
     <button class="btn-help" onclick="toggleBattleLog()" title="战斗日志">📜</button>
     <button class="btn-help btn-dmg-toggle" onclick="toggleDmgStats()" title="伤害统计">📊</button>
+    <button class="btn-help btn-surrender" onclick="confirmSurrender()" title="认输">🏳</button>
   </div>
 
   <!-- Help panel -->
@@ -285,21 +271,21 @@
       <span class="team-label team-label-right" id="teamLabelRight">敌方</span>
     </div>
     <!-- Turtles are dynamically rendered by renderScene() -->
-  </div>
-
-  <!-- FIGHTER DETAIL PANEL (shows on turtle click) -->
-  <div class="fighter-detail-panel" id="fighterDetailPanel" style="display:none">
-    <div class="fdp-header">
-      <span class="fdp-name" id="fdpName"></span>
-      <button class="fdp-close" onclick="closeFighterDetail()">✕</button>
+    <!-- FIGHTER DETAIL PANEL (shows next to clicked turtle) -->
+    <div class="fighter-detail-panel" id="fighterDetailPanel" style="display:none">
+      <div class="fdp-header">
+        <span class="fdp-name" id="fdpName"></span>
+        <button class="fdp-close" onclick="closeFighterDetail()">✕</button>
+      </div>
+      <div class="fdp-body" id="fdpBody"></div>
     </div>
-    <div class="fdp-body" id="fdpBody"></div>
-  </div>
-
-  <!-- DAMAGE STATS (hidden on mobile, toggle via 📊) -->
-  <div class="dmg-stats-panel" id="dmgStatsPanel">
-    <div class="dmg-stats-header">伤害统计</div>
-    <div class="dmg-stats-body" id="dmgStatsBody"></div>
+    <!-- DAMAGE STATS (floating overlay inside scene) -->
+    <div class="dmg-stats-panel" id="dmgStatsPanel" style="display:none">
+      <div class="dmg-stats-header">伤害统计 <span class="dmg-close" onclick="toggleDmgStats()">✕</span></div>
+      <div class="dmg-stats-body" id="dmgStatsBody"></div>
+    <!-- Target hint overlay -->
+    <div class="target-hint" id="targetHint" style="display:none"><span class="target-hint-text">🎯 点击发光的龟选择目标</span> <button class="target-hint-cancel" onclick="cancelTarget()">← 返回</button></div>
+    </div>
   </div>
 
   <!-- PASSIVE DETAIL POPUP -->
@@ -314,6 +300,7 @@
   <!-- ACTION PANEL -->
   <div class="action-panel" id="actionPanel">
     <div class="action-header">
+      <button class="btn-back-picker" id="btnBackPicker" onclick="backToPicker()" style="display:none">← 换龟</button>
       <span class="acting-name" id="actingName">小龟</span> 的回合
     </div>
     <div class="action-buttons" id="actionButtons"></div>

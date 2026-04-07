@@ -720,7 +720,7 @@ async function nextSideAction() {
 
   // First round: left only sends 1
   const totalAlive = sideTeam.filter(f => f.alive).length;
-  const maxActions = (isFirstRound && activeSide === 'left') ? 1 : (isBossSide ? 3 : totalAlive);
+  const maxActions = (isFirstRound && activeSide === 'left') ? Math.min(2, totalAlive) : (isBossSide ? 3 : totalAlive);
   const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
@@ -844,6 +844,21 @@ function selectTurtleToAct(fIdx) {
   const picker = document.getElementById('turtlePicker');
   if (picker) picker.style.display = 'none';
   showActionPanel(f);
+}
+
+function backToPicker() {
+  // Un-mark current fighter as acted, go back to turtle picker
+  if (currentActingFighter) {
+    const fIdx = allFighters.indexOf(currentActingFighter);
+    actedThisSide.delete(fIdx);
+    const el = document.getElementById(getFighterElId(currentActingFighter));
+    if (el) el.classList.remove('active-turn');
+  }
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
+  clearTargetHighlights();
+  document.getElementById('targetSelect').style.display = 'none';
+  nextSideAction();
 }
 
 function renderSideIndicator() {
@@ -1106,18 +1121,44 @@ function pickSkill(idx) {
   else showTargetSelect(targets, f, skill);
 }
 
-function showTargetSelect(targets) {
-  // Mobile: hide skill panel, show target panel separately
-  // Desktop: keep skill panel, show target select inside
-  if (window.innerWidth <= 768) {
-    const panel = document.getElementById('actionPanel');
-    if (panel) panel.classList.remove('show');
+function showTargetSelect(targets, srcFighter, skill) {
+  // Hide action panel
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
+
+  // Determine if targeting allies or enemies
+  const isAllyTarget = skill && (skill.isAlly || skill.aoeAlly);
+  const targetClass = isAllyTarget ? 'targetable targetable-ally' : 'targetable';
+
+  // Clear old highlights
+  document.querySelectorAll('.scene-turtle.targetable,.scene-turtle.targetable-ally').forEach(el => {
+    el.classList.remove('targetable', 'targetable-ally');
+    el._targetClick = null;
+  });
+
+  // Highlight targetable turtles on scene + make clickable
+  targets.forEach(t => {
+    const el = document.getElementById(getFighterElId(t));
+    if (!el) return;
+    targetClass.split(' ').forEach(c => el.classList.add(c));
+    const fi = allFighters.indexOf(t);
+    el._targetClick = () => selectTarget(fi);
+    el.onclick = el._targetClick;
+  });
+
+  // Show cancel hint
+  const hint = document.getElementById('targetHint');
+  if (hint) {
+    hint.querySelector('.target-hint-text').textContent = isAllyTarget ? '🎯 点击发光的龟选择友方目标' : '🎯 点击发光的龟选择目标';
+    hint.style.display = 'flex';
   }
+
+  // Also keep bottom fallback for accessibility
   const box = document.getElementById('targetButtons');
   box.innerHTML = targets.map(t => {
     const hpPct = Math.round(t.hp/t.maxHp*100);
     return `<button class="btn btn-target" onclick="selectTarget(${allFighters.indexOf(t)})">
-      ${t.emoji} ${t.name} (HP${hpPct}%${t.shield>0?' 🛡'+Math.ceil(t.shield):''})
+      ${t.emoji} ${t.name} (HP${hpPct}%)
     </button>`;
   }).join('');
   document.getElementById('targetSelect').style.display = 'flex';
@@ -1128,19 +1169,29 @@ function selectTarget(fi) {
   const f = currentActingFighter;
   if (!f) return;
   const skill = f.skills[pendingSkillIdx];
+  clearTargetHighlights();
   executePlayerAction(f, skill, allFighters[fi]);
 }
 function cancelTarget() {
+  clearTargetHighlights();
   document.getElementById('targetSelect').style.display='none';
   pendingSkillIdx=null;
-  // Mobile: re-show skill panel
-  if (window.innerWidth <= 768) {
-    const panel = document.getElementById('actionPanel');
-    if (panel) panel.classList.add('show');
-  }
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.add('show');
+}
+function clearTargetHighlights() {
+  document.querySelectorAll('.scene-turtle.targetable,.scene-turtle.targetable-ally').forEach(el => {
+    el.classList.remove('targetable', 'targetable-ally');
+    // Restore normal click handler
+    const f = allFighters.find(f => getFighterElId(f) === el.id);
+    if (f) el.onclick = () => showFighterDetail(f);
+  });
+  const hint = document.getElementById('targetHint');
+  if (hint) hint.style.display = 'none';
 }
 
 function executePlayerAction(f, skill, target) {
+  clearTargetHighlights();
   document.getElementById('targetSelect').style.display = 'none';
   // Hide action panel immediately to prevent double-click
   const panel = document.getElementById('actionPanel');

@@ -13,21 +13,43 @@ function renderScene() {
     const el = document.createElement('div');
     el.className = 'scene-turtle ' + posClass;
     el.id = getFighterElId(f);
+    el.dataset.pid = f.petId || f.id || '';
     el.onclick = () => showFighterDetail(f);
 
-    const spriteSize = window.innerWidth <= 768 ? 48 : 64;
+    const spriteSize = window.innerWidth <= 768 ? 48 : 80;
     const spriteHTML = buildPetImgHTML(f, spriteSize);
-    const hpPct = Math.max(0, f.hp / f.maxHp * 100);
-    const shieldPct = f.shield > 0 ? Math.min(100, f.shield / f.maxHp * 100) : 0;
+    const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
+    const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
+    const barMax = Math.max(f.maxHp, totalEff);
+    const hpPct = Math.max(0, f.hp / barMax * 100);
+    const shieldPct = f.shield / barMax * 100;
+    const bsPct = (f.bubbleShieldVal || 0) / barMax * 100;
+    const hpGrad = isAlly
+      ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
+      : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
+
+    // Tick marks
+    let ticksHtml = '';
+    for (let v = 20; v < barMax; v += 20) {
+      const pct = v / barMax * 100;
+      if (pct >= 99.5) break;
+      const isMajor = v % 100 === 0;
+      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
+    }
 
     el.innerHTML = `
+      <div class="st-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
       <div class="st-hp-wrap">
-        <div class="st-hp-bar"><div class="st-hp-fill" style="width:${hpPct}%"></div></div>
-        ${f.shield > 0 ? `<div class="st-shield-bar"><div class="st-shield-fill" style="width:${shieldPct}%"></div></div>` : ''}
-        <div class="st-hp-text">${Math.ceil(f.hp)}/${f.maxHp}</div>
+        <div class="st-hp-bar">
+          <div class="st-hp-delay" style="width:${hpPct}%"></div>
+          <div class="st-hp-fill" style="width:${hpPct}%;background:${hpGrad}"></div>
+          <div class="st-shield-fill" style="width:${shieldPct}%;left:${hpPct}%;${f.shield > 0 ? '' : 'display:none'}"></div>
+          <div class="st-bubble-shield" style="width:${bsPct}%;left:${hpPct + shieldPct}%;${f.bubbleShieldVal > 0 ? '' : 'display:none'}"></div>
+          <div class="st-hp-ticks">${ticksHtml}</div>
+        </div>
+        ${f.passive && f.passive.type === 'bubbleStore' ? `<div class="st-bubble-store-bar"><div class="st-bubble-store-fill" style="width:0%"></div></div>` : ''}
       </div>
       <div class="st-sprite">${spriteHTML}</div>
-      <div class="st-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
       <div class="st-buffs"></div>
     `;
 
@@ -37,8 +59,17 @@ function renderScene() {
     renderSceneBuffs(f);
   };
 
-  leftTeam.forEach((f, i) => renderTurtle(f, 'pos-left-' + i));
-  rightTeam.forEach((f, i) => renderTurtle(f, 'pos-right-' + i));
+  // Assign position classes based on front/back row
+  const assignPos = (team, side) => {
+    let fi = 0, bi = 0;
+    team.forEach(f => {
+      const row = f._position === 'back' ? 'back' : 'front';
+      const idx = row === 'front' ? fi++ : bi++;
+      renderTurtle(f, `pos-${side}-${row}-${idx}`);
+    });
+  };
+  assignPos(leftTeam, 'left');
+  assignPos(rightTeam, 'right');
 
   // Summons
   allFighters.forEach(f => {
@@ -71,97 +102,361 @@ function renderSceneBuffs(f) {
 function updateSceneHp(f) {
   const el = document.getElementById(getFighterElId(f));
   if (!el) return;
-  const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+
+  const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
+  const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
+  const barMax = Math.max(f.maxHp, totalEff);
+  const hpPct = Math.max(0, f.hp / barMax * 100);
+  const hpGrad = isAlly
+    ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
+    : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
+
+  // ── HP fill ──
   const hpFill = el.querySelector('.st-hp-fill');
   if (hpFill) {
     hpFill.style.width = hpPct + '%';
-    hpFill.style.background = hpPct > 50 ? 'var(--green)' : hpPct > 25 ? '#ffd93d' : '#ff6b6b';
+    hpFill.style.background = hpGrad;
   }
-  const hpText = el.querySelector('.st-hp-text');
-  if (hpText) hpText.textContent = Math.ceil(f.hp) + '/' + f.maxHp;
-  // Shield bar
-  let shieldBar = el.querySelector('.st-shield-bar');
-  if (f.shield > 0) {
-    if (!shieldBar) {
-      shieldBar = document.createElement('div');
-      shieldBar.className = 'st-shield-bar';
-      shieldBar.innerHTML = '<div class="st-shield-fill"></div>';
-      const wrap = el.querySelector('.st-hp-wrap');
-      if (wrap) wrap.insertBefore(shieldBar, wrap.querySelector('.st-hp-text'));
+
+  // ── Delay trail ──
+  const hpDelay = el.querySelector('.st-hp-delay');
+  if (hpDelay) {
+    const oldHp = hpDelay._hp !== undefined ? hpDelay._hp : f.hp;
+    const oldPct = hpDelay._pct || hpPct;
+    hpDelay._hp = f.hp;
+
+    if (f.hp < oldHp) {
+      // Damage: red trail holds, then shrinks
+      hpDelay.style.width = oldPct + '%';
+      hpDelay.style.background = 'linear-gradient(180deg, #ee5555 40%, #aa2222 60%)';
+      hpDelay.style.opacity = '1';
+      hpDelay.style.transition = 'none';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        hpDelay.style.transition = 'width 0.5s ease-in-out 0.2s, opacity 0.4s ease-in 0.5s';
+        hpDelay.style.width = hpPct + '%';
+        hpDelay.style.opacity = '0';
+      }));
+      // Hit flash
+      if (hpFill) {
+        hpFill.classList.add('hp-flash');
+        setTimeout(() => {
+          hpFill.style.transition = 'width .15s ease-out, filter 0.15s ease-out';
+          hpFill.classList.remove('hp-flash');
+        }, 60);
+      }
+    } else if (f.hp > oldHp) {
+      // Heal: green flash
+      hpDelay.style.width = hpPct + '%';
+      hpDelay.style.background = 'linear-gradient(180deg, #66ffaa 40%, #06d6a0 60%)';
+      hpDelay.style.opacity = '0.7';
+      hpDelay.style.transition = 'none';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        hpDelay.style.transition = 'opacity 0.4s ease-out 0.1s';
+        hpDelay.style.opacity = '0';
+      }));
     }
-    const sFill = shieldBar.querySelector('.st-shield-fill');
-    if (sFill) sFill.style.width = Math.min(100, f.shield / f.maxHp * 100) + '%';
-  } else if (shieldBar) {
-    shieldBar.remove();
+    hpDelay._pct = hpPct;
   }
-  // Death state
+
+  // ── Shield fill ──
+  const shieldPct = f.shield / barMax * 100;
+  let shieldFill = el.querySelector('.st-shield-fill');
+  if (shieldFill) {
+    if (f.shield > 0) {
+      shieldFill.style.display = '';
+      shieldFill.style.left = hpPct + '%';
+      shieldFill.style.width = shieldPct + '%';
+    } else {
+      shieldFill.style.display = 'none';
+    }
+  }
+
+  // ── Bubble shield fill ──
+  const bsPct = (f.bubbleShieldVal || 0) / barMax * 100;
+  let bsEl = el.querySelector('.st-bubble-shield');
+  if (bsEl) {
+    if (f.bubbleShieldVal > 0) {
+      bsEl.style.display = '';
+      bsEl.style.left = (hpPct + shieldPct) + '%';
+      bsEl.style.width = bsPct + '%';
+    } else {
+      bsEl.style.display = 'none';
+    }
+  }
+
+  // ── Tick marks (rebuild if barMax changed) ──
+  const tickContainer = el.querySelector('.st-hp-ticks');
+  if (tickContainer && tickContainer._barMax !== barMax) {
+    let ticksHtml = '';
+    for (let v = 20; v < barMax; v += 20) {
+      const pct = v / barMax * 100;
+      if (pct >= 99.5) break;
+      const isMajor = v % 100 === 0;
+      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
+    }
+    tickContainer.innerHTML = ticksHtml;
+    tickContainer._barMax = barMax;
+  }
+
+  // ── Bubble store bar ──
+  const bBar = el.querySelector('.st-bubble-store-bar');
+  if (bBar) {
+    if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
+      bBar.style.display = '';
+      const maxStore = f.maxHp * 0.5;
+      bBar.querySelector('.st-bubble-store-fill').style.width = Math.min(f.bubbleStore / maxStore * 100, 100) + '%';
+    } else {
+      bBar.style.display = 'none';
+    }
+  }
+
+  // ── Death state ──
   el.classList.toggle('dead', !f.alive);
   el._pendingDead = false;
   el.classList.remove('death-anim');
+
+  // ── Refresh detail panel if showing this fighter ──
+  refreshDetailPanel(f);
+}
+
+function refreshDetailPanel(f) {
+  const panel = document.getElementById('fighterDetailPanel');
+  if (!panel || !panel.classList.contains('show') || panel._currentFighter !== f) return;
+  // Update HP section
+  const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
+  const sc = (cur, init) => cur > init ? 'fdp-up' : cur < init ? 'fdp-down' : '';
+  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+  const hpColor = isAlly ? 'linear-gradient(180deg,#3deb9e 40%,#089e6b 60%)' : 'linear-gradient(180deg,#c084fc 40%,#7c3aed 60%)';
+  const shieldPct = f.shield > 0 ? Math.min(100 - hpPct, f.shield / f.maxHp * 100) : 0;
+
+  // HP line text
+  const hpLine = panel.querySelector('.fdp-hp-line');
+  if (hpLine) hpLine.innerHTML = `${ic('hp-icon.png')}<span class="${sc(f.maxHp, f._initHp)}">HP ${Math.ceil(f.hp)}/${f.maxHp}</span>${f.shield>0?` <span class="shield-val">${ic('shield-icon.png')}${Math.ceil(f.shield)}</span>`:''}`;
+
+  // HP bar fill
+  const hpFill = panel.querySelector('.fdp-hp-fill');
+  if (hpFill) { hpFill.style.width = hpPct + '%'; hpFill.style.background = hpColor; }
+
+  // HP bar delay
+  const bar = panel.querySelector('.fdp-hp-bar');
+  if (bar) {
+    let delay = bar.querySelector('.fdp-hp-delay');
+    if (!delay) {
+      delay = document.createElement('div');
+      delay.className = 'fdp-hp-delay';
+      bar.insertBefore(delay, bar.firstChild);
+      delay._hp = f.hp; delay._pct = hpPct;
+    }
+    const oldHp = delay._hp !== undefined ? delay._hp : f.hp;
+    const oldPct = delay._pct || hpPct;
+    delay._hp = f.hp;
+    if (f.hp < oldHp) {
+      delay.style.width = oldPct + '%';
+      delay.style.background = 'linear-gradient(180deg,#ee5555 40%,#aa2222 60%)';
+      delay.style.opacity = '1'; delay.style.transition = 'none';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        delay.style.transition = 'width 0.5s ease-in-out 0.2s, opacity 0.4s ease-in 0.5s';
+        delay.style.width = hpPct + '%'; delay.style.opacity = '0';
+      }));
+    } else if (f.hp > oldHp) {
+      delay.style.width = hpPct + '%';
+      delay.style.background = 'linear-gradient(180deg,#66ffaa 40%,#06d6a0 60%)';
+      delay.style.opacity = '0.7'; delay.style.transition = 'none';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        delay.style.transition = 'opacity 0.4s ease-out 0.1s';
+        delay.style.opacity = '0';
+      }));
+    }
+    delay._pct = hpPct;
+  }
+
+  // Shield fill in panel bar
+  let sFill = bar ? bar.querySelector('.fdp-shield-fill') : null;
+  if (f.shield > 0) {
+    if (!sFill && bar) { sFill = document.createElement('div'); sFill.className = 'fdp-shield-fill'; bar.appendChild(sFill); }
+    if (sFill) { sFill.style.width = shieldPct + '%'; sFill.style.left = hpPct + '%'; sFill.style.display = ''; }
+  } else if (sFill) { sFill.style.display = 'none'; }
+
+  // Stats colors
+  const stats = panel.querySelectorAll('.fdp-stat');
+  const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
+  const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
+  const critPct = Math.min(100, Math.round((f.crit||0) * 100));
+  const vals = [
+    { cur: f.atk, init: f._initAtk, text: `${ic('atk-icon.png')}攻击 ${f.atk}` },
+    { cur: f._lifestealPct||0, init: f._initLifesteal||0, text: `${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct||0}%` },
+    { cur: f.def, init: f._initDef, text: `${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(-${defPct}%)</span>` },
+    { cur: f.mr, init: f._initMr, text: `${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(-${mrPct}%)</span>` },
+    { cur: f.crit, init: f._initCrit, text: `${ic('crit-icon.png')}暴击 ${critPct}%` },
+    { cur: f.critDmg||150, init: 150, text: `${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%` },
+    { cur: f.armorPen, init: f._initArmorPen, text: `${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}` },
+    { cur: f.magicPen, init: f._initMagicPen, text: `${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}` },
+  ];
+  vals.forEach((v, i) => {
+    if (stats[i]) { stats[i].className = 'fdp-stat ' + sc(v.cur, v.init); stats[i].innerHTML = v.text; }
+  });
 }
 
 // Fighter detail panel (click turtle to show)
 function showFighterDetail(f) {
   const panel = document.getElementById('fighterDetailPanel');
   if (!panel) return;
-  const fIdx = allFighters.indexOf(f);
+  // If clicking same turtle, toggle off
+  if (panel.classList.contains('show') && panel._currentFighter === f) {
+    closeFighterDetail(); return;
+  }
+  panel._currentFighter = f;
+
   document.getElementById('fdpName').textContent = f.emoji + ' ' + f.name;
   document.getElementById('fdpName').style.color = RARITY_COLORS[f.rarity];
 
-  const ic = (name) => `<img src="assets/${name}" class="stat-icon" style="width:14px;height:14px">`;
+  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const sc = (cur, init) => cur > init ? 'fdp-up' : cur < init ? 'fdp-down' : '';
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
   const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
   const critPct = Math.min(100, Math.round((f.crit||0) * 100));
+  const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
+  const hpPct = Math.max(0, f.hp / f.maxHp * 100);
+  const hpColor = isAlly ? 'linear-gradient(180deg,#3deb9e 40%,#089e6b 60%)' : 'linear-gradient(180deg,#c084fc 40%,#7c3aed 60%)';
+  const shieldPct = f.shield > 0 ? Math.min(100 - hpPct, f.shield / f.maxHp * 100) : 0;
 
-  let html = `<div class="fdp-stats">
-    <div class="fdp-stat">${ic('hp-icon.png')}HP ${Math.ceil(f.hp)}/${f.maxHp}${f.shield>0?' +'+Math.ceil(f.shield)+'盾':''}</div>
-    <div class="fdp-stat">${ic('atk-icon.png')}攻击力 ${f.atk}</div>
-    <div class="fdp-stat">${ic('def-icon.png')}护甲 ${f.def} (物伤-${defPct}%)</div>
-    <div class="fdp-stat">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} (魔伤-${mrPct}%)</div>
-    <div class="fdp-stat">${ic('crit-icon.png')}暴击 ${critPct}%</div>
-    <div class="fdp-stat">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}</div>
-    <div class="fdp-stat">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</div>
-    ${f._lifestealPct ? `<div class="fdp-stat">${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct}%</div>` : ''}
+  let html = `<div class="fdp-hp-section">
+    <div class="fdp-hp-line">${ic('hp-icon.png')}<span class="${sc(f.maxHp, f._initHp)}">HP ${Math.ceil(f.hp)}/${f.maxHp}</span>${f.shield>0?` <span class="shield-val">${ic('shield-icon.png')}${Math.ceil(f.shield)}</span>`:''}</div>
+    <div class="fdp-hp-bar">
+      <div class="fdp-hp-fill" style="width:${hpPct}%;background:${hpColor}"></div>
+      ${f.shield > 0 ? `<div class="fdp-shield-fill" style="width:${shieldPct}%;left:${hpPct}%"></div>` : ''}
+    </div>
+  </div>
+  <div class="fdp-stats">
+    <div class="fdp-stat ${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击 ${f.atk}</div>
+    <div class="fdp-stat ${sc(f._lifestealPct||0, f._initLifesteal||0)}">${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct||0}%</div>
+    <div class="fdp-stat ${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(-${defPct}%)</span></div>
+    <div class="fdp-stat ${sc(f.mr, f._initMr)}">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(-${mrPct}%)</span></div>
+    <div class="fdp-stat ${sc(f.crit, f._initCrit)}">${ic('crit-icon.png')}暴击 ${critPct}%</div>
+    <div class="fdp-stat ${sc(f.critDmg||150, 150)}">${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%</div>
+    <div class="fdp-stat ${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}</div>
+    <div class="fdp-stat ${sc(f.magicPen, f._initMagicPen)}">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</div>
   </div>`;
 
-  // Buffs
+  // ── Buffs / Status (right after stats) ──
   if (f.buffs && f.buffs.length) {
-    html += '<div class="fdp-buffs">';
+    html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">';
     f.buffs.forEach(b => {
-      if (b.type === 'phoenixBurnDot') html += `<span style="color:#ff6600">🔥灼烧${b.turns}回合</span> `;
-      else if (b.type === 'dot') html += `<span style="color:#9b59b6">💀诅咒${b.turns}回合</span> `;
-      else if (b.type === 'atkUp') html += `<span style="color:var(--green)">⬆攻+${b.value} ${b.turns}回合</span> `;
-      else if (b.type === 'atkDown') html += `<span style="color:var(--red)">⬇攻-${b.value}% ${b.turns}回合</span> `;
-      else if (b.type === 'defUp') html += `<span style="color:var(--green)">⬆护+${b.value} ${b.turns}回合</span> `;
-      else if (b.type === 'defDown') html += `<span style="color:var(--red)">⬇护-${b.value}% ${b.turns}回合</span> `;
-      else if (b.type === 'dodge') html += `<span>💨闪避${b.value}% ${b.turns}回合</span> `;
-      else if (b.type === 'stun') html += `<span style="color:#ff0">💫眩晕</span> `;
-      else if (b.type === 'healReduce') html += `<span style="color:#6b8e23">☠治疗-${b.value}%</span> `;
+      if (b.type === 'phoenixBurnDot') html += `<span class="fdp-buff-tag" style="border-color:#ff6600;color:#ff6600">🔥灼烧 ${b.turns}回合</span>`;
+      else if (b.type === 'dot') html += `<span class="fdp-buff-tag" style="border-color:#9b59b6;color:#9b59b6">💀诅咒 ${b.turns}回合</span>`;
+      else if (b.type === 'atkUp') html += `<span class="fdp-buff-tag" style="border-color:var(--green);color:var(--green)">⬆攻+${b.value} ${b.turns}回合</span>`;
+      else if (b.type === 'atkDown') html += `<span class="fdp-buff-tag" style="border-color:var(--red);color:var(--red)">⬇攻-${b.value}% ${b.turns}回合</span>`;
+      else if (b.type === 'defUp') html += `<span class="fdp-buff-tag" style="border-color:var(--green);color:var(--green)">⬆护+${b.value} ${b.turns}回合</span>`;
+      else if (b.type === 'defDown') html += `<span class="fdp-buff-tag" style="border-color:var(--red);color:var(--red)">⬇护-${b.value}% ${b.turns}回合</span>`;
+      else if (b.type === 'dodge') html += `<span class="fdp-buff-tag">💨闪避${b.value}% ${b.turns}回合</span>`;
+      else if (b.type === 'stun') html += `<span class="fdp-buff-tag" style="border-color:#ffee00;color:#ffee00">💫眩晕</span>`;
+      else if (b.type === 'healReduce') html += `<span class="fdp-buff-tag" style="border-color:#6b8e23;color:#6b8e23">☠治疗削减 ${b.value}%</span>`;
     });
     html += '</div>';
   }
 
-  // Passive
+  // ── Passive ──
   if (f.passive) {
-    const passiveBrief = f.passive.brief || f.passive.desc || '';
-    html += `<div style="margin-top:8px;padding:8px;background:var(--bg2);border-radius:8px;font-size:11px">
-      <b>被动：${f.passive.name || ''}</b><br>${passiveBrief}
-    </div>`;
+    const iconRaw = PASSIVE_ICONS[f.passive.type] || '⭐';
+    const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:16px;height:16px;vertical-align:middle">` : iconRaw;
+    const passiveName = f.passive.name || '被动';
+    let descText = f.passive.desc;
+    if (f._twoHeadForm === 'melee' && f.passive.descMelee) descText = f.passive.descMelee;
+    if (f._lavaTransformed && f.passive.descVolcano) descText = f.passive.descVolcano;
+    const descRendered = renderSkillTemplate(descText, f, f.passive);
+    const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
+
+    html += `<div class="fdp-passive">`;
+    html += `<div class="fdp-passive-title">${iconH} ${passiveName}</div>`;
+    if (briefText) {
+      html += `<div class="fdp-passive-brief">${briefText}</div>`;
+      html += `<div class="fdp-passive-detail" style="display:none">${descRendered}</div>`;
+      html += `<span class="fdp-passive-toggle" onclick="fdpTogglePassive(this)">详细 ▾</span>`;
+    } else {
+      html += `<div class="fdp-passive-brief">${descRendered}</div>`;
+    }
+    html += `</div>`;
   }
 
-  // Equipment
+  // ── Skills ──
+  if (f.skills && f.skills.length) {
+    html += `<div class="fdp-section-label">技能</div><div class="fdp-skills">`;
+    f.skills.forEach(s => {
+      const brief = buildSkillBrief(f, s);
+      const detail = buildSkillDetailDesc(f, s);
+      const cdText = s.cd ? `<span class="fdp-cd">CD${s.cd}</span>` : '';
+      html += `<div class="fdp-skill">
+        <div class="fdp-skill-header">${s.name}${cdText}</div>
+        <div class="fdp-skill-brief">${brief}</div>
+        <div class="fdp-skill-detail" style="display:none">${detail}</div>
+        ${detail !== brief ? `<span class="fdp-passive-toggle" onclick="fdpTogglePassive(this)">详细 ▾</span>` : ''}
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Equipment ──
   if (f._equips && f._equips.length) {
     html += `<div class="fdp-equips"><b>装备：</b>${f._equips.map(e => e.icon + e.name).join('、')}</div>`;
   }
 
   document.getElementById('fdpBody').innerHTML = html;
+
+  // Position panel near the turtle element
+  const turtleEl = document.getElementById(getFighterElId(f));
+  const scene = document.getElementById('battleScene');
+  if (turtleEl && scene) {
+    const tRect = turtleEl.getBoundingClientRect();
+    const sRect = scene.getBoundingClientRect();
+    // Determine side: left team -> show panel to the right; right team -> show to the left
+    const isLeft = f.side === 'left';
+    panel.style.position = 'absolute';
+    panel.style.bottom = 'auto';
+    panel.style.left = 'auto';
+    panel.style.right = 'auto';
+    // Calculate position relative to scene
+    let topPx = tRect.top - sRect.top;
+    // Clamp so panel doesn't overflow below scene
+    const maxTop = sRect.height - panel.scrollHeight - 4;
+    topPx = Math.max(0, Math.min(topPx, maxTop));
+    panel.style.top = topPx + 'px';
+    if (isLeft) {
+      const leftPx = tRect.right - sRect.left + 6;
+      panel.style.left = Math.min(leftPx, sRect.width - 270) + 'px';
+    } else {
+      const rightPx = sRect.right - tRect.left + 6;
+      panel.style.right = Math.min(rightPx, sRect.width - 270) + 'px';
+    }
+  }
+
   panel.style.display = 'block';
   panel.classList.add('show');
+
+  // Re-clamp after render (now scrollHeight is known)
+  if (scene) {
+    const sRect2 = scene.getBoundingClientRect();
+    const panelH = panel.offsetHeight;
+    const curTop = parseFloat(panel.style.top) || 0;
+    const maxTop2 = sRect2.height - panelH - 4;
+    if (curTop > maxTop2) panel.style.top = Math.max(0, maxTop2) + 'px';
+  }
 }
 
 function closeFighterDetail() {
   const panel = document.getElementById('fighterDetailPanel');
-  if (panel) { panel.classList.remove('show'); panel.style.display = 'none'; }
+  if (panel) { panel.classList.remove('show'); panel.style.display = 'none'; panel._currentFighter = null; }
+}
+
+function fdpTogglePassive(el) {
+  const parent = el.parentElement;
+  const brief = parent.querySelector('.fdp-passive-brief') || parent.querySelector('.fdp-skill-brief');
+  const detail = parent.querySelector('.fdp-passive-detail') || parent.querySelector('.fdp-skill-detail');
+  if (!brief || !detail) return;
+  const showing = detail.style.display !== 'none';
+  brief.style.display = showing ? '' : 'none';
+  detail.style.display = showing ? 'none' : '';
+  el.textContent = showing ? '详细 ▾' : '简略 ▴';
 }
 
 // Legacy compatibility — redirect old card-based functions
@@ -172,76 +467,95 @@ function renderSummonMiniCard(owner) {
   const summon = owner._summon;
   if (!summon) return;
   const ownerElId = getFighterElId(owner);
-  const ownerCard = document.getElementById(ownerElId);
-  if (!ownerCard) return;
+  const ownerEl = document.getElementById(ownerElId);
+  if (!ownerEl) return;
+  const scene = document.getElementById('battleScene');
+  if (!scene) return;
 
-  // Create a unique ID for the summon card
   const summonElId = 'summon_' + ownerElId;
   summon._summonElId = summonElId;
 
-  // Remove existing summon card if any
+  // Remove existing
   const existing = document.getElementById(summonElId);
   if (existing) existing.remove();
 
+  // Create summon as a scene turtle positioned behind the owner
   const mini = document.createElement('div');
   mini.id = summonElId;
-  mini.className = 'summon-mini' + (summon.alive ? '' : ' dead');
-  const avatarHTML = buildPetImgHTML(summon, 32);
-  // Passive icon
-  const passiveIcon = summon.passive ? PASSIVE_ICONS[summon.passive.type] || '' : '';
-  let passiveHTML = '';
-  if (passiveIcon) {
-    if (passiveIcon.endsWith('.png')) passiveHTML = `<img src="assets/${passiveIcon}" class="summon-passive-icon" title="${summon.passive.name||summon.passive.type}">`;
-    else passiveHTML = `<span class="summon-passive-icon" title="${summon.passive.name||summon.passive.type}">${passiveIcon}</span>`;
-  }
+  mini.className = 'scene-turtle scene-summon' + (summon.alive ? '' : ' dead');
+  mini.dataset.pid = summon.id || '';
+  mini.onclick = () => showFighterDetail(summon);
+
+  const spriteSize = window.innerWidth <= 768 ? 36 : 44;
+  const spriteHTML = buildPetImgHTML(summon, spriteSize);
+  const hpPct = Math.max(0, summon.hp / summon.maxHp * 100);
+  const isAlly = gameMode === 'pvp-online' ? (owner.side === onlineSide) : (owner.side === 'left');
+  const hpGrad = isAlly
+    ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
+    : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
+
   mini.innerHTML = `
-    <div class="summon-header">
-      ${avatarHTML}
-      <span class="summon-name" style="color:${RARITY_COLORS[summon.rarity]}">${summon.name}</span>
-      ${passiveHTML}
-      <span class="summon-tag">随从</span>
+    <div class="st-name" style="color:${RARITY_COLORS[summon.rarity]};font-size:8px">${summon.name}<span class="summon-tag" style="margin-left:3px">随从</span></div>
+    <div class="st-hp-wrap" style="width:60px">
+      <div class="st-hp-bar" style="height:5px">
+        <div class="st-hp-delay" style="width:${hpPct}%"></div>
+        <div class="st-hp-fill" style="width:${hpPct}%;background:${hpGrad}"></div>
+      </div>
     </div>
-    <div class="summon-hp-bar">
-      <div class="summon-hp-fill"></div>
-      <div class="summon-shield-fill"></div>
-    </div>
-    <div class="summon-hp-text"></div>
-    <div class="summon-stats"></div>
-    <div class="summon-status-icons"></div>
+    <div class="st-sprite">${spriteHTML}</div>
+    <div class="st-buffs"></div>
   `;
-  ownerCard.appendChild(mini);
-  updateSummonHpBar(summon);
-  updateSummonStats(summon);
-  renderSummonStatusIcons(summon);
+
+  // Position behind owner: offset slightly back and down
+  const ownerStyle = window.getComputedStyle(ownerEl);
+  const isLeft = owner.side === 'left';
+  if (isLeft) {
+    const ownerLeft = parseFloat(ownerStyle.left) || 0;
+    const ownerBottom = parseFloat(ownerStyle.bottom) || 0;
+    mini.style.position = 'absolute';
+    mini.style.left = (ownerLeft - 60) + 'px';
+    mini.style.bottom = (ownerBottom - 20) + 'px';
+  } else {
+    const ownerRight = parseFloat(ownerStyle.right) || 0;
+    const ownerBottom = parseFloat(ownerStyle.bottom) || 0;
+    mini.style.position = 'absolute';
+    mini.style.right = (ownerRight - 60) + 'px';
+    mini.style.bottom = (ownerBottom - 20) + 'px';
+  }
+  // Flip sprite same as owner side
+  if (isLeft) mini.querySelector('.st-sprite').style.transform = 'scaleX(-1)';
+
+  scene.appendChild(mini);
+  summon._summonElId = summonElId;
 }
 
 function updateSummonHpBar(summon) {
   if (!summon || !summon._summonElId) return;
-  const card = document.getElementById(summon._summonElId);
-  if (!card) return;
-  const fill = card.querySelector('.summon-hp-fill');
-  const shieldFill = card.querySelector('.summon-shield-fill');
-  const text = card.querySelector('.summon-hp-text');
-  if (!fill) return;
+  const el = document.getElementById(summon._summonElId);
+  if (!el) return;
 
-  const totalEff = summon.hp + summon.shield;
-  const barMax = Math.max(summon.maxHp, totalEff);
-  const hpPct = summon.hp / barMax * 100;
-  fill.style.width = hpPct + '%';
-  fill.style.background = (summon.hp/summon.maxHp) > 0.5 ? '#06d6a0' : (summon.hp/summon.maxHp) > 0.25 ? '#ffd93d' : '#ff6b6b';
+  const hpPct = Math.max(0, summon.hp / summon.maxHp * 100);
+  const hpFill = el.querySelector('.st-hp-fill');
+  if (hpFill) hpFill.style.width = hpPct + '%';
 
-  if (shieldFill) {
-    const sPct = summon.shield / barMax * 100;
-    shieldFill.style.left = hpPct + '%';
-    shieldFill.style.width = sPct + '%';
+  // Delay trail
+  const hpDelay = el.querySelector('.st-hp-delay');
+  if (hpDelay) {
+    const oldHp = hpDelay._hp !== undefined ? hpDelay._hp : summon.hp;
+    const oldPct = hpDelay._pct || hpPct;
+    hpDelay._hp = summon.hp;
+    if (summon.hp < oldHp) {
+      hpDelay.style.width = oldPct + '%'; hpDelay.style.background = 'rgba(255,60,60,.6)';
+      hpDelay.style.opacity = '1'; hpDelay.style.transition = 'none';
+      requestAnimationFrame(() => requestAnimationFrame(() => {
+        hpDelay.style.transition = 'width 0.5s ease-in-out 0.2s, opacity 0.4s ease-in 0.5s';
+        hpDelay.style.width = hpPct + '%'; hpDelay.style.opacity = '0';
+      }));
+    } else { hpDelay.style.width = hpPct + '%'; }
+    hpDelay._pct = hpPct;
   }
 
-  let hpStr = `<img src="assets/hp-icon.png" style="width:10px;height:10px;vertical-align:middle"> ${Math.ceil(summon.hp)}/${summon.maxHp}`;
-  if (summon.shield > 0) hpStr += ` <img src="assets/shield-icon.png" style="width:10px;height:10px;vertical-align:middle">${Math.ceil(summon.shield)}`;
-  if (summon.bubbleShieldVal > 0) hpStr += ` <img src="assets/bubble-store-icon.png" style="width:10px;height:10px;vertical-align:middle">${Math.ceil(summon.bubbleShieldVal)}`;
-  if (text) text.innerHTML = hpStr;
-
-  card.classList.toggle('dead', !summon.alive);
+  el.classList.toggle('dead', !summon.alive);
 }
 
 function updateSummonStats(summon) {
@@ -806,7 +1120,17 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)魔抗(?!<)/g, '<span class="val-magic">魔抗</span>');
   result = result.replace(/(?<!\">)最大生命值(?!<)/g, '<span class="val-heal">最大生命值</span>');
   result = result.replace(/(?<!\">)最大HP(?!<)/g, '<span class="val-heal">最大HP</span>');
-  result = result.replace(/(?<!\">)治疗削减(?!<)/g, '<span style="color:#6b8e23">治疗削减</span>');
+  // Status effect keywords
+  result = result.replace(/(?<!\">)治疗削减(?!<)/g, '<span class="val-heal-reduce">治疗削减</span>');
+  result = result.replace(/(?<!\">)灼烧(?!<)/g, '<span class="val-burn">灼烧</span>');
+  result = result.replace(/(?<!\">)生命偷取(?!<)/g, '<span class="val-lifesteal">生命偷取</span>');
+  result = result.replace(/(?<!\">)吸血(?!<)/g, '<span class="val-lifesteal">吸血</span>');
+  result = result.replace(/(?<!\">)眩晕(?!<)/g, '<span class="val-stun">眩晕</span>');
+  result = result.replace(/(?<!\">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>');
+  result = result.replace(/(?<!\">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
+  // Extra/bonus damage
+  result = result.replace(/(?<!\">)额外伤害(?!<)/g, '<span class="val-extra">额外伤害</span>');
+  result = result.replace(/(?<!\">)额外(?!伤害|<)/g, '<span class="val-extra">额外</span>');
   return result;
 }
 
@@ -839,7 +1163,15 @@ function colorDmgKeywords(text) {
     .replace(/真实伤害/g, '<span class="val-true">真实伤害</span>')
     .replace(/(?<!"val-[^"]*">)真实(?!伤害|<)/g, '<span class="val-true">真实</span>')
     .replace(/(?<!"val-[^"]*">)物理(?!伤害|<)/g, '<span class="val-normal">物理</span>')
-    .replace(/(?<!"val-[^"]*">)魔法(?!伤害|<)/g, '<span class="val-magic">魔法</span>');
+    .replace(/(?<!"val-[^"]*">)魔法(?!伤害|<)/g, '<span class="val-magic">魔法</span>')
+    .replace(/(?<!"val-[^"]*">)额外伤害(?!<)/g, '<span class="val-extra">额外伤害</span>')
+    .replace(/(?<!"val-[^"]*">)额外(?!伤害|<)/g, '<span class="val-extra">额外</span>')
+    .replace(/(?<!"val-[^"]*">)灼烧(?!<)/g, '<span class="val-burn">灼烧</span>')
+    .replace(/(?<!"val-[^"]*">)治疗削减(?!<)/g, '<span class="val-heal-reduce">治疗削减</span>')
+    .replace(/(?<!"val-[^"]*">)吸血(?!<)/g, '<span class="val-lifesteal">吸血</span>')
+    .replace(/(?<!"val-[^"]*">)眩晕(?!<)/g, '<span class="val-stun">眩晕</span>')
+    .replace(/(?<!"val-[^"]*">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>')
+    .replace(/(?<!"val-[^"]*">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
 }
 function buildSkillBrief(f, s) {
   let result;
@@ -1000,6 +1332,14 @@ function showActionPanel(f) {
   const activeEl = document.getElementById(getFighterElId(f));
   if (activeEl) activeEl.classList.add('active-turn');
 
+  // Show back button if multiple turtles could act
+  const backBtn = document.getElementById('btnBackPicker');
+  if (backBtn) {
+    const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
+    const aliveCount = sideTeam.filter(t => t.alive).length;
+    backBtn.style.display = aliveCount > 1 ? '' : 'none';
+  }
+
   // Mech auto-attack: not player controlled
   if (f._isMech) {
     panel.classList.remove('show');
@@ -1084,29 +1424,25 @@ function renderActionButtons(f) {
 function toggleBattleLog() {
   const wrapper = document.getElementById('battleLogWrapper');
   if (!wrapper) return;
-  const showing = wrapper.classList.toggle('mobile-show');
-  if (showing && !wrapper.querySelector('.log-close-btn')) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm log-close-btn';
-    btn.textContent = '✕ 关闭日志';
-    btn.style.cssText = 'position:sticky;top:0;z-index:10;margin-bottom:8px;width:100%';
-    btn.onclick = () => wrapper.classList.remove('mobile-show');
-    wrapper.insertBefore(btn, wrapper.firstChild);
+  if (window.innerWidth <= 768) {
+    // Mobile: fullscreen overlay
+    wrapper.classList.toggle('mobile-show');
+  } else {
+    // Desktop: toggle inline
+    wrapper.classList.toggle('log-open');
   }
 }
 
 function toggleDmgStats() {
-  const panel = document.querySelector('.dmg-stats-panel');
+  const panel = document.getElementById('dmgStatsPanel');
   if (!panel) return;
-  const showing = panel.classList.toggle('mobile-show');
-  // Add close button if not exists
-  if (showing && !panel.querySelector('.dmg-close-btn')) {
-    const btn = document.createElement('button');
-    btn.className = 'btn btn-sm dmg-close-btn';
-    btn.textContent = '✕ 关闭';
-    btn.style.cssText = 'position:sticky;top:0;z-index:10;margin-bottom:8px;width:100%';
-    btn.onclick = () => panel.classList.remove('mobile-show');
-    panel.insertBefore(btn, panel.firstChild);
+  if (window.innerWidth <= 768) {
+    // Mobile: fullscreen overlay
+    const showing = panel.classList.toggle('mobile-show');
+    panel.style.display = showing ? 'block' : 'none';
+  } else {
+    // Desktop: floating panel in scene
+    panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
   }
 }
 
@@ -1373,11 +1709,42 @@ function updateDmgStats() {
     </div>`;
   }
 
+  const playerSide = (gameMode === 'pvp-online') ? onlineSide : 'left';
+  const enemySide = playerSide === 'left' ? 'right' : 'left';
+  const allyDealt = byDealt.filter(f => f.side === playerSide);
+  const enemyDealt = byDealt.filter(f => f.side === enemySide);
+  const allyTaken = byTaken.filter(f => f.side === playerSide);
+  const enemyTaken = byTaken.filter(f => f.side === enemySide);
+  const maxAllyDealt = Math.max(1, ...allyDealt.map(f => f._dmgDealt));
+  const maxEnemyDealt = Math.max(1, ...enemyDealt.map(f => f._dmgDealt));
+  const maxAllyTaken = Math.max(1, ...allyTaken.map(f => f._dmgTaken));
+  const maxEnemyTaken = Math.max(1, ...enemyTaken.map(f => f._dmgTaken));
+
+  const tab = _dmgStatsTab || 'dealt';
+  let content = '';
+  if (tab === 'dealt') {
+    content = `<div class="ds-columns">
+      <div class="ds-col"><div class="ds-col-label">我方</div>${allyDealt.map(f => dmgRow(f, maxAllyDealt, true)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyDealt.map(f => dmgRow(f, maxEnemyDealt, true)).join('')}</div>
+    </div>`;
+  } else {
+    content = `<div class="ds-columns">
+      <div class="ds-col"><div class="ds-col-label">我方</div>${allyTaken.map(f => dmgRow(f, maxAllyTaken, false)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyTaken.map(f => dmgRow(f, maxEnemyTaken, false)).join('')}</div>
+    </div>`;
+  }
+
   body.innerHTML =
-    `<div class="ds-section-title"><img src="assets/atk-icon.png" class="stat-icon">造成总伤害</div>` +
-    byDealt.map(f => dmgRow(f, maxDealt, true)).join('') +
-    `<div class="ds-section-title ds-section-gap"><img src="assets/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">承受总伤害</div>` +
-    byTaken.map(f => dmgRow(f, maxTaken, false)).join('');
+    `<div class="ds-tabs">
+      <button class="ds-tab${tab==='dealt'?' active':''}" onclick="switchDmgTab('dealt')">⚔ 造成伤害</button>
+      <button class="ds-tab${tab==='taken'?' active':''}" onclick="switchDmgTab('taken')">🛡 承受伤害</button>
+    </div>` + content;
+}
+
+let _dmgStatsTab = 'dealt';
+function switchDmgTab(tab) {
+  _dmgStatsTab = tab;
+  updateDmgStats();
 }
 
 function _toggleDmgStatsDesktop() {

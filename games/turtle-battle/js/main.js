@@ -317,11 +317,17 @@ function handleOnlineMessage(msg) {
 
 // ── SELECT SCREEN ─────────────────────────────────────────
 function showSelectScreen(title) {
+  _fgSlots = {};
+  selectedIds = [];
   document.getElementById('selectTitle').innerHTML = title;
   renderPetGrid();
-  updateSlots();
-  document.getElementById('btnConfirmTeam').disabled = true;
+  renderFgSlots();
+  updateConfirmBtn();
   showScreen('screenSelect');
+  // Bind touch drag listeners on select screen
+  const sel = document.getElementById('screenSelect');
+  sel.ontouchmove = fgTouchMove;
+  sel.ontouchend = fgTouchEnd;
 }
 
 function renderPetGrid() {
@@ -342,6 +348,8 @@ function renderPetGrid() {
     }
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
+         draggable="true" ondragstart="fgDragStart(event,'${p.id}')" ondragend="fgDragEnd(event)"
+         ontouchstart="fgTouchStart(event,'${p.id}')"
          onclick="togglePet(event,'${p.id}')">
       <div class="pet-avatar">${buildPetImgHTML(p, window.innerWidth <= 768 ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
@@ -356,15 +364,181 @@ function renderPetGrid() {
   }).join('');
 }
 
+// Formation slots: 6 slots (3 front + 3 back), place exactly 3 turtles
+let _fgSlots = {};
+const FG_SLOT_KEYS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+let _fgDragId = null; // pet id being dragged
+
 function togglePet(e, id) {
   if (e && e.target && e.target.closest('.pet-passive-icon')) return;
-  const maxPets = 3;
-  const idx = selectedIds.indexOf(id);
-  if (idx >= 0) selectedIds.splice(idx,1);
-  else { if (selectedIds.length >= maxPets) return showToast('最多选' + maxPets + '只'); selectedIds.push(id); }
+  // If already placed in a slot, remove it
+  for (const key of FG_SLOT_KEYS) {
+    if (_fgSlots[key] === id) {
+      delete _fgSlots[key];
+      renderFgSlots();
+      renderPetGrid();
+      updateConfirmBtn();
+      return;
+    }
+  }
+  // If already 3 placed, can't add more
+  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+  if (placed >= 3) { showToast('已选3只，点击龟或格子可移除'); return; }
+  // Place in next empty front slot first, then back
+  for (const key of FG_SLOT_KEYS) {
+    if (!_fgSlots[key]) {
+      _fgSlots[key] = id;
+      renderFgSlots();
+      renderPetGrid();
+      updateConfirmBtn();
+      return;
+    }
+  }
+}
+
+function fgSlotClick(key) {
+  if (_fgSlots[key]) {
+    delete _fgSlots[key];
+    renderFgSlots();
+    renderPetGrid();
+    updateConfirmBtn();
+  }
+}
+
+// ── Drag & Drop ──
+function fgDragStart(e, id) {
+  _fgDragId = id;
+  e.dataTransfer.effectAllowed = 'move';
+  e.dataTransfer.setData('text/plain', id);
+  requestAnimationFrame(() => e.target.closest('.pet-card')?.classList.add('dragging'));
+}
+function fgDragEnd(e) {
+  _fgDragId = null;
+  document.querySelectorAll('.pet-card.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.fg-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+}
+function fgDragOver(e) {
+  e.preventDefault();
+  e.dataTransfer.dropEffect = 'move';
+  e.currentTarget.classList.add('drag-over');
+}
+function fgDragLeave(e) {
+  e.currentTarget.classList.remove('drag-over');
+}
+function fgDrop(e, key) {
+  e.preventDefault();
+  e.currentTarget.classList.remove('drag-over');
+  const id = _fgDragId || (e.dataTransfer && e.dataTransfer.getData('text/plain'));
+  if (!id) return;
+  // Find where the dragged turtle currently is
+  const oldKey = FG_SLOT_KEYS.find(k => _fgSlots[k] === id);
+  const existing = _fgSlots[key];
+  if (existing === id) return; // dropped on same slot, no-op
+  // Swap: put existing turtle into the dragged turtle's old slot
+  if (existing && oldKey) {
+    _fgSlots[oldKey] = existing;
+  } else if (oldKey) {
+    delete _fgSlots[oldKey];
+  }
+  // Check cap: if dragging from pet grid (no oldKey) and no existing to replace
+  if (!oldKey && !existing) {
+    const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+    if (placed >= 3) { showToast('已选3只，先移除再放置'); return; }
+  }
+  _fgSlots[key] = id;
+  renderFgSlots();
   renderPetGrid();
-  updateSlots();
-  document.getElementById('btnConfirmTeam').disabled = selectedIds.length !== maxPets;
+  updateConfirmBtn();
+}
+
+// ── Touch drag for mobile ──
+let _touchDragId = null, _touchGhost = null;
+let _touchStartX = 0, _touchStartY = 0, _touchMoved = false;
+function fgTouchStart(e, id) {
+  _touchDragId = id;
+  _touchMoved = false;
+  const touch = e.touches[0];
+  _touchStartX = touch.clientX;
+  _touchStartY = touch.clientY;
+}
+function fgTouchMove(e) {
+  if (!_touchDragId) return;
+  const touch = e.touches[0];
+  const dx = touch.clientX - _touchStartX, dy = touch.clientY - _touchStartY;
+  // Only start drag after 10px movement
+  if (!_touchMoved && Math.abs(dx) + Math.abs(dy) < 10) return;
+  if (!_touchMoved) {
+    _touchMoved = true;
+    const card = document.querySelector(`.pet-card[data-id="${_touchDragId}"]`);
+    if (card) {
+      _touchGhost = card.cloneNode(true);
+      _touchGhost.style.cssText = 'position:fixed;pointer-events:none;z-index:9999;opacity:.75;width:70px;transform:scale(.85);border-radius:10px;overflow:hidden';
+      document.body.appendChild(_touchGhost);
+      card.classList.add('dragging');
+    }
+  }
+  e.preventDefault();
+  if (_touchGhost) {
+    _touchGhost.style.left = (touch.clientX - 35) + 'px';
+    _touchGhost.style.top = (touch.clientY - 35) + 'px';
+  }
+  // Highlight slot under finger
+  document.querySelectorAll('.fg-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+  const el = document.elementFromPoint(touch.clientX, touch.clientY);
+  const slot = el?.closest('.fg-slot');
+  if (slot) slot.classList.add('drag-over');
+}
+function fgTouchEnd(e) {
+  if (!_touchDragId) return;
+  document.querySelectorAll('.pet-card.dragging').forEach(el => el.classList.remove('dragging'));
+  document.querySelectorAll('.fg-slot.drag-over').forEach(el => el.classList.remove('drag-over'));
+  if (_touchGhost) { _touchGhost.remove(); _touchGhost = null; }
+  if (_touchMoved) {
+    const touch = e.changedTouches[0];
+    const el = document.elementFromPoint(touch.clientX, touch.clientY);
+    const slot = el?.closest('.fg-slot');
+    if (slot) {
+      const key = slot.id.replace('fgSlot-', '');
+      if (FG_SLOT_KEYS.includes(key)) {
+        _fgDragId = _touchDragId;
+        fgDrop({ preventDefault(){}, currentTarget: slot }, key);
+      }
+    }
+    // Prevent click from firing after drag
+    e.preventDefault();
+  }
+  _touchDragId = null;
+  _fgDragId = null;
+  _touchMoved = false;
+}
+
+function renderFgSlots() {
+  for (const key of FG_SLOT_KEYS) {
+    const slot = document.getElementById('fgSlot-' + key);
+    if (!slot) continue;
+    const petId = _fgSlots[key];
+    if (petId) {
+      const p = ALL_PETS.find(x => x.id === petId);
+      slot.innerHTML = `<div class="fg-turtle"><span class="fg-emoji">${p.emoji}</span><span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
+      slot.classList.add('filled');
+      // Make filled slot draggable for reordering
+      slot.draggable = true;
+      slot.ondragstart = (e) => { _fgDragId = petId; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', petId); };
+      slot.ondragend = fgDragEnd;
+    } else {
+      slot.innerHTML = '<span class="fg-empty">空</span>';
+      slot.classList.remove('filled');
+      slot.draggable = false;
+      slot.ondragstart = null;
+      slot.ondragend = null;
+    }
+  }
+  selectedIds = FG_SLOT_KEYS.map(k => _fgSlots[k]).filter(Boolean);
+}
+
+function updateConfirmBtn() {
+  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+  document.getElementById('btnConfirmTeam').disabled = placed !== 3;
 }
 
 function showPetPassive(e, petId) {
@@ -392,32 +566,12 @@ function showPetPassive(e, petId) {
   popup.style.display = 'block';
 }
 
-function updateSlots() {
-  const maxSlots = 3;
-  const slotsContainer = document.querySelector('.team-slots');
-  // Ensure correct number of slot elements
-  if (slotsContainer) {
-    while (slotsContainer.children.length < maxSlots) {
-      const s = document.createElement('div');
-      s.className = 'team-slot';
-      s.id = 'slot' + slotsContainer.children.length;
-      slotsContainer.appendChild(s);
-    }
-    while (slotsContainer.children.length > maxSlots) {
-      slotsContainer.removeChild(slotsContainer.lastChild);
-    }
-  }
-  for (let i = 0; i < maxSlots; i++) {
-    const slot = document.getElementById('slot'+i);
-    if (!slot) continue;
-    if (selectedIds[i]) {
-      const p = ALL_PETS.find(x => x.id === selectedIds[i]);
-      slot.innerHTML = `<div class="slot-filled" style="border-color:${RARITY_COLORS[p.rarity]}">
-        <div class="slot-avatar">${buildPetImgHTML(p, 40)}</div><span>${p.name}</span></div>`;
-    } else {
-      slot.innerHTML = `<div class="slot-empty">空位 ${i+1}</div>`;
-    }
-  }
+function _buildTeamFromSlots(side) {
+  return FG_SLOT_KEYS.filter(k => _fgSlots[k]).map(k => {
+    const f = createFighter(_fgSlots[k], side);
+    f._position = k.startsWith('front') ? 'front' : 'back';
+    return f;
+  });
 }
 
 function confirmTeam() {
@@ -433,14 +587,15 @@ function confirmTeam() {
     return;
   }
   if (gameMode === 'pve') {
-    leftTeam = selectedIds.map(id => createFighter(id,'left'));
+    // Create fighters from occupied formation slots
+    leftTeam = _buildTeamFromSlots('left');
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
     rightTeam = [createFighter(shuffled[0].id,'right'), createFighter(shuffled[1].id,'right'), createFighter(shuffled[2].id,'right')];
     autoAssignPositions(rightTeam);
-    showFormationScreen();
+    startBattle();
   } else if (gameMode === 'boss') {
-    leftTeam = selectedIds.map(id => createFighter(id,'left'));
+    leftTeam = _buildTeamFromSlots('left');
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
     const boss = createFighter(bossPet.id, 'right');
@@ -454,11 +609,11 @@ function confirmTeam() {
     boss.name = 'BOSS ' + boss.name;
     rightTeam = [boss];
     boss._position = 'front';
-    showFormationScreen();
+    startBattle();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
-    if (side === 'left')  leftTeam  = team.map(id => createFighter(id,'left'));
-    if (side === 'right') rightTeam = team.map(id => createFighter(id,'right'));
+    if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
+    if (side === 'right') rightTeam = _buildTeamFromSlots('right');
     sendOnline({ type:'team-ready', side, team });
     showToast('等待对手选择…');
     // Only host starts battle (generates seed); guest waits for battle-seed message
@@ -466,89 +621,6 @@ function confirmTeam() {
       autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
     }
   }
-}
-
-// ── FORMATION SCREEN ─────────────────────────────────────
-let _formationPlacements = {}; // { 'front-0': fighterIdx, 'front-1': fighterIdx, 'back-0': fighterIdx }
-let _formationSelectedBench = null; // index in leftTeam
-
-function showFormationScreen() {
-  _formationPlacements = {};
-  _formationSelectedBench = null;
-  // Render bench (unplaced turtles)
-  renderFormationBench();
-  // Clear slots
-  ['front-0','front-1','back-0'].forEach(key => {
-    const slot = document.getElementById('fslot-' + key);
-    if (slot) { slot.innerHTML = ''; slot.classList.remove('filled','selected'); }
-  });
-  document.getElementById('btnConfirmFormation').disabled = true;
-  showScreen('screenFormation');
-}
-
-function renderFormationBench() {
-  const bench = document.getElementById('formationBench');
-  const placedIndices = Object.values(_formationPlacements);
-  bench.innerHTML = leftTeam.map((f, i) => {
-    const placed = placedIndices.includes(i);
-    const selected = _formationSelectedBench === i;
-    return `<div class="formation-bench-turtle ${placed ? 'placed' : ''} ${selected ? 'bench-selected' : ''}" onclick="formationBenchClick(${i})">
-      <div class="fb-emoji">${f.emoji}</div>
-      <div class="fb-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
-    </div>`;
-  }).join('');
-}
-
-function formationBenchClick(idx) {
-  if (Object.values(_formationPlacements).includes(idx)) return; // already placed
-  _formationSelectedBench = idx;
-  renderFormationBench();
-}
-
-function formationSlotClick(row, col) {
-  const key = row + '-' + col;
-  const slot = document.getElementById('fslot-' + key);
-
-  // If slot already has a turtle, remove it
-  if (_formationPlacements[key] !== undefined) {
-    delete _formationPlacements[key];
-    slot.innerHTML = '';
-    slot.classList.remove('filled');
-    renderFormationBench();
-    checkFormationComplete();
-    return;
-  }
-
-  // If no bench turtle selected, do nothing
-  if (_formationSelectedBench === null) return;
-
-  // Place selected turtle
-  const f = leftTeam[_formationSelectedBench];
-  _formationPlacements[key] = _formationSelectedBench;
-  slot.innerHTML = `<div class="fs-emoji">${f.emoji}</div><div class="fs-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>`;
-  slot.classList.add('filled');
-
-  _formationSelectedBench = null;
-  renderFormationBench();
-  checkFormationComplete();
-}
-
-function checkFormationComplete() {
-  const placed = Object.keys(_formationPlacements).length;
-  document.getElementById('btnConfirmFormation').disabled = placed !== leftTeam.length;
-}
-
-function confirmFormation() {
-  // Apply positions to leftTeam fighters
-  for (const [key, idx] of Object.entries(_formationPlacements)) {
-    const row = key.startsWith('front') ? 'front' : 'back';
-    leftTeam[idx]._position = row;
-  }
-  startBattle();
-}
-
-function formationBack() {
-  showScreen('screenSelect');
 }
 
 function autoAssignPositions(team) {
@@ -562,6 +634,18 @@ function autoAssignPositions(team) {
 function goBackFromSelect() {
   showScreen('screenMenu');
   // menu BGM already playing, don't restart
+}
+
+function confirmSurrender() {
+  if (battleOver) return;
+  if (!confirm('确定认输？')) return;
+  battleOver = true;
+  closeFighterDetail();
+  clearTurnTimer();
+  const playerSide = (gameMode === 'pvp-online') ? onlineSide : 'left';
+  const leftWon = playerSide !== 'left';
+  addLog(`${playerSide === 'left' ? '我方' : '敌方'}认输！`);
+  showResult(leftWon);
 }
 
 
