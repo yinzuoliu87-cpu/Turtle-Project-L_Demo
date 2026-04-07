@@ -13,6 +13,32 @@
    穿甲: 固定穿甲(armorPen)无视X点防御 + 百分比穿甲(armorPenPct)无视X%防御  */
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
 const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
+
+// ── COMMON SKILL POOL (通用技能池) ────────────────────────
+// Any turtle can equip these in their 3rd slot (or replace default skills)
+const COMMON_SKILLS = [
+  // Team buffs
+  { name:'攻击号令', type:'commonAtkBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, atkUpPct:15, atkUpTurns:3,
+    brief:'全体友方攻击力 +15% 持续3回合', detail:'为全体友方施加攻击力 +15% 增益，持续3回合。\n冷却{cd}回合。', category:'团队增益' },
+  { name:'防御号令', type:'commonDefBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, defUpVal:6, mrUpVal:6, buffTurns:3,
+    brief:'全体友方护甲+6 魔抗+6 持续3回合', detail:'为全体友方施加护甲 +6、魔抗 +6 增益，持续3回合。\n冷却{cd}回合。', category:'团队增益' },
+  { name:'团队护盾', type:'commonTeamShield', cd:3, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, shieldScale:0.5, shieldDuration:3,
+    brief:'全体友方获得（{S:0.5*ATK}）护盾 持续3回合', detail:'为全体友方施加（50%×攻击力 = {S:0.5*ATK}）护盾，持续3回合。\n冷却{cd}回合。', category:'团队增益' },
+  { name:'团队治愈', type:'commonTeamHeal', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, healScale:0.5, healHpPct:6,
+    brief:'全体友方回复（{H:0.5*ATK+HP*0.06}）HP', detail:'治愈全体友方（50%×攻击力 + 6%×最大HP = {H:0.5*ATK+HP*0.06}）HP。\n冷却{cd}回合。', category:'团队增益' },
+  // Self buffs
+  { name:'自我强化', type:'commonSelfAtk', cd:3, hits:0, power:0, pierce:0, selfCast:true, atkUpPct:25, atkUpTurns:4,
+    brief:'自身攻击力 +25% 持续4回合', detail:'为自身施加攻击力 +25% 增益，持续4回合。\n冷却{cd}回合。', category:'自我增益' },
+  { name:'坚韧', type:'commonSelfShield', cd:3, hits:0, power:0, pierce:0, selfCast:true, shieldHpPct:20, shieldDuration:3,
+    brief:'自身获得（{S:HP*0.2}）护盾 持续3回合', detail:'为自身施加（20%×最大HP = {S:HP*0.2}）护盾，持续3回合。\n冷却{cd}回合。', category:'自我增益' },
+  { name:'生命汲取', type:'commonLifesteal', cd:4, hits:0, power:0, pierce:0, selfCast:true, healLostPct:20, lifestealBuff:10, lifestealTurns:3,
+    brief:'回复 20% 已损HP + 生命偷取+10% 3回合', detail:'回复20%已损生命值，并获得10%生命偷取增益持续3回合。\n冷却{cd}回合。', category:'自我增益' },
+  // Single target support
+  { name:'鼓舞', type:'commonInspire', cd:3, hits:0, power:0, pierce:0, isAlly:true, atkUpVal:8, defUpVal:4, buffTurns:3,
+    brief:'强化友方单体：攻击+8 护甲+4 3回合', detail:'选择一名友方，攻击力 +8、护甲 +4，持续3回合。\n冷却{cd}回合。', category:'单体辅助' },
+  { name:'净化', type:'commonPurify', cd:5, hits:0, power:0, pierce:0, isAlly:true, cleanse:true,
+    brief:'清除友方单体所有减益效果', detail:'选择一名友方，清除其身上所有减益效果（攻击降低、护甲降低、灼烧、诅咒、治疗削减等）。\n冷却{cd}回合。', category:'单体辅助' },
+];
 // 计算有效护甲：先扣百分比穿透，再扣固定穿透
 function calcEffArmor(atk, tgt) {
   return Math.max(0, tgt.def * (1 - (atk.armorPenPct || 0)) - (atk.armorPen || 0));
