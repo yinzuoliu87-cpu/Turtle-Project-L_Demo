@@ -129,6 +129,77 @@ function aiPickSkills(petId) {
   return indices.sort((a,b) => a-b);
 }
 
+// ── COMBO SKILLS ─────────────────────────────────────────
+function getAvailableCombos(side) {
+  if (typeof COMBO_SKILLS === 'undefined') return [];
+  const team = side === 'left' ? leftTeam : rightTeam;
+  const aliveIds = team.filter(f => f.alive).map(f => f.id);
+  return COMBO_SKILLS.filter(c => c.ids.every(id => aliveIds.includes(id)));
+}
+
+async function executeCombo(combo, side) {
+  const team = side === 'left' ? leftTeam : rightTeam;
+  const enemies = side === 'left' ? rightTeam : leftTeam;
+  const fighters = combo.ids.map(id => team.find(f => f.id === id && f.alive));
+  if (fighters.some(f => !f)) return;
+
+  // Mark both fighters as acted
+  fighters.forEach(f => actedThisSide.add(allFighters.indexOf(f)));
+
+  // Announce
+  showSkillAnnounce(fighters[0], { name: combo.name });
+  addLog(`<b style="color:#ffd93d">🤝 连携技！${fighters.map(f=>f.name).join(' + ')} → ${combo.name}！</b>`);
+  await sleep(800);
+
+  // Use higher ATK of the two
+  const atkVal = Math.max(fighters[0].atk, fighters[1].atk);
+
+  if (combo.aoeAlly && combo.shieldDefScale) {
+    // Shield combo (stone+diamond)
+    const defVal = Math.max(fighters[0].def, fighters[1].def);
+    const shieldVal = Math.round(defVal * combo.shieldDefScale);
+    for (const ally of team.filter(a => a.alive)) {
+      ally.shield += shieldVal;
+      spawnFloatingNum(getFighterElId(ally), `+${shieldVal}🛡`, 'shield-label', 0, 0);
+      updateHpBar(ally, getFighterElId(ally));
+    }
+    addLog(`${combo.icon} ${combo.name}：全队获得 ${shieldVal} 护盾`);
+  } else if (combo.stealHpPct) {
+    // Steal HP combo (candy+bubble)
+    const aliveEnemies = enemies.filter(e => e.alive);
+    for (const e of aliveEnemies) {
+      const steal = Math.round(e.maxHp * combo.stealHpPct / 100);
+      e.hp = Math.max(1, e.hp - steal);
+      updateHpBar(e, getFighterElId(e));
+      spawnFloatingNum(getFighterElId(e), `-${steal}`, 'direct-dmg', 0, 0);
+    }
+    const totalSteal = Math.round(aliveEnemies.reduce((s,e) => s + e.maxHp * combo.stealHpPct / 100, 0));
+    fighters.forEach(f => { f.hp = Math.min(f.maxHp, f.hp + Math.round(totalSteal / 2)); updateHpBar(f, getFighterElId(f)); });
+    addLog(`${combo.icon} ${combo.name}：偷取全体敌人HP！`);
+  } else {
+    // Damage combo
+    const totalDmg = Math.round(atkVal * combo.atkScale);
+    const targets = combo.aoe ? enemies.filter(e => e.alive) : [enemies.filter(e => e.alive).sort((a,b) => a.hp - b.hp)[0]];
+    for (const t of targets) {
+      if (!t || !t.alive) continue;
+      const dmgType = combo.dmgType || 'magic';
+      const finalDmg = applyRawDmg(fighters[0], t, totalDmg + (combo.hpPct ? Math.round(t.hp * combo.hpPct / 100) : 0), dmgType);
+      spawnFloatingNum(getFighterElId(t), `-${finalDmg}`, dmgType === 'true' ? 'true-dmg' : dmgType === 'magic' ? 'magic-dmg' : 'direct-dmg', 0, 0, {atkSide:side, amount:finalDmg});
+      if (combo.burn) t.buffs.push({ type:'phoenixBurnDot', turns:combo.burnTurns||3, atkScale:0.4, hpPct:0.08, source:fighters[0] });
+      if (combo.stun) t.buffs.push({ type:'stun' });
+      if (combo.mrDown) t.buffs.push({ type:'mrDown', value:combo.mrDown.pct, turns:combo.mrDown.turns });
+      if (combo.shieldBreak) t.shield = 0;
+      if (combo.dot) t.buffs.push({ type:'dot', dmg:combo.dot.dmg, turns:combo.dot.turns });
+      updateHpBar(t, getFighterElId(t));
+      checkDeaths();
+    }
+    addLog(`${combo.icon} ${combo.name}：造成 ${totalDmg} ${combo.dmgType === 'true' ? '真实' : '魔法'}伤害！`);
+  }
+
+  await sleep(600);
+  if (checkBattleEnd()) return;
+}
+
 // ── BATTLE START ──────────────────────────────────────────
 function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];
@@ -1205,6 +1276,21 @@ function showTargetSelect(targets, srcFighter, skill) {
     </button>`;
   }).join('');
   document.getElementById('targetSelect').style.display = 'flex';
+}
+
+async function useCombo(comboIdx) {
+  if (animating || battleOver) return;
+  const combo = COMBO_SKILLS[comboIdx];
+  if (!combo) return;
+  const f = currentActingFighter;
+  if (!f) return;
+  animating = true;
+  clearTurnTimer();
+  const panel = document.getElementById('actionPanel');
+  if (panel) panel.classList.remove('show');
+  await executeCombo(combo, f.side);
+  animating = false;
+  onActionComplete();
 }
 
 function selectTarget(fi) {

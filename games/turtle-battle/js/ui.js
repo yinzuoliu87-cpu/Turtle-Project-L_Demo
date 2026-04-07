@@ -1583,6 +1583,26 @@ function renderActionButtons(f) {
       </div>
     </div>`;
   }).join('');
+
+  // Combo skill buttons
+  const combos = getAvailableCombos(f.side);
+  const comboPartner = (c) => { const otherId = c.ids.find(id => id !== f.id); return allFighters.find(a => a.id === otherId && a.side === f.side && a.alive); };
+  const myCombo = combos.filter(c => c.ids.includes(f.id));
+  if (myCombo.length) {
+    myCombo.forEach((c, ci) => {
+      const partner = comboPartner(c);
+      if (!partner) return;
+      const partnerActed = actedThisSide.has(allFighters.indexOf(partner));
+      if (partnerActed) return; // partner already acted this round
+      box.innerHTML += `<div class="skill-btn-wrap">
+        <div class="skill-card combo-card" onclick="useCombo(${COMBO_SKILLS.indexOf(c)})">
+          <div class="skill-header" style="color:#ffd93d">🤝 ${c.name}</div>
+          <div class="skill-body-brief">${c.icon} ${f.name} + ${partner.name}：${c.desc}</div>
+        </div>
+      </div>`;
+    });
+  }
+
   document.getElementById('targetSelect').style.display = 'none';
 }
 
