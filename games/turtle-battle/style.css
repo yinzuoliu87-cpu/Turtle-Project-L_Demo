@@ -1711,7 +1711,9 @@ body{
 .spc-cd{font-size:11px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px}
 .spc-brief{font-size:12px;color:var(--fg2);line-height:1.5}
 .spc-check{position:absolute;top:10px;right:12px;font-size:16px;color:#ffd93d;font-weight:700}
-.skill-pick-confirm{width:100%;padding:12px;font-size:15px}
+.skill-pick-actions{display:flex;gap:10px}
+.skill-pick-back{flex:0 0 auto;padding:12px 16px;font-size:14px}
+.skill-pick-confirm{flex:1;padding:12px;font-size:15px}
 /* Combo skill card */
 .combo-card{border-color:rgba(255,217,61,.4)!important;background:rgba(255,217,61,.06)!important}
 .combo-card:hover{border-color:#ffd93d!important;background:rgba(255,217,61,.12)!important}
@@ -1808,9 +1810,8 @@ body{
 /* Fighter detail panel (click to show) */
 .fighter-detail-panel{position:absolute;z-index:250;background:rgba(12,16,24,.94);backdrop-filter:blur(10px);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.7);padding:14px 16px;width:280px;max-height:420px;overflow-y:auto;display:none;animation:fadeIn .15s ease;font-size:13px;border:1px solid rgba(255,255,255,.06)}
 .fighter-detail-panel.show{display:block}
-.fdp-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+.fdp-header{display:flex;align-items:center;margin-bottom:8px}
 .fdp-name{font-size:18px;font-weight:700}
-.fdp-close{background:none;border:none;color:var(--fg2);font-size:20px;cursor:pointer;padding:2px 6px}
 .fdp-body{font-size:13px;line-height:1.5;color:var(--fg2)}
 /* HP section with bar */
 .fdp-hp-section{margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid rgba(255,255,255,.08)}

@@ -559,6 +559,18 @@ function showFighterDetail(f) {
   panel.style.display = 'block';
   panel.classList.add('show');
 
+  // Click outside to close
+  setTimeout(() => {
+    const closeOnClick = (e) => {
+      if (!panel.contains(e.target)) {
+        closeFighterDetail();
+        document.removeEventListener('click', closeOnClick, true);
+      }
+    };
+    document.addEventListener('click', closeOnClick, true);
+    panel._closeListener = closeOnClick;
+  }, 100);
+
   // Desktop: re-clamp after render
   if (window.innerWidth > 768) {
     const scene = document.getElementById('battleScene');
@@ -574,7 +586,9 @@ function showFighterDetail(f) {
 
 function closeFighterDetail() {
   const panel = document.getElementById('fighterDetailPanel');
-  if (panel) { panel.classList.remove('show'); panel.style.display = 'none'; panel._currentFighter = null; }
+  if (!panel) return;
+  panel.classList.remove('show'); panel.style.display = 'none'; panel._currentFighter = null;
+  if (panel._closeListener) { document.removeEventListener('click', panel._closeListener, true); panel._closeListener = null; }
 }
 
 function fdpTogglePassive(el) {

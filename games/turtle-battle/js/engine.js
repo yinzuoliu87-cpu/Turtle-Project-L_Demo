@@ -829,6 +829,8 @@ function resetTurnState() {
 
 async function nextSideAction() {
   if (battleOver) return;
+  // Safety: check if battle should end (catches edge cases like DOT kills)
+  if (checkBattleEnd()) return;
 
   // Get alive fighters for active side that haven't acted yet
   const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;

@@ -721,7 +721,10 @@ function showSkillPickModal(petId, onDone) {
             </div>`;
           }).join('')}
         </div>
-        <button class="btn btn-primary skill-pick-confirm" ${selected.length === 3 ? '' : 'disabled'} onclick="window._skillPickConfirm()">确认装配</button>
+        <div class="skill-pick-actions">
+          <button class="btn btn-secondary skill-pick-back" onclick="window._skillPickBack()">← 返回选龟</button>
+          <button class="btn btn-primary skill-pick-confirm" ${selected.length === 3 ? '' : 'disabled'} onclick="window._skillPickConfirm()">确认装配</button>
+        </div>
       </div>
     `;
     overlay.style.display = 'flex';
@@ -741,6 +744,12 @@ function showSkillPickModal(petId, onDone) {
     saveLoadout(petId, selected.sort((a,b) => a-b));
     overlay.style.display = 'none';
     onDone();
+  };
+
+  window._skillPickBack = () => {
+    overlay.style.display = 'none';
+    // Go back to select screen
+    showScreen('screenSelect');
   };
 
   render();
