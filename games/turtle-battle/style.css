@@ -664,6 +664,7 @@ body{
 /* ── BATTLE LOG ── */
 .battle-log{background:var(--bg2);border-radius:var(--radius);padding:12px;max-height:200px;overflow-y:auto;font-size:13px;line-height:1.8;display:none}
 .battle-log-wrapper.log-open .battle-log{display:block}
+.battle-log-wrapper.mobile-show .battle-log{display:block}
 .log-entry{padding:2px 0;border-bottom:1px solid rgba(255,255,255,.04)}
 .log-entry.sys{color:var(--fg2);font-style:italic}
 .log-entry.round-sep{text-align:center;color:var(--accent);font-weight:700;border-bottom:1px solid rgba(88,166,255,.15);padding:6px 0;margin:4px 0;font-size:12px;letter-spacing:1px}
@@ -701,6 +702,7 @@ body{
 /* Battle log wrapper (collapsible on mobile) */
 .battle-log-wrapper{flex-shrink:0;display:none}
 .battle-log-wrapper.log-open{display:block}
+.battle-log-wrapper.mobile-show{display:block}
 .battle-log-toggle{display:none}
 
 /* ═══════════════════════════════════════════════════
@@ -804,35 +806,21 @@ body{
   .side-indicator { margin-bottom: 2px; min-height: 20px; }
 
   /* ── SCENE-BASED BATTLE (mobile) ── */
-  .battle-scene{aspect-ratio:3/2;max-height:45vh}
-  .battle-scene .team-label{font-size:11px;padding:2px 8px}
+  /* Keep 16:9 ratio same as PC, just limit height */
+  .battle-scene{aspect-ratio:16/9;max-height:42vh}
+  .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
-  /* Scene turtle sizing */
-  .scene-turtle .st-name{font-size:8px;max-width:56px;overflow:hidden;text-overflow:ellipsis}
-  .scene-turtle .st-hp-wrap{width:56px}
-  .scene-turtle .st-hp-bar{height:5px}
+  /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
+  .scene-turtle{transform:scale(.45);transform-origin:center bottom;padding:10px;margin:-10px}
+  .scene-turtle:hover{transform:scale(.5)}
+  .scene-turtle.targetable{transform:scale(.5);padding:14px;margin:-14px}
+  .scene-turtle.targetable:hover{transform:scale(.55)}
+  .scene-turtle.active-turn{transform:scale(.5)}
   .scene-turtle .st-buffs{max-width:50px;font-size:7px}
-  /* Increase touch target */
-  .scene-turtle{padding:6px;margin:-6px}
-  .scene-turtle.targetable{padding:10px;margin:-10px}
-
-  /* Mobile turtle positions — spread for 3:2 */
-  .scene-turtle.pos-left-front-0{left:30%;bottom:48%}
-  .scene-turtle.pos-left-front-1{left:26%;bottom:32%}
-  .scene-turtle.pos-left-front-2{left:34%;bottom:16%}
-  .scene-turtle.pos-left-back-0{left:10%;bottom:46%}
-  .scene-turtle.pos-left-back-1{left:7%;bottom:31%}
-  .scene-turtle.pos-left-back-2{left:14%;bottom:16%}
-  .scene-turtle.pos-right-front-0{right:30%;bottom:48%}
-  .scene-turtle.pos-right-front-1{right:26%;bottom:32%}
-  .scene-turtle.pos-right-front-2{right:34%;bottom:16%}
-  .scene-turtle.pos-right-back-0{right:10%;bottom:46%}
-  .scene-turtle.pos-right-back-1{right:7%;bottom:31%}
-  .scene-turtle.pos-right-back-2{right:14%;bottom:16%}
 
   /* Scene summon */
-  .scene-summon{transform:scale(.65)}
-  .scene-summon .st-hp-wrap{width:44px}
+  .scene-summon{transform:scale(.45)}
+  /* No position overrides — use same PC percentages */
 
   /* Fighter detail panel → bottom sheet */
   .fighter-detail-panel{position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:100%!important;max-height:60vh;border-radius:16px 16px 0 0;animation:slideUpSheet .2s ease;z-index:400;padding:16px}
@@ -871,6 +859,9 @@ body{
     z-index: 9999;
   }
 
+  /* Mobile overlay close button */
+  .mobile-overlay-close{position:sticky;top:0;z-index:10;width:100%;padding:10px;font-size:14px;background:var(--bg2);border:1px solid rgba(255,255,255,.1);border-radius:8px;color:var(--fg);cursor:pointer;margin-bottom:8px;text-align:center}
+
   /* Battle log: hidden on mobile, shown as fullscreen overlay via button */
   .battle-log-wrapper { display: none; }
   .battle-log-wrapper.mobile-show {
@@ -889,39 +880,45 @@ body{
     font-size: 12px;
     padding: 8px;
   }
-  /* Action panel: inline at bottom of flex column (not fixed) */
+  /* Action panel: fixed bottom sheet */
   .action-panel {
-    flex-shrink: 0;
-    border-radius: 10px;
-    padding: 6px 8px calc(6px + env(safe-area-inset-bottom, 0px));
-    max-height: 40vh;
+    position: fixed;
+    bottom: 0; left: 0; right: 0;
+    z-index: 200;
+    border-radius: 14px 14px 0 0;
+    box-shadow: 0 -4px 20px rgba(0,0,0,.6);
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    background: var(--bg);
+    max-height: 45vh;
     overflow-y: auto;
     display: none;
   }
   .action-panel.show { display: block; }
-  .action-header { font-size: 11px; margin-bottom: 4px; }
+  .action-header { font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
+  .action-header .acting-name { font-size: 15px; }
+  .btn-back-picker { font-size: 11px; padding: 2px 8px; }
   .action-buttons {
     display: flex;
     flex-direction: column;
-    gap: 4px;
+    gap: 6px;
   }
 
-  /* Mobile skill buttons: compact name buttons + info toggle */
+  /* Mobile skill buttons: full-width cards with brief */
   .skill-card-mobile { width: 100%; }
   .skill-btn-row {
     display: flex;
-    gap: 4px;
+    gap: 6px;
     align-items: stretch;
   }
   .skill-name-btn {
     flex: 1;
-    padding: 10px 12px;
-    min-height: 44px;
-    font-size: 14px;
+    padding: 12px 14px;
+    min-height: 48px;
+    font-size: 15px;
     font-weight: 700;
     border: 2px solid var(--accent);
-    border-radius: 8px;
-    background: var(--bg2);
+    border-radius: 10px;
+    background: rgba(255,255,255,.04);
     color: var(--fg);
     cursor: pointer;
     text-align: left;
@@ -932,13 +929,13 @@ body{
   .skill-name-btn .cd-tag { font-size: 11px; }
   .skill-name-btn .skill-cd-info { font-size: 10px; color: var(--fg2); margin-left: 6px; }
   .skill-info-btn {
-    width: 36px;
-    min-height: 44px;
+    width: 40px;
+    min-height: 48px;
     border: 2px solid rgba(255,255,255,.15);
-    border-radius: 8px;
-    background: var(--bg2);
+    border-radius: 10px;
+    background: rgba(255,255,255,.03);
     color: var(--fg2);
-    font-size: 16px;
+    font-size: 18px;
     cursor: pointer;
     flex-shrink: 0;
     display: flex;
@@ -947,13 +944,13 @@ body{
   }
   .skill-info-btn:active { background: rgba(255,255,255,.1); }
   .skill-mobile-detail {
-    margin-top: 4px;
-    padding: 8px 10px;
+    margin-top: 6px;
+    padding: 10px 12px;
     background: rgba(255,255,255,.04);
-    border-radius: 6px;
-    font-size: 11px;
+    border-radius: 8px;
+    font-size: 12px;
     color: var(--fg2);
-    line-height: 1.5;
+    line-height: 1.6;
   }
   .skill-card-mobile.disabled .skill-name-btn { opacity: 0.4; pointer-events: none; }
 
@@ -961,18 +958,20 @@ body{
   .skill-card { display: none; }
   .skill-btn-wrap { flex: 1 1 100%; min-width: 0; }
 
-  /* Turtle picker: fixed bottom too */
+  /* Turtle picker: fixed bottom sheet */
   #turtlePicker {
     position: fixed;
-    bottom: 0;
-    left: 0;
-    right: 0;
+    bottom: 0; left: 0; right: 0;
     z-index: 200;
-    border-radius: 12px 12px 0 0;
+    border-radius: 14px 14px 0 0;
     box-shadow: 0 -4px 20px rgba(0,0,0,.6);
-    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
+    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
   }
+  .picker-header { font-size: 13px; }
+  .picker-btn { padding: 10px 14px; border-radius: 10px; }
+  .picker-name { font-size: 14px; }
+  .picker-hp { font-size: 11px; }
   /* Passive popup: scrollable fullwidth */
   .passive-popup {
     max-width: calc(100vw - 24px);
@@ -989,8 +988,6 @@ body{
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     padding: 4px;
-    max-height: calc(100dvh - 180px);
-    overflow-y: auto;
   }
   .pet-card {
     padding: 8px 6px;
@@ -1839,6 +1836,7 @@ body{
 .fg-slot:hover{border-color:var(--accent);background:rgba(88,166,255,.06)}
 .fg-slot.filled{border-style:solid;border-color:var(--green);background:rgba(6,214,160,.06)}
 .fg-slot.drag-over{border-color:var(--accent);background:rgba(88,166,255,.12);transform:scale(1.05)}
+.fg-slot.fg-selected{border-color:#ffcc00;border-style:solid;background:rgba(255,204,0,.1);box-shadow:0 0 8px rgba(255,204,0,.4)}
 .fg-empty{font-size:11px;color:var(--fg2)}
 .fg-slot .fg-turtle{display:flex;flex-direction:column;align-items:center;gap:2px}
 .fg-slot .fg-emoji{font-size:24px}
@@ -1850,10 +1848,11 @@ body{
   .fg-slot{width:58px;height:58px}
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
-  .battle-scene{max-height:40vh}
-  .scene-turtle .st-hp-wrap{width:44px}
-  .scene-turtle .st-hp-bar{height:4px}
-  .scene-turtle .st-name{font-size:7px;max-width:44px}
+  .battle-scene{max-height:38vh}
+  .scene-turtle{transform:scale(.38)}
+  .scene-turtle:hover{transform:scale(.42)}
+  .scene-turtle.targetable{transform:scale(.42)}
+  .scene-turtle.active-turn{transform:scale(.42)}
   .skill-announce{font-size:11px;padding:4px 10px}
   .fighter-detail-panel{max-height:70vh;font-size:11px}
   .fdp-name{font-size:14px}

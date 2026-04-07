@@ -324,10 +324,6 @@ function showSelectScreen(title) {
   renderFgSlots();
   updateConfirmBtn();
   showScreen('screenSelect');
-  // Bind touch drag listeners on select screen
-  const sel = document.getElementById('screenSelect');
-  sel.ontouchmove = fgTouchMove;
-  sel.ontouchend = fgTouchEnd;
 }
 
 function renderPetGrid() {
@@ -346,12 +342,12 @@ function renderPetGrid() {
       const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="stat-icon">` : iconRaw;
       passiveHtml = `<span class="pet-passive-icon" onclick="event.stopPropagation();showPetPassive(event,'${p.id}')">${iconH}</span>`;
     }
+    const _mob = window.innerWidth <= 768;
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
-         draggable="true" ondragstart="fgDragStart(event,'${p.id}')" ondragend="fgDragEnd(event)"
-         ontouchstart="fgTouchStart(event,'${p.id}')"
+         ${_mob ? '' : `draggable="true" ondragstart="fgDragStart(event,'${p.id}')" ondragend="fgDragEnd(event)"`}
          onclick="togglePet(event,'${p.id}')">
-      <div class="pet-avatar">${buildPetImgHTML(p, window.innerWidth <= 768 ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}</div>
+      <div class="pet-avatar">${buildPetImgHTML(p, _mob ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
@@ -396,7 +392,47 @@ function togglePet(e, id) {
   }
 }
 
+let _fgSelectedSlot = null; // for mobile tap-to-swap
 function fgSlotClick(key) {
+  const isMobile = window.innerWidth <= 768;
+  if (isMobile && _fgSlots[key]) {
+    if (_fgSelectedSlot === null) {
+      // First tap: select this slot
+      _fgSelectedSlot = key;
+      renderFgSlots(); // highlight selected
+      return;
+    } else if (_fgSelectedSlot === key) {
+      // Tap same slot: deselect and remove turtle
+      _fgSelectedSlot = null;
+      delete _fgSlots[key];
+      renderFgSlots();
+      renderPetGrid();
+      updateConfirmBtn();
+      return;
+    } else {
+      // Tap different slot: swap
+      const tmp = _fgSlots[_fgSelectedSlot];
+      _fgSlots[_fgSelectedSlot] = _fgSlots[key];
+      _fgSlots[key] = tmp;
+      _fgSelectedSlot = null;
+      renderFgSlots();
+      renderPetGrid();
+      updateConfirmBtn();
+      return;
+    }
+  }
+  // Also handle: mobile tap empty slot while one is selected → move
+  if (isMobile && _fgSelectedSlot && !_fgSlots[key]) {
+    _fgSlots[key] = _fgSlots[_fgSelectedSlot];
+    delete _fgSlots[_fgSelectedSlot];
+    _fgSelectedSlot = null;
+    renderFgSlots();
+    renderPetGrid();
+    updateConfirmBtn();
+    return;
+  }
+  _fgSelectedSlot = null;
+  // Desktop: click to remove
   if (_fgSlots[key]) {
     delete _fgSlots[key];
     renderFgSlots();
@@ -513,18 +549,24 @@ function fgTouchEnd(e) {
 }
 
 function renderFgSlots() {
+  const isMobile = window.innerWidth <= 768;
   for (const key of FG_SLOT_KEYS) {
     const slot = document.getElementById('fgSlot-' + key);
     if (!slot) continue;
     const petId = _fgSlots[key];
+    // Selected highlight for mobile swap
+    slot.classList.toggle('fg-selected', _fgSelectedSlot === key);
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
       slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
       slot.classList.add('filled');
-      // Make filled slot draggable for reordering
-      slot.draggable = true;
-      slot.ondragstart = (e) => { _fgDragId = petId; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', petId); };
-      slot.ondragend = fgDragEnd;
+      if (!isMobile) {
+        slot.draggable = true;
+        slot.ondragstart = (e) => { _fgDragId = petId; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', petId); };
+        slot.ondragend = fgDragEnd;
+      } else {
+        slot.draggable = false;
+      }
     } else {
       slot.innerHTML = '<span class="fg-empty">空</span>';
       slot.classList.remove('filled');

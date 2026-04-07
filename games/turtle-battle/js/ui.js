@@ -16,7 +16,7 @@ function renderScene() {
     el.dataset.pid = f.petId || f.id || '';
     el.onclick = () => showFighterDetail(f);
 
-    const spriteSize = window.innerWidth <= 768 ? 48 : 80;
+    const spriteSize = 80;
     const spriteHTML = buildPetImgHTML(f, spriteSize);
     const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
     const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
@@ -1466,8 +1466,8 @@ function renderActionButtons(f) {
     const cdStr = !ready ? ` <span class="cd-tag">CD${s.cdLeft}</span>` : '';
 
     if (isMobile) {
-      // Mobile: compact button, tap to expand detail
       const brief = buildSkillBrief(f, s);
+      const detail = buildSkillDetailDesc(f, s);
       const cdLine = s.cd > 0 && s.cd < 100 ? `<span class="skill-cd-info">CD${s.cd}</span>` : '';
       return `<div class="skill-btn-wrap" id="skillWrap${i}">
         <div class="skill-card-mobile ${ready?'':'disabled'}">
@@ -1479,6 +1479,8 @@ function renderActionButtons(f) {
           </div>
           <div class="skill-mobile-detail" id="skillMobileDetail${i}" style="display:none">
             <div class="skill-mobile-brief">${brief}</div>
+            <div class="skill-mobile-full" style="display:none">${detail}</div>
+            ${detail !== brief ? `<span class="fdp-passive-toggle" onclick="event.stopPropagation();toggleMobileSkillBriefDetail(${i})">详细 ▾</span>` : ''}
           </div>
         </div>
       </div>`;
@@ -1508,10 +1510,16 @@ function toggleBattleLog() {
   const wrapper = document.getElementById('battleLogWrapper');
   if (!wrapper) return;
   if (window.innerWidth <= 768) {
-    // Mobile: fullscreen overlay
-    wrapper.classList.toggle('mobile-show');
+    const showing = wrapper.classList.toggle('mobile-show');
+    // Add close button if not exists
+    if (showing && !wrapper.querySelector('.mobile-overlay-close')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn mobile-overlay-close';
+      btn.textContent = '✕ 关闭';
+      btn.onclick = () => { wrapper.classList.remove('mobile-show'); };
+      wrapper.insertBefore(btn, wrapper.firstChild);
+    }
   } else {
-    // Desktop: toggle inline
     wrapper.classList.toggle('log-open');
   }
 }
@@ -1520,9 +1528,15 @@ function toggleDmgStats() {
   const panel = document.getElementById('dmgStatsPanel');
   if (!panel) return;
   if (window.innerWidth <= 768) {
-    // Mobile: fullscreen overlay
     const showing = panel.classList.toggle('mobile-show');
     panel.style.display = showing ? 'block' : 'none';
+    if (showing && !panel.querySelector('.mobile-overlay-close')) {
+      const btn = document.createElement('button');
+      btn.className = 'btn mobile-overlay-close';
+      btn.textContent = '✕ 关闭';
+      btn.onclick = () => { panel.classList.remove('mobile-show'); panel.style.display = 'none'; };
+      panel.insertBefore(btn, panel.firstChild);
+    }
   } else {
     // Desktop: floating panel in scene
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
@@ -1534,9 +1548,20 @@ function toggleMobileSkillDetail(e, idx) {
   const el = document.getElementById('skillMobileDetail' + idx);
   if (!el) return;
   const wasOpen = el.style.display !== 'none';
-  // Close all
   document.querySelectorAll('.skill-mobile-detail').forEach(d => d.style.display = 'none');
   if (!wasOpen) el.style.display = 'block';
+}
+function toggleMobileSkillBriefDetail(idx) {
+  const wrap = document.getElementById('skillMobileDetail' + idx);
+  if (!wrap) return;
+  const brief = wrap.querySelector('.skill-mobile-brief');
+  const full = wrap.querySelector('.skill-mobile-full');
+  const toggle = wrap.querySelector('.fdp-passive-toggle');
+  if (!brief || !full || !toggle) return;
+  const showing = full.style.display !== 'none';
+  brief.style.display = showing ? '' : 'none';
+  full.style.display = showing ? 'none' : '';
+  toggle.textContent = showing ? '详细 ▾' : '简略 ▴';
 }
 
 function buildSkillDetail(s, f) {
