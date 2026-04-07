@@ -85,7 +85,7 @@ async function doGamblerBet(attacker, target, skill) {
   let totalDmg = 0;
 
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
@@ -117,7 +117,7 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
   const tElId = getFighterElId(target);
   let totalDmg = 0;
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale);
     const isPierceHit = (i % 2 === 1); // odd index = pierce
@@ -735,7 +735,7 @@ async function doIceSpike(attacker, target, skill) {
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
   for (let i = 0; i < hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
 
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
@@ -1035,7 +1035,7 @@ async function doFortuneAllIn(attacker, target, skill) {
 
   const perCoinDelay = Math.max(200, Math.round(600 / Math.sqrt(coins))); // 1币600ms, 4币300ms, 16币150ms
   for (let i = 0; i < coins; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     // Physical portion (reduced by armor)
     const effectiveDef = calcEffDef(attacker, target, 'physical');
     const defRed = effectiveDef / (effectiveDef + DEF_CONSTANT);
@@ -1205,7 +1205,7 @@ async function doStarBeam(attacker, target, skill) {
   let totalDmg = 0;
 
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(target.hp * skill.currentHpPct / 100);
     const eDef = calcEffDef(attacker, target, 'magic');
@@ -1331,7 +1331,7 @@ async function doCrystalSpike(attacker, target, skill) {
   const tElId = getFighterElId(target);
   let totalDmg = 0;
   for (let i = 0; i < hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     let baseDmg = Math.round(attacker.atk * skill.atkScale);
     if (skill.targetHpPct) baseDmg += Math.round(target.maxHp * skill.targetHpPct / 100);
@@ -2071,7 +2071,7 @@ async function doShellStrike(attacker, target, skill) {
   const defReduction = effectiveDef / (effectiveDef + DEF_CONSTANT);
 
   for (let i = 0; i < hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
 
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
@@ -2298,7 +2298,7 @@ async function doLineSketch(attacker, target, skill) {
   let totalDmg = 0;
 
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale);
     const eDef = calcEffDef(attacker, target);
@@ -2457,7 +2457,7 @@ async function doGhostStorm(attacker, target, skill) {
   let totalPierce = 0;
 
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
     // Ink amplification
@@ -2512,7 +2512,7 @@ async function doBambooLeaf(attacker, target, skill) {
   const tElId = getFighterElId(target);
   let totalDmg = 0;
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale) + Math.round(attacker.maxHp * skill.selfHpPct / 100);
     const eDef = calcEffDef(attacker, target);
@@ -2740,7 +2740,7 @@ async function doDiceAttack(attacker, target, skill) {
   const perHit = Math.round(totalBase / skill.hits);
   let totalDmg = 0, totalCrits = 0;
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const eDef = calcEffDef(attacker, target);
     const defRed = eDef / (eDef + DEF_CONSTANT);
     let effectiveCrit = attacker.crit;
@@ -2829,7 +2829,7 @@ async function doChestSmash(attacker, target, skill) {
 
   const hasThunder = hasChestEquip(attacker, 'thunder');
   for (let i = 0; i < hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const effDef = calcEffDef(attacker, target, dmgType);
     const defRed = dmgType === 'true' ? 0 : effDef / (effDef + DEF_CONSTANT);

@@ -360,39 +360,32 @@ const MODE_GUIDES = {
     icon: '🌿',
     title: '普通对战',
     tips: [
-      '选择3只龟组成队伍，对战随机AI敌方',
-      '前排龟优先承受单体攻击，后排更安全',
-      '先手方首回合只能行动2只龟',
-      '合理搭配物理/魔法/辅助龟'
+      '请选择3只乌龟组成队伍，对战敌方野生乌龟队伍',
+      '前排乌龟优先作为被选择目标，只有过了前排才可以选择后排作为目标',
+      '先手方首回合只能行动2只龟以平衡先手优势'
     ]
   },
   boss: {
     icon: '👑',
     title: 'Boss挑战',
     tips: [
-      '3只龟挑战1只超强Boss',
-      'Boss拥有 ×3.5 HP、×1.2 攻击、×1.4 护甲/魔抗',
-      'Boss每回合行动3次',
-      '建议带治疗/护盾龟'
+      '选择3只龟挑战1只超强Boss',
+      'Boss每回合行动3次'
     ]
   },
   dungeon: {
     icon: '🏰',
     title: '深海闯关',
     tips: [
-      '选择6只龟：3只上场 + 3只替补',
-      '5层连续3v3闯关，HP不会回满',
-      '每层通关后可选增益奖励，并可用替补换下阵亡龟',
-      '最终Boss在第5层等待'
+      '选择3只上场龟 + 3只替补龟',
+      '5层连续闯关，HP不回满，每层通关可选增益并换龟'
     ]
   },
   'pvp-online': {
     icon: '🌐',
     title: '在线对战',
     tips: [
-      '与真人玩家实时对战',
-      '双方各选3只龟，前后排自行安排',
-      '每回合限时3分钟'
+      '与真人玩家实时对战，每回合限时3分钟'
     ]
   }
 };
@@ -471,8 +464,18 @@ function togglePet(e, id) {
   // Check cap
   const maxPets = gameMode === 'dungeon' ? 6 : 3;
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+  // If there's an active slot, place into it
+  if (_fgActiveSlot && !_fgSlots[_fgActiveSlot]) {
+    if (placed >= maxPets) { showToast(`已选${maxPets}只`); _fgActiveSlot = null; renderFgSlots(); return; }
+    _fgSlots[_fgActiveSlot] = id;
+    _fgActiveSlot = null;
+    renderFgSlots();
+    renderPetGrid();
+    updateConfirmBtn();
+    return;
+  }
   if (placed >= maxPets) { showToast(`已选${maxPets}只，点击龟或格子可移除`); return; }
-  // Place in next empty front slot first, then back
+  // Place in next empty slot
   for (const key of FG_SLOT_KEYS) {
     if (!_fgSlots[key]) {
       _fgSlots[key] = id;
@@ -485,6 +488,7 @@ function togglePet(e, id) {
 }
 
 let _fgSelectedSlot = null; // for mobile tap-to-swap
+let _fgActiveSlot = null; // click slot first, then click turtle to place
 function fgSlotClick(key) {
   const isMobile = window.innerWidth <= 768;
   if (isMobile && _fgSlots[key]) {
@@ -524,13 +528,18 @@ function fgSlotClick(key) {
     return;
   }
   _fgSelectedSlot = null;
-  // Desktop: click to remove
+  // Click occupied slot: remove turtle
   if (_fgSlots[key]) {
+    _fgActiveSlot = null;
     delete _fgSlots[key];
     renderFgSlots();
     renderPetGrid();
     updateConfirmBtn();
+    return;
   }
+  // Click empty slot: activate it (next turtle click fills it)
+  _fgActiveSlot = (_fgActiveSlot === key) ? null : key;
+  renderFgSlots();
 }
 
 // ── Drag & Drop ──
@@ -653,8 +662,9 @@ function renderFgSlots() {
     const slot = document.getElementById('fgSlot-' + key);
     if (!slot) continue;
     const petId = _fgSlots[key];
-    // Selected highlight for mobile swap
+    // Highlight: mobile swap selection or active slot for placement
     slot.classList.toggle('fg-selected', _fgSelectedSlot === key);
+    slot.classList.toggle('fg-active', _fgActiveSlot === key);
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
       slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;

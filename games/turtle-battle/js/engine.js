@@ -1956,7 +1956,7 @@ async function doDamage(attacker, target, skill) {
   let totalDirect = 0, totalPierce = 0, totalShieldDmg = 0, totalCrits = 0;
 
   for (let i = 0; i < hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue;
 
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
@@ -2554,7 +2554,7 @@ async function doGamblerCards(attacker, target, skill) {
   const tElId = getFighterElId(target);
   let totalDmg = 0;
   for (let i = 0; i < skill.hits; i++) {
-    if (!target.alive) break;
+    if (!target.alive) continue;
     const scale = skill.minScale + Math.random() * (skill.maxScale - skill.minScale);
     const baseDmg = Math.round(attacker.atk * scale);
     const eDef = calcEffDef(attacker, target);
