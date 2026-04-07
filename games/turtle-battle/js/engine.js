@@ -17,13 +17,12 @@ function createFighter(petId, side, equippedIdxs) {
   const atk = b.atk;
   const def = b.def;
   const mr  = b.mr !== undefined ? b.mr : b.def;
-  const spd = b.spd;
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
     maxHp:hp, hp:hp, shield:0,
-    baseAtk:atk, baseDef:def, baseMr:mr, baseSpd:spd,
-    atk, def, mr, spd,
+    baseAtk:atk, baseDef:def, baseMr:mr,
+    atk, def, mr,
     // Initial snapshot (never modified, for UI color comparison)
     _initHp:hp, _initAtk:atk, _initDef:def, _initMr:mr, _initCrit: b.crit || 0.08, _initArmorPen:0, _initMagicPen:0, _initLifesteal:0,
     crit: b.crit || 0.08,
