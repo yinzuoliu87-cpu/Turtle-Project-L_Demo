@@ -50,6 +50,7 @@ function renderScene() {
         ${f.passive && f.passive.type === 'bubbleStore' ? `<div class="st-bubble-store-bar"><div class="st-bubble-store-fill" style="width:0%"></div></div>` : ''}
         ${f.passive && f.passive.type === 'lavaRage' ? `<div class="st-rage-bar"><div class="st-rage-fill" style="width:0%"></div></div>` : ''}
         ${f.passive && f.passive.type === 'starEnergy' ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
+        ${f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
       </div>
       <div class="st-sprite">${spriteHTML}</div>
       <div class="st-buffs"></div>
@@ -246,6 +247,17 @@ function updateSceneHp(f) {
     const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
     const ePct = Math.min(100, (f._starEnergy || 0) / maxE * 100);
     energyBar.style.width = ePct + '%';
+  }
+
+  // ── Aura energy bar (龟壳 stored energy) ──
+  if (f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore) {
+    const allEBars = el.querySelectorAll('.st-energy-fill');
+    const auraBar = allEBars[allEBars.length - 1]; // last energy bar is aura's
+    if (auraBar) {
+      const maxVisual = f.maxHp * 2;
+      const storePct = Math.min(100, (f._storedEnergy || 0) / maxVisual * 100);
+      auraBar.style.width = storePct + '%';
+    }
   }
 
   // ── Death state ──
@@ -499,13 +511,26 @@ function showFighterDetail(f) {
     html += `</div>`;
   }
 
-  // ── Skills ──
+  // ── Passive Skills (equipped passives) ──
+  if (f._passiveSkills && f._passiveSkills.length) {
+    html += `<div class="fdp-section-label">装备被动</div><div class="fdp-skills">`;
+    f._passiveSkills.forEach(s => {
+      const brief = s.brief ? renderSkillTemplate(s.brief, f, s).replace(/\n/g,'<br>') : '';
+      html += `<div class="fdp-skill fdp-skill-passive">
+        <div class="fdp-skill-header">${s.name} <span class="spc-passive-tag">被动</span></div>
+        <div class="fdp-skill-brief">${brief}</div>
+      </div>`;
+    });
+    html += `</div>`;
+  }
+
+  // ── Active Skills ──
   if (f.skills && f.skills.length) {
     html += `<div class="fdp-section-label">技能</div><div class="fdp-skills">`;
     f.skills.forEach(s => {
       const brief = buildSkillBrief(f, s);
       const detail = buildSkillDetailDesc(f, s);
-      const cdText = s.cd ? `<span class="fdp-cd">CD${s.cd}</span>` : '';
+      const cdText = s.cd ? `<span class="fdp-cd">CD${s.cd}${s.cdLeft > 0 ? ' (剩'+s.cdLeft+')' : ''}</span>` : '';
       html += `<div class="fdp-skill">
         <div class="fdp-skill-header">${s.name}${cdText}</div>
         <div class="fdp-skill-brief">${brief}</div>

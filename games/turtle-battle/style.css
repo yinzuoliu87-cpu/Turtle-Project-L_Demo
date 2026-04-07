@@ -1857,6 +1857,7 @@ body{
 .fdp-skill-header{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .fdp-cd{font-size:10px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px}
 .fdp-skill-brief,.fdp-skill-detail{font-size:12px;line-height:1.6;color:var(--fg2)}
+.fdp-skill-passive{border-color:rgba(199,125,255,.2);background:rgba(199,125,255,.04)}
 /* Skill announce banner */
 .skill-announce{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;align-items:center;gap:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);padding:8px 20px;border-radius:8px;z-index:200;font-size:16px;font-weight:700;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.1)}
 .sa-name{font-size:16px}

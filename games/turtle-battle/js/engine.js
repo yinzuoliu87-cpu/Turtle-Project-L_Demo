@@ -976,9 +976,14 @@ async function nextSideAction() {
     const picker = document.getElementById('turtlePicker');
     if (picker) picker.style.display = 'none';
     const f = canAct[Math.floor(Math.random() * canAct.length)];
+    // Safety watchdog: if AI hangs for 8s, force next action
+    const watchdog = setTimeout(() => {
+      if (!battleOver && animating) { console.warn('AI watchdog triggered'); animating = false; onActionComplete(); }
+    }, 8000);
     setTimeout(() => {
+      clearTimeout(watchdog);
       actedThisSide.add(allFighters.indexOf(f));
-      aiAction(f);
+      try { aiAction(f); } catch(e) { console.error('aiAction error:', e); animating = false; onActionComplete(); }
     }, 1200);
   }
 }
