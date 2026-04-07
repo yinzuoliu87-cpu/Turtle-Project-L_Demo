@@ -88,16 +88,26 @@ function renderSceneBuffs(f) {
   if (!box) return;
   const icons = [];
   for (const b of (f.buffs || [])) {
-    if (b.type === 'phoenixBurnDot') icons.push('🔥');
-    else if (b.type === 'dot') icons.push('💀');
-    else if (b.type === 'atkUp') icons.push('⬆');
-    else if (b.type === 'atkDown') icons.push('⬇');
-    else if (b.type === 'defUp') icons.push('🛡');
+    if (b.type === 'phoenixBurnDot') icons.push('<span style="color:#ff6600">🔥</span>');
+    else if (b.type === 'dot') icons.push('<span style="color:#9b59b6">💀</span>');
+    else if (b.type === 'atkUp') icons.push('<span style="color:#06d6a0">⬆</span>');
+    else if (b.type === 'atkDown') icons.push('<span style="color:#ff6b6b">⬇</span>');
+    else if (b.type === 'defUp') icons.push('<span style="color:#06d6a0">🛡</span>');
+    else if (b.type === 'defDown') icons.push('<span style="color:#ff6b6b">🛡</span>');
+    else if (b.type === 'mrUp') icons.push('<span style="color:#4dabf7">🛡</span>');
+    else if (b.type === 'mrDown') icons.push('<span style="color:#ff6b6b">🔮</span>');
     else if (b.type === 'dodge') icons.push('💨');
-    else if (b.type === 'stun') icons.push('💫');
-    else if (b.type === 'healReduce') icons.push('☠');
+    else if (b.type === 'stun') icons.push('<span style="color:#ffee00">💫</span>');
+    else if (b.type === 'healReduce') icons.push('<span style="color:#6b8e23">☠</span>');
+    else if (b.type === 'hot') icons.push('<span style="color:#06d6a0">💚</span>');
+    else if (b.type === 'fear') icons.push('<span style="color:#9b59b6">😨</span>');
+    else if (b.type === 'bubbleBind') icons.push('<span style="color:#4cc9f0">🫧</span>');
+    else if (b.type === 'trap') icons.push('<span style="color:#ff9f43">⚡</span>');
+    else if (b.type === 'diceFateCrit') icons.push('<span style="color:#ff4757">🎲</span>');
+    else if (b.type === 'gamblerPierceConvert') icons.push('<span style="color:#ffd93d">🎰</span>');
+    else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
   }
-  box.innerHTML = icons.slice(0, 5).map(i => `<span>${i}</span>`).join('');
+  box.innerHTML = icons.slice(0, 6).map(i => i).join('');
 }
 
 // Update HP bar for a scene turtle
@@ -300,13 +310,16 @@ function refreshDetailPanel(f) {
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
   const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
   const critPct = Math.min(100, Math.round((f.crit||0) * 100));
+  const overflowCrit2 = Math.max(0, (f.crit||0) - 1.0);
+  const overflowMult2 = (f.passive && f.passive.overflowMult) || 1.5;
+  const critDmgPct = Math.round((1.5 + (f._extraCritDmg||0) + (f._extraCritDmgPerm||0) + overflowCrit2 * overflowMult2) * 100);
   const vals = [
     { cur: f.atk, init: f._initAtk, text: `${ic('atk-icon.png')}攻击 ${f.atk}` },
     { cur: f._lifestealPct||0, init: f._initLifesteal||0, text: `${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct||0}%` },
     { cur: f.def, init: f._initDef, text: `${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(减免${defPct}%)</span>` },
     { cur: f.mr, init: f._initMr, text: `${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(减免${mrPct}%)</span>` },
     { cur: f.crit, init: f._initCrit, text: `${ic('crit-icon.png')}暴击 ${critPct}%` },
-    { cur: f.critDmg||150, init: 150, text: `${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%` },
+    { cur: critDmgPct, init: 150, text: `${ic('crit-dmg-icon.png')}爆伤 ${critDmgPct}%` },
     { cur: f.armorPen, init: f._initArmorPen, text: `${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}` },
     { cur: f.magicPen, init: f._initMagicPen, text: `${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}` },
   ];
@@ -333,6 +346,9 @@ function showFighterDetail(f) {
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
   const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
   const critPct = Math.min(100, Math.round((f.crit||0) * 100));
+  const overflowCrit = Math.max(0, (f.crit||0) - 1.0);
+  const overflowMult = (f.passive && f.passive.overflowMult) || 1.5;
+  const critDmgPct = Math.round((1.5 + (f._extraCritDmg||0) + (f._extraCritDmgPerm||0) + overflowCrit * overflowMult) * 100);
   const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
   const hpPct = Math.max(0, f.hp / f.maxHp * 100);
   const hpColor = isAlly ? 'linear-gradient(180deg,#3deb9e 40%,#089e6b 60%)' : 'linear-gradient(180deg,#c084fc 40%,#7c3aed 60%)';
@@ -351,7 +367,7 @@ function showFighterDetail(f) {
     <div class="fdp-stat ${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(减免${defPct}%)</span></div>
     <div class="fdp-stat ${sc(f.mr, f._initMr)}">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(减免${mrPct}%)</span></div>
     <div class="fdp-stat ${sc(f.crit, f._initCrit)}">${ic('crit-icon.png')}暴击 ${critPct}%</div>
-    <div class="fdp-stat ${sc(f.critDmg||150, 150)}">${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%</div>
+    <div class="fdp-stat ${sc(critDmgPct, 150)}">${ic('crit-dmg-icon.png')}爆伤 ${critDmgPct}%</div>
     <div class="fdp-stat ${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}</div>
     <div class="fdp-stat ${sc(f.magicPen, f._initMagicPen)}">${ic('magic-pen-icon.png')}魔穿 ${f.magicPen||0}</div>
   </div>`;
@@ -360,15 +376,25 @@ function showFighterDetail(f) {
   if (f.buffs && f.buffs.length) {
     html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">';
     f.buffs.forEach(b => {
-      if (b.type === 'phoenixBurnDot') html += `<span class="fdp-buff-tag" style="border-color:#ff6600;color:#ff6600">🔥灼烧 ${b.turns}回合</span>`;
-      else if (b.type === 'dot') html += `<span class="fdp-buff-tag" style="border-color:#9b59b6;color:#9b59b6">💀诅咒 ${b.turns}回合</span>`;
-      else if (b.type === 'atkUp') html += `<span class="fdp-buff-tag" style="border-color:var(--green);color:var(--green)">⬆攻+${b.value} ${b.turns}回合</span>`;
-      else if (b.type === 'atkDown') html += `<span class="fdp-buff-tag" style="border-color:var(--red);color:var(--red)">⬇攻-${b.value}% ${b.turns}回合</span>`;
-      else if (b.type === 'defUp') html += `<span class="fdp-buff-tag" style="border-color:var(--green);color:var(--green)">⬆护+${b.value} ${b.turns}回合</span>`;
-      else if (b.type === 'defDown') html += `<span class="fdp-buff-tag" style="border-color:var(--red);color:var(--red)">⬇护-${b.value}% ${b.turns}回合</span>`;
-      else if (b.type === 'dodge') html += `<span class="fdp-buff-tag">💨闪避${b.value}% ${b.turns}回合</span>`;
-      else if (b.type === 'stun') html += `<span class="fdp-buff-tag" style="border-color:#ffee00;color:#ffee00">💫眩晕</span>`;
-      else if (b.type === 'healReduce') html += `<span class="fdp-buff-tag" style="border-color:#6b8e23;color:#6b8e23">☠治疗削减 ${b.value}%</span>`;
+      const tag = (color, text) => `<span class="fdp-buff-tag" style="border-color:${color};color:${color}">${text}</span>`;
+      if (b.type === 'phoenixBurnDot') html += tag('#ff6600', `🔥灼烧 ${b.turns}回合`);
+      else if (b.type === 'dot') html += tag('#9b59b6', `💀诅咒 ${b.turns}回合`);
+      else if (b.type === 'atkUp') html += tag('#06d6a0', `⬆攻+${b.value} ${b.turns}回合`);
+      else if (b.type === 'atkDown') html += tag('#ff6b6b', `⬇攻-${b.value}% ${b.turns}回合`);
+      else if (b.type === 'defUp') html += tag('#06d6a0', `⬆护+${b.value} ${b.turns}回合`);
+      else if (b.type === 'defDown') html += tag('#ff6b6b', `⬇护-${b.value}% ${b.turns}回合`);
+      else if (b.type === 'mrUp') html += tag('#4dabf7', `⬆魔抗+${b.value} ${b.turns}回合`);
+      else if (b.type === 'mrDown') html += tag('#ff6b6b', `⬇魔抗-${b.value}% ${b.turns}回合`);
+      else if (b.type === 'dodge') html += tag('#aaa', `💨闪避${b.value}% ${b.turns}回合`);
+      else if (b.type === 'stun') html += tag('#ffee00', `💫眩晕`);
+      else if (b.type === 'healReduce') html += tag('#6b8e23', `☠治疗削减 ${b.value}%`);
+      else if (b.type === 'hot') html += tag('#06d6a0', `💚持续回复 ${b.hpPerTurn}/回 ${b.turns}回合`);
+      else if (b.type === 'fear') html += tag('#9b59b6', `😨恐惧 ${b.turns}回合`);
+      else if (b.type === 'bubbleBind') html += tag('#4cc9f0', `🫧泡泡束缚 ${b.turns}回合`);
+      else if (b.type === 'trap') html += tag('#ff9f43', `⚡陷阱`);
+      else if (b.type === 'diceFateCrit') html += tag('#ff4757', `🎲暴击+${b.value}% ${b.turns}回合`);
+      else if (b.type === 'gamblerPierceConvert') html += tag('#ffd93d', `🎰穿透转换 ${b.turns}回合`);
+      else if (b.type === 'hidingShield') html += tag('#fff', `🐢缩头护盾 ${b.turns}回合`);
     });
     html += '</div>';
   }
