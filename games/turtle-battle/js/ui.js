@@ -107,6 +107,10 @@ function renderSceneBuffs(f) {
     else if (b.type === 'gamblerPierceConvert') icons.push('<span style="color:#ffd93d">🎰</span>');
     else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
   }
+  // Special state icons (not in buffs array)
+  if (f._inkStacks > 0) icons.push(`<span style="color:#222" title="墨迹${f._inkStacks}层">🦑${f._inkStacks}</span>`);
+  if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">⚡${f._shockStacks}</span>`);
+  if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}</span>`);
   // Equipment icons
   if (f._equips && f._equips.length) {
     for (const eq of f._equips) {
@@ -403,7 +407,18 @@ function showFighterDetail(f) {
       else if (b.type === 'gamblerPierceConvert') html += tag('#ffd93d', `🎰穿透转换 ${b.turns}回合`);
       else if (b.type === 'hidingShield') html += tag('#fff', `🐢缩头护盾 ${b.turns}回合`);
     });
+    // Non-buff state tags
+    if (f._inkStacks > 0) html += tag('#222', `🦑墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
+    if (f._shockStacks > 0) html += tag('#ffd700', `⚡电击 ${f._shockStacks}层`);
+    if (f._goldLightning > 0) html += tag('#ffd700', `⚡金闪电 ${f._goldLightning}/8`);
     html += '</div>';
+  } else {
+    // No buffs but might have special states
+    const specials = [];
+    if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#222;color:#222;background:rgba(0,0,0,.2)">🦑墨迹 ${f._inkStacks}层</span>`);
+    if (f._shockStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡电击 ${f._shockStacks}层</span>`);
+    if (f._goldLightning > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡金闪电 ${f._goldLightning}/8</span>`);
+    if (specials.length) html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">' + specials.join('') + '</div>';
   }
 
   // ── Passive ──
@@ -452,8 +467,8 @@ function showFighterDetail(f) {
       let descText = f.passive.desc;
       if (f._twoHeadForm === 'melee' && f.passive.descMelee) descText = f.passive.descMelee;
       if (f._lavaTransformed && f.passive.descVolcano) descText = f.passive.descVolcano;
-      const descRendered = renderSkillTemplate(descText, f, f.passive);
-      const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
+      const descRendered = renderSkillTemplate(descText, f, f.passive).replace(/\n/g, '<br>');
+      const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive).replace(/\n/g, '<br>') : null;
 
       if (briefText) {
         html += `<div class="fdp-passive-brief">${briefText}</div>`;
