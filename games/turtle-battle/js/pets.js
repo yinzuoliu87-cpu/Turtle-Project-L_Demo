@@ -115,7 +115,8 @@ const ALL_PETS = [
         brief:'天使龟造成（{T:1.0*ATK}）+ 8%目标最大HP 真实伤害',
         detail:'天使龟对单体降下神罚，造成（100%×攻击力({ATK}) = {T:1.0*ATK}）+ 8%目标最大HP 真实伤害。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2],
-    skills:[],
+    skills:[]
+  },
   { id:'ice',       name:'寒冰龟',   emoji:'❄️🐢',    rarity:'B',   hp:381,  atk:41,  def:16, mr:18, spd:9, crit:0.25,
     img:'../../assets/pets/寒冰龟.png',
     passive:{ type:'frostAura', name:'冰寒', atkDownPct:20, atkDownTurns:6, burnImmune:true,
@@ -155,7 +156,8 @@ const ALL_PETS = [
         brief:'忍者龟造成（{N:2.0*ATK}）物理伤害，目标HP低于30%时必暴击+真实伤害',
         detail:'忍者龟对单体施展致命一击，造成（200%×攻击力({ATK}) = {N:2.0*ATK}）物理伤害。\n如果目标HP低于 <span class="val-atk">30%</span>，此攻击必定暴击且转为真实伤害。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2],
-    skills:[],
+    skills:[]
+  },
   { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:302,  atk:50,  def:11, mr:12, spd:7, crit:0.25,
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', name:'双生', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
@@ -403,7 +405,8 @@ const ALL_PETS = [
         brief:'凤凰龟清除一名友方所有减益，每清除1个回复 <span class="val-heal">10%</span> 最大HP',
         detail:'凤凰龟选择一名友方，清除其身上所有减益效果（攻击降低、护甲降低、灼烧、诅咒、治疗削减等）。\n每清除1个减益效果，回复该友方 <span class="val-heal">10%</span> 最大生命值。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2],
-    skills:[],
+    skills:[]
+  },
   { id:'lava',      name:'熔岩龟',   emoji:'🌋🐢',    rarity:'S',   hp:290,  atk:40,  def:14, mr:16, spd:8, crit:0.25,
     img:'../../assets/pets/熔岩龟.png',
     passive:{ type:'lavaRage', name:'熔岩之心', rageDmgPct:25, rageTakenPct:20, rageMax:100,
