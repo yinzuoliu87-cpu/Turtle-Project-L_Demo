@@ -78,7 +78,7 @@ let _turnPromise = (async function loadTurnServers() {
   } catch(e) {
     console.warn('Metered TURN API failed:', e.message);
   }
-  // Fallback: public STUN + free TURN relays
+  // Fallback: public STUN + multiple free TURN relays for better connectivity
   console.log('Using fallback STUN/TURN servers');
   PEER_CONFIG.config.iceServers = [
     { urls: 'stun:stun.l.google.com:19302' },
@@ -89,6 +89,7 @@ let _turnPromise = (async function loadTurnServers() {
     { urls: 'turn:openrelay.metered.ca:80', username: 'openrelayproject', credential: 'openrelayproject' },
     { urls: 'turn:openrelay.metered.ca:443', username: 'openrelayproject', credential: 'openrelayproject' },
     { urls: 'turns:openrelay.metered.ca:443?transport=tcp', username: 'openrelayproject', credential: 'openrelayproject' },
+    { urls: 'turn:relay1.expressturn.com:3478', username: 'efDQE6V5R0GFWWMR7M', credential: 'mIjlSYNm3082pVfl' },
   ];
   _turnReady = true;
 })();
@@ -110,8 +111,8 @@ async function createRoom() {
   status.textContent = '正在连接信令服务器… (ICE: ' + PEER_CONFIG.config.iceServers.length + '个)';
 
   const timeout = setTimeout(() => {
-    status.textContent = '❌ 连接超时（10秒）。PeerJS公共服务器可能不可用，请稍后重试。';
-  }, 10000);
+    status.innerHTML = '❌ 连接超时。PeerJS服务器可能不可用。<br><button class="btn btn-sm" onclick="createRoom()" style="margin-top:6px">重试</button>';
+  }, 15000);
 
   onlinePeer.on('open', (id) => {
     clearTimeout(timeout);
@@ -160,7 +161,7 @@ async function joinRoom() {
   status.textContent = '正在连接信令服务器… (ICE: ' + PEER_CONFIG.config.iceServers.length + '个)';
 
   const timeout = setTimeout(() => {
-    status.textContent = '❌ 连接信令服务器超时（10秒）。请检查网络或稍后重试。';
+    status.innerHTML = '❌ 连接信令服务器超时。<br><button class="btn btn-sm" onclick="joinRoom()" style="margin-top:6px">重试</button>';
   }, 10000);
 
   onlinePeer.on('open', (myId) => {
@@ -218,13 +219,12 @@ function copyRoomCode() {
   navigator.clipboard.writeText(onlineRoom).then(() => showToast('已复制房间号'));
 }
 
+let _reconnectTimer = null;
 function setupConn(conn) {
   conn.on('data', (msg) => handleOnlineMessage(msg));
   conn.on('close', () => {
     onlineConn = null;
-    if (!battleOver) {
-      showDisconnectOverlay();
-    }
+    if (!battleOver) showDisconnectOverlay();
   });
   conn.on('error', (err) => {
     console.error('DataConnection error:', err);
@@ -232,7 +232,20 @@ function setupConn(conn) {
   });
   conn.on('iceStateChanged', (state) => {
     console.log('ICE state:', state);
-    if (state === 'disconnected' || state === 'failed') {
+    if (state === 'disconnected') {
+      // Brief disconnect — wait 8s for recovery before declaring loss
+      if (_reconnectTimer) clearTimeout(_reconnectTimer);
+      if (!battleOver) {
+        showToast('⚠️ 连接不稳定，等待恢复…');
+        _reconnectTimer = setTimeout(() => {
+          if (!battleOver) showDisconnectOverlay();
+        }, 8000);
+      }
+    } else if (state === 'connected' || state === 'completed') {
+      // Recovered
+      if (_reconnectTimer) { clearTimeout(_reconnectTimer); _reconnectTimer = null; showToast('✅ 连接已恢复'); }
+    } else if (state === 'failed') {
+      if (_reconnectTimer) clearTimeout(_reconnectTimer);
       if (!battleOver) showDisconnectOverlay();
     }
   });
@@ -268,10 +281,35 @@ function showDisconnectOverlay() {
 }
 
 function sendOnline(msg) {
-  if (onlineConn && onlineConn.open) onlineConn.send(msg);
+  if (onlineConn && onlineConn.open) {
+    try { onlineConn.send(msg); }
+    catch(e) { console.error('sendOnline error:', e); }
+  }
+}
+
+// Heartbeat: detect silent disconnects
+let _heartbeatInterval = null;
+let _lastPong = 0;
+function startHeartbeat() {
+  _lastPong = Date.now();
+  if (_heartbeatInterval) clearInterval(_heartbeatInterval);
+  _heartbeatInterval = setInterval(() => {
+    if (!onlineConn || !onlineConn.open || battleOver) { clearInterval(_heartbeatInterval); return; }
+    sendOnline({ type: 'ping' });
+    // If no pong for 15s, show warning
+    if (Date.now() - _lastPong > 15000 && !battleOver) {
+      showToast('⚠️ 对手无响应…');
+    }
+    if (Date.now() - _lastPong > 30000 && !battleOver) {
+      clearInterval(_heartbeatInterval);
+      showDisconnectOverlay();
+    }
+  }, 5000);
 }
 
 function handleOnlineMessage(msg) {
+  if (msg.type === 'ping') { sendOnline({ type: 'pong' }); return; }
+  if (msg.type === 'pong') { _lastPong = Date.now(); return; }
   switch (msg.type) {
     case 'start':
       selecting = onlineSide;
@@ -817,6 +855,7 @@ function startBattle(seed) {
     }
     _battleSeed = seed;
     seedBattleRng(seed);
+    startHeartbeat();
   }
   showScreen('screenBattle');
   // Set battle background based on mode

@@ -1542,18 +1542,11 @@ function renderActionButtons(f) {
       const detail = buildSkillDetailDesc(f, s);
       const cdLine = s.cd > 0 && s.cd < 100 ? `<span class="skill-cd-info">CD${s.cd}</span>` : '';
       return `<div class="skill-btn-wrap" id="skillWrap${i}">
-        <div class="skill-card-mobile ${ready?'':'disabled'}">
-          <div class="skill-btn-row">
-            <button class="skill-name-btn ${ready?'':'disabled'}" ${ready?`onclick="pickSkill(${i})"`:''}>
-              ${icon} ${s.name}${hitsLabel}${cdStr} ${cdLine}
-            </button>
-            <button class="skill-info-btn" onclick="toggleMobileSkillDetail(event,${i})">ℹ</button>
-          </div>
-          <div class="skill-mobile-detail" id="skillMobileDetail${i}" style="display:none">
-            <div class="skill-mobile-brief">${brief}</div>
-            <div class="skill-mobile-full" style="display:none">${detail}</div>
-            ${detail !== brief ? `<span class="fdp-passive-toggle" onclick="event.stopPropagation();toggleMobileSkillBriefDetail(${i})">详细 ▾</span>` : ''}
-          </div>
+        <div class="skill-card-mobile ${ready?'':'disabled'}" ${ready?`onclick="pickSkill(${i})"`:''}>
+          <div class="skill-mobile-header">${icon} <b>${s.name}</b>${hitsLabel}${cdStr} ${cdLine}</div>
+          <div class="skill-mobile-brief">${brief}</div>
+          <div class="skill-mobile-full" id="skillMobileDetail${i}" style="display:none">${detail}</div>
+          ${detail !== brief ? `<span class="fdp-passive-toggle" onclick="event.stopPropagation();toggleMobileSkillBriefDetail(${i})">详细 ▾</span>` : ''}
         </div>
       </div>`;
     }
@@ -2001,11 +1994,17 @@ function showPassivePopup(e, fIdx) {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div><div class="passive-popup-desc">${descRendered}</div>`;
   }
   popup.style.display = 'block';
-  // Position near click
-  const x = Math.min(e.clientX, window.innerWidth - 290);
-  const y = Math.min(e.clientY + 10, window.innerHeight - 120);
-  popup.style.left = x + 'px';
-  popup.style.top = y + 'px';
+  if (window.innerWidth <= 768) {
+    // Mobile: center on screen (CSS handles via !important)
+    popup.style.left = '';
+    popup.style.top = '';
+  } else {
+    // Desktop: position near click
+    const x = Math.min(e.clientX, window.innerWidth - 290);
+    const y = Math.min(e.clientY + 10, window.innerHeight - 120);
+    popup.style.left = x + 'px';
+    popup.style.top = y + 'px';
+  }
   // Close on next click anywhere
   setTimeout(() => document.addEventListener('click', closePassivePopup, { once: true }), 10);
 }
