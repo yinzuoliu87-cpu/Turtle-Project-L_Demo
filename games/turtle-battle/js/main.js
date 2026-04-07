@@ -519,7 +519,7 @@ function renderFgSlots() {
     const petId = _fgSlots[key];
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
-      slot.innerHTML = `<div class="fg-turtle"><span class="fg-emoji">${p.emoji}</span><span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
+      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
       slot.classList.add('filled');
       // Make filled slot draggable for reordering
       slot.draggable = true;
@@ -1150,7 +1150,7 @@ function showDungeonClearScreen() {
     const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
     const hpPct = Math.round(hp / maxHp * 100);
     return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
-      <div class="dts-emoji">${p.emoji}</div>
+      <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
       <div class="dts-name">${p.name}</div>
       <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
     </div>`;
@@ -1226,7 +1226,7 @@ function showDungeonTeamStatus() {
     const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
     const hpPct = Math.round(hp / maxHp * 100);
     return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
-      <div class="dts-emoji">${p.emoji}</div>
+      <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
       <div class="dts-name">${p.name}</div>
       <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
     </div>`;

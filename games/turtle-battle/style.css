@@ -90,7 +90,7 @@ body{
 .pet-rarity{font-size:18px;font-weight:700;position:absolute;top:4px;left:8px;text-shadow:0 0 6px rgba(0,0,0,.5)}
 .pet-stats-mini{display:flex;gap:6px;justify-content:center;font-size:13px;color:var(--fg2);margin-top:6px}
 .pet-stats-mini .stat-icon{width:16px;height:16px}
-.select-top{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:16px;flex-wrap:wrap;padding:12px 0;position:sticky;top:0;z-index:50;background:var(--bg)}
+.select-top{display:flex;align-items:center;justify-content:center;gap:20px;margin-bottom:0;flex-wrap:wrap;padding:12px 16px;position:sticky;top:42px;z-index:50;background:var(--bg)}
 .select-actions{display:flex;gap:12px;align-items:center}
 .slot-avatar{display:flex;align-items:center;justify-content:center;flex-shrink:0}
 
@@ -632,6 +632,7 @@ body{
 .val-stun{color:#ffee00;font-weight:700}
 .val-dot{color:#9b59b6;font-weight:700}
 .val-shield-break{color:#ff4757;font-weight:700}
+.val-reflect{color:#e67e22;font-weight:700}
 .skill-pierce{font-size:11px;color:var(--purple);font-weight:700}
 .cd-tag{position:absolute;top:4px;right:6px;font-size:10px;color:var(--red);font-weight:700}
 .skill-tags{display:flex;gap:3px;justify-content:center;margin-top:2px}
@@ -698,7 +699,8 @@ body{
 
 /* ── RESPONSIVE (legacy 640px removed, consolidated into 768px/480px below) ── */
 /* Battle log wrapper (collapsible on mobile) */
-.battle-log-wrapper{flex-shrink:0}
+.battle-log-wrapper{flex-shrink:0;display:none}
+.battle-log-wrapper.log-open{display:block}
 .battle-log-toggle{display:none}
 
 /* ═══════════════════════════════════════════════════
@@ -801,66 +803,49 @@ body{
   .turn-banner { font-size: 13px; padding: 2px 6px; }
   .side-indicator { margin-bottom: 2px; min-height: 20px; }
 
-  /* Battle field: left | VS | right, horizontal */
-  .battle-main-row {
-    flex-direction: row;
-    gap: 4px;
-    flex: 1;
-    min-height: 0;
-    overflow: hidden;
-    margin-bottom: 0;
-    align-items: stretch;
-  }
-  .battle-field {
-    flex-direction: row;
-    flex-wrap: nowrap;
-    gap: 2px;
-    flex: 1;
-    align-items: stretch;
-    justify-content: stretch;
-    min-width: 0;
-  }
-  .battle-side {
-    flex: 1 1 0;
-    min-width: 0;
-    max-width: none;
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-height: 0;
-  }
-  .vs-badge { font-size: 12px; padding: 0; align-self: center; margin-top: 0; flex-shrink: 0; width: 20px; text-align: center; }
-  .team-label { font-size: 10px; padding: 1px 0; margin-bottom: 1px; }
+  /* ── SCENE-BASED BATTLE (mobile) ── */
+  .battle-scene{aspect-ratio:3/2;max-height:45vh}
+  .battle-scene .team-label{font-size:11px;padding:2px 8px}
 
-  /* Fighter cards: compact, no stretch */
-  .fighter-card {
-    flex: 0 1 auto;
-    padding: 4px 4px;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
-    border-radius: 8px;
-  }
-  .fighter-emoji { font-size: 24px; min-height: 30px; flex-shrink: 0; }
-  .fighter-card .sprite-wrap { flex-shrink: 0; }
-  .fighter-name { font-size: 10px; margin-bottom: 1px; flex-shrink: 0; }
-  .hp-bar { height: 7px; flex-shrink: 0; }
-  .hp-text { font-size: 8px; flex-shrink: 0; }
-  .fighter-stats { font-size: 8px; flex-shrink: 1; overflow: hidden; }
-  .stats-brief { font-size: 8px; gap: 2px; }
-  .stats-brief .stat-icon { width: 10px; height: 10px; }
-  .stats-detail { display: none; } /* hide expanded stats on mobile */
-  .stats-toggle { display: none; }
-  .passive-icon { width: 18px; height: 18px; }
-  .passive-icon .stat-icon { width: 14px; height: 14px; }
-  .status-icons { font-size: 8px; gap: 2px; max-height: 18px; overflow: hidden; flex-shrink: 1; }
+  /* Scene turtle sizing */
+  .scene-turtle .st-name{font-size:8px;max-width:56px;overflow:hidden;text-overflow:ellipsis}
+  .scene-turtle .st-hp-wrap{width:56px}
+  .scene-turtle .st-hp-bar{height:5px}
+  .scene-turtle .st-buffs{max-width:50px;font-size:7px}
+  /* Increase touch target */
+  .scene-turtle{padding:6px;margin:-6px}
+  .scene-turtle.targetable{padding:10px;margin:-10px}
 
-  /* Summon mini-card */
-  .summon-mini { padding: 3px 4px; margin-top: 2px; }
-  .summon-name { font-size: 9px; }
-  .summon-hp-bar { height: 4px; }
-  .summon-hp-text { font-size: 7px; }
-  .summon-stats { font-size: 7px; }
+  /* Mobile turtle positions — spread for 3:2 */
+  .scene-turtle.pos-left-front-0{left:30%;bottom:48%}
+  .scene-turtle.pos-left-front-1{left:26%;bottom:32%}
+  .scene-turtle.pos-left-front-2{left:34%;bottom:16%}
+  .scene-turtle.pos-left-back-0{left:10%;bottom:46%}
+  .scene-turtle.pos-left-back-1{left:7%;bottom:31%}
+  .scene-turtle.pos-left-back-2{left:14%;bottom:16%}
+  .scene-turtle.pos-right-front-0{right:30%;bottom:48%}
+  .scene-turtle.pos-right-front-1{right:26%;bottom:32%}
+  .scene-turtle.pos-right-front-2{right:34%;bottom:16%}
+  .scene-turtle.pos-right-back-0{right:10%;bottom:46%}
+  .scene-turtle.pos-right-back-1{right:7%;bottom:31%}
+  .scene-turtle.pos-right-back-2{right:14%;bottom:16%}
+
+  /* Scene summon */
+  .scene-summon{transform:scale(.65)}
+  .scene-summon .st-hp-wrap{width:44px}
+
+  /* Fighter detail panel → bottom sheet */
+  .fighter-detail-panel{position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:100%!important;max-height:60vh;border-radius:16px 16px 0 0;animation:slideUpSheet .2s ease;z-index:400;padding:16px}
+  @keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
+  .fdp-name{font-size:16px}
+  .fdp-stats{gap:3px 8px}
+  .fdp-stat{font-size:12px}
+
+  /* Skill announce */
+  .skill-announce{font-size:13px;padding:6px 14px;white-space:normal;text-align:center;max-width:80vw}
+
+  /* Target hint */
+  .target-hint{top:8px;bottom:auto;font-size:12px;padding:6px 14px}
 
   /* Damage stats panel: fullscreen overlay on mobile */
   .dmg-stats-panel {
@@ -996,17 +981,8 @@ body{
     -webkit-overflow-scrolling: touch;
   }
 
-  /* Target select: inline at bottom */
-  .target-select {
-    flex-shrink: 0;
-    border-radius: 10px;
-    padding: 8px;
-    background: var(--bg2);
-    margin: 0;
-    border-top: none;
-  }
-  .target-buttons { display: flex; gap: 6px; flex-wrap: wrap; }
-  .target-buttons .btn-target { flex: 1; min-width: 100px; min-height: 44px; text-align: center; }
+  /* Target select: hidden on mobile too, use scene click */
+  .target-select { display: none!important; }
 
   /* -- Pet selection grid: 2 columns -- */
   .pet-grid {
@@ -1826,17 +1802,16 @@ body{
 .fdp-skill-header{font-size:13px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:6px}
 .fdp-cd{font-size:10px;color:var(--fg2);background:rgba(255,255,255,.06);padding:1px 5px;border-radius:3px}
 .fdp-skill-brief,.fdp-skill-detail{font-size:12px;line-height:1.6;color:var(--fg2)}
+/* Skill announce banner */
+.skill-announce{position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);display:none;align-items:center;gap:8px;background:rgba(0,0,0,.75);backdrop-filter:blur(4px);padding:8px 20px;border-radius:8px;z-index:200;font-size:16px;font-weight:700;white-space:nowrap;pointer-events:none;border:1px solid rgba(255,255,255,.1)}
+.sa-name{font-size:16px}
+.sa-arrow{color:var(--fg2);font-size:14px}
+.sa-skill{color:#fff;font-size:16px}
+@keyframes skillAnnounce{0%{opacity:0;transform:translate(-50%,-50%) scale(.8)}15%{opacity:1;transform:translate(-50%,-50%) scale(1.05)}30%{transform:translate(-50%,-50%) scale(1)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) translateY(-10px)}}
+
 @keyframes fadeUp{from{transform:translateY(20px);opacity:0}to{transform:translateY(0);opacity:1}}
 
-@media(max-width:768px){
-  .battle-scene{aspect-ratio:4/3;max-height:50vh}
-  .scene-turtle .st-hp-wrap{width:48px}
-  .scene-turtle .st-hp-wrap{width:70px}
-  .scene-turtle .st-hp-bar{height:6px}
-  .scene-turtle .st-hp-text{font-size:7px}
-  .scene-turtle .st-name{font-size:8px}
-  .scene-turtle .st-name{font-size:9px}
-}
+/* (mobile scene styles consolidated into main @media 768px block) */
 
 /* ── FORMATION SCREEN ── */
 .formation-field{max-width:400px;margin:0 auto 16px;padding:20px;background:var(--bg2);border-radius:14px;border:1px solid rgba(255,255,255,.08)}
@@ -1875,4 +1850,15 @@ body{
   .fg-slot{width:58px;height:58px}
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
+  .battle-scene{max-height:40vh}
+  .scene-turtle .st-hp-wrap{width:44px}
+  .scene-turtle .st-hp-bar{height:4px}
+  .scene-turtle .st-name{font-size:7px;max-width:44px}
+  .skill-announce{font-size:11px;padding:4px 10px}
+  .fighter-detail-panel{max-height:70vh;font-size:11px}
+  .fdp-name{font-size:14px}
+  .fdp-stat{font-size:10px}
+  .picker-btn{padding:6px 10px}
+  .picker-name{font-size:12px}
+  .picker-emoji{font-size:18px}
 }

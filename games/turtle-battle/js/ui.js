@@ -286,8 +286,8 @@ function refreshDetailPanel(f) {
   const vals = [
     { cur: f.atk, init: f._initAtk, text: `${ic('atk-icon.png')}攻击 ${f.atk}` },
     { cur: f._lifestealPct||0, init: f._initLifesteal||0, text: `${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct||0}%` },
-    { cur: f.def, init: f._initDef, text: `${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(-${defPct}%)</span>` },
-    { cur: f.mr, init: f._initMr, text: `${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(-${mrPct}%)</span>` },
+    { cur: f.def, init: f._initDef, text: `${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(减免${defPct}%)</span>` },
+    { cur: f.mr, init: f._initMr, text: `${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(减免${mrPct}%)</span>` },
     { cur: f.crit, init: f._initCrit, text: `${ic('crit-icon.png')}暴击 ${critPct}%` },
     { cur: f.critDmg||150, init: 150, text: `${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%` },
     { cur: f.armorPen, init: f._initArmorPen, text: `${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}` },
@@ -308,7 +308,7 @@ function showFighterDetail(f) {
   }
   panel._currentFighter = f;
 
-  document.getElementById('fdpName').textContent = f.emoji + ' ' + f.name;
+  document.getElementById('fdpName').innerHTML = petIcon(f, 24) + ' ' + f.name;
   document.getElementById('fdpName').style.color = RARITY_COLORS[f.rarity];
 
   const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
@@ -331,8 +331,8 @@ function showFighterDetail(f) {
   <div class="fdp-stats">
     <div class="fdp-stat ${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击 ${f.atk}</div>
     <div class="fdp-stat ${sc(f._lifestealPct||0, f._initLifesteal||0)}">${ic('lifesteal-icon.png')}吸血 ${f._lifestealPct||0}%</div>
-    <div class="fdp-stat ${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(-${defPct}%)</span></div>
-    <div class="fdp-stat ${sc(f.mr, f._initMr)}">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(-${mrPct}%)</span></div>
+    <div class="fdp-stat ${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲 ${f.def} <span class="fdp-sub">(减免${defPct}%)</span></div>
+    <div class="fdp-stat ${sc(f.mr, f._initMr)}">${ic('mr-icon.png')}魔抗 ${f.mr||f.def} <span class="fdp-sub">(减免${mrPct}%)</span></div>
     <div class="fdp-stat ${sc(f.crit, f._initCrit)}">${ic('crit-icon.png')}暴击 ${critPct}%</div>
     <div class="fdp-stat ${sc(f.critDmg||150, 150)}">${ic('crit-dmg-icon.png')}爆伤 ${f.critDmg||150}%</div>
     <div class="fdp-stat ${sc(f.armorPen, f._initArmorPen)}">${ic('armor-pen-icon.png')}穿甲 ${f.armorPen||0}</div>
@@ -361,20 +361,57 @@ function showFighterDetail(f) {
     const iconRaw = PASSIVE_ICONS[f.passive.type] || '⭐';
     const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:16px;height:16px;vertical-align:middle">` : iconRaw;
     const passiveName = f.passive.name || '被动';
-    let descText = f.passive.desc;
-    if (f._twoHeadForm === 'melee' && f.passive.descMelee) descText = f.passive.descMelee;
-    if (f._lavaTransformed && f.passive.descVolcano) descText = f.passive.descVolcano;
-    const descRendered = renderSkillTemplate(descText, f, f.passive);
-    const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
 
     html += `<div class="fdp-passive">`;
     html += `<div class="fdp-passive-title">${iconH} ${passiveName}</div>`;
-    if (briefText) {
-      html += `<div class="fdp-passive-brief">${briefText}</div>`;
-      html += `<div class="fdp-passive-detail" style="display:none">${descRendered}</div>`;
+
+    if (f.passive.type === 'chestTreasure') {
+      // Chest turtle: dynamic treasure progress + equipment pools
+      const treasure = f._chestTreasure || 0;
+      const tier = f._chestTier || 0;
+      const th = f.passive.thresholds;
+      const nextThresh = tier < th.length ? th[tier] : null;
+      const poolNames = ['基础池','基础池','进阶池','进阶池','传说池'];
+      let briefLines = `造成伤害充能财宝进度，达到阈值获得装备。<br>当前：<span class="val-atk">${treasure}</span>`;
+      if (nextThresh) briefLines += ` / ${nextThresh}（下一件：${poolNames[tier]}装备）`;
+      else briefLines += '（已满）';
+
+      const owned = (f._chestEquips || []).map(e => e.id);
+      const renderPool = (label, pool) => {
+        let h = `<div style="margin-top:6px"><b>${label}</b></div>`;
+        for (const eq of pool) {
+          const isOwned = owned.includes(eq.id);
+          const eIcon = eq.icon && eq.icon.endsWith('.png') ? `<img src="assets/${eq.icon}" style="width:14px;height:14px;vertical-align:middle;${isOwned?'':'opacity:.5'}">` : (eq.icon||'');
+          h += `<div style="color:${isOwned?'#c77dff':'var(--fg2)'};font-size:11px">${eIcon} ${eq.name}：${eq.desc}</div>`;
+        }
+        return h;
+      };
+      const pools = f.passive.pools;
+      const thDisplay = th.map((v, i) => i < tier ? `<span class="val-atk">${v}</span>` : `${v}`).join(' / ');
+      let detailHtml = `造成伤害充能财宝进度，根据进度 ${thDisplay} 获得装备。<br>当前：<span class="val-atk">${treasure}</span>`;
+      if (nextThresh) detailHtml += ` / ${nextThresh}（下一件：${poolNames[tier]}装备）`;
+      else detailHtml += '（已满）';
+      detailHtml += renderPool('基础池（第1-2件）：', pools[0]);
+      detailHtml += renderPool('进阶池（第3-4件）：', pools[1]);
+      detailHtml += renderPool('传说池（第5件）：', pools[2]);
+
+      html += `<div class="fdp-passive-brief">${briefLines}</div>`;
+      html += `<div class="fdp-passive-detail" style="display:none">${detailHtml}</div>`;
       html += `<span class="fdp-passive-toggle" onclick="fdpTogglePassive(this)">详细 ▾</span>`;
     } else {
-      html += `<div class="fdp-passive-brief">${descRendered}</div>`;
+      let descText = f.passive.desc;
+      if (f._twoHeadForm === 'melee' && f.passive.descMelee) descText = f.passive.descMelee;
+      if (f._lavaTransformed && f.passive.descVolcano) descText = f.passive.descVolcano;
+      const descRendered = renderSkillTemplate(descText, f, f.passive);
+      const briefText = f.passive.brief ? renderSkillTemplate(f.passive.brief, f, f.passive) : null;
+
+      if (briefText) {
+        html += `<div class="fdp-passive-brief">${briefText}</div>`;
+        html += `<div class="fdp-passive-detail" style="display:none">${descRendered}</div>`;
+        html += `<span class="fdp-passive-toggle" onclick="fdpTogglePassive(this)">详细 ▾</span>`;
+      } else {
+        html += `<div class="fdp-passive-brief">${descRendered}</div>`;
+      }
     }
     html += `</div>`;
   }
@@ -403,43 +440,52 @@ function showFighterDetail(f) {
 
   document.getElementById('fdpBody').innerHTML = html;
 
-  // Position panel near the turtle element
-  const turtleEl = document.getElementById(getFighterElId(f));
-  const scene = document.getElementById('battleScene');
-  if (turtleEl && scene) {
-    const tRect = turtleEl.getBoundingClientRect();
-    const sRect = scene.getBoundingClientRect();
-    // Determine side: left team -> show panel to the right; right team -> show to the left
-    const isLeft = f.side === 'left';
-    panel.style.position = 'absolute';
-    panel.style.bottom = 'auto';
-    panel.style.left = 'auto';
-    panel.style.right = 'auto';
-    // Calculate position relative to scene
-    let topPx = tRect.top - sRect.top;
-    // Clamp so panel doesn't overflow below scene
-    const maxTop = sRect.height - panel.scrollHeight - 4;
-    topPx = Math.max(0, Math.min(topPx, maxTop));
-    panel.style.top = topPx + 'px';
-    if (isLeft) {
-      const leftPx = tRect.right - sRect.left + 6;
-      panel.style.left = Math.min(leftPx, sRect.width - 270) + 'px';
-    } else {
-      const rightPx = sRect.right - tRect.left + 6;
-      panel.style.right = Math.min(rightPx, sRect.width - 270) + 'px';
+  if (window.innerWidth <= 768) {
+    // Mobile: bottom sheet, CSS handles positioning
+    panel.style.position = '';
+    panel.style.top = '';
+    panel.style.left = '';
+    panel.style.right = '';
+    panel.style.bottom = '';
+  } else {
+    // Desktop: position near the turtle element
+    const turtleEl = document.getElementById(getFighterElId(f));
+    const scene = document.getElementById('battleScene');
+    if (turtleEl && scene) {
+      const tRect = turtleEl.getBoundingClientRect();
+      const sRect = scene.getBoundingClientRect();
+      const isLeft = f.side === 'left';
+      panel.style.position = 'absolute';
+      panel.style.bottom = 'auto';
+      panel.style.left = 'auto';
+      panel.style.right = 'auto';
+      let topPx = tRect.top - sRect.top;
+      const maxTop = sRect.height - 200;
+      topPx = Math.max(0, Math.min(topPx, maxTop));
+      panel.style.top = topPx + 'px';
+      if (isLeft) {
+        const leftPx = tRect.right - sRect.left + 6;
+        panel.style.left = Math.min(leftPx, sRect.width - 290) + 'px';
+      } else {
+        const rightPx = sRect.right - tRect.left + 6;
+        panel.style.right = Math.min(rightPx, sRect.width - 290) + 'px';
+      }
     }
   }
 
   panel.style.display = 'block';
   panel.classList.add('show');
 
-  // Re-clamp after render (now scrollHeight is known)
-  if (scene) {
-    const sRect2 = scene.getBoundingClientRect();
-    const panelH = panel.offsetHeight;
-    const curTop = parseFloat(panel.style.top) || 0;
-    const maxTop2 = sRect2.height - panelH - 4;
-    if (curTop > maxTop2) panel.style.top = Math.max(0, maxTop2) + 'px';
+  // Desktop: re-clamp after render
+  if (window.innerWidth > 768) {
+    const scene = document.getElementById('battleScene');
+    if (scene) {
+      const sRect2 = scene.getBoundingClientRect();
+      const panelH = panel.offsetHeight;
+      const curTop = parseFloat(panel.style.top) || 0;
+      const maxTop2 = sRect2.height - panelH - 4;
+      if (curTop > maxTop2) panel.style.top = Math.max(0, maxTop2) + 'px';
+    }
   }
 }
 
@@ -459,8 +505,37 @@ function fdpTogglePassive(el) {
   el.textContent = showing ? '详细 ▾' : '简略 ▴';
 }
 
-// Legacy compatibility — redirect old card-based functions
-function renderFighterCard(f, elId) { /* no-op, scene-based now */ }
+// ── SKILL ANNOUNCE BANNER ──
+function showSkillAnnounce(f, skill) {
+  if (!f || !skill) return;
+  let banner = document.getElementById('skillAnnounceBanner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'skillAnnounceBanner';
+    banner.className = 'skill-announce';
+    const scene = document.getElementById('battleScene');
+    if (scene) scene.appendChild(banner);
+    else document.body.appendChild(banner);
+  }
+  const color = RARITY_COLORS[f.rarity] || '#fff';
+  banner.innerHTML = `${petIcon(f, 28)}<span class="sa-name" style="color:${color}">${f.name}</span><span class="sa-arrow">▸</span><span class="sa-skill">${skill.name}</span>`;
+  banner.style.display = 'flex';
+  banner.style.animation = 'none';
+  requestAnimationFrame(() => { banner.style.animation = 'skillAnnounce .6s ease forwards'; });
+  setTimeout(() => { banner.style.display = 'none'; }, 1200);
+}
+
+// Update scene turtle sprite + name on transform
+function renderFighterCard(f, elId) {
+  // Update scene turtle sprite + name on transform
+  const el = document.getElementById(elId || getFighterElId(f));
+  if (!el) return;
+  const spriteSize = window.innerWidth <= 768 ? 48 : 80;
+  const spriteEl = el.querySelector('.st-sprite');
+  if (spriteEl) spriteEl.innerHTML = buildPetImgHTML(f, spriteSize);
+  const nameEl = el.querySelector('.st-name');
+  if (nameEl) { nameEl.textContent = f.name; nameEl.style.color = RARITY_COLORS[f.rarity] || '#fff'; }
+}
 
 
 function renderSummonMiniCard(owner) {
@@ -733,6 +808,12 @@ function buildPetImgHTML(pet, size) {
     return '<img src="' + pet.img + '" alt="' + pet.name + '" loading="lazy" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
   }
   return '<span style="font-size:' + Math.round(size * 0.75) + 'px;line-height:1;">' + pet.emoji + '</span>';
+}
+
+// Small inline turtle icon (for text contexts: logs, panels, pickers)
+function petIcon(f, size) {
+  size = size || 20;
+  return buildPetImgHTML(f, size);
 }
 
 function updateHpBar(f, elId) {
@@ -1128,6 +1209,7 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)眩晕(?!<)/g, '<span class="val-stun">眩晕</span>');
   result = result.replace(/(?<!\">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>');
   result = result.replace(/(?<!\">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
+  result = result.replace(/(?<!\">)反伤(?!<)/g, '<span class="val-reflect">反伤</span>');
   // Extra/bonus damage
   result = result.replace(/(?<!\">)额外伤害(?!<)/g, '<span class="val-extra">额外伤害</span>');
   result = result.replace(/(?<!\">)额外(?!伤害|<)/g, '<span class="val-extra">额外</span>');
@@ -1171,7 +1253,8 @@ function colorDmgKeywords(text) {
     .replace(/(?<!"val-[^"]*">)吸血(?!<)/g, '<span class="val-lifesteal">吸血</span>')
     .replace(/(?<!"val-[^"]*">)眩晕(?!<)/g, '<span class="val-stun">眩晕</span>')
     .replace(/(?<!"val-[^"]*">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>')
-    .replace(/(?<!"val-[^"]*">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
+    .replace(/(?<!"val-[^"]*">)护盾(?!<)/g, '<span class="val-shield">护盾</span>')
+    .replace(/(?<!"val-[^"]*">)反伤(?!<)/g, '<span class="val-reflect">反伤</span>');
 }
 function buildSkillBrief(f, s) {
   let result;
@@ -1313,7 +1396,7 @@ function showTurtlePicker(canAct) {
     const hpPct = Math.round(f.hp / f.maxHp * 100);
     const color = RARITY_COLORS[f.rarity] || '#fff';
     return `<button class="picker-btn" onclick="selectTurtleToAct(${fIdx})" style="border-color:${color}">
-      <span class="picker-emoji">${f.emoji}</span>
+      <span class="picker-emoji">${petIcon(f, 28)}</span>
       <span class="picker-name" style="color:${color}">${f.name}</span>
       <span class="picker-hp">HP ${hpPct}%${f.shield > 0 ? ' 🛡' + Math.ceil(f.shield) : ''}</span>
     </button>`;
@@ -1343,7 +1426,7 @@ function showActionPanel(f) {
   // Mech auto-attack: not player controlled
   if (f._isMech) {
     panel.classList.remove('show');
-    setTimeout(() => aiAction(f), 800);
+    setTimeout(() => aiAction(f), 1200);
     return;
   }
 
@@ -1700,7 +1783,7 @@ function updateDmgStats() {
     const side = f.side === 'left' ? 'ds-left' : 'ds-right';
     const dead = f.alive ? '' : 'ds-dead';
     return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${f.emoji}${f.name}</div><div class="ds-val">${total}</div></div>
+      <div class="ds-top"><div class="ds-name">${petIcon(f,16)}${f.name}</div><div class="ds-val">${total}</div></div>
       <div class="ds-bar-wrap">
         <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
         <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>

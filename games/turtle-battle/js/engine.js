@@ -785,7 +785,7 @@ async function nextSideAction() {
     setTimeout(() => {
       actedThisSide.add(allFighters.indexOf(f));
       aiAction(f);
-    }, 800);
+    }, 1200);
   }
 }
 
@@ -1247,6 +1247,10 @@ async function executeAction(action) {
     // Skill set changed due to transform, use new skill 0 (basic attack)
     action.skillIdx = 0;
   }
+
+  // Skill announce banner
+  showSkillAnnounce(f, f.skills[action.skillIdx]);
+  await sleep(600);
 
   const atkEl = document.getElementById(getFighterElId(f));
   atkEl.classList.add('attack-anim');
@@ -2907,7 +2911,8 @@ async function processLavaTransform() {
       if (pet && pet.volcanoSkills) f.skills = pet.volcanoSkills.map(s => ({...s, cdLeft:0}));
       f.name = '火山龟';
       f._lavaSmallImg = f.img;
-      f.img = null; // use emoji display
+      f._lavaSmallSprite = f.sprite;
+      f.img = 'assets/volcano-form-icon.png';
       f.emoji = '🌋🐢';
       f.sprite = null;
       const elId = getFighterElId(f);
