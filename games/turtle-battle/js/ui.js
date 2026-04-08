@@ -74,13 +74,20 @@ function renderScene() {
       const imgX = side === 'left' ? pos.x : (100 - pos.x);
       const imgY = pos.y;
       const mapped = mapCoverPos(imgX, imgY, cw, ch);
-      // Use left% + bottom% to work with CSS transform-origin:center bottom
+      // Position turtle centered on the mapped point
       const leftPct = mapped.px / cw * 100;
       const bottomPct = (1 - mapped.py / ch) * 100;
       el.style.left = leftPct + '%';
       el.style.bottom = bottomPct + '%';
       el.style.right = 'auto';
       el.style.top = 'auto';
+      // Center element on point after render (accounts for actual width + scale)
+      requestAnimationFrame(() => {
+        const rect = el.getBoundingClientRect();
+        const sceneRect = scene.getBoundingClientRect();
+        const visualW = rect.width;
+        el.style.marginLeft = (-visualW / 2) + 'px';
+      });
     }
     el.id = getFighterElId(f);
     el.dataset.pid = f.petId || f.id || '';

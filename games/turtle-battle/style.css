@@ -1746,7 +1746,7 @@ body{
 .battle-scene .team-label-right{color:var(--red)}
 
 /* Scene turtle (positioned on the battlefield) */
-.scene-turtle{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;z-index:2;translate:-50% 0}
+.scene-turtle{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;z-index:2}
 .scene-turtle:hover{transform:scale(1.08)}
 .scene-turtle.active-turn{filter:drop-shadow(0 0 8px rgba(88,166,255,.8))}
 .scene-turtle.targetable{cursor:crosshair;filter:drop-shadow(0 0 12px rgba(255,60,60,1)) drop-shadow(0 0 24px rgba(255,60,60,.6));animation:targetPulse .8s ease-in-out infinite;z-index:10;transform:scale(1.05)}
