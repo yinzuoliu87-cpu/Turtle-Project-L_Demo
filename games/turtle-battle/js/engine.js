@@ -149,6 +149,13 @@ function applyPassiveSkills(f) {
       f._diamondEnhanced = true;
       // Will be processed in passive application — overrides base passive values
     }
+    // 赛博龟 强化浮游炮: 20 cap, 2/turn, 12% dmg, mech gets armor/mr
+    if (ps.type === 'cyberEnhancedDrone') {
+      f._cyberEnhanced = true;
+      if (f.passive && f.passive.type === 'cyberDrone') {
+        f.passive = { ...f.passive, maxDrones: 20, droneScale: 0.12, dronesPerTurn: 2 };
+      }
+    }
     // 凤凰龟 强化涅槃: revive at 100% HP + ATK boost
     if (ps.type === 'phoenixEnhancedRebirth') {
       f._phoenixEnhancedRebirth = true;
@@ -189,15 +196,24 @@ function aiPickSkills(petId) {
   const b = ALL_PETS.find(p => p.id === petId);
   if (!b || !b.skillPool || b.skillPool.length <= 3) return null;
   const pool = b.skillPool;
-  const indices = [];
-  // Ensure at least 1 damage skill (not heal/shield/isAlly-only)
-  const dmgIdxs = pool.map((s,i) => i).filter(i => !pool[i].isAlly && pool[i].type !== 'heal' && pool[i].type !== 'shield');
+  // Always include skill 0 (basic attack)
+  const indices = [0];
+  // Pick 2 more from remaining (exclude passiveSkills for AI, at most 1 passive allowed)
+  const available = pool.map((s,i) => i).filter(i => i !== 0);
+  // Prefer active skills, allow max 1 passive
+  const actives = available.filter(i => !pool[i].passiveSkill);
+  const passives = available.filter(i => pool[i].passiveSkill);
+  // Pick 1 active damage skill first
+  const dmgIdxs = actives.filter(i => !pool[i].isAlly && pool[i].type !== 'heal' && pool[i].type !== 'shield');
   if (dmgIdxs.length) indices.push(dmgIdxs[Math.floor(Math.random() * dmgIdxs.length)]);
-  // Fill remaining randomly
-  const remaining = pool.map((s,i) => i).filter(i => !indices.includes(i));
+  // Fill to 3: prefer actives, 30% chance to pick passive
+  const remaining = available.filter(i => !indices.includes(i));
   while (indices.length < 3 && remaining.length) {
-    const pick = remaining.splice(Math.floor(Math.random() * remaining.length), 1)[0];
-    indices.push(pick);
+    const usePassive = passives.length && Math.random() < 0.3 && !indices.some(i => pool[i].passiveSkill);
+    const pickFrom = usePassive ? passives.filter(i => !indices.includes(i)) : actives.filter(i => !indices.includes(i));
+    const src = pickFrom.length ? pickFrom : remaining.filter(i => !indices.includes(i));
+    if (!src.length) break;
+    indices.push(src[Math.floor(Math.random() * src.length)]);
   }
   return indices.sort((a,b) => a-b);
 }
@@ -517,14 +533,19 @@ async function beginTurn() {
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">护甲+${gain}(已+${f._stoneDefGained}/${f.passive.maxDef})</span>`);
       }
     }
-    // Passive: cyberDrone — generate 1 drone per turn
+    // Passive: cyberDrone — generate drones per turn
     if (f.passive && f.passive.type === 'cyberDrone' && !f._isMech) {
       if (!f._drones) f._drones = [];
-      if (f._drones.length < f.passive.maxDrones) {
+      const spawnCount = f.passive.dronesPerTurn || 1;
+      let spawned = 0;
+      for (let di = 0; di < spawnCount && f._drones.length < f.passive.maxDrones; di++) {
         f._drones.push({ age: 0 });
+        spawned++;
+      }
+      if (spawned > 0) {
         const elId = getFighterElId(f);
-        spawnFloatingNum(elId, `+<img src="assets/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
+        spawnFloatingNum(elId, `+${spawned}<img src="assets/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成${spawned}个浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
       // Every drone fires every turn at random enemy — speed scales with count
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
@@ -1903,7 +1924,9 @@ async function executeAction(action) {
       ff.maxHp = finalHp;
       ff.hp = 0;
       ff.baseAtk = 0; ff.atk = 0;
-      ff.baseDef = 0; ff.def = 0;
+      const mechDef = ff._cyberEnhanced ? dc : 0;
+      ff.baseDef = mechDef; ff.def = mechDef;
+      ff.baseMr = mechDef; ff.mr = mechDef;
       ff.shield = 0; ff.bubbleShieldVal = 0;
       ff.crit = 0.25; ff.armorPen = 0;
       ff.alive = true; ff._deathProcessed = false;
