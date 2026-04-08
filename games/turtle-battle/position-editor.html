@@ -68,14 +68,16 @@ h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
 <script>
 const SLOTS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
 
-// Positions on 16:9 background image (x% from left, y% from top)
+// Two sets: desktop and mobile, both in 16:9 image coordinates
 const defaults = {
-  'front-0': { x: 38, y: 38 },
-  'front-1': { x: 36, y: 55 },
-  'front-2': { x: 39, y: 72 },
-  'back-0':  { x: 22, y: 38 },
-  'back-1':  { x: 19, y: 55 },
-  'back-2':  { x: 23, y: 72 },
+  desktop: {
+    'front-0': { x: 38, y: 38 }, 'front-1': { x: 36, y: 55 }, 'front-2': { x: 39, y: 72 },
+    'back-0':  { x: 22, y: 38 }, 'back-1':  { x: 19, y: 55 }, 'back-2':  { x: 23, y: 72 },
+  },
+  mobile: {
+    'front-0': { x: 38, y: 38 }, 'front-1': { x: 36, y: 55 }, 'front-2': { x: 39, y: 72 },
+    'back-0':  { x: 22, y: 38 }, 'back-1':  { x: 19, y: 55 }, 'back-2':  { x: 23, y: 72 },
+  }
 };
 
 let positions = JSON.parse(JSON.stringify(defaults));
@@ -128,12 +130,13 @@ function render() {
   // Clear old dots
   document.querySelectorAll('.dot').forEach(d => d.remove());
 
-  // Render on both previews
-  [desktopBox, mobileBox].forEach(box => {
+  // Render on both previews, each with its own position set
+  const configs = [[desktopBox, 'desktop'], [mobileBox, 'mobile']];
+  configs.forEach(([box, mode]) => {
     const cw = box.offsetWidth, ch = box.offsetHeight;
     ['left','right'].forEach(side => {
       SLOTS.forEach(slot => {
-        const p = positions[slot];
+        const p = positions[mode][slot];
         const row = slot.startsWith('front') ? 'front' : 'back';
         const idx = slot.split('-')[1];
         const label = (row === 'front' ? 'F' : 'B') + idx;
@@ -148,8 +151,8 @@ function render() {
         el.style.top = mapped.py + 'px';
 
         if (side === 'left') {
-          el.addEventListener('mousedown', (e) => startDrag(e, slot, box));
-          el.addEventListener('touchstart', (e) => startDragTouch(e, slot, box), {passive:false});
+          el.addEventListener('mousedown', (e) => startDrag(e, slot, box, mode));
+          el.addEventListener('touchstart', (e) => startDragTouch(e, slot, box, mode), {passive:false});
         } else {
           el.style.opacity = '0.5';
           el.style.cursor = 'default';
@@ -163,9 +166,9 @@ function render() {
   updateOutput();
 }
 
-let dragging = null, dragBox = null;
-function startDrag(e, slot, box) { e.preventDefault(); dragging = slot; dragBox = box; document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', stopDrag); }
-function startDragTouch(e, slot, box) { e.preventDefault(); dragging = slot; dragBox = box; document.addEventListener('touchmove', onDragT, {passive:false}); document.addEventListener('touchend', stopDrag); }
+let dragging = null, dragBox = null, dragMode = null;
+function startDrag(e, slot, box, mode) { e.preventDefault(); dragging = slot; dragBox = box; dragMode = mode; document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', stopDrag); }
+function startDragTouch(e, slot, box, mode) { e.preventDefault(); dragging = slot; dragBox = box; dragMode = mode; document.addEventListener('touchmove', onDragT, {passive:false}); document.addEventListener('touchend', stopDrag); }
 function onDrag(e) { if (!dragging) return; const r = dragBox.getBoundingClientRect(); doMove(e.clientX - r.left, e.clientY - r.top); }
 function onDragT(e) { if (!dragging) return; e.preventDefault(); const t = e.touches[0]; const r = dragBox.getBoundingClientRect(); doMove(t.clientX - r.left, t.clientY - r.top); }
 
@@ -188,16 +191,20 @@ function doMove(px, py) {
   }
   imgX = Math.round(Math.max(5, Math.min(48, imgX)));
   imgY = Math.round(Math.max(5, Math.min(95, imgY)));
-  positions[dragging] = { x: imgX, y: imgY };
+  positions[dragMode][dragging] = { x: imgX, y: imgY };
   render();
 }
 
-function stopDrag() { dragging = null; dragBox = null; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); document.removeEventListener('touchmove', onDragT); document.removeEventListener('touchend', stopDrag); }
+function stopDrag() { dragging = null; dragBox = null; dragMode = null; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); document.removeEventListener('touchmove', onDragT); document.removeEventListener('touchend', stopDrag); }
 
 function updateOutput() {
   let code = "const BATTLE_POSITIONS = {\n";
-  SLOTS.forEach(s => {
-    code += `  '${s}': { x: ${positions[s].x}, y: ${positions[s].y} },\n`;
+  ['desktop','mobile'].forEach(mode => {
+    code += `  ${mode}: {\n`;
+    SLOTS.forEach(s => {
+      code += `    '${s}': { x: ${positions[mode][s].x}, y: ${positions[mode][s].y} },\n`;
+    });
+    code += `  },\n`;
   });
   code += "};";
   document.getElementById('output').textContent = code;

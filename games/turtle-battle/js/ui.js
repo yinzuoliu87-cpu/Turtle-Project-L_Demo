@@ -4,12 +4,22 @@
 // Left side positions; right side auto-mirrors (100-x).
 // ONE config for ALL screen sizes — JS maps to actual container via cover math.
 const BATTLE_POSITIONS = {
-  'front-0': { x: 38, y: 38 },
-  'front-1': { x: 36, y: 55 },
-  'front-2': { x: 39, y: 72 },
-  'back-0':  { x: 22, y: 38 },
-  'back-1':  { x: 19, y: 55 },
-  'back-2':  { x: 23, y: 72 },
+  desktop: {
+    'front-0': { x: 38, y: 38 },
+    'front-1': { x: 36, y: 55 },
+    'front-2': { x: 39, y: 72 },
+    'back-0':  { x: 22, y: 38 },
+    'back-1':  { x: 19, y: 55 },
+    'back-2':  { x: 23, y: 72 },
+  },
+  mobile: {
+    'front-0': { x: 38, y: 38 },
+    'front-1': { x: 36, y: 55 },
+    'front-2': { x: 39, y: 72 },
+    'back-0':  { x: 22, y: 38 },
+    'back-1':  { x: 19, y: 55 },
+    'back-2':  { x: 23, y: 72 },
+  },
 };
 
 // Map a point on the 16:9 source image to pixel position in a cover-cropped container
@@ -53,7 +63,8 @@ function renderScene() {
     const el = document.createElement('div');
     el.className = 'scene-turtle ' + posClass;
     // Map position from 16:9 image coords to cover-cropped container
-    const pos = BATTLE_POSITIONS[slotKey];
+    const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+    const pos = posSet[slotKey];
     if (pos && cw && ch) {
       const imgX = side === 'left' ? pos.x : (100 - pos.x); // mirror for right
       const imgY = pos.y;
