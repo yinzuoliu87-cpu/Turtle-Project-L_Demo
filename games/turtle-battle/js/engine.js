@@ -1051,7 +1051,7 @@ function selectTurtleToAct(fIdx) {
 }
 
 function backToPicker() {
-  // Un-mark current fighter as acted, go back to turtle picker
+  // Un-mark current fighter as acted, go back to turtle picker (no timer reset)
   if (currentActingFighter) {
     const fIdx = allFighters.indexOf(currentActingFighter);
     actedThisSide.delete(fIdx);
@@ -1062,7 +1062,11 @@ function backToPicker() {
   if (panel) panel.classList.remove('show');
   clearTargetHighlights();
   document.getElementById('targetSelect').style.display = 'none';
-  nextSideAction();
+  // Show picker directly without resetting timer
+  const sideTeam = activeSide === 'left' ? leftTeam : rightTeam;
+  const canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
+  if (canAct.length > 1) showTurtlePicker(canAct);
+  else if (canAct.length === 1) { actedThisSide.add(allFighters.indexOf(canAct[0])); showActionPanel(canAct[0]); }
 }
 
 function renderSideIndicator() {

@@ -813,13 +813,17 @@ function showPetPassive(e, petId) {
       skillsHtml += '</div>';
     }
   }
-  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>${skillsHtml}<div style="text-align:center;margin-top:10px;font-size:12px;color:var(--fg2);cursor:pointer;padding:6px" onclick="this.parentElement.style.display='none'">点击关闭</div>`;
-  // Mobile: bottom sheet; Desktop: centered
+  popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>${skillsHtml}`;
   if (window.innerWidth <= 768) {
     popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:0;right:0;bottom:0;top:auto;transform:none;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0;animation:none;width:100%';
   } else {
     popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%);animation:none';
   }
+  // Click outside to close
+  setTimeout(() => {
+    const close = (ev) => { if (!popup.contains(ev.target)) { popup.style.display = 'none'; document.removeEventListener('click', close, true); } };
+    document.addEventListener('click', close, true);
+  }, 200);
 }
 
 function _buildTeamFromSlots(side, loadoutMap) {
@@ -1091,7 +1095,7 @@ function startBattle(seed) {
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       const curseDmgPct = f.passive ? f.passive.hpPct : 9;
       for (const e of enemies) {
-        e.buffs.push({ type:'dot', dmg: Math.round(e.maxHp * curseDmgPct / 100 * (f._ghostCurseDmgMult||1)), turns:3 });
+        e.buffs.push({ type:'dot', value: Math.round(e.maxHp * curseDmgPct / 100 * (f._ghostCurseDmgMult||1)), turns:3 });
       }
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">👻强化怨灵！开场诅咒全体敌人3回合！</span>`);
     }

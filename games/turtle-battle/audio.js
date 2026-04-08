@@ -269,12 +269,24 @@ const BGM_TRACKS = {
   boss: 'assets/bgm-boss.mp3'
 };
 
+// Preload BGM tracks
+const _bgmCache = {};
+Object.entries(BGM_TRACKS).forEach(([k, src]) => {
+  const a = new Audio(); a.preload = 'auto'; a.src = src; _bgmCache[k] = a;
+});
+
 function playBgm(track) {
   stopBgm();
   if (soundMuted) return;
   const src = BGM_TRACKS[track];
   if (!src) return;
-  _currentBgm = new Audio(src);
+  // Use cached audio or create new
+  if (_bgmCache[track]) {
+    _currentBgm = _bgmCache[track];
+    _currentBgm.currentTime = 0;
+  } else {
+    _currentBgm = new Audio(src);
+  }
   _currentBgm.loop = true;
   _currentBgm.volume = _bgmVolume;
   _currentBgm.play().catch(() => {});
