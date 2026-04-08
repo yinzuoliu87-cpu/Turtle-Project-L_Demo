@@ -1113,12 +1113,14 @@ async function processBuffs() {
       hadTick = true;
       if (f.hp <= 0) break;
     }
-    // Poison DoT (0.5 × source ATK per turn, physical)
+    // Poison DoT (magic damage — reduced by MR)
     const poisons = f.buffs.filter(b => b.type === 'poison');
     for (const p of poisons) {
-      const poisonDmg = p.value || 10;
+      const poisonRaw = p.value || 10;
+      const mrRed2 = f.mr / (f.mr + DEF_CONSTANT);
+      const poisonDmg = Math.max(1, Math.round(poisonRaw * (1 - mrRed2)));
       f.hp = Math.max(0, f.hp - poisonDmg);
-      spawnFloatingNum(elId, `-${poisonDmg}`, 'dot-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
+      spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
       hadTick = true;
