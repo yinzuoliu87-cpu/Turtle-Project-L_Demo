@@ -1,76 +1,67 @@
 // ── BATTLE POSITION CONFIG ─────────────────────────────────
-// Change these values to adjust turtle positions for any map.
-// 'h' = horizontal %, 'v' = vertical (bottom) %
-// Left side uses 'left', right side mirrors to 'right'
+// Positions defined on the 16:9 BACKGROUND IMAGE coordinate system.
+// x = % from left edge of image, y = % from top edge of image.
+// Left side positions; right side auto-mirrors (100-x).
+// ONE config for ALL screen sizes — JS maps to actual container via cover math.
 const BATTLE_POSITIONS = {
-  desktop: {
-    'front-0': { h: 41, v: 58 },
-    'front-1': { h: 40, v: 39 },
-    'front-2': { h: 39, v: 19 },
-    'back-0':  { h: 29, v: 58 },
-    'back-1':  { h: 27, v: 39 },
-    'back-2':  { h: 25, v: 19 },
-  },
-  mobile: {
-    'front-0': { h: 39, v: 60 },
-    'front-1': { h: 37, v: 40 },
-    'front-2': { h: 35, v: 20 },
-    'back-0':  { h: 13, v: 60 },
-    'back-1':  { h: 11, v: 40 },
-    'back-2':  { h: 10, v: 20 },
-  }
+  'front-0': { x: 38, y: 38 },
+  'front-1': { x: 36, y: 55 },
+  'front-2': { x: 39, y: 72 },
+  'back-0':  { x: 22, y: 38 },
+  'back-1':  { x: 19, y: 55 },
+  'back-2':  { x: 23, y: 72 },
 };
 
-function getPositionConfig() {
-  return window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+// Map a point on the 16:9 source image to pixel position in a cover-cropped container
+function mapCoverPos(imgX, imgY, containerW, containerH) {
+  const imgRatio = 16 / 9;
+  const cRatio = containerW / containerH;
+  let scale, offsetX, offsetY;
+  if (cRatio > imgRatio) {
+    // Container wider than image → image scaled to fill width, crops top/bottom
+    scale = containerW / 1; // normalized
+    const visibleH = 1 / cRatio * imgRatio; // fraction of image height visible
+    offsetY = (1 - visibleH) / 2; // cropped from top
+    offsetX = 0;
+    const px = imgX / 100 * containerW;
+    const py = (imgY / 100 - offsetY) / visibleH * containerH;
+    return { px, py };
+  } else {
+    // Container taller than image → image scaled to fill height, crops left/right
+    const visibleW = cRatio / imgRatio; // fraction of image width visible
+    offsetX = (1 - visibleW) / 2; // cropped from left
+    offsetY = 0;
+    const px = (imgX / 100 - offsetX) / visibleW * containerW;
+    const py = imgY / 100 * containerH;
+    return { px, py };
+  }
 }
 
 function renderFighters() {
   renderScene();
 }
 
-function sizeSceneInner() {
-  const scene = document.getElementById('battleScene');
-  const inner = document.getElementById('sceneInner');
-  if (!scene || !inner) return;
-  const sw = scene.offsetWidth, sh = scene.offsetHeight;
-  // Fit 16:9 inside the container, centered
-  const targetRatio = 16/9;
-  const containerRatio = sw / sh;
-  let iw, ih;
-  if (containerRatio > targetRatio) {
-    // Container wider than 16:9 → fit height, center horizontally
-    ih = sh; iw = Math.round(sh * targetRatio);
-  } else {
-    // Container taller than 16:9 → fit width, center vertically
-    iw = sw; ih = Math.round(sw / targetRatio);
-  }
-  inner.style.width = iw + 'px';
-  inner.style.height = ih + 'px';
-  inner.style.left = Math.round((sw - iw) / 2) + 'px';
-  inner.style.top = Math.round((sh - ih) / 2) + 'px';
-}
-
 function renderScene() {
   const scene = document.getElementById('battleScene');
   if (!scene) return;
-  const inner = document.getElementById('sceneInner');
-  // Size the inner 16:9 container
-  sizeSceneInner();
   // Remove old scene turtles
   scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
 
   // Render each fighter as a scene turtle
-  const posConfig = getPositionConfig();
+  const cw = scene.offsetWidth, ch = scene.offsetHeight;
   const renderTurtle = (f, posClass, side, slotKey) => {
     const el = document.createElement('div');
     el.className = 'scene-turtle ' + posClass;
-    // Apply position from config
-    const pos = posConfig[slotKey];
-    if (pos) {
-      if (side === 'left') { el.style.left = pos.h + '%'; el.style.right = 'auto'; }
-      else { el.style.right = pos.h + '%'; el.style.left = 'auto'; }
-      el.style.bottom = pos.v + '%';
+    // Map position from 16:9 image coords to cover-cropped container
+    const pos = BATTLE_POSITIONS[slotKey];
+    if (pos && cw && ch) {
+      const imgX = side === 'left' ? pos.x : (100 - pos.x); // mirror for right
+      const imgY = pos.y;
+      const mapped = mapCoverPos(imgX, imgY, cw, ch);
+      el.style.left = mapped.px + 'px';
+      el.style.top = mapped.py + 'px';
+      el.style.right = 'auto';
+      el.style.bottom = 'auto';
     }
     el.id = getFighterElId(f);
     el.dataset.pid = f.petId || f.id || '';
@@ -118,7 +109,7 @@ function renderScene() {
 
     if (!f.alive) el.classList.add('dead');
     if (f._isBoss) el.style.transform = 'scale(1.3)';
-    (inner || scene).appendChild(el);
+    scene.appendChild(el);
     renderSceneBuffs(f);
   };
 

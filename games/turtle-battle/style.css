@@ -1737,8 +1737,7 @@ body{
 
 /* ── BATTLE SCENE (replaces card layout) ── */
 .battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-color:#0a1628;background-size:cover;background-position:center}
-.scene-inner{position:absolute;pointer-events:none}
-.scene-inner .scene-turtle{pointer-events:auto}
+/* scene-inner removed — turtles positioned directly via cover mapping */
 .battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.3) 0%,transparent 8%,transparent 92%,rgba(10,22,40,.3) 100%),linear-gradient(180deg,rgba(10,22,40,.15) 0%,transparent 5%,transparent 95%,rgba(10,22,40,.15) 100%)}
 .battle-scene .scene-labels{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 12px;z-index:5;pointer-events:none}
 .battle-scene .scene-labels .side-indicator{pointer-events:none;flex:1;font-size:12px}
