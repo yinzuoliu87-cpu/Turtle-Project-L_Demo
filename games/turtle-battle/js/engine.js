@@ -144,6 +144,11 @@ function applyPassiveSkills(f) {
       f._ghostCurseOnSpawn = true;
       f._ghostCurseDmgMult = 1.5;
     }
+    // 钻石龟 强化钻石结构: enhanced def amplification + flat reduction
+    if (ps.type === 'diamondEnhanced') {
+      f._diamondEnhanced = true;
+      // Will be processed in passive application — overrides base passive values
+    }
     // 凤凰龟 强化涅槃: revive at 100% HP + ATK boost
     if (ps.type === 'phoenixEnhancedRebirth') {
       f._phoenixEnhancedRebirth = true;
@@ -1234,7 +1239,12 @@ function recalcStats() {
     // Diamond structure: amplify armor/mr buffs for all allies
     const team = f.side === 'left' ? leftTeam : rightTeam;
     const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
-    const defAmp = diamond ? 1 + diamond.passive.defBuffAmp / 100 : 1;
+    let defAmp = 1;
+    if (diamond) {
+      const isSelf = f === diamond;
+      const ampPct = (isSelf && diamond._diamondEnhanced) ? 100 : (diamond.passive.defBuffAmp || 50);
+      defAmp = 1 + ampPct / 100;
+    }
     // Apply debuffs & buffs
     for (const b of f.buffs) {
       if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
@@ -1311,8 +1321,8 @@ function pickSkill(idx) {
   // bubbleBind targets enemies
   const targetsFromSide = (isAlly ? (f.side==='left'?leftTeam:rightTeam) : (f.side==='left'?rightTeam:leftTeam));
   let targets = targetsFromSide.filter(a => a.alive);
-  // Front row priority for enemy single-target skills
-  if (!isAlly) {
+  // Front row priority for enemy single-target skills (unless ignoreRow)
+  if (!isAlly && !skill.ignoreRow) {
     const frontTargets = targets.filter(t => t._position === 'front');
     if (frontTargets.length > 0) targets = frontTargets;
   }
@@ -2040,7 +2050,9 @@ async function doDamage(attacker, target, skill) {
     if (pcBuff) { convertedTrue = Math.round(mainDmg * pcBuff.value / 100); mainDmg -= convertedTrue; }
     // Diamond structure: flat reduction per hit (physical + magic, not true)
     if (dmgType !== 'true' && target.passive && target.passive.type === 'diamondStructure') {
-      const flatReduce = Math.round(target.def * target.passive.flatReductionPct / 100);
+      const defPct = target._diamondEnhanced ? 20 : (target.passive.flatReductionPct || 20);
+      const mrPct = target._diamondEnhanced ? 10 : 0;
+      const flatReduce = Math.round(target.def * defPct / 100) + Math.round((target.mr||0) * mrPct / 100);
       mainDmg = Math.max(1, mainDmg - flatReduce);
     }
     let mainPart = mainDmg;
