@@ -13,12 +13,12 @@ const BATTLE_POSITIONS = {
     'back-2':  { x: 23, y: 72 },
   },
   mobile: {
-    'front-0': { x: 38, y: 38 },
-    'front-1': { x: 36, y: 55 },
-    'front-2': { x: 39, y: 72 },
-    'back-0':  { x: 22, y: 38 },
-    'back-1':  { x: 19, y: 55 },
-    'back-2':  { x: 23, y: 72 },
+    'front-0': { x: 42, y: 38 },
+    'front-1': { x: 40, y: 55 },
+    'front-2': { x: 42, y: 72 },
+    'back-0':  { x: 32, y: 38 },
+    'back-1':  { x: 30, y: 55 },
+    'back-2':  { x: 32, y: 72 },
   },
 };
 
