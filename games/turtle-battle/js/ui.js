@@ -13,12 +13,12 @@ const BATTLE_POSITIONS = {
     'back-2':  { x: 23, y: 72 },
   },
   mobile: {
-    'front-0': { x: 42, y: 38 },
-    'front-1': { x: 40, y: 55 },
-    'front-2': { x: 42, y: 72 },
-    'back-0':  { x: 32, y: 38 },
-    'back-1':  { x: 30, y: 55 },
-    'back-2':  { x: 32, y: 72 },
+    'front-0': { x: 46, y: 38 },
+    'front-1': { x: 44, y: 55 },
+    'front-2': { x: 46, y: 72 },
+    'back-0':  { x: 38, y: 38 },
+    'back-1':  { x: 36, y: 55 },
+    'back-2':  { x: 38, y: 72 },
   },
 };
 
@@ -66,13 +66,16 @@ function renderScene() {
     const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
     const pos = posSet[slotKey];
     if (pos && cw && ch) {
-      const imgX = side === 'left' ? pos.x : (100 - pos.x); // mirror for right
+      const imgX = side === 'left' ? pos.x : (100 - pos.x);
       const imgY = pos.y;
       const mapped = mapCoverPos(imgX, imgY, cw, ch);
-      el.style.left = mapped.px + 'px';
-      el.style.top = mapped.py + 'px';
+      // Use left% + bottom% to work with CSS transform-origin:center bottom
+      const leftPct = mapped.px / cw * 100;
+      const bottomPct = (1 - mapped.py / ch) * 100;
+      el.style.left = leftPct + '%';
+      el.style.bottom = bottomPct + '%';
       el.style.right = 'auto';
-      el.style.bottom = 'auto';
+      el.style.top = 'auto';
     }
     el.id = getFighterElId(f);
     el.dataset.pid = f.petId || f.id || '';
