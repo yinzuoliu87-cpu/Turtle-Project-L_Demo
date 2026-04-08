@@ -662,17 +662,17 @@ function showFighterDetail(f) {
   panel.style.display = 'block';
   panel.classList.add('show');
 
-  // Click outside to close
+  // Click outside to close (300ms delay to avoid current touch triggering close)
   setTimeout(() => {
     const closeOnClick = (e) => {
-      if (!panel.contains(e.target)) {
+      if (!panel.contains(e.target) && !e.target.closest('.scene-turtle')) {
         closeFighterDetail();
         document.removeEventListener('click', closeOnClick, true);
       }
     };
     document.addEventListener('click', closeOnClick, true);
     panel._closeListener = closeOnClick;
-  }, 100);
+  }, 300);
 
   // Desktop: re-clamp after render
   if (window.innerWidth > 768) {

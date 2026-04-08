@@ -820,7 +820,7 @@ body{
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
-  .scene-turtle{transform:scale(1.14);transform-origin:center bottom;padding:10px;margin:-10px}
+  .scene-turtle{transform:scale(.5);transform-origin:center bottom;padding:10px;margin:-10px}
   .scene-turtle:hover{transform:scale(.5)}
   .scene-turtle.targetable{transform:scale(.5);padding:14px;margin:-14px}
   .scene-turtle.targetable:hover{transform:scale(.55)}
@@ -834,20 +834,20 @@ body{
   .scene-turtle.attack-anim[class*="pos-left"]{animation:mobileAttackRight .5s ease}
   .scene-turtle.attack-anim[class*="pos-right"]{animation:mobileAttackLeft .5s ease}
   @keyframes mobileAttackRight{
-    0%{transform:translateX(0) scale(1.14)}
-    25%{transform:translateX(10px) scale(1.18);filter:brightness(1.3)}
-    50%{transform:translateX(14px) scale(1.2);filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(1.14);filter:brightness(1)}
+    0%{transform:translateX(0) scale(.5)}
+    25%{transform:translateX(12px) scale(.53);filter:brightness(1.3)}
+    50%{transform:translateX(16px) scale(.55);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(.5);filter:brightness(1)}
   }
   @keyframes mobileAttackLeft{
-    0%{transform:translateX(0) scale(1.14)}
-    25%{transform:translateX(-10px) scale(1.18);filter:brightness(1.3)}
-    50%{transform:translateX(-14px) scale(1.2);filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(1.14);filter:brightness(1)}
+    0%{transform:translateX(0) scale(.5)}
+    25%{transform:translateX(-12px) scale(.53);filter:brightness(1.3)}
+    50%{transform:translateX(-16px) scale(.55);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(.5);filter:brightness(1)}
   }
 
   /* Scene summon */
-  .scene-summon{transform:scale(.9)}
+  .scene-summon{transform:scale(.35)}
   /* No position overrides — use same PC percentages */
 
   /* Fighter detail panel → bottom sheet */
@@ -1898,10 +1898,10 @@ body{
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
   /* battle-scene flex:1 inherited from 768px */
-  .scene-turtle{transform:scale(1.14)}
-  .scene-turtle:hover{transform:scale(1.2)}
-  .scene-turtle.targetable{transform:scale(1.2)}
-  .scene-turtle.active-turn{transform:scale(1.2)}
+  .scene-turtle{transform:scale(.5)}
+  .scene-turtle:hover{transform:scale(.55)}
+  .scene-turtle.targetable{transform:scale(.55)}
+  .scene-turtle.active-turn{transform:scale(.55)}
   .skill-announce{font-size:11px;padding:4px 10px}
   .fighter-detail-panel{max-height:70vh;font-size:11px}
   .fdp-name{font-size:14px}
