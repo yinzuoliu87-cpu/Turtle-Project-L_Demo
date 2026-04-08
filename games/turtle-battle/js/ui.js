@@ -4,12 +4,12 @@
 // Left side uses 'left', right side mirrors to 'right'
 const BATTLE_POSITIONS = {
   desktop: {
-    'front-0': { h: 40, v: 62 },
-    'front-1': { h: 34, v: 43 },
-    'front-2': { h: 38, v: 23 },
-    'back-0':  { h: 25, v: 62 },
-    'back-1':  { h: 17, v: 43 },
-    'back-2':  { h: 23, v: 24 },
+    'front-0': { h: 41, v: 58 },
+    'front-1': { h: 34, v: 39 },
+    'front-2': { h: 40, v: 21 },
+    'back-0':  { h: 29, v: 58 },
+    'back-1':  { h: 21, v: 39 },
+    'back-2':  { h: 26, v: 21 },
   },
   mobile: {
     'front-0': { h: 37, v: 60 },
