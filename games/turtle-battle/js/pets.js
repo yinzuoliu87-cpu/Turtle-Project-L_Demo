@@ -14,21 +14,7 @@
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
 const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
 
-// ── SHARED SKILLS (通用技能模板，直接引用到各龟skillPool中) ────
-const SK = {
-  teamShield:  { name:'团队护盾', type:'commonTeamShield', cd:3, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, shieldScale:0.5, shieldDuration:3,
-    brief:'全体友方获得（{S:0.5*ATK}）护盾 持续3回合', detail:'为全体友方施加（50%×攻击力 = {S:0.5*ATK}）护盾，持续3回合。\n冷却{cd}回合。' },
-  teamHeal:    { name:'团队治愈', type:'commonTeamHeal', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, healScale:0.5, healHpPct:6,
-    brief:'全体友方回复（{H:0.5*ATK+HP*0.06}）HP', detail:'治愈全体友方（50%×攻击力 + 6%×最大HP = {H:0.5*ATK+HP*0.06}）HP。\n冷却{cd}回合。' },
-  atkBuff:     { name:'攻击号令', type:'commonAtkBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, atkUpPct:15, atkUpTurns:3,
-    brief:'全体友方攻击力 +15% 持续3回合', detail:'为全体友方施加攻击力 +15% 增益，持续3回合。\n冷却{cd}回合。' },
-  defBuff:     { name:'防御号令', type:'commonDefBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, defUpVal:6, mrUpVal:6, buffTurns:3,
-    brief:'全体友方护甲+6 魔抗+6 持续3回合', detail:'为全体友方施加护甲 +6、魔抗 +6 增益，持续3回合。\n冷却{cd}回合。' },
-  selfShield:  { name:'坚韧', type:'commonSelfShield', cd:3, hits:0, power:0, pierce:0, selfCast:true, shieldHpPct:20, shieldDuration:3,
-    brief:'自身获得（{S:HP*0.2}）护盾 持续3回合', detail:'为自身施加（20%×最大HP = {S:HP*0.2}）护盾，持续3回合。\n冷却{cd}回合。' },
-  purify:      { name:'净化', type:'commonPurify', cd:5, hits:0, power:0, pierce:0, isAlly:true, cleanse:true,
-    brief:'清除友方单体所有减益效果', detail:'选择一名友方，清除其身上所有减益效果。\n冷却{cd}回合。' },
-};
+// SK templates removed — all skills now defined inline per turtle
 // 计算有效护甲：先扣百分比穿透，再扣固定穿透
 function calcEffArmor(atk, tgt) {
   return Math.max(0, tgt.def * (1 - (atk.armorPenPct || 0)) - (atk.armorPen || 0));
@@ -77,7 +63,8 @@ const ALL_PETS = [
       { name:'打击', type:'basicBarrage', hits:10, power:0, pierce:0, cd:4, atkScale:2.9,
         brief:'小龟发射10段共{N:2.9*ATK}物理伤害随机分布敌方',
         detail:'小龟对敌方发射10段攻击，随机分布。\n共 290%×(攻击力={ATK}) = {N:2.9*ATK} 物理伤害。\n冷却{cd}回合。' },
-      SK.atkBuff,
+      { name:'团队鼓舞', type:'commonAtkBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, atkUpPct:15, atkUpTurns:3,
+        brief:'全体友方攻击力 +15% 持续3回合', detail:'为全体友方施加攻击力 +15% 增益，持续3回合。\n冷却{cd}回合。' },
       { name:'过肩摔', type:'basicSlam', hits:1, power:0, pierce:0, cd:5, atkScale:1.0, targetHpPct:25, splashHpPct:20, splashAtkScale:0.3,
         brief:'小龟对主目标造成（{N:ATK}+25%目标最大HP）物理伤害，对其余敌人造成（{N:0.3*ATK}+20%主目标最大HP）物理伤害',
         detail:'小龟给目标来个过肩摔。\n主目标：（100%×攻击力 + 25%目标最大HP）物理伤害。\n其余敌人：（30%×攻击力 + 20%主目标最大HP）物理伤害。\n冷却{cd}回合。' },
@@ -174,7 +161,8 @@ const ALL_PETS = [
       { name:'冰封', type:'iceFreeze', hits:1, power:0, pierce:0, cd:6, atkScale:0.6, dmgType:'magic', stunChance:100,
         brief:'寒冰龟对单体造成（{M:0.6*ATK}）魔法伤害，100%眩晕1回合',
         detail:'寒冰龟对单体释放极寒之力，造成（60%×攻击力 = {M:0.6*ATK}）魔法伤害。\n目标必定眩晕1回合。\n冷却{cd}回合。' },
-      SK.teamShield,
+      { name:'团队护盾', type:'commonTeamShield', cd:3, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, shieldScale:0.5, shieldDuration:3,
+        brief:'全体友方获得（{S:0.5*ATK}）护盾 持续3回合', detail:'为全体友方施加（50%×攻击力 = {S:0.5*ATK}）护盾，持续3回合。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2], skills:[]
   },
   { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rarity:'B',   hp:329,  atk:47,  def:9,  mr:7,crit:0.25,
@@ -285,7 +273,8 @@ const ALL_PETS = [
       { name:'强化钻石结构', type:'diamondEnhanced', passiveSkill:true, hits:0, power:0, pierce:0, cd:0,
         brief:'携带后被动增强：友军护甲/魔抗+50%，自身+100%，每段伤害减免（20%护甲+10%魔抗），真实伤害除外',
         detail:'被动技能：钻石结构增强。\n· 其他友军护甲/魔抗加成放大+50%\n· 自身护甲/魔抗加成放大+100%\n· 受到每段伤害减免（20%护甲+10%魔抗）固定值\n· 真实伤害不受减免' },
-      SK.teamShield,
+      { name:'团队护盾', type:'commonTeamShield', cd:3, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, shieldScale:0.5, shieldDuration:3,
+        brief:'全体友方获得（{S:0.5*ATK}）护盾 持续3回合', detail:'为全体友方施加（50%×攻击力 = {S:0.5*ATK}）护盾，持续3回合。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2], skills:[]
   },
   { id:'fortune',   name:'财神龟',   emoji:'🧧🐢',    rarity:'B',   hp:385,  atk:39,  def:19, mr:16,crit:0.25,
@@ -505,7 +494,8 @@ const ALL_PETS = [
       { name:'闪电打击', type:'lightningStrike', dmgType:'magic', hits:5, power:0, pierce:0, cd:0, atkScale:0.23, splashPct:25,
         brief:'闪电龟打击5段，共（{M:0.23*ATK*5}）魔法伤害，每段溅射25%+叠电击层',
         detail:'闪电龟打击5段，共（{M:0.23*ATK*5}）魔法伤害。\n每段溅射25%到次目标，每段叠电击层。' },
-      SK.atkBuff,
+      { name:'团队鼓舞', type:'commonAtkBuff', cd:4, hits:0, power:0, pierce:0, aoeAlly:true, selfCast:true, atkUpPct:15, atkUpTurns:3,
+        brief:'全体友方攻击力 +15% 持续3回合', detail:'为全体友方施加攻击力 +15% 增益，持续3回合。\n冷却{cd}回合。' },
       { name:'雷暴',     type:'lightningBarrage', dmgType:'magic', hits:20, power:0, pierce:0, cd:6, arrowScale:0.11,
         brief:'闪电龟释放20次闪电随机命中敌方，共（{M:0.11*ATK*20}）魔法伤害',
         detail:'闪电龟释放20次闪电随机分布，共（{M:0.11*ATK*20}）魔法伤害，每次叠电击层。\n冷却{cd}回合。' },
