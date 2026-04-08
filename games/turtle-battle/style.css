@@ -141,7 +141,7 @@ body{
 @keyframes fadeUp{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
 
 /* ── SIDE INDICATOR (whose turn) ── */
-.side-indicator{text-align:center;margin-bottom:10px;min-height:28px}
+.side-indicator{text-align:center;font-size:12px;z-index:5}
 .side-ind{display:inline-block;padding:4px 16px;border-radius:6px;font-size:13px;font-weight:700;animation:fadeUp .2s ease}
 .side-ind-left{color:var(--green);background:rgba(6,214,160,.1);border:1px solid rgba(6,214,160,.25)}
 .side-ind-right{color:var(--red);background:rgba(255,107,107,.1);border:1px solid rgba(255,107,107,.25)}
@@ -827,19 +827,7 @@ body{
   .scene-turtle .st-buffs{max-width:50px;font-size:7px}
 
   /* Mobile position adjustments — spread out slightly */
-  /* Mobile: 6 fixed positions per side, spread across taller scene */
-  .scene-turtle.pos-left-front-0{left:32%;bottom:52%}
-  .scene-turtle.pos-left-front-1{left:28%;bottom:35%}
-  .scene-turtle.pos-left-front-2{left:35%;bottom:18%}
-  .scene-turtle.pos-left-back-0{left:10%;bottom:50%}
-  .scene-turtle.pos-left-back-1{left:7%;bottom:34%}
-  .scene-turtle.pos-left-back-2{left:13%;bottom:18%}
-  .scene-turtle.pos-right-front-0{right:32%;bottom:52%}
-  .scene-turtle.pos-right-front-1{right:28%;bottom:35%}
-  .scene-turtle.pos-right-front-2{right:35%;bottom:18%}
-  .scene-turtle.pos-right-back-0{right:10%;bottom:50%}
-  .scene-turtle.pos-right-back-1{right:7%;bottom:34%}
-  .scene-turtle.pos-right-back-2{right:13%;bottom:18%}
+  /* Positions handled by JS BATTLE_POSITIONS */
 
   /* Attack anim: preserve mobile scale */
   .scene-turtle.attack-anim[class*="pos-left"]{animation:mobileAttackRight .5s ease}
@@ -1749,7 +1737,8 @@ body{
 /* ── BATTLE SCENE (replaces card layout) ── */
 .battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-size:cover;background-position:center;background-color:#0a1628}
 .battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.4) 0%,transparent 10%,transparent 90%,rgba(10,22,40,.4) 100%),linear-gradient(180deg,rgba(10,22,40,.2) 0%,transparent 6%,transparent 96%,rgba(10,22,40,.2) 100%)}
-.battle-scene .scene-labels{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:5;pointer-events:none}
+.battle-scene .scene-labels{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 12px;z-index:5;pointer-events:none}
+.battle-scene .scene-labels .side-indicator{pointer-events:none;flex:1;font-size:12px}
 .battle-scene .team-label{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.5)}
 .battle-scene .team-label-left{color:var(--green)}
 .battle-scene .team-label-right{color:var(--red)}
@@ -1796,22 +1785,7 @@ body{
 /* Buff icons below name */
 .scene-turtle .st-buffs{display:flex;gap:2px;margin-top:1px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center}
 
-/* Left team: front row (closer to center), back row (further from center)
-   Layout: 3 turtles in a column, staggered slightly for depth feel
-   Front row ~30% from left, back row ~13% from left */
-.scene-turtle.pos-left-front-0{left:33%;bottom:45%}
-.scene-turtle.pos-left-front-1{left:30%;bottom:30%}
-.scene-turtle.pos-left-front-2{left:36%;bottom:16%}
-.scene-turtle.pos-left-back-0{left:16%;bottom:43%}
-.scene-turtle.pos-left-back-1{left:13%;bottom:29%}
-.scene-turtle.pos-left-back-2{left:19%;bottom:16%}
-/* Right team: mirror of left */
-.scene-turtle.pos-right-front-0{right:33%;bottom:45%}
-.scene-turtle.pos-right-front-1{right:30%;bottom:30%}
-.scene-turtle.pos-right-front-2{right:36%;bottom:16%}
-.scene-turtle.pos-right-back-0{right:16%;bottom:43%}
-.scene-turtle.pos-right-back-1{right:13%;bottom:29%}
-.scene-turtle.pos-right-back-2{right:19%;bottom:16%}
+/* Turtle positions now set by JS via BATTLE_POSITIONS config */
 .scene-turtle[class*="pos-left"] .st-sprite{transform:scaleX(-1)}
 .scene-turtle[class*="pos-left"][data-pid="hiding"] .st-sprite{transform:scaleX(1)}
 .scene-turtle[class*="pos-right"][data-pid="hiding"] .st-sprite{transform:scaleX(-1)}

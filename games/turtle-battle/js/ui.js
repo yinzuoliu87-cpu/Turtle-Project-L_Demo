@@ -1,3 +1,30 @@
+// ── BATTLE POSITION CONFIG ─────────────────────────────────
+// Change these values to adjust turtle positions for any map.
+// 'h' = horizontal %, 'v' = vertical (bottom) %
+// Left side uses 'left', right side mirrors to 'right'
+const BATTLE_POSITIONS = {
+  desktop: {
+    'front-0': { h: 33, v: 45 },
+    'front-1': { h: 30, v: 30 },
+    'front-2': { h: 36, v: 16 },
+    'back-0':  { h: 16, v: 43 },
+    'back-1':  { h: 13, v: 29 },
+    'back-2':  { h: 19, v: 16 },
+  },
+  mobile: {
+    'front-0': { h: 33, v: 50 },
+    'front-1': { h: 29, v: 34 },
+    'front-2': { h: 36, v: 18 },
+    'back-0':  { h: 12, v: 48 },
+    'back-1':  { h: 8,  v: 33 },
+    'back-2':  { h: 15, v: 18 },
+  }
+};
+
+function getPositionConfig() {
+  return window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+}
+
 function renderFighters() {
   renderScene();
 }
@@ -9,9 +36,17 @@ function renderScene() {
   scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
 
   // Render each fighter as a scene turtle
-  const renderTurtle = (f, posClass) => {
+  const posConfig = getPositionConfig();
+  const renderTurtle = (f, posClass, side, slotKey) => {
     const el = document.createElement('div');
     el.className = 'scene-turtle ' + posClass;
+    // Apply position from config
+    const pos = posConfig[slotKey];
+    if (pos) {
+      if (side === 'left') { el.style.left = pos.h + '%'; el.style.right = 'auto'; }
+      else { el.style.right = pos.h + '%'; el.style.left = 'auto'; }
+      el.style.bottom = pos.v + '%';
+    }
     el.id = getFighterElId(f);
     el.dataset.pid = f.petId || f.id || '';
     el.onclick = () => showFighterDetail(f);
@@ -62,11 +97,11 @@ function renderScene() {
     renderSceneBuffs(f);
   };
 
-  // Assign position classes based on slot key (fixed 6 positions)
+  // Assign position based on slot key (fixed 6 positions)
   const assignPos = (team, side) => {
     team.forEach(f => {
       const slot = f._slotKey || 'front-0';
-      renderTurtle(f, `pos-${side}-${slot}`);
+      renderTurtle(f, `pos-${side}-${slot}`, side, slot);
     });
   };
   assignPos(leftTeam, 'left');
