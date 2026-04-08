@@ -49,10 +49,6 @@ function sizeSceneInner() {
   inner.style.height = ih + 'px';
   inner.style.left = Math.round((sw - iw) / 2) + 'px';
   inner.style.top = Math.round((sh - ih) / 2) + 'px';
-  // Copy background from scene to inner
-  if (scene.style.backgroundImage && !inner.style.backgroundImage) {
-    inner.style.backgroundImage = scene.style.backgroundImage;
-  }
 }
 
 function renderScene() {
