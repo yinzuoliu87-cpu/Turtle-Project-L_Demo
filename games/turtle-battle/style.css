@@ -1747,7 +1747,7 @@ body{
 
 /* Scene turtle (positioned on the battlefield) */
 .scene-turtle{position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;z-index:2}
-.scene-turtle:hover{transform:scale(1.08)}
+.scene-turtle:hover{filter:drop-shadow(0 0 6px rgba(255,255,255,.4))}
 .scene-turtle.active-turn{filter:drop-shadow(0 0 8px rgba(88,166,255,.8))}
 .scene-turtle.targetable{cursor:crosshair;filter:drop-shadow(0 0 12px rgba(255,60,60,1)) drop-shadow(0 0 24px rgba(255,60,60,.6));animation:targetPulse .8s ease-in-out infinite;z-index:10;transform:scale(1.05)}
 .scene-turtle.targetable:hover{transform:scale(1.15)}
@@ -1899,9 +1899,9 @@ body{
   .fg-slot .fg-name{font-size:8px}
   /* battle-scene flex:1 inherited from 768px */
   .scene-turtle{transform:scale(.38)}
-  .scene-turtle:hover{transform:scale(1.45)}
-  .scene-turtle.targetable{transform:scale(1.45)}
-  .scene-turtle.active-turn{transform:scale(1.45)}
+  .scene-turtle:hover{transform:scale(1.35)}
+  .scene-turtle.targetable{transform:scale(1.35)}
+  .scene-turtle.active-turn{transform:scale(1.35)}
   .skill-announce{font-size:11px;padding:4px 10px}
   .fighter-detail-panel{max-height:70vh;font-size:11px}
   .fdp-name{font-size:14px}
