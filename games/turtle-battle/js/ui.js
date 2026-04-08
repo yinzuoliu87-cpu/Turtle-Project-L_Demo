@@ -62,13 +62,11 @@ function renderScene() {
     renderSceneBuffs(f);
   };
 
-  // Assign position classes based on front/back row
+  // Assign position classes based on slot key (fixed 6 positions)
   const assignPos = (team, side) => {
-    let fi = 0, bi = 0;
     team.forEach(f => {
-      const row = f._position === 'back' ? 'back' : 'front';
-      const idx = row === 'front' ? fi++ : bi++;
-      renderTurtle(f, `pos-${side}-${row}-${idx}`);
+      const slot = f._slotKey || 'front-0';
+      renderTurtle(f, `pos-${side}-${slot}`);
     });
   };
   assignPos(leftTeam, 'left');
@@ -1528,12 +1526,10 @@ function showTurtlePicker(canAct) {
   const box = document.getElementById('pickerButtons');
   box.innerHTML = canAct.map(f => {
     const fIdx = allFighters.indexOf(f);
-    const hpPct = Math.round(f.hp / f.maxHp * 100);
     const color = RARITY_COLORS[f.rarity] || '#fff';
     return `<button class="picker-btn" onclick="selectTurtleToAct(${fIdx})" style="border-color:${color}">
       <span class="picker-emoji">${petIcon(f, 28)}</span>
       <span class="picker-name" style="color:${color}">${f.name}</span>
-      <span class="picker-hp">HP ${hpPct}%${f.shield > 0 ? ' 🛡' + Math.ceil(f.shield) : ''}</span>
     </button>`;
   }).join('');
   picker.style.display = 'block';

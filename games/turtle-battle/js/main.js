@@ -828,6 +828,7 @@ function _buildTeamFromSlots(side, loadoutMap) {
     const idxs = (loadoutMap && loadoutMap[petId]) || getSavedLoadout(petId) || null;
     const f = createFighter(petId, side, idxs);
     f._position = k.startsWith('front') ? 'front' : 'back';
+    f._slotKey = k; // e.g. 'front-0', 'back-2'
     return f;
   });
 }
@@ -924,8 +925,10 @@ function confirmTeam() {
 function autoAssignPositions(team) {
   // Sort by DEF descending — highest DEF go front
   const sorted = [...team].sort((a,b) => b.def - a.def);
+  const slotKeys = ['front-0','front-1','back-0'];
   sorted.forEach((f, i) => {
     f._position = i < 2 ? 'front' : 'back';
+    if (!f._slotKey) f._slotKey = slotKeys[i] || 'back-' + (i-2);
   });
 }
 
