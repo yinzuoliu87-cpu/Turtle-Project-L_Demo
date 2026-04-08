@@ -7,16 +7,16 @@ const BATTLE_POSITIONS = {
     'front-0': { h: 30, v: 52 },
     'front-1': { h: 32, v: 35 },
     'front-2': { h: 30, v: 18 },
-    'back-0':  { h: 10, v: 50 },
-    'back-1':  { h: 12, v: 34 },
+    'back-0':  { h: 10, v: 52 },
+    'back-1':  { h: 12, v: 35 },
     'back-2':  { h: 10, v: 18 },
   },
   mobile: {
     'front-0': { h: 30, v: 62 },
     'front-1': { h: 32, v: 42 },
     'front-2': { h: 30, v: 22 },
-    'back-0':  { h: 8,  v: 60 },
-    'back-1':  { h: 10, v: 41 },
+    'back-0':  { h: 8,  v: 62 },
+    'back-1':  { h: 10, v: 42 },
     'back-2':  { h: 8,  v: 22 },
   }
 };

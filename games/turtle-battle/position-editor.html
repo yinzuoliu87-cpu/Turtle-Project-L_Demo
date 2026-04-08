@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>站位编辑器</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a1628;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
+h1{font-size:18px;margin-bottom:10px;color:#58a6ff}
+.controls{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
+.controls button{padding:6px 14px;border:1px solid #58a6ff;background:rgba(88,166,255,.1);color:#58a6ff;border-radius:6px;cursor:pointer;font-size:13px}
+.controls button:hover{background:rgba(88,166,255,.2)}
+.controls select{padding:6px;background:#1a2a3a;color:#fff;border:1px solid #58a6ff;border-radius:6px;font-size:13px}
+.scene-wrap{position:relative;border:2px solid #333;border-radius:12px;overflow:hidden;margin-bottom:15px}
+.scene-wrap img{display:block;width:100%;height:100%}
+.dot{position:absolute;width:40px;height:40px;border-radius:50%;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;transform:translate(-50%,-50%);z-index:10;user-select:none;transition:box-shadow .15s}
+.dot:hover{box-shadow:0 0 14px rgba(255,255,255,.5)}
+.dot.dragging{cursor:grabbing;box-shadow:0 0 20px rgba(255,255,255,.7)}
+.dot.left-front{background:rgba(6,214,160,.7);border:2px solid #06d6a0}
+.dot.left-back{background:rgba(6,214,160,.35);border:2px dashed #06d6a0}
+.dot.right-front{background:rgba(199,125,255,.7);border:2px solid #c77dff}
+.dot.right-back{background:rgba(199,125,255,.35);border:2px dashed #c77dff}
+.output{width:100%;max-width:700px;background:#111;border:1px solid #333;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;white-space:pre;overflow-x:auto;color:#06d6a0;line-height:1.6;margin-bottom:10px}
+.legend{display:flex;gap:16px;margin-bottom:10px;font-size:12px;flex-wrap:wrap;justify-content:center}
+.legend span{display:flex;align-items:center;gap:4px}
+.legend .swatch{width:14px;height:14px;border-radius:50%}
+.size-toggle{display:flex;gap:8px;margin-bottom:10px}
+.size-toggle button{padding:4px 12px;font-size:12px;border:1px solid #444;background:#1a2a3a;color:#aaa;border-radius:4px;cursor:pointer}
+.size-toggle button.active{border-color:#58a6ff;color:#58a6ff;background:rgba(88,166,255,.15)}
+.mirror-line{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,.15);z-index:5;pointer-events:none}
+</style>
+</head>
+<body>
+
+<h1>🐢 站位编辑器</h1>
+
+<div class="legend">
+  <span><span class="swatch" style="background:#06d6a0"></span>左方前排</span>
+  <span><span class="swatch" style="background:rgba(6,214,160,.4)"></span>左方后排</span>
+  <span><span class="swatch" style="background:#c77dff"></span>右方前排</span>
+  <span><span class="swatch" style="background:rgba(199,125,255,.4)"></span>右方后排</span>
+</div>
+
+<div class="size-toggle">
+  <button class="active" onclick="setSize('mobile')">📱 移动端</button>
+  <button onclick="setSize('desktop')">🖥 桌面端</button>
+</div>
+
+<div class="controls">
+  <select id="bgSelect" onchange="changeBg()">
+    <option value="assets/bg-cave-alt.png">洞穴(默认)</option>
+    <option value="assets/bg-cave.png">洞穴(Boss)</option>
+    <option value="assets/bg-shipwreck.png">沉船</option>
+  </select>
+  <button onclick="resetPositions()">重置</button>
+  <button onclick="mirrorLeftToRight()">左→右 对称</button>
+  <button onclick="copyOutput()">📋 复制代码</button>
+</div>
+
+<div class="scene-wrap" id="sceneWrap">
+  <div class="mirror-line"></div>
+  <img id="bgImg" src="assets/bg-cave-alt.png" alt="bg">
+</div>
+
+<div class="output" id="output"></div>
+
+<script>
+const SLOTS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+const SIDES = ['left','right'];
+
+// Default positions
+const defaults = {
+  mobile: {
+    'front-0': { h: 30, v: 62 }, 'front-1': { h: 32, v: 42 }, 'front-2': { h: 30, v: 22 },
+    'back-0':  { h: 8,  v: 60 }, 'back-1':  { h: 10, v: 41 }, 'back-2':  { h: 8,  v: 22 },
+  },
+  desktop: {
+    'front-0': { h: 30, v: 52 }, 'front-1': { h: 32, v: 35 }, 'front-2': { h: 30, v: 18 },
+    'back-0':  { h: 10, v: 50 }, 'back-1':  { h: 12, v: 34 }, 'back-2':  { h: 10, v: 18 },
+  }
+};
+
+let currentSize = 'mobile';
+let positions = JSON.parse(JSON.stringify(defaults));
+let dots = [];
+
+const wrap = document.getElementById('sceneWrap');
+const bgImg = document.getElementById('bgImg');
+
+function setSize(size) {
+  currentSize = size;
+  document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
+  document.querySelector(`.size-toggle button[onclick*="${size}"]`).classList.add('active');
+  if (size === 'mobile') {
+    wrap.style.width = '390px';
+    wrap.style.height = '580px';
+  } else {
+    wrap.style.width = '700px';
+    wrap.style.height = '394px';
+  }
+  renderDots();
+}
+
+function changeBg() {
+  bgImg.src = document.getElementById('bgSelect').value;
+}
+
+function resetPositions() {
+  positions = JSON.parse(JSON.stringify(defaults));
+  renderDots();
+}
+
+function mirrorLeftToRight() {
+  // Copy left positions to right (same h,v since right uses 'right' property)
+  SLOTS.forEach(s => {
+    positions[currentSize][s] = { ...positions[currentSize][s] };
+  });
+  renderDots();
+  updateOutput();
+}
+
+function renderDots() {
+  // Remove old dots
+  dots.forEach(d => d.el.remove());
+  dots = [];
+
+  const pos = positions[currentSize];
+  const w = wrap.offsetWidth;
+  const h = wrap.offsetHeight;
+
+  SIDES.forEach(side => {
+    SLOTS.forEach(slot => {
+      const p = pos[slot];
+      const row = slot.startsWith('front') ? 'front' : 'back';
+      const idx = slot.split('-')[1];
+      const label = (row === 'front' ? 'F' : 'B') + idx;
+
+      const el = document.createElement('div');
+      el.className = `dot ${side}-${row}`;
+      el.textContent = label;
+      el.title = `${side} ${slot}: h=${p.h}% v=${p.v}%`;
+
+      // Position: left side uses left%, right side uses right%
+      const x = side === 'left' ? (p.h / 100 * w) : (w - p.h / 100 * w);
+      const y = h - (p.v / 100 * h);
+      el.style.left = x + 'px';
+      el.style.top = y + 'px';
+
+      // Only left side dots are draggable (right mirrors)
+      if (side === 'left') {
+        el.addEventListener('mousedown', (e) => startDrag(e, slot));
+        el.addEventListener('touchstart', (e) => startDragTouch(e, slot), {passive:false});
+      } else {
+        el.style.opacity = '0.6';
+        el.style.cursor = 'default';
+      }
+
+      wrap.appendChild(el);
+      dots.push({ el, side, slot });
+    });
+  });
+
+  updateOutput();
+}
+
+let dragging = null;
+function startDrag(e, slot) {
+  e.preventDefault();
+  dragging = slot;
+  document.addEventListener('mousemove', onDrag);
+  document.addEventListener('mouseup', stopDrag);
+}
+function startDragTouch(e, slot) {
+  e.preventDefault();
+  dragging = slot;
+  document.addEventListener('touchmove', onDragTouch, {passive:false});
+  document.addEventListener('touchend', stopDrag);
+}
+function onDrag(e) {
+  if (!dragging) return;
+  const rect = wrap.getBoundingClientRect();
+  updatePos(e.clientX - rect.left, e.clientY - rect.top);
+}
+function onDragTouch(e) {
+  if (!dragging) return;
+  e.preventDefault();
+  const t = e.touches[0];
+  const rect = wrap.getBoundingClientRect();
+  updatePos(t.clientX - rect.left, t.clientY - rect.top);
+}
+function updatePos(x, y) {
+  const w = wrap.offsetWidth;
+  const h = wrap.offsetHeight;
+  const hPct = Math.round(Math.max(2, Math.min(48, x / w * 100)));
+  const vPct = Math.round(Math.max(5, Math.min(85, (1 - y / h) * 100)));
+  positions[currentSize][dragging] = { h: hPct, v: vPct };
+  renderDots();
+}
+function stopDrag() {
+  dragging = null;
+  document.removeEventListener('mousemove', onDrag);
+  document.removeEventListener('mouseup', stopDrag);
+  document.removeEventListener('touchmove', onDragTouch);
+  document.removeEventListener('touchend', stopDrag);
+}
+
+function updateOutput() {
+  const p = positions[currentSize];
+  let code = `// ${currentSize === 'mobile' ? '📱 移动端' : '🖥 桌面端'} 站位\n`;
+  code += `${currentSize}: {\n`;
+  SLOTS.forEach(s => {
+    code += `  '${s}': { h: ${p[s].h}, v: ${p[s].v} },\n`;
+  });
+  code += `}`;
+  document.getElementById('output').textContent = code;
+}
+
+function copyOutput() {
+  const text = document.getElementById('output').textContent;
+  navigator.clipboard.writeText(text).then(() => alert('已复制！'));
+}
+
+// Init
+setSize('mobile');
+</script>
+</body>
+</html>
