@@ -81,12 +81,9 @@ function renderScene() {
       el.style.bottom = bottomPct + '%';
       el.style.right = 'auto';
       el.style.top = 'auto';
-      // Center element on point after render (accounts for actual width + scale)
+      // Center element on point (offsetWidth = layout width before scale transform)
       requestAnimationFrame(() => {
-        const rect = el.getBoundingClientRect();
-        const sceneRect = scene.getBoundingClientRect();
-        const visualW = rect.width;
-        el.style.marginLeft = (-visualW / 2) + 'px';
+        el.style.marginLeft = (-el.offsetWidth / 2) + 'px';
       });
     }
     el.id = getFighterElId(f);
