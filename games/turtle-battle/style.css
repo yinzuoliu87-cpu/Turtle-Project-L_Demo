@@ -12,10 +12,12 @@
   --shadow:0 4px 24px rgba(0,0,0,.4);
 }
 *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html{overscroll-behavior:none;-webkit-overflow-scrolling:auto}
 body{
   font-family:'Segoe UI',system-ui,-apple-system,sans-serif;
   background:var(--bg);color:var(--fg);
-  min-height:100vh;overflow-x:hidden;
+  min-height:100dvh;overflow-x:hidden;
+  overscroll-behavior:none;
 }
 
 /* ── NAV ── */
@@ -862,7 +864,7 @@ body{
   /* No position overrides — use same PC percentages */
 
   /* Fighter detail panel → bottom sheet */
-  .fighter-detail-panel{position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:100%!important;max-height:60vh;border-radius:16px 16px 0 0;animation:slideUpSheet .2s ease;z-index:400;padding:16px}
+  .fighter-detail-panel{position:fixed!important;top:auto!important;left:0!important;right:0!important;bottom:0!important;width:100%!important;max-width:100%!important;max-height:60vh;border-radius:16px 16px 0 0;animation:slideUpSheet .2s ease;z-index:400;padding:16px;overscroll-behavior:contain;-webkit-overflow-scrolling:touch}
   @keyframes slideUpSheet{from{transform:translateY(100%)}to{transform:translateY(0)}}
   .fdp-name{font-size:16px}
   .fdp-stats{gap:3px 8px}
@@ -930,9 +932,11 @@ body{
     background: var(--bg);
     max-height: 45vh;
     overflow-y: auto;
+    overscroll-behavior: contain;
+    -webkit-overflow-scrolling: touch;
     display: none;
   }
-  .action-panel.show { display: block; }
+  .action-panel.show { display: block; overscroll-behavior: contain; }
   .action-header { font-size: 13px; margin-bottom: 6px; display: flex; align-items: center; gap: 8px; }
   .action-header .acting-name { font-size: 15px; }
   .btn-back-picker { font-size: 11px; padding: 2px 8px; }
@@ -976,6 +980,7 @@ body{
     box-shadow: 0 -4px 20px rgba(0,0,0,.6);
     padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
+    overscroll-behavior: contain;
   }
   .picker-header { font-size: 13px; }
   .picker-btn { padding: 10px 14px; border-radius: 10px; }
@@ -1007,6 +1012,7 @@ body{
     grid-template-columns: repeat(2, 1fr);
     gap: 8px;
     padding: 4px;
+    overscroll-behavior: contain;
   }
   .pet-card {
     padding: 8px 6px;
@@ -1738,6 +1744,7 @@ body{
 
 /* ── BATTLE SCENE (replaces card layout) ── */
 .battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-size:cover;background-position:center;background-color:#0a1628}
+.battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.5) 0%,transparent 12%,transparent 88%,rgba(10,22,40,.5) 100%),linear-gradient(180deg,rgba(10,22,40,.3) 0%,transparent 8%,transparent 92%,rgba(10,22,40,.4) 100%)}
 .battle-scene .scene-labels{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:5;pointer-events:none}
 .battle-scene .team-label{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.5)}
 .battle-scene .team-label-left{color:var(--green)}

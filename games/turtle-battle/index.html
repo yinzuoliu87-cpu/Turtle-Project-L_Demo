@@ -395,5 +395,17 @@
 <script src="js/ui.js" defer></script>
 <script src="js/tutorial.js" defer></script>
 <script src="js/main.js" defer></script>
+<script>
+// Mobile: prevent pull-to-refresh and rubber-banding in battle
+document.addEventListener('touchmove', function(e) {
+  const battle = document.getElementById('screenBattle');
+  if (battle && battle.classList.contains('active')) {
+    // Allow scrolling only inside explicitly scrollable containers
+    if (!e.target.closest('.action-panel,.battle-log,.fighter-detail-panel,.dmg-stats-panel,.passive-popup')) {
+      e.preventDefault();
+    }
+  }
+}, { passive: false });
+</script>
 </body>
 </html>
