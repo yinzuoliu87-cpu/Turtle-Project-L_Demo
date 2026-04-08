@@ -1129,6 +1129,24 @@ async function processBuffs() {
       if (checkBattleEnd()) return;
       continue;
     }
+    // Bleed DoT (物理伤害, reduced by DEF)
+    const bleeds = f.buffs.filter(b => b.type === 'bleed');
+    for (const bl of bleeds) {
+      const bleedRaw = bl.value || 10;
+      const defRed = f.def / (f.def + DEF_CONSTANT);
+      const bleedDmg = Math.max(1, Math.round(bleedRaw * (1 - defRed)));
+      f.hp = Math.max(0, f.hp - bleedDmg);
+      spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} 受到 <span style="color:#cc3333">${bleedDmg}流血伤害</span>（剩余${bl.turns-1}回合）`);
+      hadTick = true;
+      if (f.hp <= 0) break;
+    }
+    if (!f.alive) {
+      checkDeaths(null);
+      if (checkBattleEnd()) return;
+      continue;
+    }
     // Ice-Fire combo: if target has both 冰寒(chilled) and 灼烧(burn), consume both → 30% maxHP magic damage
     const hasChill = f.buffs.some(b => b.type === 'chilled');
     const hasBurn = f.buffs.some(b => b.type === 'phoenixBurnDot');

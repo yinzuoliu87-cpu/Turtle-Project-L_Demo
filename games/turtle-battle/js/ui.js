@@ -109,6 +109,7 @@ function renderSceneBuffs(f) {
     else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
     else if (b.type === 'poison') icons.push('<span style="color:#6b8e23">🧪</span>');
     else if (b.type === 'chilled') icons.push('<span style="color:#87ceeb">❄️</span>');
+    else if (b.type === 'bleed') icons.push('<span style="color:#cc3333">🩸</span>');
   }
   // Special state icons (not in buffs array)
   if (f._inkStacks > 0) icons.push(`<span style="color:#222" title="墨迹${f._inkStacks}层">🦑${f._inkStacks}</span>`);
@@ -422,6 +423,7 @@ function showFighterDetail(f) {
       else if (b.type === 'hidingShield') html += tag('#fff', `🐢缩头护盾 ${b.turns}回合`);
       else if (b.type === 'poison') html += tag('#6b8e23', `🧪中毒 ${b.value}/回 ${b.turns}回合`);
       else if (b.type === 'chilled') html += tag('#87ceeb', `❄️冰寒 ATK-20% ${b.turns}回合`);
+      else if (b.type === 'bleed') html += tag('#cc3333', `🩸流血 ${b.value}/回 ${b.turns}回合`);
     });
     // Non-buff state tags
     if (f._inkStacks > 0) html += tag('#222', `🦑墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
@@ -1338,6 +1340,7 @@ function renderSkillTemplate(template, f, s) {
   result = result.replace(/(?<!\">)诅咒(?!<)/g, '<span class="val-dot">诅咒</span>');
   result = result.replace(/(?<!\">)护盾(?!<)/g, '<span class="val-shield">护盾</span>');
   result = result.replace(/(?<!\">)中毒(?!<)/g, '<span class="val-dot">中毒</span>');
+  result = result.replace(/(?<!\">)流血(?!<)/g, '<span style="color:#cc3333;font-weight:700">流血</span>');
   result = result.replace(/(?<!\">)冰寒(?!<)/g, '<span style="color:#87ceeb;font-weight:700">冰寒</span>');
   result = result.replace(/(?<!\">)反伤(?!<)/g, '<span class="val-reflect">反伤</span>');
   result = result.replace(/(?<!\">)暴击率(?!<)/g, '<span class="val-crit">暴击率</span>');
