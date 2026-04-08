@@ -1018,7 +1018,9 @@ function startBattle(seed) {
   else if (gameMode === 'pvp-online') bgFile = 'assets/bg-shipwreck.png';
   else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg-cave.png' : 'assets/bg-cave-alt.png';
   const battleScene = document.getElementById('battleScene');
-  if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
+  const sceneInner = document.getElementById('sceneInner');
+  if (sceneInner) sceneInner.style.backgroundImage = 'url(' + bgFile + ')';
+  if (battleScene) battleScene.style.backgroundImage = 'none';
   document.getElementById('screenBattle').style.backgroundImage = 'none';
   // Spawn underwater bubble particles inside scene
   let bubbleContainer = battleScene ? battleScene.querySelector('.battle-bubbles') : null;

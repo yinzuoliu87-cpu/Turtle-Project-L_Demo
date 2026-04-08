@@ -816,7 +816,7 @@ body{
 
   /* ── SCENE-BASED BATTLE (mobile) ── */
   /* Keep 16:9 ratio same as PC, just limit height */
-  .battle-scene{aspect-ratio:auto;flex:1;min-height:0;max-height:none;margin-bottom:0}
+  .battle-scene{aspect-ratio:auto;flex:1;min-height:0;max-height:none;margin-bottom:0;background-color:#0a1628}
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
@@ -1736,8 +1736,9 @@ body{
 .equip-pick-item.selected{border-color:#ffd93d;background:rgba(255,215,0,.1)}
 
 /* ── BATTLE SCENE (replaces card layout) ── */
-.battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-size:cover;background-position:center;background-color:#0a1628}
-.battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.4) 0%,transparent 10%,transparent 90%,rgba(10,22,40,.4) 100%),linear-gradient(180deg,rgba(10,22,40,.2) 0%,transparent 6%,transparent 96%,rgba(10,22,40,.2) 100%)}
+.battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-color:#0a1628}
+.scene-inner{position:absolute;background-size:100% 100%;background-position:center}
+.scene-inner::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;border-radius:8px;background:linear-gradient(90deg,rgba(10,22,40,.3) 0%,transparent 8%,transparent 92%,rgba(10,22,40,.3) 100%),linear-gradient(180deg,rgba(10,22,40,.15) 0%,transparent 5%,transparent 95%,rgba(10,22,40,.15) 100%)}
 .battle-scene .scene-labels{position:absolute;top:6px;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:0 12px;z-index:5;pointer-events:none}
 .battle-scene .scene-labels .side-indicator{pointer-events:none;flex:1;font-size:12px}
 .battle-scene .team-label{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.5)}

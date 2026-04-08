@@ -29,10 +29,39 @@ function renderFighters() {
   renderScene();
 }
 
+function sizeSceneInner() {
+  const scene = document.getElementById('battleScene');
+  const inner = document.getElementById('sceneInner');
+  if (!scene || !inner) return;
+  const sw = scene.offsetWidth, sh = scene.offsetHeight;
+  // Fit 16:9 inside the container, centered
+  const targetRatio = 16/9;
+  const containerRatio = sw / sh;
+  let iw, ih;
+  if (containerRatio > targetRatio) {
+    // Container wider than 16:9 → fit height, center horizontally
+    ih = sh; iw = Math.round(sh * targetRatio);
+  } else {
+    // Container taller than 16:9 → fit width, center vertically
+    iw = sw; ih = Math.round(sw / targetRatio);
+  }
+  inner.style.width = iw + 'px';
+  inner.style.height = ih + 'px';
+  inner.style.left = Math.round((sw - iw) / 2) + 'px';
+  inner.style.top = Math.round((sh - ih) / 2) + 'px';
+  // Copy background from scene to inner
+  if (scene.style.backgroundImage && !inner.style.backgroundImage) {
+    inner.style.backgroundImage = scene.style.backgroundImage;
+  }
+}
+
 function renderScene() {
   const scene = document.getElementById('battleScene');
   if (!scene) return;
-  // Remove old scene turtles (keep labels and bubbles)
+  const inner = document.getElementById('sceneInner');
+  // Size the inner 16:9 container
+  sizeSceneInner();
+  // Remove old scene turtles
   scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
 
   // Render each fighter as a scene turtle
@@ -93,7 +122,7 @@ function renderScene() {
 
     if (!f.alive) el.classList.add('dead');
     if (f._isBoss) el.style.transform = 'scale(1.3)';
-    scene.appendChild(el);
+    (inner || scene).appendChild(el);
     renderSceneBuffs(f);
   };
 
