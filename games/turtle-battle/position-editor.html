@@ -43,10 +43,10 @@ h1{font-size:18px;margin-bottom:10px;color:#58a6ff}
 </div>
 
 <div class="size-toggle">
-  <button class="active" onclick="setSize('mobile')">📱 移动端</button>
+  <button class="active" onclick="setSize('mobile')">📱 移动端 (390×684)</button>
   <button onclick="setSize('desktop')">🖥 桌面端</button>
-  <button onclick="setSize('actual')">📐 实际尺寸</button>
 </div>
+<div style="font-size:11px;color:#666;margin-bottom:8px">💡 用Chrome DevTools的📱模拟器(iPhone 14)调整效果最准</div>
 
 <div class="controls">
   <select id="bgSelect" onchange="changeBg()">
@@ -93,19 +93,19 @@ function setSize(size) {
   currentSize = size;
   document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
   document.querySelector(`.size-toggle button[onclick*="${size}"]`).classList.add('active');
-  if (size === 'actual') {
-    // Use actual viewport: full width, height = viewport - ~120px for UI
-    currentSize = window.innerWidth <= 768 ? 'mobile' : 'desktop';
-    wrap.style.width = '100%';
-    wrap.style.height = (window.innerHeight - 120) + 'px';
-  } else if (size === 'mobile') {
-    const sw = Math.min(window.innerWidth, 430);
+  if (size === 'mobile') {
+    // Simulate iPhone 14: 390px wide, scene = full height minus top bar(40px) + bottom panel(120px)
+    const sw = 390;
+    const screenH = 844; // iPhone 14 viewport
+    const sceneH = screenH - 40 - 120; // top bar + bottom panels
     wrap.style.width = sw + 'px';
-    wrap.style.height = Math.round(sw * 1.55) + 'px';
+    wrap.style.height = sceneH + 'px';
   } else {
+    // Desktop: max 1400px wide, 16:9 ratio with 70vh cap
     const dw = Math.min(800, window.innerWidth - 40);
+    const dh = Math.min(Math.round(dw * 9/16), Math.round(window.innerHeight * 0.7));
     wrap.style.width = dw + 'px';
-    wrap.style.height = Math.round(dw * 9/16) + 'px';
+    wrap.style.height = dh + 'px';
   }
   wrap.style.backgroundImage = 'url(' + document.getElementById('bgSelect').value + ')';
   renderDots();
