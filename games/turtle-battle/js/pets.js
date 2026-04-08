@@ -1,16 +1,13 @@
 /* ═══════════════════════════════════════════════════════════
-   龟龟对战 — 2V2 回合制战斗引擎
-   护盾(白条) / 物理伤害(红) / 真实伤害(黄) / 魔法伤害(蓝) / 治疗(绿)
-   多段伤害技能 / 持久浮动数字
+   龟龟对战 — 3V3 回合制战斗
+   28只龟 / 5选3技能装配 / 前后排 / 连携技 / 被动技能系统
    ═══════════════════════════════════════════════════════════ */
 
 // ── PET DATABASE ──────────────────────────────────────────
-/* Base stats are normalized — rarity bonus applied in createFighter()
-   Each rarity tier = +3% to HP/ATK/DEF/SPD over previous tier
-   C=1.00  B=1.03  A=1.06  S=1.09  SS=1.12  SSS=1.15
-   New stats: crit (暴击率 0~1)
-   DEF reduction formula: reduction% = DEF/(DEF+40), diminishing returns
-   穿甲: 固定穿甲(armorPen)无视X点防御 + 百分比穿甲(armorPenPct)无视X%防御  */
+/* 属性: HP, ATK, DEF, MR, CRIT
+   DEF减伤公式: reduction% = DEF/(DEF+40)
+   穿甲: 固定穿甲(armorPen) + 百分比穿甲(armorPenPct)
+   技能池: 每只龟5个技能(含被动技能), 战前选3个(技能0固定)  */
 const RARITY_MULT = { C:1.00, B:1.03, A:1.06, S:1.09, SS:1.12, SSS:1.15 };
 const DEF_CONSTANT = 40; // DEF/(DEF+K) formula constant
 
