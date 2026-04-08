@@ -3,50 +3,44 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>站位编辑器</title>
+<title>站位编辑器 v2</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
 body{background:#0a1628;color:#fff;font-family:system-ui;display:flex;flex-direction:column;align-items:center;min-height:100vh;padding:20px}
-h1{font-size:18px;margin-bottom:10px;color:#58a6ff}
-.controls{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap;justify-content:center}
-.controls button{padding:6px 14px;border:1px solid #58a6ff;background:rgba(88,166,255,.1);color:#58a6ff;border-radius:6px;cursor:pointer;font-size:13px}
+h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
+.controls{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;justify-content:center}
+.controls button{padding:5px 12px;border:1px solid #58a6ff;background:rgba(88,166,255,.1);color:#58a6ff;border-radius:6px;cursor:pointer;font-size:12px}
 .controls button:hover{background:rgba(88,166,255,.2)}
-.controls select{padding:6px;background:#1a2a3a;color:#fff;border:1px solid #58a6ff;border-radius:6px;font-size:13px}
-.scene-wrap{position:relative;border:2px solid #333;border-radius:12px;overflow:hidden;margin-bottom:15px;background-size:cover;background-position:center;background-color:#0a1628}
-.scene-wrap img{display:none}
-.dot{position:absolute;width:40px;height:40px;border-radius:50%;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:700;z-index:10;user-select:none;transition:box-shadow .15s}
-.dot:hover{box-shadow:0 0 14px rgba(255,255,255,.5)}
-.dot.dragging{cursor:grabbing;box-shadow:0 0 20px rgba(255,255,255,.7)}
+.controls select{padding:5px;background:#1a2a3a;color:#fff;border:1px solid #58a6ff;border-radius:6px;font-size:12px}
+.preview-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
+.preview-box{position:relative;border:2px solid #333;border-radius:10px;overflow:hidden;background-size:cover;background-position:center;background-color:#0a1628}
+.preview-box .label{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:10px;color:#58a6ff;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:4px;z-index:20}
+.dot{position:absolute;width:32px;height:32px;border-radius:50%;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;z-index:10;user-select:none;transform:translate(-50%,-50%)}
+.dot:hover{box-shadow:0 0 12px rgba(255,255,255,.5)}
 .dot.left-front{background:rgba(6,214,160,.7);border:2px solid #06d6a0}
 .dot.left-back{background:rgba(6,214,160,.35);border:2px dashed #06d6a0}
 .dot.right-front{background:rgba(199,125,255,.7);border:2px solid #c77dff}
 .dot.right-back{background:rgba(199,125,255,.35);border:2px dashed #c77dff}
-.output{width:100%;max-width:700px;background:#111;border:1px solid #333;border-radius:8px;padding:12px;font-family:monospace;font-size:12px;white-space:pre;overflow-x:auto;color:#06d6a0;line-height:1.6;margin-bottom:10px}
-.legend{display:flex;gap:16px;margin-bottom:10px;font-size:12px;flex-wrap:wrap;justify-content:center}
-.legend span{display:flex;align-items:center;gap:4px}
-.legend .swatch{width:14px;height:14px;border-radius:50%}
-.size-toggle{display:flex;gap:8px;margin-bottom:10px}
-.size-toggle button{padding:4px 12px;font-size:12px;border:1px solid #444;background:#1a2a3a;color:#aaa;border-radius:4px;cursor:pointer}
-.size-toggle button.active{border-color:#58a6ff;color:#58a6ff;background:rgba(88,166,255,.15)}
+.output{width:100%;max-width:700px;background:#111;border:1px solid #333;border-radius:8px;padding:10px;font-family:monospace;font-size:11px;white-space:pre;overflow-x:auto;color:#06d6a0;line-height:1.5}
+.legend{display:flex;gap:14px;margin-bottom:6px;font-size:11px;flex-wrap:wrap;justify-content:center}
+.legend span{display:flex;align-items:center;gap:3px}
+.legend .sw{width:12px;height:12px;border-radius:50%}
 .mirror-line{position:absolute;top:0;bottom:0;left:50%;width:1px;background:rgba(255,255,255,.15);z-index:5;pointer-events:none}
+.info{font-size:11px;color:#666;margin-bottom:8px;text-align:center}
 </style>
 </head>
 <body>
 
-<h1>🐢 站位编辑器</h1>
+<h1>🐢 站位编辑器 v2（cover映射）</h1>
 
 <div class="legend">
-  <span><span class="swatch" style="background:#06d6a0"></span>左方前排</span>
-  <span><span class="swatch" style="background:rgba(6,214,160,.4)"></span>左方后排</span>
-  <span><span class="swatch" style="background:#c77dff"></span>右方前排</span>
-  <span><span class="swatch" style="background:rgba(199,125,255,.4)"></span>右方后排</span>
+  <span><span class="sw" style="background:#06d6a0"></span>左前排</span>
+  <span><span class="sw" style="background:rgba(6,214,160,.4)"></span>左后排</span>
+  <span><span class="sw" style="background:#c77dff"></span>右前排</span>
+  <span><span class="sw" style="background:rgba(199,125,255,.4)"></span>右后排</span>
 </div>
 
-<div class="size-toggle">
-  <button class="active" onclick="setSize('mobile')">📱 移动端 (390×684)</button>
-  <button onclick="setSize('desktop')">🖥 桌面端</button>
-</div>
-<div style="font-size:11px;color:#666;margin-bottom:8px">💡 用Chrome DevTools的📱模拟器(iPhone 14)调整效果最准</div>
+<div class="info">拖动左边圆点调整位置，右边自动镜像。坐标基于16:9原始背景图，两个预览模拟实际裁剪效果。</div>
 
 <div class="controls">
   <select id="bgSelect" onchange="changeBg()">
@@ -54,192 +48,166 @@ h1{font-size:18px;margin-bottom:10px;color:#58a6ff}
     <option value="assets/bg-cave.png">洞穴(Boss)</option>
     <option value="assets/bg-shipwreck.png">沉船</option>
   </select>
-  <button onclick="resetPositions()">重置</button>
-  <button onclick="mirrorLeftToRight()">左→右 对称</button>
+  <button onclick="resetPos()">重置</button>
   <button onclick="copyOutput()">📋 复制代码</button>
 </div>
 
-<div class="scene-wrap" id="sceneWrap">
-  <div class="mirror-line"></div>
-  <img id="bgImg" src="assets/bg-cave-alt.png" alt="bg">
+<div class="preview-row">
+  <div class="preview-box" id="previewDesktop">
+    <div class="label">🖥 桌面端 16:9</div>
+    <div class="mirror-line"></div>
+  </div>
+  <div class="preview-box" id="previewMobile">
+    <div class="label">📱 移动端</div>
+    <div class="mirror-line"></div>
+  </div>
 </div>
 
 <div class="output" id="output"></div>
 
 <script>
 const SLOTS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
-const SIDES = ['left','right'];
 
-// Default positions (synced with BATTLE_POSITIONS in ui.js)
+// Positions on 16:9 background image (x% from left, y% from top)
 const defaults = {
-  mobile: {
-    'front-0': { h: 39, v: 60 }, 'front-1': { h: 37, v: 40 }, 'front-2': { h: 35, v: 20 },
-    'back-0':  { h: 13, v: 60 }, 'back-1':  { h: 11, v: 40 }, 'back-2':  { h: 10, v: 20 },
-  },
-  desktop: {
-    'front-0': { h: 41, v: 58 }, 'front-1': { h: 40, v: 39 }, 'front-2': { h: 39, v: 19 },
-    'back-0':  { h: 29, v: 58 }, 'back-1':  { h: 27, v: 39 }, 'back-2':  { h: 25, v: 19 },
-  }
+  'front-0': { x: 38, y: 38 },
+  'front-1': { x: 36, y: 55 },
+  'front-2': { x: 39, y: 72 },
+  'back-0':  { x: 22, y: 38 },
+  'back-1':  { x: 19, y: 55 },
+  'back-2':  { x: 23, y: 72 },
 };
 
-let currentSize = 'mobile';
 let positions = JSON.parse(JSON.stringify(defaults));
-let dots = [];
 
-const wrap = document.getElementById('sceneWrap');
-const bgImg = document.getElementById('bgImg');
+const desktopBox = document.getElementById('previewDesktop');
+const mobileBox = document.getElementById('previewMobile');
 
-function setSize(size) {
-  currentSize = size;
-  document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
-  document.querySelector(`.size-toggle button[onclick*="${size}"]`).classList.add('active');
-  if (size === 'mobile') {
-    // Simulate iPhone 14: 390px wide, scene = full height minus top bar(40px) + bottom panel(120px)
-    const sw = 390;
-    const screenH = 844; // iPhone 14 viewport
-    const sceneH = screenH - 40 - 120; // top bar + bottom panels
-    wrap.style.width = sw + 'px';
-    wrap.style.height = sceneH + 'px';
+// Same math as game's mapCoverPos
+function mapCoverPos(imgX, imgY, cw, ch) {
+  const imgRatio = 16 / 9;
+  const cRatio = cw / ch;
+  if (cRatio > imgRatio) {
+    const visibleH = 1 / cRatio * imgRatio;
+    const offsetY = (1 - visibleH) / 2;
+    return { px: imgX / 100 * cw, py: (imgY / 100 - offsetY) / visibleH * ch };
   } else {
-    // Desktop: max 1400px wide, 16:9 ratio with 70vh cap
-    const dw = Math.min(800, window.innerWidth - 40);
-    const dh = Math.min(Math.round(dw * 9/16), Math.round(window.innerHeight * 0.7));
-    wrap.style.width = dw + 'px';
-    wrap.style.height = dh + 'px';
+    const visibleW = cRatio / imgRatio;
+    const offsetX = (1 - visibleW) / 2;
+    return { px: (imgX / 100 - offsetX) / visibleW * cw, py: imgY / 100 * ch };
   }
-  wrap.style.backgroundImage = 'url(' + document.getElementById('bgSelect').value + ')';
-  renderDots();
+}
+
+function init() {
+  // Desktop: 16:9
+  const dw = Math.min(500, window.innerWidth / 2 - 30);
+  desktopBox.style.width = dw + 'px';
+  desktopBox.style.height = Math.round(dw * 9/16) + 'px';
+
+  // Mobile: simulate phone ratio (9:16-ish scene area)
+  const mw = Math.min(250, window.innerWidth / 2 - 30);
+  mobileBox.style.width = mw + 'px';
+  mobileBox.style.height = Math.round(mw * 1.6) + 'px';
+
+  changeBg();
+  render();
 }
 
 function changeBg() {
-  wrap.style.backgroundImage = 'url(' + document.getElementById('bgSelect').value + ')';
+  const bg = document.getElementById('bgSelect').value;
+  desktopBox.style.backgroundImage = 'url(' + bg + ')';
+  mobileBox.style.backgroundImage = 'url(' + bg + ')';
 }
 
-function resetPositions() {
+function resetPos() {
   positions = JSON.parse(JSON.stringify(defaults));
-  renderDots();
+  render();
 }
 
-function mirrorLeftToRight() {
-  // Copy left positions to right (same h,v since right uses 'right' property)
-  SLOTS.forEach(s => {
-    positions[currentSize][s] = { ...positions[currentSize][s] };
-  });
-  renderDots();
-  updateOutput();
-}
+function render() {
+  // Clear old dots
+  document.querySelectorAll('.dot').forEach(d => d.remove());
 
-function renderDots() {
-  // Remove old dots
-  dots.forEach(d => d.el.remove());
-  dots = [];
+  // Render on both previews
+  [desktopBox, mobileBox].forEach(box => {
+    const cw = box.offsetWidth, ch = box.offsetHeight;
+    ['left','right'].forEach(side => {
+      SLOTS.forEach(slot => {
+        const p = positions[slot];
+        const row = slot.startsWith('front') ? 'front' : 'back';
+        const idx = slot.split('-')[1];
+        const label = (row === 'front' ? 'F' : 'B') + idx;
+        const imgX = side === 'left' ? p.x : (100 - p.x);
+        const imgY = p.y;
+        const mapped = mapCoverPos(imgX, imgY, cw, ch);
 
-  const pos = positions[currentSize];
+        const el = document.createElement('div');
+        el.className = 'dot ' + side + '-' + row;
+        el.textContent = label;
+        el.style.left = mapped.px + 'px';
+        el.style.top = mapped.py + 'px';
 
-  SIDES.forEach(side => {
-    SLOTS.forEach(slot => {
-      const p = pos[slot];
-      const row = slot.startsWith('front') ? 'front' : 'back';
-      const idx = slot.split('-')[1];
-      const label = (row === 'front' ? 'F' : 'B') + idx;
+        if (side === 'left') {
+          el.addEventListener('mousedown', (e) => startDrag(e, slot, box));
+          el.addEventListener('touchstart', (e) => startDragTouch(e, slot, box), {passive:false});
+        } else {
+          el.style.opacity = '0.5';
+          el.style.cursor = 'default';
+        }
 
-      const el = document.createElement('div');
-      el.className = `dot ${side}-${row}`;
-      el.textContent = label;
-      el.title = `${side} ${slot}: h=${p.h}% v=${p.v}%`;
-
-      // Match actual scene rendering exactly
-      el.style.position = 'absolute';
-      if (side === 'left') {
-        el.style.left = p.h + '%';
-        el.style.right = 'auto';
-        el.style.transform = 'translateX(-50%)';
-      } else {
-        el.style.right = p.h + '%';
-        el.style.left = 'auto';
-        el.style.transform = 'translateX(50%)';
-      }
-      el.style.bottom = p.v + '%';
-      el.style.top = 'auto';
-
-      // Only left side dots are draggable (right mirrors)
-      if (side === 'left') {
-        el.addEventListener('mousedown', (e) => startDrag(e, slot));
-        el.addEventListener('touchstart', (e) => startDragTouch(e, slot), {passive:false});
-      } else {
-        el.style.opacity = '0.6';
-        el.style.cursor = 'default';
-      }
-
-      wrap.appendChild(el);
-      dots.push({ el, side, slot });
+        box.appendChild(el);
+      });
     });
   });
 
   updateOutput();
 }
 
-let dragging = null;
-function startDrag(e, slot) {
-  e.preventDefault();
-  dragging = slot;
-  document.addEventListener('mousemove', onDrag);
-  document.addEventListener('mouseup', stopDrag);
-}
-function startDragTouch(e, slot) {
-  e.preventDefault();
-  dragging = slot;
-  document.addEventListener('touchmove', onDragTouch, {passive:false});
-  document.addEventListener('touchend', stopDrag);
-}
-function onDrag(e) {
-  if (!dragging) return;
-  const rect = wrap.getBoundingClientRect();
-  updatePos(e.clientX - rect.left, e.clientY - rect.top);
-}
-function onDragTouch(e) {
-  if (!dragging) return;
-  e.preventDefault();
-  const t = e.touches[0];
-  const rect = wrap.getBoundingClientRect();
-  updatePos(t.clientX - rect.left, t.clientY - rect.top);
-}
-function updatePos(x, y) {
-  const w = wrap.offsetWidth;
-  const h = wrap.offsetHeight;
-  // h% = distance from left edge (for left side)
-  const hPct = Math.round(Math.max(2, Math.min(48, x / w * 100)));
-  // v% = distance from bottom edge
-  const vPct = Math.round(Math.max(5, Math.min(85, (1 - y / h) * 100)));
-  positions[currentSize][dragging] = { h: hPct, v: vPct };
-  renderDots();
-}
-function stopDrag() {
-  dragging = null;
-  document.removeEventListener('mousemove', onDrag);
-  document.removeEventListener('mouseup', stopDrag);
-  document.removeEventListener('touchmove', onDragTouch);
-  document.removeEventListener('touchend', stopDrag);
+let dragging = null, dragBox = null;
+function startDrag(e, slot, box) { e.preventDefault(); dragging = slot; dragBox = box; document.addEventListener('mousemove', onDrag); document.addEventListener('mouseup', stopDrag); }
+function startDragTouch(e, slot, box) { e.preventDefault(); dragging = slot; dragBox = box; document.addEventListener('touchmove', onDragT, {passive:false}); document.addEventListener('touchend', stopDrag); }
+function onDrag(e) { if (!dragging) return; const r = dragBox.getBoundingClientRect(); doMove(e.clientX - r.left, e.clientY - r.top); }
+function onDragT(e) { if (!dragging) return; e.preventDefault(); const t = e.touches[0]; const r = dragBox.getBoundingClientRect(); doMove(t.clientX - r.left, t.clientY - r.top); }
+
+function doMove(px, py) {
+  const cw = dragBox.offsetWidth, ch = dragBox.offsetHeight;
+  // Reverse mapCoverPos: pixel → image coordinate
+  const imgRatio = 16 / 9;
+  const cRatio = cw / ch;
+  let imgX, imgY;
+  if (cRatio > imgRatio) {
+    const visibleH = 1 / cRatio * imgRatio;
+    const offsetY = (1 - visibleH) / 2;
+    imgX = px / cw * 100;
+    imgY = (py / ch * visibleH + offsetY) * 100;
+  } else {
+    const visibleW = cRatio / imgRatio;
+    const offsetX = (1 - visibleW) / 2;
+    imgX = (px / cw * visibleW + offsetX) * 100;
+    imgY = py / ch * 100;
+  }
+  imgX = Math.round(Math.max(5, Math.min(48, imgX)));
+  imgY = Math.round(Math.max(5, Math.min(95, imgY)));
+  positions[dragging] = { x: imgX, y: imgY };
+  render();
 }
 
+function stopDrag() { dragging = null; dragBox = null; document.removeEventListener('mousemove', onDrag); document.removeEventListener('mouseup', stopDrag); document.removeEventListener('touchmove', onDragT); document.removeEventListener('touchend', stopDrag); }
+
 function updateOutput() {
-  const p = positions[currentSize];
-  let code = `// ${currentSize === 'mobile' ? '📱 移动端' : '🖥 桌面端'} 站位\n`;
-  code += `${currentSize}: {\n`;
+  let code = "const BATTLE_POSITIONS = {\n";
   SLOTS.forEach(s => {
-    code += `  '${s}': { h: ${p[s].h}, v: ${p[s].v} },\n`;
+    code += `  '${s}': { x: ${positions[s].x}, y: ${positions[s].y} },\n`;
   });
-  code += `}`;
+  code += "};";
   document.getElementById('output').textContent = code;
 }
 
 function copyOutput() {
-  const text = document.getElementById('output').textContent;
-  navigator.clipboard.writeText(text).then(() => alert('已复制！'));
+  navigator.clipboard.writeText(document.getElementById('output').textContent).then(() => alert('已复制！'));
 }
 
-// Init
-setSize('mobile');
+init();
 </script>
 </body>
 </html>
