@@ -72,10 +72,17 @@
 
 <!-- ══════ SCREEN: MENU ══════ -->
 <section id="screenMenu" class="screen active">
+  <div class="menu-top-bar">
+    <a class="back-link" href="../../index.html">← 返回龟投</a>
+    <div class="menu-top-right">
+      <button class="btn-sound" id="soundBtn" onclick="toggleSound()">🔊</button>
+      <span class="coin-display" id="coinDisplay">🪙 0</span>
+    </div>
+  </div>
   <div class="menu-hero">
     <div class="menu-logo">⚔️</div>
     <h2>龟龟对战</h2>
-    <p class="menu-sub">2V2 回合制战斗</p>
+    <p class="menu-sub">3V3 回合制战斗</p>
   </div>
   <div class="menu-buttons">
     <button class="btn btn-primary btn-lg" onclick="startMode('pve')">
