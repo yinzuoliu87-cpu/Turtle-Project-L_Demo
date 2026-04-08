@@ -22,7 +22,8 @@ body{
 
 /* ── NAV ── */
 .top-nav{display:none}
-.btn-sound-global{position:fixed;top:8px;right:8px;z-index:999;width:36px;height:36px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(15,20,30,.8);backdrop-filter:blur(4px);color:#fff;font-size:16px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.btn-sound-global{position:fixed;top:8px;right:8px;z-index:999;width:32px;height:32px;border-radius:50%;border:1px solid rgba(255,255,255,.15);background:rgba(15,20,30,.8);backdrop-filter:blur(4px);color:#fff;font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+body:has(#screenBattle.active) .btn-sound-global{top:46px}
 .menu-top-bar{display:flex;justify-content:space-between;align-items:center;padding:10px 16px;margin-bottom:4px}
 .menu-top-bar .back-link{color:var(--accent);text-decoration:none;font-size:14px}
 .menu-top-right{display:flex;align-items:center;gap:10px}
