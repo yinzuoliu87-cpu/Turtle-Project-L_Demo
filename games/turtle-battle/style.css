@@ -121,6 +121,8 @@ body{
 .btn-help:hover{border-color:var(--accent);background:rgba(88,166,255,.1)}
 .btn-surrender{border-color:rgba(255,80,80,.3);color:#ff6b6b}
 .btn-surrender:hover{border-color:#ff6b6b;background:rgba(255,80,80,.1)}
+.btn-battle-back{display:none}
+@media(max-width:768px){.btn-battle-back{display:flex}}
 
 /* ── HELP PANEL ── */
 .help-panel{background:var(--bg2);border:1px solid rgba(255,255,255,.1);border-radius:var(--radius);padding:16px;margin-bottom:12px;animation:fadeUp .2s ease}
@@ -804,21 +806,27 @@ body{
   }
 
   /* -- Battle area: fit one screen, no scroll -- */
+  /* Hide nav bar during battle on mobile */
+  #screenBattle.active ~ .top-nav,
+  .top-nav:has(~ #screenBattle.active) { display: none; }
+  body:has(#screenBattle.active) .top-nav { display: none!important; }
   #screenBattle.active {
     max-width: 100%;
-    padding: 4px 6px;
-    height: calc(100dvh - 44px);
+    padding: 2px 4px;
+    height: 100dvh;
     display: flex;
     flex-direction: column;
     overflow: hidden;
   }
-  .turn-banner-row { margin-bottom: 2px; }
-  .turn-banner { font-size: 13px; padding: 2px 6px; }
+  .turn-banner-row { margin-bottom: 1px; }
+  .turn-banner { font-size: 12px; padding: 2px 6px; }
+  /* Side indicator compact */
+  .side-indicator { margin-bottom: 1px; min-height: 18px; font-size: 11px; }
   .side-indicator { margin-bottom: 2px; min-height: 20px; }
 
   /* ── SCENE-BASED BATTLE (mobile) ── */
   /* Keep 16:9 ratio same as PC, just limit height */
-  .battle-scene{aspect-ratio:16/9;max-height:42vh}
+  .battle-scene{aspect-ratio:16/9;max-height:52vh;margin-bottom:2px}
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
@@ -928,12 +936,11 @@ body{
     z-index: 200;
     border-radius: 14px 14px 0 0;
     box-shadow: 0 -4px 20px rgba(0,0,0,.6);
-    padding: 10px 12px calc(10px + env(safe-area-inset-bottom, 0px));
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom, 0px));
     background: var(--bg);
-    max-height: 45vh;
-    overflow-y: auto;
+    max-height: none;
+    overflow: visible;
     overscroll-behavior: contain;
-    -webkit-overflow-scrolling: touch;
     display: none;
   }
   .action-panel.show { display: block; overscroll-behavior: contain; }
@@ -942,23 +949,31 @@ body{
   .btn-back-picker { font-size: 11px; padding: 2px 8px; }
   .action-buttons {
     display: flex;
-    flex-direction: column;
-    gap: 6px;
+    flex-direction: row;
+    gap: 8px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    scroll-snap-type: x mandatory;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: 4px;
   }
+  .action-buttons::-webkit-scrollbar{display:none}
 
-  /* Mobile skill cards: show name + brief inline */
+  /* Mobile skill cards: horizontal swipeable */
+  .skill-btn-wrap { flex: 0 0 auto; min-width: 0; width: 75vw; max-width: 280px; scroll-snap-align: start; }
   .skill-card-mobile {
     width: 100%;
-    padding: 12px 14px;
+    padding: 10px 12px;
     border: 2px solid var(--accent);
     border-radius: 10px;
     background: rgba(255,255,255,.04);
     cursor: pointer;
     transition: .15s;
+    height: 100%;
   }
   .skill-card-mobile:active { transform: scale(0.97); background: rgba(88,166,255,.15); }
   .skill-card-mobile.disabled { opacity: 0.4; border-color: rgba(255,255,255,.1); pointer-events: none; }
-  .skill-mobile-header { font-size: 15px; color: var(--fg); margin-bottom: 5px; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+  .skill-mobile-header { font-size: 14px; color: var(--fg); margin-bottom: 4px; display: flex; align-items: center; gap: 5px; flex-wrap: wrap; }
   .skill-mobile-header .cd-tag { font-size: 10px; }
   .skill-mobile-header .skill-cd-info { font-size: 10px; color: var(--fg2); }
   .skill-mobile-brief { font-size: 13px; color: var(--fg2); line-height: 1.6; }
@@ -1744,7 +1759,7 @@ body{
 
 /* ── BATTLE SCENE (replaces card layout) ── */
 .battle-scene{position:relative;width:100%;aspect-ratio:16/9;max-height:70vh;border-radius:12px;overflow:hidden;margin-bottom:8px;background-size:cover;background-position:center;background-color:#0a1628}
-.battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.5) 0%,transparent 12%,transparent 88%,rgba(10,22,40,.5) 100%),linear-gradient(180deg,rgba(10,22,40,.3) 0%,transparent 8%,transparent 92%,rgba(10,22,40,.4) 100%)}
+.battle-scene::before{content:'';position:absolute;inset:0;z-index:1;pointer-events:none;background:linear-gradient(90deg,rgba(10,22,40,.4) 0%,transparent 10%,transparent 90%,rgba(10,22,40,.4) 100%),linear-gradient(180deg,rgba(10,22,40,.2) 0%,transparent 6%,transparent 96%,rgba(10,22,40,.2) 100%)}
 .battle-scene .scene-labels{position:absolute;top:8px;left:0;right:0;display:flex;justify-content:space-between;padding:0 16px;z-index:5;pointer-events:none}
 .battle-scene .team-label{font-size:13px;font-weight:700;padding:3px 10px;border-radius:6px;background:rgba(0,0,0,.5)}
 .battle-scene .team-label-left{color:var(--green)}
@@ -1917,7 +1932,7 @@ body{
   .fg-slot{width:58px;height:58px}
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
-  .battle-scene{max-height:38vh}
+  .battle-scene{max-height:48vh}
   .scene-turtle{transform:scale(.38)}
   .scene-turtle:hover{transform:scale(.42)}
   .scene-turtle.targetable{transform:scale(.42)}
