@@ -1177,6 +1177,8 @@ function startBattle(seed) {
   recalcStats();
 
   renderFighters();
+  // Re-render after layout settles (flex:1 might not have final size yet)
+  setTimeout(() => renderFighters(), 100);
   updateDmgStats();
 
   // Show rule banner animation then log

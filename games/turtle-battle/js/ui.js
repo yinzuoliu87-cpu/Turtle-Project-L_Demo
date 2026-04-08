@@ -56,6 +56,11 @@ function renderScene() {
   if (!scene) return;
   // Remove old scene turtles
   scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
+  // Ensure layout is complete before reading dimensions
+  if (!scene.offsetWidth || !scene.offsetHeight) {
+    requestAnimationFrame(() => renderScene());
+    return;
+  }
 
   // Render each fighter as a scene turtle
   const cw = scene.offsetWidth, ch = scene.offsetHeight;
