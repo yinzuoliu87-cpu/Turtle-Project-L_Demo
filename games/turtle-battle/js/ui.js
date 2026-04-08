@@ -148,8 +148,8 @@ function updateSceneHp(f) {
   // ── Delay trail ──
   const hpDelay = el.querySelector('.st-hp-delay');
   if (hpDelay) {
-    const oldHp = hpDelay._hp !== undefined ? hpDelay._hp : f.hp;
-    const oldPct = hpDelay._pct || hpPct;
+    const oldHp = hpDelay._hp !== undefined ? hpDelay._hp : f.maxHp;
+    const oldPct = hpDelay._pct !== undefined ? hpDelay._pct : 100;
     hpDelay._hp = f.hp;
 
     if (f.hp < oldHp) {
@@ -1702,12 +1702,13 @@ function toggleMobileSkillDetail(e, idx) {
   if (!wasOpen) el.style.display = 'block';
 }
 function toggleMobileSkillBriefDetail(idx) {
-  const wrap = document.getElementById('skillMobileDetail' + idx);
-  if (!wrap) return;
-  const brief = wrap.querySelector('.skill-mobile-brief');
-  const full = wrap.querySelector('.skill-mobile-full');
-  const toggle = wrap.querySelector('.fdp-passive-toggle');
-  if (!brief || !full || !toggle) return;
+  const full = document.getElementById('skillMobileDetail' + idx);
+  if (!full) return;
+  const card = full.parentElement;
+  if (!card) return;
+  const brief = card.querySelector('.skill-mobile-brief');
+  const toggle = card.querySelector('.fdp-passive-toggle');
+  if (!brief || !toggle) return;
   const showing = full.style.display !== 'none';
   brief.style.display = showing ? '' : 'none';
   full.style.display = showing ? 'none' : '';

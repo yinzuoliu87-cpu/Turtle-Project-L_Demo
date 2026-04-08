@@ -826,7 +826,7 @@ body{
 
   /* ── SCENE-BASED BATTLE (mobile) ── */
   /* Keep 16:9 ratio same as PC, just limit height */
-  .battle-scene{aspect-ratio:16/9;max-height:52vh;margin-bottom:2px}
+  .battle-scene{aspect-ratio:auto;flex:1;min-height:0;max-height:none;margin-bottom:0}
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
@@ -984,7 +984,6 @@ body{
 
   /* Hide desktop skill cards on mobile */
   .skill-card { display: none; }
-  .skill-btn-wrap { flex: 1 1 100%; min-width: 0; }
 
   /* Turtle picker: fixed bottom sheet */
   #turtlePicker {
@@ -1932,7 +1931,7 @@ body{
   .fg-slot{width:58px;height:58px}
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
-  .battle-scene{max-height:48vh}
+  /* battle-scene flex:1 inherited from 768px */
   .scene-turtle{transform:scale(.38)}
   .scene-turtle:hover{transform:scale(.42)}
   .scene-turtle.targetable{transform:scale(.42)}
