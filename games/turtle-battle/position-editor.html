@@ -45,6 +45,7 @@ h1{font-size:18px;margin-bottom:10px;color:#58a6ff}
 <div class="size-toggle">
   <button class="active" onclick="setSize('mobile')">📱 移动端</button>
   <button onclick="setSize('desktop')">🖥 桌面端</button>
+  <button onclick="setSize('actual')">📐 实际尺寸</button>
 </div>
 
 <div class="controls">
@@ -92,12 +93,19 @@ function setSize(size) {
   currentSize = size;
   document.querySelectorAll('.size-toggle button').forEach(b => b.classList.remove('active'));
   document.querySelector(`.size-toggle button[onclick*="${size}"]`).classList.add('active');
-  if (size === 'mobile') {
-    wrap.style.width = '390px';
-    wrap.style.height = '600px'; // simulates flex:1 tall scene
+  if (size === 'actual') {
+    // Use actual viewport: full width, height = viewport - ~120px for UI
+    currentSize = window.innerWidth <= 768 ? 'mobile' : 'desktop';
+    wrap.style.width = '100%';
+    wrap.style.height = (window.innerHeight - 120) + 'px';
+  } else if (size === 'mobile') {
+    const sw = Math.min(window.innerWidth, 430);
+    wrap.style.width = sw + 'px';
+    wrap.style.height = Math.round(sw * 1.55) + 'px';
   } else {
-    wrap.style.width = '800px';
-    wrap.style.height = '450px'; // 16:9
+    const dw = Math.min(800, window.innerWidth - 40);
+    wrap.style.width = dw + 'px';
+    wrap.style.height = Math.round(dw * 9/16) + 'px';
   }
   wrap.style.backgroundImage = 'url(' + document.getElementById('bgSelect').value + ')';
   renderDots();
