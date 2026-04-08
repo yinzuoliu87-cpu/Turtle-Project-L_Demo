@@ -1113,6 +1113,37 @@ async function processBuffs() {
       hadTick = true;
       if (f.hp <= 0) break;
     }
+    // Poison DoT (0.5 × source ATK per turn, physical)
+    const poisons = f.buffs.filter(b => b.type === 'poison');
+    for (const p of poisons) {
+      const poisonDmg = p.value || 10;
+      f.hp = Math.max(0, f.hp - poisonDmg);
+      spawnFloatingNum(elId, `-${poisonDmg}`, 'dot-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
+      hadTick = true;
+      if (f.hp <= 0) break;
+    }
+    if (!f.alive) {
+      checkDeaths(null);
+      if (checkBattleEnd()) return;
+      continue;
+    }
+    // Ice-Fire combo: if target has both 冰寒(chilled) and 灼烧(burn), consume both → 30% maxHP magic damage
+    const hasChill = f.buffs.some(b => b.type === 'chilled');
+    const hasBurn = f.buffs.some(b => b.type === 'phoenixBurnDot');
+    if (hasChill && hasBurn) {
+      f.buffs = f.buffs.filter(b => b.type !== 'chilled' && b.type !== 'phoenixBurnDot');
+      const comboDmg = Math.round(f.maxHp * 0.3);
+      const mrRed = f.mr / (f.mr + DEF_CONSTANT);
+      const finalDmg = Math.max(1, Math.round(comboDmg * (1 - mrRed)));
+      f.hp = Math.max(0, f.hp - finalDmg);
+      spawnFloatingNum(elId, `-${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} <span style="color:#4dabf7">❄️🔥冰火联动！</span>消耗冰寒+灼烧，造成 ${finalDmg} 魔法伤害`);
+      hadTick = true;
+      if (f.hp <= 0) { f.alive = false; }
+    }
     if (!f.alive) {
       checkDeaths(null);
       if (checkBattleEnd()) return;
@@ -1244,6 +1275,10 @@ function recalcStats() {
       const isSelf = f === diamond;
       const ampPct = (isSelf && diamond._diamondEnhanced) ? 100 : (diamond.passive.defBuffAmp || 50);
       defAmp = 1 + ampPct / 100;
+    }
+    // Chilled: ATK -20%
+    if (f.buffs.some(b => b.type === 'chilled')) {
+      f.atk = Math.round(f.atk * 0.8);
     }
     // Apply debuffs & buffs
     for (const b of f.buffs) {

@@ -1078,10 +1078,10 @@ function startBattle(seed) {
     if (f.passive && f.passive.type === 'frostAura') {
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       for (const e of enemies) {
-        e.buffs.push({ type:'atkDown', value:f.passive.atkDownPct, turns:f.passive.atkDownTurns });
+        e.buffs.push({ type:'chilled', turns:f.passive.atkDownTurns || 6 });
       }
       recalcStats();
-      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体ATK-${f.passive.atkDownPct}% ${f.passive.atkDownTurns}回合</span>`);
+      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">❄️冰寒！敌方全体冰寒（ATK-20%）${f.passive.atkDownTurns||6}回合</span>`);
     }
     // Ghost enhanced curse on spawn (passive skill)
     if (f._ghostCurseOnSpawn) {
