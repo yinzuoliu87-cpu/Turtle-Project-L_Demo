@@ -4100,6 +4100,14 @@ function aiAction(f) {
     const other = ready.filter(s => s.type !== 'bubbleBurst');
     if (other.length) skill = other[0];
   }
+  // Star turtle AI: only use starShieldBreak when enemies have shields
+  if (skill && skill.type === 'starShieldBreak') {
+    const hasShield = enemies.some(e => e.shield > 0 || e.bubbleShieldVal > 0);
+    if (!hasShield) {
+      const other = ready.filter(s => s.type !== 'starShieldBreak');
+      if (other.length) skill = other[0];
+    }
+  }
 
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
