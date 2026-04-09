@@ -1352,10 +1352,10 @@ async function doCrystalBarrier(caster, skill) {
       const mrGain = Math.round((ally.baseMr || ally.baseDef) * skill.defMrUpPct / 100);
       ally.buffs.push({type:'defUp', value:defGain, turns:skill.defMrUpTurns});
       ally.buffs.push({type:'mrUp', value:mrGain, turns:skill.defMrUpTurns});
-      if (ally !== caster) {
-        const aElId = getFighterElId(ally);
-        spawnFloatingNum(aElId, `+${defGain}甲+${mrGain}抗`, 'passive-num', 200, 0);
-      }
+      const aElId = getFighterElId(ally);
+      spawnFloatingNum(aElId, `+${defGain}甲+${mrGain}抗`, 'passive-num', 200, 0);
+      renderStatusIcons(ally);
+      updateFighterStats(ally, aElId);
     }
   }
   recalcStats();
