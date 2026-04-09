@@ -217,7 +217,7 @@ function renderSceneBuffs(f) {
     else if (b.type === 'bleed') icons.push('<span style="color:#cc3333">🩸</span>');
   }
   // Special state icons (not in buffs array)
-  if (f._inkStacks > 0) icons.push(`<span style="color:#222" title="墨迹${f._inkStacks}层"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._inkStacks}</span>`);
+  if (f._inkStacks > 0) icons.push(`<span style="color:#b8b8ff" title="墨迹${f._inkStacks}层"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._inkStacks}</span>`);
   if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">⚡${f._shockStacks}</span>`);
   if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}</span>`);
   // Equipment icons
@@ -538,7 +538,7 @@ function showFighterDetail(f) {
   } else {
     // No buffs but might have special states
     const specials = [];
-    if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#222;color:#222;background:rgba(0,0,0,.2)"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层</span>`);
+    if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#b8b8ff;color:#b8b8ff;background:rgba(100,100,200,.2)"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层</span>`);
     if (f._shockStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡电击 ${f._shockStacks}层</span>`);
     if (f._goldLightning > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡金闪电 ${f._goldLightning}/8</span>`);
     if (specials.length) html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">' + specials.join('') + '</div>';
