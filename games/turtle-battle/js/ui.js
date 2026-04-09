@@ -383,7 +383,7 @@ function refreshDetailPanel(f) {
   // Update HP section
   const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
   const sc = (cur, init) => cur > init ? 'fdp-up' : cur < init ? 'fdp-down' : '';
-  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const ic = (name) => `<img src="assets/stats/${name}" class="stat-icon">`;
   const hpPct = Math.max(0, f.hp / f.maxHp * 100);
   const hpColor = isAlly ? 'linear-gradient(180deg,#3deb9e 40%,#089e6b 60%)' : 'linear-gradient(180deg,#c084fc 40%,#7c3aed 60%)';
   const shieldPct = f.shield > 0 ? Math.min(100 - hpPct, f.shield / f.maxHp * 100) : 0;
@@ -472,7 +472,7 @@ function showFighterDetail(f) {
   document.getElementById('fdpName').innerHTML = petIcon(f, 24) + ' ' + f.name;
   document.getElementById('fdpName').style.color = RARITY_COLORS[f.rarity];
 
-  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const ic = (name) => `<img src="assets/stats/${name}" class="stat-icon">`;
   const sc = (cur, init) => cur > init ? 'fdp-up' : cur < init ? 'fdp-down' : '';
   const defPct = Math.round(f.def / (f.def + DEF_CONSTANT) * 100);
   const mrPct = Math.round((f.mr||f.def) / ((f.mr||f.def) + DEF_CONSTANT) * 100);
@@ -874,7 +874,7 @@ function updateSummonStats(summon) {
   if (!card) return;
   const box = card.querySelector('.summon-stats');
   if (!box) return;
-  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const ic = (name) => `<img src="assets/stats/${name}" class="stat-icon">`;
   const sc = (cur, init) => cur > init ? 'stat-up' : cur < init ? 'stat-down' : '';
   box.innerHTML =
     `<span class="${sc(summon.atk, summon.baseAtk)}">${ic('atk-icon.png')}${summon.atk}</span>` +
@@ -959,8 +959,8 @@ function renderSummonStatusIcons(summon) {
 
 const PASSIVE_ICONS = {
   turnScaleAtk:'⚔️', turnScaleHp:'💗', bonusDmgAbove60:'🎯',
-  lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'shield-icon.png',
-  healOnKill:'💚', counterAttack:'⚡', lavaRage:'lava-heart-icon.png', undeadRage:'undead-rage-icon.png', crystalResonance:'crystal-resonance-icon.png', bubbleStore:'bubble-store-icon.png', stoneWall:'stone-wall-icon.png', hunterKill:'hunter-kill-icon.png', ninjaInstinct:'ninja-instinct-icon.png', phoenixRebirth:'phoenix-rebirth-icon.png', lightningStorm:'lightning-storm-icon.png', fortuneGold:'fortune-gold-icon.png', twoHeadVitality:'two-head-icon.png', twoHeadDual:'two-head-icon.png', gamblerMultiHit:'gambler-multi-icon.png', summonAlly:'summon-ally-icon.png', cyberDrone:'cyber-drone-icon.png', judgement:'judgement-icon.png', frostAura:'frost-aura-icon.png', basicTurtle:'unyielding-icon.png', auraAwaken:'aura-awaken-icon.png', starEnergy:'star-energy-icon.png', inkMark:'ink-mark-icon.png', rainbowPrism:'rainbow-prism-icon.png', ghostCurse:'ghost-curse-icon.png', bambooCharge:'bamboo-charge-icon.png', diamondStructure:'diamond-structure-icon.png', gamblerBlood:'gambler-blood-icon.png', pirateBarrage:'pirate-plunder-icon.png', mechBody:'mech-form-icon.png', candySteal:'candy-steal-icon.png', chestTreasure:'chest-treasure-icon.png'
+  lowHpCrit:'💢', deathExplode:'💥', deathHook:'🪝', shieldOnHit:'status/shield-icon.png',
+  healOnKill:'💚', counterAttack:'⚡', lavaRage:'passive/lava-heart-icon.png', undeadRage:'passive/undead-rage-icon.png', crystalResonance:'passive/crystal-resonance-icon.png', bubbleStore:'passive/bubble-store-icon.png', stoneWall:'passive/stone-wall-icon.png', hunterKill:'passive/hunter-kill-icon.png', ninjaInstinct:'passive/ninja-instinct-icon.png', phoenixRebirth:'passive/phoenix-rebirth-icon.png', lightningStorm:'passive/lightning-storm-icon.png', fortuneGold:'passive/fortune-gold-icon.png', twoHeadVitality:'passive/two-head-icon.png', twoHeadDual:'passive/two-head-icon.png', gamblerMultiHit:'passive/gambler-multi-icon.png', summonAlly:'passive/summon-ally-icon.png', cyberDrone:'passive/cyber-drone-icon.png', judgement:'passive/judgement-icon.png', frostAura:'passive/frost-aura-icon.png', basicTurtle:'passive/unyielding-icon.png', auraAwaken:'passive/aura-awaken-icon.png', starEnergy:'passive/star-energy-icon.png', inkMark:'passive/ink-mark-icon.png', rainbowPrism:'passive/rainbow-prism-icon.png', ghostCurse:'passive/ghost-curse-icon.png', bambooCharge:'passive/bamboo-charge-icon.png', diamondStructure:'passive/diamond-structure-icon.png', gamblerBlood:'passive/gambler-blood-icon.png', pirateBarrage:'passive/pirate-plunder-icon.png', mechBody:'passive/mech-form-icon.png', candySteal:'passive/candy-steal-icon.png', chestTreasure:'passive/chest-treasure-icon.png'
 };
 
 function updateFighterStats(f, elId) {
@@ -987,7 +987,7 @@ function updateFighterStats(f, elId) {
   // Preserve detail expand state
   const wasExpanded = document.getElementById('statsDetail'+fIdx)?.style.display === 'flex';
 
-  const ic = (name) => `<img src="assets/${name}" class="stat-icon">`;
+  const ic = (name) => `<img src="assets/stats/${name}" class="stat-icon">`;
   const briefStats =
     `<span class="${sc(f.atk, f._initAtk)}">${ic('atk-icon.png')}攻击力${f.atk}</span>` +
     `<span class="${sc(f.def, f._initDef)}">${ic('def-icon.png')}护甲${f.def}(物伤-${defPct}%)</span>` +
