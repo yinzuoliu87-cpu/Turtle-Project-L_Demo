@@ -871,7 +871,7 @@ function renderSummonStatusIcons(summon) {
     if (b.type === 'bubbleBind') return `<span class="status-bubble"><img src="assets/bubble-store-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge')   return `<span class="status-dodge"><img src="assets/dodge-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'fear')    return `<span class="status-atkdown">😱${b.turns}</span>`;
-    if (b.type === 'wormhole') return `<span style="color:#ffa500">🌀${b.turns}</span>`;
+    if (b.type === 'wormhole') return `<span style="color:#ffa500"><img src="assets/wormhole-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup"><img src="assets/shield-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun')    return `<span style="color:#ff0">💫</span>`;
@@ -1212,15 +1212,15 @@ function renderStatusIcons(f) {
     if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合"><img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合"><img src="assets/dodge-new-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合">😱${b.turns}</span>`;
-    if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：真实+${b.pierceBonusPct}% 魔伤+${b.normalBonusPct}% 剩${b.turns}回合">🌀${b.turns}</span>`;
+    if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：真实+${b.pierceBonusPct}% 魔伤+${b.normalBonusPct}% 剩${b.turns}回合"><img src="assets/wormhole-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转真实 剩${b.turns}回合">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP"><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动"><img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕</span>`;
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合"><img src="assets/heal-reduce-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%治疗${b.turns}</span>`;
-    if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合">😤嘲讽${b.turns}</span>`;
-    if (b.type === 'stealth') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="隐身 剩${b.turns}回合">👻隐身${b.turns}</span>`;
-    if (b.type === 'reflect') return `<span style="color:#ff8c00;background:rgba(255,140,0,.15);padding:1px 5px;border-radius:6px" title="反弹${b.value}% 剩${b.turns}回合">🪞反弹${b.turns}</span>`;
+    if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合"><img src="assets/taunt-icon.png" style="width:14px;height:14px;vertical-align:middle">嘲讽${b.turns}</span>`;
+    if (b.type === 'stealth') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="隐身 剩${b.turns}回合"><img src="assets/stealth-icon.png" style="width:14px;height:14px;vertical-align:middle">隐身${b.turns}</span>`;
+    if (b.type === 'reflect') return `<span style="color:#ff8c00;background:rgba(255,140,0,.15);padding:1px 5px;border-radius:6px" title="反弹${b.value}% 剩${b.turns}回合"><img src="assets/reflect-icon.png" style="width:14px;height:14px;vertical-align:middle">反弹${b.turns}</span>`;
     if (b.type === 'dmgReduce') return `<span style="color:#4dabf7;background:rgba(77,171,247,.15);padding:1px 5px;border-radius:6px" title="受伤-${b.value}% 剩${b.turns}回合">🛡-${b.value}%${b.turns}</span>`;
     if (b.type === 'dodgeCounter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="闪避反击${b.value}伤害 剩${b.turns}回合">⚔️反击${b.turns}</span>`;
     if (b.type === 'lifesteal') return `<span style="color:#e74c3c;background:rgba(231,76,60,.15);padding:1px 5px;border-radius:6px" title="吸血+${b.value}% 剩${b.turns}回合">🩸+${b.value}%${b.turns}</span>`;
@@ -1230,7 +1230,7 @@ function renderStatusIcons(f) {
     if (b.type === 'poison') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="中毒${b.value}/回合 剩${b.turns}回合"><img src="assets/poison-icon.png" style="width:14px;height:14px;vertical-align:middle">中毒${b.turns}</span>`;
     if (b.type === 'bleed') return `<span style="color:#cc3333;background:rgba(204,51,51,.15);padding:1px 5px;border-radius:6px" title="流血${b.value}/回合 剩${b.turns}回合"><img src="assets/bleed-icon.png" style="width:14px;height:14px;vertical-align:middle">流血${b.turns}</span>`;
     if (b.type === 'counter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="反击${b.value}伤害 剩${b.turns}回合">⚔️${b.turns}</span>`;
-    if (b.type === 'physImmune') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="虚化：免疫物理伤害 剩${b.turns}回合">👻虚化${b.turns}</span>`;
+    if (b.type === 'physImmune') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="虚化：免疫物理伤害 剩${b.turns}回合"><img src="assets/stealth-icon.png" style="width:14px;height:14px;vertical-align:middle">虚化${b.turns}</span>`;
     if (b.type === 'hunterMark') return `<span style="color:#ff4444;background:rgba(255,68,68,.2);padding:1px 5px;border-radius:6px" title="猎杀印记：HP<${b.value}%时被斩杀 剩${b.turns}回合"><img src="assets/hunter-kill-icon.png" style="width:14px;height:14px;vertical-align:middle">印记${b.turns}</span>`;
     return '';
   }).join('');
