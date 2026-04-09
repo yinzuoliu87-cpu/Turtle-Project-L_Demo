@@ -1307,7 +1307,7 @@ async function doCyberDeploy(caster, _skill) {
   }
   caster._drones.push({ age: 0 });
   const elId = getFighterElId(caster);
-  spawnFloatingNum(elId, `+🛸`, 'passive-num', 0, 0);
+  spawnFloatingNum(elId, `+<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
   renderStatusIcons(caster);
   addLog(`${caster.emoji}${caster.name} 部署浮游炮！（${caster._drones.length}/${caster.passive.maxDrones}）`);
   await sleep(800);
