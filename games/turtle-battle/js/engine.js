@@ -2760,10 +2760,30 @@ async function executeAction(action) {
         const frontCount = enemyTeam.filter(t => t.alive && t._position === 'front').length;
         if (frontCount < 3) {
           target._position = 'front';
+          // Find an empty front slot for the target
+          const usedSlots = enemyTeam.filter(t => t.alive && t !== target).map(t => t._slotKey);
+          const frontSlots = ['front-0','front-1','front-2'];
+          const emptyFront = frontSlots.find(s => !usedSlots.includes(s));
+          if (emptyFront) target._slotKey = emptyFront;
+          // Move DOM element to new position
+          const tEl = document.getElementById(getFighterElId(target));
+          if (tEl) {
+            const scene = document.getElementById('battleScene');
+            const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+            const newPos = posSet[target._slotKey];
+            if (scene && newPos) {
+              const rect = scene.getBoundingClientRect();
+              const side = target.side;
+              const imgX = side === 'left' ? newPos.x : 100 - newPos.x;
+              const pos = mapCoverPos(imgX, newPos.y, rect.width, rect.height);
+              tEl.style.transition = 'left 0.4s ease, top 0.4s ease';
+              tEl.style.left = pos.x + 'px';
+              tEl.style.top = pos.y + 'px';
+              setTimeout(() => { tEl.style.transition = ''; }, 500);
+            }
+          }
           spawnFloatingNum(getFighterElId(target), `击至前排!`, 'passive-num', 300, 0);
           addLog(`${target.emoji}${target.name} 被击至前排！`);
-          // Don't call renderScene() mid-action — just update position visually
-          updateSceneHp(target);
         }
       }
     }
