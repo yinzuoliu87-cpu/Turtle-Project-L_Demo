@@ -1483,8 +1483,13 @@ async function processBuffs() {
     }
     // Tick down all buffs, remove expired
     const hadPhysImmune = f.buffs.some(b => b.type === 'physImmune');
+    const hadCritUp = f.buffs.find(b => b.type === 'critUp' && b.turns === 1); // about to expire
     f.buffs.forEach(b => b.turns--);
     f.buffs = f.buffs.filter(b => b.turns > 0);
+    // CritUp expired: remove the crit bonus
+    if (hadCritUp && !f.buffs.some(b => b.type === 'critUp')) {
+      f.crit = Math.max(0, (f.crit || 0) - hadCritUp.value / 100);
+    }
     // Ghost phantom: physImmune expired → trigger stored strike
     if (hadPhysImmune && !f.buffs.some(b => b.type === 'physImmune') && f._phantomStrike && f.alive) {
       const ps = f._phantomStrike;
@@ -1536,7 +1541,7 @@ function recalcStats() {
       if (b.type === 'defUp')   f.def += Math.round(b.value * defAmp);
       if (b.type === 'mrUp')    f.mr  += Math.round(b.value * defAmp);
       if (b.type === 'atkUp')   f.atk += b.value;
-      // Dice fate crit buff
+      // Dice fate crit buff (managed separately by gamblerBlood recalc below)
       if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
     }
     // UndeadRage: ATK scales with lost HP
@@ -2895,8 +2900,8 @@ async function executeAction(action) {
       summon.buffs.push({ type:'defUp', value:defGain, turns:2 });
       summon.buffs.push({ type:'mrUp', value:mrGain, turns:2 });
       summon.buffs.push({ type:'lifesteal', value:10, turns:2 });
-      summon.crit += 0.20;
-      // Schedule crit removal after 2 turns via buff
+      // Crit: add directly, use critUp buff as tracker for removal
+      summon.crit = (summon.crit || 0.25) + 0.20;
       summon.buffs.push({ type:'critUp', value:20, turns:2 });
       recalcStats();
       const sElId = getFighterElId(summon) || (summon._summonElId);
