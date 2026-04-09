@@ -2160,7 +2160,13 @@ async function doShellCopy(caster, _skill) {
   const COPY_BLACKLIST = ['shellCopy','twoHeadSteal','cyberDeploy','cyberBuff','hidingDefend',
     'hidingCommand','diceFate','fortuneDice','fortuneAllIn','bambooHeal','bambooLeaf','ghostPhase',
     'diamondFortify','iceShield','twoHeadSwitch','mechAttack','chestOpen',
-    'gamblerDraw','gamblerBet','chestCount','chestSmash','starWormhole'];
+    'gamblerDraw','gamblerBet','chestCount','chestSmash','starWormhole',
+    'bubbleBurst', // 需要泡泡值才有伤害
+    'shellAbsorb','shellErode','shellFortify', // 龟壳专属机制
+    'fortuneBuyEquip','fortuneGainCoins', // 财神龟金币技能
+    'ghostPhantom','starShieldBreak', // 依赖特殊状态
+    'hidingBuffSummon','diceStableShield', // 依赖随从/暴击率
+  ];
 
   const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   if (!enemies.length) { await sleep(500); return; }

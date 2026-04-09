@@ -4095,6 +4095,12 @@ function aiAction(f) {
     }
   }
 
+  // Bubble turtle AI: only use bubbleBurst when bubbleStore > 0
+  if (skill && skill.type === 'bubbleBurst' && (f.bubbleStore || 0) <= 0) {
+    const other = ready.filter(s => s.type !== 'bubbleBurst');
+    if (other.length) skill = other[0];
+  }
+
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   else if (skill.selfCast || skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='chestCount' || skill.type==='iceShield' || skill.type==='headlessRegen' || skill.type==='stoneTaunt' || skill.type==='ghostShadow' || skill.type==='starWarp' || skill.type==='hidingReflect' || skill.type==='starShield' || skill.type==='shellEnergyShield' || skill.type==='lightningShield') target = f; // self-cast

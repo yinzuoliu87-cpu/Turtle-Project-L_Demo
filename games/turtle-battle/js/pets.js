@@ -768,10 +768,10 @@ const ALL_PETS = [
       { name:'吸收', type:'shellAbsorb', hits:0, power:0, pierce:0, cd:4, stealHpPct:10,
         brief:'龟壳偷取单体目标 <span class="val-atk">10%</span> 最大生命值',
         detail:'龟壳吸收单体目标的生命力。\n偷取目标 <span class="val-atk">10%</span> 最大生命值，转移给自身。\n目标最大HP和当前HP同步减少，龟壳最大HP和当前HP同步增加。\n冷却{cd}回合。' },
-      { name:'侵蚀', type:'shellErode', dmgType:'magic', hits:1, power:0, pierce:0, cd:2, atkScale:2.0, mrShredAtkPct:0.1, cdReducePerUse:1,
+      { name:'侵蚀', type:'shellErode', dmgType:'magic', hits:1, power:0, pierce:0, cd:3, atkScale:2.0, mrShredAtkPct:0.1, cdReducePerUse:1,
         brief:'龟壳造成（{M:2*ATK}）魔法伤害，永久减少目标（{M:0.1*ATK}）魔抗，每次释放CD-1',
         detail:'龟壳对单体造成（200%×攻击力({ATK}) = {M:2*ATK}）魔法伤害。\n永久减少目标（10%×攻击力({ATK}) = {M:ATK*0.1}）魔抗。\n每次释放此技能CD永久减1（最低0CD）。\n冷却{cd}回合。' },
-      { name:'强化', type:'shellFortify', hits:1, power:0, pierce:0, cd:2, atkScale:2.0, selfAtkGainPct:0.1, cdReducePerUse:1,
+      { name:'强化', type:'shellFortify', hits:1, power:0, pierce:0, cd:3, atkScale:2.0, selfAtkGainPct:0.1, cdReducePerUse:1,
         brief:'龟壳造成（{N:2*ATK}）物理伤害，永久增加自身（{N:0.1*ATK}）攻击力，每次释放CD-1',
         detail:'龟壳对单体造成（200%×攻击力({ATK}) = {N:2*ATK}）物理伤害。\n永久增加自身（10%×攻击力({ATK}) = {N:ATK*0.1}）攻击力。\n每次释放此技能CD永久减1（最低0CD）。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2], skills:[]
