@@ -820,7 +820,7 @@ async function beginTurn() {
       const shipAtk = f.atk;
       const ship = {
         id:'pirateShip_'+f.id, name:'海盗船', emoji:'🚢', rarity:f.rarity, side:f.side,
-        img:f.img, sprite:null,
+        img:'assets/pirate-ship.png', sprite:null,
         _equippedIdxs:[0], maxHp:shipHp, hp:shipHp, shield:0,
         baseAtk:shipAtk, baseDef:0, baseMr:0, atk:shipAtk, def:0, mr:0,
         _initHp:shipHp, _initAtk:shipAtk, _initDef:0, _initMr:0, _initCrit:0,
