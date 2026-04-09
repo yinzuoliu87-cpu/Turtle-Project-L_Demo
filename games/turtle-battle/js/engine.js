@@ -164,6 +164,20 @@ function applyPassiveSkills(f) {
     if (ps.type === 'lavaEnhancedRage') {
       f._lavaStartFull = true;
     }
+    // 赌神龟 强化多重打击: lose 30% HP, multi-hit chance 40→60
+    if (ps.type === 'gamblerEnhancedMulti') {
+      const hpLoss = Math.round(f.maxHp * 0.3);
+      f.maxHp -= hpLoss;
+      f.hp = f.maxHp;
+      f._initHp = f.maxHp;
+      if (f.passive && f.passive.type === 'gamblerMultiHit') {
+        f.passive = { ...f.passive, chance: 60 };
+      }
+    }
+    // 赌神龟 命运之轮: mark for per-turn card draw
+    if (ps.type === 'gamblerFateWheel') {
+      f._fateWheel = true;
+    }
     // 水晶龟 不朽: mark for turn 10 bonus
     if (ps.type === 'crystalImmortal') {
       f._crystalImmortal = true;
@@ -758,6 +772,33 @@ async function beginTurn() {
       addLog(`${f.emoji}${f.name} <span class="log-passive">🔮不朽价值觉醒！+${hpGain}最大HP +${atkGain}攻击力！</span>`);
       try { sfxRebirth(); } catch(e) {}
       await sleep(1000);
+    }
+    // Gambler fate wheel: draw a suit each turn for permanent stat gain
+    if (f._fateWheel && f.alive) {
+      const suit = Math.floor(Math.random() * 4); // 0=spade, 1=heart, 2=diamond, 3=club
+      const elId = getFighterElId(f);
+      const suits = ['♠','♥','♦','♣'];
+      if (suit === 0) {
+        f.baseAtk += 5; f.maxHp += 30; f.hp += 30; f._initHp = f.maxHp;
+        spawnFloatingNum(elId, `${suits[0]}+5攻+30HP`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 命运之轮：<span class="log-passive">${suits[0]}黑桃 攻击+5 HP+30</span>`);
+      } else if (suit === 1) {
+        f.baseDef += 2; f.baseMr += 2;
+        spawnFloatingNum(elId, `${suits[1]}+2甲+2魔抗`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 命运之轮：<span class="log-passive">${suits[1]}红心 护甲+2 魔抗+2</span>`);
+      } else if (suit === 2) {
+        f.crit += 0.08; f.armorPen += 2;
+        spawnFloatingNum(elId, `${suits[2]}+8%暴击+2穿甲`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 命运之轮：<span class="log-passive">${suits[2]}方块 暴击+8% 穿甲+2</span>`);
+      } else {
+        f._lifestealPct = (f._lifestealPct||0) + 4;
+        spawnFloatingNum(elId, `${suits[3]}+4%吸血`, 'passive-num', 0, 0);
+        addLog(`${f.emoji}${f.name} 命运之轮：<span class="log-passive">${suits[3]}梅花 吸血+4%</span>`);
+      }
+      recalcStats();
+      updateFighterStats(f, elId);
+      updateHpBar(f, elId);
+      await sleep(400);
     }
     if (f._pirateShipEnabled && !f._pirateShipSummoned && turnNum === 3) {
       f._pirateShipSummoned = true;
