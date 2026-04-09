@@ -176,7 +176,7 @@ function renderSceneBuffs(f) {
     else if (b.type === 'fear') icons.push('<span style="color:#9b59b6">😨</span>');
     else if (b.type === 'bubbleBind') icons.push('<span style="color:#4cc9f0">🫧</span>');
     else if (b.type === 'trap') icons.push('<span style="color:#ff9f43">⚡</span>');
-    else if (b.type === 'diceFateCrit') icons.push('<span style="color:#ff4757">🎲</span>');
+    else if (b.type === 'diceFateCrit') icons.push('<span style="color:#ff4757"><img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"></span>');
     else if (b.type === 'gamblerPierceConvert') icons.push('<span style="color:#ffd93d">🎰</span>');
     else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
     else if (b.type === 'poison') icons.push('<span style="color:#6b8e23">🧪</span>');
@@ -490,7 +490,7 @@ function showFighterDetail(f) {
       else if (b.type === 'fear') html += tag('#9b59b6', `<img src="assets/fear-icon.png" style="width:14px;height:14px;vertical-align:middle">恐惧 ${b.turns}回合`);
       else if (b.type === 'bubbleBind') html += tag('#4cc9f0', `🫧泡泡束缚 ${b.turns}回合`);
       else if (b.type === 'trap') html += tag('#ff9f43', `⚡陷阱`);
-      else if (b.type === 'diceFateCrit') html += tag('#ff4757', `🎲暴击+${b.value}% ${b.turns}回合`);
+      else if (b.type === 'diceFateCrit') html += tag('#ff4757', `<img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">暴击+${b.value}% ${b.turns}回合`);
       else if (b.type === 'gamblerPierceConvert') html += tag('#ffd93d', `🎰穿透转换 ${b.turns}回合`);
       else if (b.type === 'hidingShield') html += tag('#fff', `🐢缩头护盾 ${b.turns}回合`);
       else if (b.type === 'poison') html += tag('#6b8e23', `<img src="assets/poison-icon.png" style="width:14px;height:14px;vertical-align:middle">中毒 ${b.value}/回 ${b.turns}回合`);
@@ -581,7 +581,7 @@ function showFighterDetail(f) {
     if (f.passive.type === 'hunterKill') st.push(`🎯 击杀数：<span class="val-atk">${f._hunterKills||0}</span>　窃取攻+${f._hunterStolenAtk||0} 防+${f._hunterStolenDef||0} 抗+${f._hunterStolenMr||0} 血+${f._hunterStolenHp||0}`);
     if (f.passive.type === 'inkMark') st.push(`🦑 墨迹层数：<span class="val-atk">${f._inkStacks||0}</span> / ${f.passive.maxStacks}`);
     if (f.passive.type === 'lightningStorm') st.push(`⚡ 全局电击层：<span class="val-atk">${f._shockStacks||0}</span> / ${f.passive.stackMax}`);
-    if (f.passive.type === 'gamblerBlood') { const oc = Math.max(0, (f.crit||0) - 1.0); st.push(`🎲 暴击溢出：<span class="val-atk">${oc > 0 ? Math.round(oc*100)+'%→+'+Math.round(oc*f.passive.overflowMult*100)+'%爆伤' : '无'}</span>`); }
+    if (f.passive.type === 'gamblerBlood') { const oc = Math.max(0, (f.crit||0) - 1.0); st.push(`<img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"> 暴击溢出：<span class="val-atk">${oc > 0 ? Math.round(oc*100)+'%→+'+Math.round(oc*f.passive.overflowMult*100)+'%爆伤' : '无'}</span>`); }
     if (f.passive.type === 'crystalResonance') st.push(`💎 结晶层数：<span class="val-atk">${f._crystallizeStacks||0}</span> / ${f.passive.crystallizeMax}`);
     if (f.passive.type === 'undeadRage') st.push(`💀 攻击加成：<span class="val-atk">+${Math.round(Math.min(f.passive.atkMaxBonus, (1 - f.hp/f.maxHp) * 100 * f.passive.atkPerLostPct))}%</span>　吸血：<span class="val-atk">${f.passive.lifestealBase}%</span>`);
     if (st.length) html += `<div class="fdp-passive-state">${st.join('<br>')}</div>`;
@@ -875,7 +875,7 @@ function renderSummonStatusIcons(summon) {
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup"><img src="assets/shield-icon.png" style="width:12px;height:12px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun')    return `<span style="color:#ff0">💫</span>`;
-    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b">🎲+${b.value}%</span>`;
+    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b"><img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23">☠️${b.turns}</span>`;
     if (b.type === 'armorPenBuff') return `<span class="status-defup">🗡穿${b.turns}</span>`;
     return '';
@@ -1216,7 +1216,7 @@ function renderStatusIcons(f) {
     if (b.type === 'gamblerPierceConvert') return `<span class="status-defup" title="${b.value}%伤害转真实 剩${b.turns}回合">🗡${b.turns}</span>`;
     if (b.type === 'hidingShield') return `<span class="status-defup" title="缩头护盾 剩${b.turns}回合，到期回复剩余盾${b.healPct}%HP"><img src="assets/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动"><img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕</span>`;
-    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
+    if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合"><img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合"><img src="assets/heal-reduce-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%治疗${b.turns}</span>`;
     if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合"><img src="assets/taunt-icon.png" style="width:14px;height:14px;vertical-align:middle">嘲讽${b.turns}</span>`;
     if (b.type === 'stealth') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="隐身 剩${b.turns}回合"><img src="assets/stealth-icon.png" style="width:14px;height:14px;vertical-align:middle">隐身${b.turns}</span>`;
@@ -1872,7 +1872,7 @@ function buildSkillDetail(s, f) {
   if (s.atkUpPct) { const v = f?Math.round(f.baseAtk*s.atkUpPct/100):'?'; lines.push(`<b>⬆攻击力</b> +${s.atkUpPct}% = ${B('+'+v)} 全体 ${s.atkUpTurns}回合`); }
 
   // ── Random ──
-  if (s.random) lines.push(`<b>🎲随机</b> 伤害×0.5~1.5倍率`);
+  if (s.random) lines.push(`<b><img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">随机</b> 伤害×0.5~1.5倍率`);
 
   // ── Special mechanics ──
   // Bubble
@@ -1939,7 +1939,7 @@ function buildSkillDetail(s, f) {
   }
   if (s.type === 'fortuneDice') {
     const v = f?Math.round(maxHp*s.healPct/100):'?';
-    lines.push(`<b>🎲</b> 1~6金币 + ${H(v+'HP')}`);
+    lines.push(`<b><img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"></b> 1~6金币 + ${H(v+'HP')}`);
   }
   if (s.type === 'fortuneAllIn') {
     const pp = f?Math.round(atk*s.perCoinAtkPierce):'?'; const np = f?Math.round(atk*s.perCoinAtkNormal):'?';
