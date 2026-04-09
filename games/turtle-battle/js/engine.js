@@ -3902,8 +3902,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // AuraAwaken: energy store — target stores received damage as energy
   if (target.passive && target.passive.type === 'auraAwaken' && target.passive.energyStore && target.alive) {
     target._storedEnergy = (target._storedEnergy || 0) + dmg;
-    spawnFloatingNum(tElId, `+${dmg}<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 350, 10);
-    updateHpBar(target, tElId); // refresh energy bar
+    updateHpBar(target, tElId); // refresh energy bar in real-time
   }
   // AuraAwaken: lifesteal — attacker heals from damage dealt
   if (attacker._auraLifesteal > 0 && attacker.alive && dmg > 0) {
