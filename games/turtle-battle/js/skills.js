@@ -2927,8 +2927,8 @@ async function doChestCount(caster, skill) {
   const fElId = getFighterElId(caster);
   // Scaling: +12% per 100 treasure
   const treasureBonus = 1 + Math.floor((caster._chestTreasure || 0) / 100) * 0.14;
-  // Heal
-  const healAmt = Math.round(caster.maxHp * skill.healPct / 100 * treasureBonus);
+  // Heal (use healHpPct if available, fallback to healPct for compat)
+  const healAmt = Math.round(caster.maxHp * (skill.healHpPct || skill.healPct || 5) / 100 * treasureBonus);
   const before = caster.hp;
   // Check healReduce
   const healRedBuff = caster.buffs.find(b => b.type === 'healReduce');

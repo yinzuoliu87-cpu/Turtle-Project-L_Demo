@@ -1231,6 +1231,7 @@ function renderStatusIcons(f) {
     if (b.type === 'bleed') return `<span style="color:#cc3333;background:rgba(204,51,51,.15);padding:1px 5px;border-radius:6px" title="流血${b.value}/回合 剩${b.turns}回合">🩸流血${b.turns}</span>`;
     if (b.type === 'counter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="反击${b.value}伤害 剩${b.turns}回合">⚔️${b.turns}</span>`;
     if (b.type === 'physImmune') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="虚化：免疫物理伤害 剩${b.turns}回合">👻虚化${b.turns}</span>`;
+    if (b.type === 'hunterMark') return `<span style="color:#ff4444;background:rgba(255,68,68,.2);padding:1px 5px;border-radius:6px" title="猎杀印记：HP<${b.value}%时被斩杀 剩${b.turns}回合">🎯印记${b.turns}</span>`;
     return '';
   }).join('');
   // Star energy indicator

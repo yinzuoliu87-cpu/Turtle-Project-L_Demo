@@ -2121,15 +2121,36 @@ async function executeAction(action) {
     sfxShield();
     await sleep(800);
 
-  } else if (skill.type === 'starShield') {
-    // Self shield from star energy
-    const amount = Math.round(Math.round(f._starEnergy * (skill.shieldEnergyPct||80) / 100) * getShieldMult());
-    f.shield += amount;
+  } else if (skill.type === 'starShieldBreak') {
+    // Break 50% shield on all enemies, then gain star energy
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    let totalBroken = 0;
+    for (const enemy of enemies) {
+      if (enemy.shield > 0) {
+        const broken = Math.round(enemy.shield * (skill.shieldBreakPct||50) / 100);
+        enemy.shield -= broken;
+        totalBroken += broken;
+        const eElId = getFighterElId(enemy);
+        spawnFloatingNum(eElId, `-${broken}🛡`, 'shield-dmg', 0, 0);
+        updateHpBar(enemy, eElId);
+      }
+      if (enemy.bubbleShieldVal > 0) {
+        const broken = Math.round(enemy.bubbleShieldVal * (skill.shieldBreakPct||50) / 100);
+        enemy.bubbleShieldVal -= broken;
+        totalBroken += broken;
+      }
+    }
+    // Gain star energy
+    const energyGain = Math.round(f.atk * (skill.energyGainAtkScale||1.0));
+    if (f.passive && f.passive.type === 'starEnergy') {
+      const maxE = Math.round(f.maxHp * f.passive.maxChargePct / 100);
+      f._starEnergy = Math.min(maxE, (f._starEnergy||0) + energyGain);
+    }
     const elId = getFighterElId(f);
-    spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+    spawnFloatingNum(elId, `+${energyGain}⭐`, 'passive-num', 0, 0);
     updateHpBar(f, elId);
-    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">星能转化+${amount}护盾</span>`);
-    sfxShield();
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：破坏全体护盾${totalBroken}，获取${energyGain}星能`);
     await sleep(800);
 
   } else if (skill.type === 'shellEnergyShield') {
@@ -2409,9 +2430,21 @@ async function executeAction(action) {
     await sleep(400);
 
   } else if (skill.type === 'piratePlunder') {
-    // Damage + steal def
+    // Break shield first, then damage + steal def
     const target = allFighters[action.targetId];
     if (target && target.alive) {
+      // Shield break
+      if (skill.shieldBreakPct && target.shield > 0) {
+        const broken = Math.round(target.shield * skill.shieldBreakPct / 100);
+        target.shield -= broken;
+        spawnFloatingNum(getFighterElId(target), `-${broken}🛡`, 'shield-dmg', 0, 0);
+        updateHpBar(target, getFighterElId(target));
+        addLog(`${f.emoji}${f.name} 破坏 ${target.emoji}${target.name} ${broken}护盾！`);
+      }
+      if (skill.shieldBreakPct && target.bubbleShieldVal > 0) {
+        const broken = Math.round(target.bubbleShieldVal * skill.shieldBreakPct / 100);
+        target.bubbleShieldVal -= broken;
+      }
       await doDamage(f, target, skill);
       const defSteal = Math.round(target.baseDef * (skill.stealDefPct||20) / 100);
       if (defSteal > 0) {
@@ -2786,6 +2819,19 @@ async function executeAction(action) {
       sfxShield();
     }
     await sleep(800);
+
+  } else if (skill.type === 'hunterMark') {
+    // Damage + apply hunter mark (exec below threshold)
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      if (target.alive && skill.markTurns) {
+        target.buffs.push({ type:'hunterMark', value:skill.markExecPct||24, turns:skill.markTurns, sourceIdx:allFighters.indexOf(f) });
+        spawnFloatingNum(getFighterElId(target), `🎯猎杀印记`, 'debuff-num', 200, 0);
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 被标记！HP<${skill.markExecPct||24}%时将被斩杀`);
+      }
+    }
 
   } else if (skill.type === 'hidingBuffSummon') {
     // Buff summon: +10%ATK, +10%DEF/MR, +10%lifesteal, +20%crit for 2 turns
@@ -4728,6 +4774,17 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     renderStatusIcons(target);
   } else {
     if (target.hp <= 0) target.alive = false;
+  }
+  // Hunter mark execution: if target alive and HP below mark threshold, instant kill
+  if (target.alive && target.hp > 0 && target.buffs) {
+    const mark = target.buffs.find(b => b.type === 'hunterMark');
+    if (mark && (target.hp / target.maxHp * 100) <= mark.value) {
+      target.hp = 0;
+      target.alive = false;
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `🎯斩杀!`, 'crit-label', 0, -25);
+      addLog(`${target.emoji}${target.name} <span class="log-passive">🎯猎杀印记触发！HP<${mark.value}% 被斩杀！</span>`);
+    }
   }
   // Real-time tracking by damage type
   if (source && source._dmgDealt !== undefined) {
