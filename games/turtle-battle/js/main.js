@@ -956,7 +956,14 @@ function autoAssignPositions(team) {
     return;
   }
   // Sort by HP descending: A(highest), B, C(lowest)
-  const sorted = [...team].sort((a, b) => b.maxHp - a.maxHp);
+  // 缩头乌龟 with 强化喊龟: will lose 50% HP at battle start, sort by effective HP
+  const effectiveHp = (f) => {
+    if (f._passiveSkills && f._passiveSkills.some(p => p.type === 'hidingEnhancedSummon')) {
+      return Math.round(f.maxHp * 0.5);
+    }
+    return f.maxHp;
+  };
+  const sorted = [...team].sort((a, b) => effectiveHp(b) - effectiveHp(a));
   // Two formations:
   // 1) A front-center, B back-left, C back-right (1 front + 2 back)
   // 2) A front-left, B front-right, C back-center (2 front + 1 back)
