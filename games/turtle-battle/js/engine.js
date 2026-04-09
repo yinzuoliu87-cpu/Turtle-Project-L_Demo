@@ -4645,7 +4645,8 @@ async function processLavaTransform() {
         const equippedIdxs = f._equippedIdxs || pet.defaultSkills || [0,1,2];
         f.skills = equippedIdxs
           .filter(i => i < pet.volcanoSkills.length && !pet.volcanoSkills[i].passiveSkill)
-          .map(i => ({...pet.volcanoSkills[i], cdLeft:0}));
+          .map(i => ({...pet.volcanoSkills[i], cdLeft:0}))
+          .slice(0, 3); // max 3 active skills
         // Fallback: if no valid volcano skills, use first 3
         if (f.skills.length === 0) f.skills = pet.volcanoSkills.filter(s => !s.passiveSkill).slice(0,3).map(s => ({...s, cdLeft:0}));
       }
