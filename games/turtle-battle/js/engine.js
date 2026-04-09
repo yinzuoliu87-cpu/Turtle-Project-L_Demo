@@ -1919,6 +1919,86 @@ async function executeAction(action) {
     await doSoulReap(f, skill);
   } else if (skill.type === 'candyBarrage') {
     await doCandyBarrage(f, skill);
+  } else if (skill.type === 'candyBomb') {
+    // AOE 3-hit + armor pen
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      for (let h = 0; h < (skill.hits||3); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.35));
+        applyRawDmg(f, enemy, dmg, false, false, 'physical');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', h * 60, 0, {atkSide:f.side, amount:dmg});
+        if (battleOver) break;
+      }
+      updateHpBar(enemy, getFighterElId(enemy));
+      await triggerOnHitEffects(f, enemy, Math.round(f.atk * (skill.atkScale||0.35) * (skill.hits||3)));
+      if (battleOver) break;
+    }
+    // Temp armor pen
+    if (skill.armorPen) { f.armorPen += skill.armorPen; }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：全体${skill.hits||3}段物理伤害`);
+    await sleep(400);
+  } else if (skill.type === 'iceFreeze') {
+    // Single target magic damage + guaranteed stun
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const dmg = Math.round(f.atk * (skill.atkScale||0.6));
+      applyRawDmg(f, target, dmg, false, false, 'magic');
+      spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+      updateHpBar(target, getFighterElId(target));
+      // Guaranteed stun
+      if (target.alive) {
+        target.buffs.push({ type:'stun', value:1, turns:1 });
+        spawnFloatingNum(getFighterElId(target), `<img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, 0);
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 被冰封眩晕！`);
+      }
+      await triggerOnHitEffects(f, target, dmg);
+    }
+    await sleep(400);
+  } else if (skill.type === 'lavaSplash') {
+    // Single target damage + burn
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      if (target.alive) {
+        applySkillDebuffs({ burn: true }, target, f);
+        renderStatusIcons(target);
+      }
+    }
+  } else if (skill.type === 'twoHeadDualStrike') {
+    // Two hits: first physical, second true damage
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const physDmg = Math.round(f.atk * (skill.normalScale||0.8));
+      applyRawDmg(f, target, physDmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(target), `-${physDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:physDmg});
+      const trueDmg = Math.round(f.atk * (skill.pierceScale||0.6));
+      applyRawDmg(f, target, trueDmg, false, false, 'true');
+      spawnFloatingNum(getFighterElId(target), `-${trueDmg}`, 'true-dmg', 100, 0, {atkSide:f.side, amount:trueDmg});
+      updateHpBar(target, getFighterElId(target));
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${physDmg}物理 + ${trueDmg}真实`);
+      await triggerOnHitEffects(f, target, physDmg + trueDmg);
+    }
+    await sleep(400);
+  } else if (skill.type === 'twoHeadSmash') {
+    // 2-hit physical with stun chance per hit
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      for (let h = 0; h < (skill.hits||2); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.9));
+        applyRawDmg(f, target, dmg, false, false, 'physical');
+        spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
+        if (Math.random() < 0.20 && target.alive) {
+          target.buffs.push({ type:'stun', value:1, turns:1 });
+          spawnFloatingNum(getFighterElId(target), `<img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, h * 80);
+          renderStatusIcons(target);
+        }
+        if (battleOver) break;
+      }
+      updateHpBar(target, getFighterElId(target));
+      await triggerOnHitEffects(f, target, Math.round(f.atk * (skill.atkScale||0.9) * (skill.hits||2)));
+    }
+    await sleep(400);
   } else if (skill.type === 'lavaBolt') {
     const target = allFighters[action.targetId];
     await doLavaBolt(f, target, skill);

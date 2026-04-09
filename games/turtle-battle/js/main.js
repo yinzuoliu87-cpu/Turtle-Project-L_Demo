@@ -1188,7 +1188,7 @@ function startBattle(seed) {
   });
 
   // Pirate barrage: opening bombardment (after render so player sees it)
-  const pirates = allFighters.filter(f => f.alive && f.passive && f.passive.type === 'pirateBarrage');
+  const pirates = allFighters.filter(f => f.alive && f.passive && f.passive.type === 'pirateBarrage' && f.passive.bombardPct > 0);
   if (pirates.length) {
     setTimeout(async () => {
       for (const f of pirates) {
