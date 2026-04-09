@@ -1304,11 +1304,11 @@ function renderStatusIcons(f) {
   }
   // Crystallize stacks indicator
   if (f._crystallize > 0) {
-    box.innerHTML += `<span style="color:#c77dff;background:rgba(199,125,255,.15);padding:1px 5px;border-radius:6px" title="结晶${f._crystallize}/4，满4层引爆"><img src="assets/passive/crystal-resonance-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._crystallize}/4</span>`;
+    box.innerHTML += `<span style="color:#c77dff;background:rgba(199,125,255,.15);padding:1px 5px;border-radius:6px" title="结晶${f._crystallize}/4，满4层引爆"><img src="assets/passive/crystal-resonance-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._crystallize}</span>`;
   }
   // Diamond collide stacks indicator
   if (f._collideStacks > 0) {
-    box.innerHTML += `<span style="color:#b8d4e3;background:rgba(184,212,227,.15);padding:1px 5px;border-radius:6px" title="碰撞${f._collideStacks}/2，满2次眩晕">💎${f._collideStacks}/2</span>`;
+    box.innerHTML += `<span style="color:#b8d4e3;background:rgba(184,212,227,.15);padding:1px 5px;border-radius:6px" title="碰撞${f._collideStacks}/2，满2次眩晕"><img src="assets/passive/diamond-structure-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._collideStacks}</span>`;
   }
   // Rainbow prism color indicator
   if (f._prismColor !== undefined && f.passive && f.passive.type === 'rainbowPrism') {

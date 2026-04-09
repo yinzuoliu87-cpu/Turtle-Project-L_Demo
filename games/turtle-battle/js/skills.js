@@ -2694,7 +2694,7 @@ async function doDiamondCollide(attacker, target, skill) {
     addLog(`${target.emoji}${target.name} 被撞晕了！<span class="log-debuff">眩晕1回合</span>`);
   } else {
     target._collideStacks = attacker._diamondCollideCount[tIdx];
-    spawnFloatingNum(tElId, `💎碰撞${target._collideStacks}/${skill.stunAfter}`, 'debuff-label', 200, -20);
+    renderStatusIcons(target);
     renderStatusIcons(target);
   }
   await sleep(700);
@@ -2813,7 +2813,7 @@ async function doChestSmash(attacker, target, skill) {
     // Thunder equip: stack per hit
     if (hasThunder && target.alive) {
       target._goldLightning = (target._goldLightning || 0) + 1;
-      spawnFloatingNum(tElId, `⚡${target._goldLightning}/8`, 'passive-num', 100, (i % 3) * 28 + 50);
+      renderStatusIcons(target);
       if (target._goldLightning >= 8) {
         target._goldLightning = 0;
         const thunderDmg = Math.round(attacker.atk * 1.0);
@@ -2848,7 +2848,7 @@ async function doChestSmash(attacker, target, skill) {
       // Chain hit also stacks thunder
       if (hasThunder && secondary.alive) {
         secondary._goldLightning = (secondary._goldLightning || 0) + 1;
-        spawnFloatingNum(sElId, `⚡${secondary._goldLightning}/8`, 'passive-num', 200, 10);
+        renderStatusIcons(secondary);
         if (secondary._goldLightning >= 8) {
           secondary._goldLightning = 0;
           const thunderDmg = Math.round(attacker.atk * 1.0);
@@ -2941,7 +2941,7 @@ async function doChestStorm(attacker, skill) {
       // Thunder equip: stack per hit
       if (hasThunder && enemy.alive) {
         enemy._goldLightning = (enemy._goldLightning || 0) + 1;
-        spawnFloatingNum(eElId, `⚡${enemy._goldLightning}/8`, 'passive-num', 50, (i % 3) * 28 + 70);
+        renderStatusIcons(enemy);
         if (enemy._goldLightning >= 8) {
           enemy._goldLightning = 0;
           const thunderDmg = Math.round(attacker.atk * 1.0);

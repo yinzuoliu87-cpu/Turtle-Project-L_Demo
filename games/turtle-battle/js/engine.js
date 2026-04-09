@@ -3826,8 +3826,6 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       spawnFloatingNum(tElCryst, '<img src="assets/passive/crystal-resonance-icon.png" style="width:16px;height:16px;vertical-align:middle">引爆!', 'crit-label', 400, -30);
       recalcStats();
       addLog(`${target.emoji}${target.name} 结晶引爆！<span class="log-magic">${finalDmg}魔法伤害</span> + ⬇️魔抗`);
-    } else {
-      spawnFloatingNum(tElCryst, `<img src="assets/passive/crystal-resonance-icon.png" style="width:12px;height:12px;vertical-align:middle">${target._crystallize}/${maxStacks}`, 'passive-num', 300, 10);
     }
     renderStatusIcons(target);
   }
@@ -3878,7 +3876,6 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Lightning shock stacks
   if (attacker.passive && attacker.passive.type === 'lightningStorm' && target.alive) {
     target._shockStacks = (target._shockStacks || 0) + 1;
-    spawnFloatingNum(tElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${target._shockStacks}/${attacker.passive.stackMax}`, 'passive-num', 350, 10);
     renderStatusIcons(target);
     if (target._shockStacks >= attacker.passive.stackMax) {
       const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
