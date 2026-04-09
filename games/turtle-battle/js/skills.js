@@ -21,14 +21,14 @@ async function doGamblerDraw(caster, _skill) {
     caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
     const actual = Math.round(caster.hp - before);
     caster.shield += shieldAmt;
-    spawnFloatingNum(fElId, `<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌`, 'passive-num', 0, -20);
+    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌`, 'passive-num', 0, -20);
     if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
     spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 400, 0);
     updateHpBar(caster, fElId);
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
   } else if (roll === 1) {
     // 2: Bomb card — 0.9ATK to all enemies, triggers multi-hit
-    spawnFloatingNum(fElId, `<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌`, 'crit-label', 0, -20);
+    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌`, 'crit-label', 0, -20);
     const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     const baseDmg = Math.round(caster.atk * 0.9);
     for (const e of enemies) {
@@ -42,7 +42,7 @@ async function doGamblerDraw(caster, _skill) {
       await triggerOnHitEffects(caster, e, dmg);
       await tryGamblerMultiHit(caster, e, eId);
     }
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌！对全体敌方 <span class="log-direct">${baseDmg}伤害</span>`);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌！对全体敌方 <span class="log-direct">${baseDmg}伤害</span>`);
   } else {
     // 3: Self buff — +15%ATK, +25%crit, +15%critDmg, 20% dmg→pierce, 3 turns
     const atkGain = Math.round(caster.baseAtk * 0.15);
@@ -50,12 +50,12 @@ async function doGamblerDraw(caster, _skill) {
     caster.crit += 0.25;
     caster._extraCritDmgPerm = (caster._extraCritDmgPerm || 0) + 0.15;
     caster.buffs.push({ type:'gamblerPierceConvert', value:20, turns:3 });
-    spawnFloatingNum(fElId, `<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌`, 'crit-label', 0, -20);
+    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌`, 'crit-label', 0, -20);
     spawnFloatingNum(fElId, `+ATK+暴击+爆伤+转真实`, 'passive-num', 200, 0);
     recalcStats();
     renderStatusIcons(caster);
     updateFighterStats(caster, fElId);
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转真实 3回合</span>`);
+    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转真实 3回合</span>`);
   }
   await sleep(1000);
 }
@@ -1004,7 +1004,7 @@ async function doFortuneDice(caster, skill) {
   const roll = 3 + Math.floor(Math.random() * 6); // 3~8
   caster._goldCoins += roll;
   const fElId = getFighterElId(caster);
-  spawnFloatingNum(fElId, `<img src="assets/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">${roll} +${roll}<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
+  spawnFloatingNum(fElId, `<img src="assets/passive/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">${roll} +${roll}<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
   renderStatusIcons(caster);
   // Heal 10% max HP + 15% lost HP
   let healAmt = Math.round(caster.maxHp * skill.healPct / 100);
@@ -1021,7 +1021,7 @@ async function doFortuneDice(caster, skill) {
     shieldStr = ` <span class="log-shield">+${shieldAmt}护盾</span>`;
   }
   updateHpBar(caster, fElId);
-  addLog(`${caster.emoji}${caster.name} <b>骰子</b>：<img src="assets/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">${roll}！<span class="log-passive">+${roll}金币（共${caster._goldCoins}）</span> <span class="log-heal">+${actual}HP</span>${shieldStr}`);
+  addLog(`${caster.emoji}${caster.name} <b>骰子</b>：<img src="assets/passive/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">${roll}！<span class="log-passive">+${roll}金币（共${caster._goldCoins}）</span> <span class="log-heal">+${actual}HP</span>${shieldStr}`);
   await sleep(1000);
 }
 
@@ -1178,7 +1178,7 @@ async function fireStarPassive(f, target) {
   if (fireDmg <= 0) return;
   applyRawDmg(f, target, fireDmg, false, false, 'true');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${fireDmg}<img src="assets/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
+  spawnFloatingNum(tElId, `-${fireDmg}<img src="assets/passive/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
   updateHpBar(target, tElId);
   // Passive true damage also charges star energy
   addStarEnergy(f, fireDmg);
@@ -1200,11 +1200,11 @@ async function starMeteorBurst(f) {
     const finalDmg = wh ? Math.round(burstDmg * (1 + wh.pierceBonusPct / 100)) : burstDmg;
     applyRawDmg(f, e, finalDmg, false, false, 'true');
     const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${finalDmg}<img src="assets/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'crit-true', 300, 0, {atkSide:f.side, amount:finalDmg});
+    spawnFloatingNum(eElId, `-${finalDmg}<img src="assets/passive/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'crit-true', 300, 0, {atkSide:f.side, amount:finalDmg});
     updateHpBar(e, eElId);
   }
   renderStatusIcons(f);
-  addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">星能爆发！</span>全体敌方 <span class="log-pierce">${burstDmg}真实伤害</span>`);
+  addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/passive/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">星能爆发！</span>全体敌方 <span class="log-pierce">${burstDmg}真实伤害</span>`);
   try { sfxExplosion(); } catch(e) {}
   await sleep(500);
 }
@@ -1750,7 +1750,7 @@ async function doPirateCannonBarrage(attacker, skill) {
     const eElId = getFighterElId(enemy);
     const eEl = document.getElementById(eElId);
     if (eEl) eEl.classList.add('hit-shake');
-    spawnFloatingNum(eElId, '<img src="assets/pirate-plunder-icon.png" style="width:16px;height:16px;vertical-align:middle">炮击!', 'debuff-label', 0, -10);
+    spawnFloatingNum(eElId, '<img src="assets/passive/pirate-plunder-icon.png" style="width:16px;height:16px;vertical-align:middle">炮击!', 'debuff-label', 0, -10);
   }
   addLog(`${attacker.emoji}${attacker.name} <b>火炮齐射</b> 全体敌方！`);
   await sleep(600);
@@ -1839,7 +1839,7 @@ async function doPhoenixShield(caster, skill) {
   // Also add as normal shield for visual
   caster.shield += amount;
   const fElId = getFighterElId(caster);
-  spawnFloatingNum(fElId, `+${amount}<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
+  spawnFloatingNum(fElId, `+${amount}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
   updateHpBar(caster, fElId);
   renderStatusIcons(caster);
   addLog(`${caster.emoji}${caster.name} <b>熔岩盾</b>：+${amount}护盾 ${skill.duration}回合，被攻击每段反击${Math.round(skill.counterScale*100)}%ATK`);
@@ -1855,7 +1855,7 @@ async function doPhoenixScald(attacker, target, skill) {
     if (target.bubbleShieldVal > 0) {
       const broken = Math.round(target.bubbleShieldVal * breakPct);
       target.bubbleShieldVal -= broken;
-      spawnFloatingNum(tElId, `-${broken}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, -15);
+      spawnFloatingNum(tElId, `-${broken}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, -15);
     }
     if (target.shield > 0) {
       const broken = Math.round(target.shield * breakPct);
@@ -2050,7 +2050,7 @@ async function doBubbleShield(caster, target, skill) {
   target.bubbleShieldTurns = skill.duration;
   target.bubbleShieldOwner = caster;
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `+${amount}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'bubble-num', 0, 0);
+  spawnFloatingNum(tElId, `+${amount}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'bubble-num', 0, 0);
   updateHpBar(target, tElId);
   renderStatusIcons(target);
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡盾+${amount}（${skill.duration}回合）</span>`);
@@ -2062,7 +2062,7 @@ async function doBubbleBind(caster, target, skill) {
   target.buffs = target.buffs.filter(b => b.type !== 'bubbleBind');
   target.buffs.push({ type:'bubbleBind', value:skill.bindPct, turns:skill.duration });
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, '<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">束缚', 'bubble-num', 0, 0);
+  spawnFloatingNum(tElId, '<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">束缚', 'bubble-num', 0, 0);
   renderStatusIcons(target);
   addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡束缚${skill.duration}回合（攻击者获得${skill.bindPct}%伤害护盾）</span>`);
   await sleep(1000);
@@ -2495,7 +2495,7 @@ async function doGhostStorm(attacker, target, skill) {
   if (target.alive) {
     const dotDmg = Math.round(target.maxHp * 0.09);
     target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side });
-    spawnFloatingNum(tElId, '<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒', 'debuff-label', 200, -10);
+    spawnFloatingNum(tElId, '<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒', 'debuff-label', 200, -10);
     renderStatusIcons(target);
   }
 
@@ -2647,7 +2647,7 @@ async function doBambooChargeAttack(attacker, target) {
   const tElId = getFighterElId(target);
 
   // ── 蓄力停顿 ──
-  spawnFloatingNum(fElId, '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">蓄力...', 'passive-num', 0, -20);
+  spawnFloatingNum(fElId, '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">蓄力...', 'passive-num', 0, -20);
   try { sfxBambooCharge(); } catch(e) {}
   await sleep(1000);
 
@@ -2659,7 +2659,7 @@ async function doBambooChargeAttack(attacker, target) {
   const magicDmg = Math.max(1, Math.round(rawDmg * critMult * (1 - mrRed)));
   applyRawDmg(attacker, target, magicDmg, false, false, 'magic');
   try { sfxBambooHit(); } catch(e) {}
-  spawnFloatingNum(tElId, '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'crit-label', 0, -20);
+  spawnFloatingNum(tElId, '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'crit-label', 0, -20);
   spawnFloatingNum(tElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -2786,7 +2786,7 @@ async function doDiceAllIn(attacker, skill) {
   const baseRaw = Math.round(attacker.atk * skill.atkScale);
   const dmgType = skill.dmgType || 'physical';
   let totalDmg = 0, totalCrits = 0;
-  spawnFloatingNum(fElId, '<img src="assets/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">孤注一掷!', 'crit-label', 0, -20);
+  spawnFloatingNum(fElId, '<img src="assets/passive/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">孤注一掷!', 'crit-label', 0, -20);
   for (const e of enemies) {
     if (!e.alive) continue;
     const {isCrit, critMult} = calcCrit(attacker);
@@ -2823,7 +2823,7 @@ async function doDiceFate(caster, skill) {
   const critGain = skill.minCrit + Math.floor(Math.random() * (skill.maxCrit - skill.minCrit + 1));
   caster.buffs.push({ type:'diceFateCrit', value:critGain, turns:skill.duration + 1 });
   recalcStats();
-  spawnFloatingNum(fElId, `<img src="assets/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">+${critGain}%暴击!`, 'crit-label', 0, -20);
+  spawnFloatingNum(fElId, `<img src="assets/passive/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">+${critGain}%暴击!`, 'crit-label', 0, -20);
   renderStatusIcons(caster);
   updateFighterStats(caster, fElId);
   addLog(`${caster.emoji}${caster.name} <b>命运骰子</b>：<span class="log-passive">+${critGain}%暴击率 ${skill.duration}回合</span>${caster.crit > 1 ? ' (溢出' + Math.round((caster.crit-1)*100) + '%→' + Math.round((caster.crit-1)*150) + '%爆伤)' : ''}`);

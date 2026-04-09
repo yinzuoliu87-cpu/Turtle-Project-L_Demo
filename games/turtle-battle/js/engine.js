@@ -627,7 +627,7 @@ async function beginTurn() {
       }
       if (spawned > 0) {
         const elId = getFighterElId(f);
-        spawnFloatingNum(elId, `+${spawned}<img src="assets/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
+        spawnFloatingNum(elId, `+${spawned}<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成${spawned}个浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
       // Every drone fires every turn at random enemy — speed scales with count
@@ -645,7 +645,7 @@ async function beginTurn() {
         applyRawDmg(f, target, finalDmg, false, false, 'physical');
         totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
+        spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/passive/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
         updateHpBar(target, tElId);
@@ -682,12 +682,12 @@ async function beginTurn() {
       // Percentage armor penetration
       f.armorPenPct += f.passive.armorPenPct / 100;
       // Visual + log
-      spawnFloatingNum(elId, '<img src="assets/aura-awaken-icon.png" style="width:16px;height:16px;vertical-align:middle">气场觉醒!', 'crit-label', 0, -20);
+      spawnFloatingNum(elId, '<img src="assets/passive/aura-awaken-icon.png" style="width:16px;height:16px;vertical-align:middle">气场觉醒!', 'crit-label', 0, -20);
       recalcStats();
       spawnFloatingNum(elId, `+${atkGain}攻 +${defGain}护甲 +${hpGain}HP`, 'passive-num', 0, 10);
       updateHpBar(f, elId);
       updateFighterStats(f, elId);
-      addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/aura-awaken-icon.png" style="width:16px;height:16px;vertical-align:middle">气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
+      addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/passive/aura-awaken-icon.png" style="width:16px;height:16px;vertical-align:middle">气场觉醒！ATK+${atkGain} DEF+${defGain} HP+${hpGain} 生命偷取${f.passive.lifestealPct}% 反伤${f.passive.reflectPct}% ${f.passive.armorPenPct}%穿甲</span>`);
     }
     // Passive: bambooCharge — charge every other turn, only consume on actual skill use
     if (f.passive.type === 'bambooCharge') {
@@ -698,8 +698,8 @@ async function beginTurn() {
         if (f._bambooCounter >= 2) {
           f._bambooCharged = true;
           f._bambooCounter = 0;
-          spawnFloatingNum(getFighterElId(f), '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'passive-num', 0, 0);
-          addLog(`${f.emoji}${f.name} 被动：<span class="log-passive"><img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">竹编充能！本回合技能后追加强化攻击</span>`);
+          spawnFloatingNum(getFighterElId(f), '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'passive-num', 0, 0);
+          addLog(`${f.emoji}${f.name} 被动：<span class="log-passive"><img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">竹编充能！本回合技能后追加强化攻击</span>`);
         }
       }
       // If still charged from last turn (didn't fire — stunned etc), keep it
@@ -822,7 +822,7 @@ async function beginTurn() {
       const shipAtk = f.atk;
       const ship = {
         id:'pirateShip_'+f.id, name:'海盗船', emoji:'🚢', rarity:f.rarity, side:f.side,
-        img:'assets/pirate-ship.png', sprite:null,
+        img:'assets/battle/pirate-ship.png', sprite:null,
         _equippedIdxs:[0], maxHp:shipHp, hp:shipHp, shield:0,
         baseAtk:shipAtk, baseDef:0, baseMr:0, atk:shipAtk, def:0, mr:0,
         _initHp:shipHp, _initAtk:shipAtk, _initDef:0, _initMr:0, _initCrit:0,
@@ -892,13 +892,13 @@ async function beginTurn() {
           addLog(`${f.emoji}${f.name} 🟠橙光：全体友方获得10%吸血1回合`);
         } else if (color === 4) {
           // Yellow: burn random enemy
-          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; applySkillDebuffs({burn:true}, t, f); spawnFloatingNum(getFighterElId(t), `<img src="assets/burn-icon.png" style="width:14px;height:14px;vertical-align:middle">灼烧`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟡黄光：${t.emoji}${t.name}被灼烧`); }
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; applySkillDebuffs({burn:true}, t, f); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/burn-icon.png" style="width:14px;height:14px;vertical-align:middle">灼烧`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟡黄光：${t.emoji}${t.name}被灼烧`); }
         } else if (color === 5) {
           // Cyan: chill random enemy 1 turn
-          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; t.buffs.push({type:'chilled',value:1,turns:2}); spawnFloatingNum(getFighterElId(t), `<img src="assets/chilled-icon.png" style="width:14px;height:14px;vertical-align:middle">冰寒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🩵青光：${t.emoji}${t.name}被冰寒`); }
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; t.buffs.push({type:'chilled',value:1,turns:2}); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/chilled-icon.png" style="width:14px;height:14px;vertical-align:middle">冰寒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🩵青光：${t.emoji}${t.name}被冰寒`); }
         } else if (color === 6) {
           // Purple: curse random enemy 3 turns
-          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; const dotDmg = Math.round(t.maxHp * 0.09); t.buffs.push({type:'dot',value:dotDmg,turns:3,sourceSide:f.side}); spawnFloatingNum(getFighterElId(t), `<img src="assets/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">诅咒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟣紫光：${t.emoji}${t.name}被诅咒3回合`); }
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; const dotDmg = Math.round(t.maxHp * 0.09); t.buffs.push({type:'dot',value:dotDmg,turns:3,sourceSide:f.side}); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">诅咒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟣紫光：${t.emoji}${t.name}被诅咒3回合`); }
         }
       }
       for (const c of picks) applyPrismColor(c);
@@ -944,9 +944,9 @@ async function beginTurn() {
         const sDmg = Math.round(s.atk * p.shockScale);
         applyRawDmg(s, t, sDmg, true);
         const tElId = getFighterElId(t);
-        spawnFloatingNum(tElId, `<img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${sDmg}`, 'pierce-dmg', 0, 0);
+        spawnFloatingNum(tElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${sDmg}`, 'pierce-dmg', 0, 0);
         updateHpBar(t, tElId);
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive"><img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${t.emoji}${t.name} ${sDmg}真实</span>`);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive"><img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${t.emoji}${t.name} ${sDmg}真实</span>`);
       }
     }
     // Bamboo charge
@@ -956,8 +956,8 @@ async function beginTurn() {
         s._bambooCounter = (s._bambooCounter || 0) + 1;
         if (s._bambooCounter >= 2) {
           s._bambooCharged = true; s._bambooCounter = 0;
-          spawnFloatingNum(sElId, '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'passive-num', 0, 0);
-          addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive"><img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">竹编充能！</span>`);
+          spawnFloatingNum(sElId, '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'passive-num', 0, 0);
+          addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive"><img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">竹编充能！</span>`);
         }
       }
     }
@@ -1406,7 +1406,7 @@ async function processBuffs() {
       const actual = applyHeal(f, healAmt);
       f.bubbleStore -= healAmt;
       if (actual > 0) {
-        spawnFloatingNum(elId, `+${actual}<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'bubble-num', 100, 0);
+        spawnFloatingNum(elId, `+${actual}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'bubble-num', 100, 0);
         updateHpBar(f, elId);
         hadTick = true;
       }
@@ -1422,7 +1422,7 @@ async function processBuffs() {
             const finalDmg = Math.max(1, Math.round(dmgAmt * calcDmgMult(effMr)));
             applyRawDmg(f, target, finalDmg, false, false, 'magic');
             const tElId = getFighterElId(target);
-            spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
+            spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
             updateHpBar(target, tElId);
             hadTick = true;
           }
@@ -1948,7 +1948,7 @@ async function executeAction(action) {
       // Guaranteed stun
       if (target.alive) {
         target.buffs.push({ type:'stun', value:1, turns:1 });
-        spawnFloatingNum(getFighterElId(target), `<img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, 0);
+        spawnFloatingNum(getFighterElId(target), `<img src="assets/status/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, 0);
         renderStatusIcons(target);
         addLog(`${target.emoji}${target.name} 被冰封眩晕！`);
       }
@@ -1990,7 +1990,7 @@ async function executeAction(action) {
         spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
         if (Math.random() < 0.20 && target.alive) {
           target.buffs.push({ type:'stun', value:1, turns:1 });
-          spawnFloatingNum(getFighterElId(target), `<img src="assets/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, h * 80);
+          spawnFloatingNum(getFighterElId(target), `<img src="assets/status/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, h * 80);
           renderStatusIcons(target);
         }
         if (battleOver) break;
@@ -3210,7 +3210,7 @@ async function executeAction(action) {
       ff.name = '机甲';
       ff.emoji = '🤖';
       ff.id = 'mech'; // for CSS flip exception
-      ff.img = 'assets/mech-form-icon.png';
+      ff.img = 'assets/passive/mech-form-icon.png';
       ff.buffs = [];
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5,
@@ -3477,7 +3477,7 @@ async function doDamage(attacker, target, skill) {
     const trueCls = isCrit ? 'crit-true' : 'true-dmg';
     const yOff = (i % 4) * 32;
     // Floating numbers: top→bottom: true(white) → magic(blue) → physical(red), no overlap
-    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: bubbleAbs });
+    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: bubbleAbs });
     if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff - 10, { atkSide: attacker.side, amount: shieldAbs });
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
@@ -3798,11 +3798,11 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       const mrDownExist = target.buffs.find(b => b.type === 'mrDown');
       if (mrDownExist) { mrDownExist.value = Math.max(mrDownExist.value, attacker.passive.crystallizeMrDown); mrDownExist.turns = Math.max(mrDownExist.turns, attacker.passive.crystallizeMrTurns); }
       else target.buffs.push({type:'mrDown', value:attacker.passive.crystallizeMrDown, turns:attacker.passive.crystallizeMrTurns});
-      spawnFloatingNum(tElCryst, '<img src="assets/crystal-resonance-icon.png" style="width:16px;height:16px;vertical-align:middle">引爆!', 'crit-label', 400, -30);
+      spawnFloatingNum(tElCryst, '<img src="assets/passive/crystal-resonance-icon.png" style="width:16px;height:16px;vertical-align:middle">引爆!', 'crit-label', 400, -30);
       recalcStats();
       addLog(`${target.emoji}${target.name} 结晶引爆！<span class="log-magic">${finalDmg}魔法伤害</span> + ⬇️魔抗`);
     } else {
-      spawnFloatingNum(tElCryst, `<img src="assets/crystal-resonance-icon.png" style="width:12px;height:12px;vertical-align:middle">${target._crystallize}/${maxStacks}`, 'passive-num', 300, 10);
+      spawnFloatingNum(tElCryst, `<img src="assets/passive/crystal-resonance-icon.png" style="width:12px;height:12px;vertical-align:middle">${target._crystallize}/${maxStacks}`, 'passive-num', 300, 10);
     }
     renderStatusIcons(target);
   }
@@ -3846,20 +3846,20 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && attacker.alive) {
     const cDmg = Math.round(target.atk * target._lavaShieldCounter);
     attacker.hp = Math.max(0, attacker.hp - cDmg);
-    spawnFloatingNum(getFighterElId(attacker), `-${cDmg}<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'counter-dmg', 300, 0);
+    spawnFloatingNum(getFighterElId(attacker), `-${cDmg}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'counter-dmg', 300, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
   }
   // Lightning shock stacks
   if (attacker.passive && attacker.passive.type === 'lightningStorm' && target.alive) {
     target._shockStacks = (target._shockStacks || 0) + 1;
-    spawnFloatingNum(tElId, `<img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${target._shockStacks}/${attacker.passive.stackMax}`, 'passive-num', 350, 10);
+    spawnFloatingNum(tElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${target._shockStacks}/${attacker.passive.stackMax}`, 'passive-num', 350, 10);
     renderStatusIcons(target);
     if (target._shockStacks >= attacker.passive.stackMax) {
       const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
       applyRawDmg(attacker, target, sDmg, false, false, 'true');
       target._shockStacks = 0;
-      spawnFloatingNum(tElId, `<img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${sDmg}`, 'pierce-dmg', 300, 0);
+      spawnFloatingNum(tElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${sDmg}`, 'pierce-dmg', 300, 0);
     }
   }
   // Lifesteal (equipment/passive-based + buff-based)
@@ -3877,7 +3877,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // AuraAwaken: energy store — target stores received damage as energy
   if (target.passive && target.passive.type === 'auraAwaken' && target.passive.energyStore && target.alive) {
     target._storedEnergy = (target._storedEnergy || 0) + dmg;
-    spawnFloatingNum(tElId, `+${dmg}<img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 350, 10);
+    spawnFloatingNum(tElId, `+${dmg}<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 350, 10);
     updateHpBar(target, tElId); // refresh energy bar
   }
   // AuraAwaken: lifesteal — attacker heals from damage dealt
@@ -3957,8 +3957,8 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
     const critFinal = Math.max(1, Math.round(eFinal * critMult));
     applyRawDmg(attacker, target, critFinal, false, false, 'physical');
     if (!tElId) tElId = getFighterElId(target);
-    const hitIcon = '<img src="assets/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
-    const critIcon = isCrit ? '<img src="assets/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
+    const hitIcon = '<img src="assets/battle/gambler-hit-icon.png" style="width:16px;height:16px;vertical-align:middle">';
+    const critIcon = isCrit ? '<img src="assets/stats/crit-icon.png" style="width:14px;height:14px;vertical-align:middle">' : '';
     spawnFloatingNum(tElId, `${hitIcon}${critIcon}-${critFinal}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (_origMathRandom()-0.5)*30);
     updateHpBar(target, tElId);
 
@@ -4363,9 +4363,9 @@ function checkDeaths(attacker) {
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
         if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '<img src="assets/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵复活!', 'crit-label', 0, -25);
+        spawnFloatingNum(elId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵复活!', 'crit-label', 0, -25);
         updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之日！以15%HP复活！</span>`);
+        addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之日！以15%HP复活！</span>`);
         return;
       }
 
@@ -4430,7 +4430,7 @@ function checkDeaths(attacker) {
           const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
           e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side });
           const eElId = getFighterElId(e);
-          spawnFloatingNum(eElId, `<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
+          spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
           renderStatusIcons(e);
         }
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">怨灵诅咒！全体敌人每回合受10%最大HP持续伤害 ${f.passive.turns}回合</span>`);
@@ -4473,7 +4473,7 @@ function checkDeaths(attacker) {
         if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
           fg._goldCoins += 9;
           const fgElId = getFighterElId(fg);
-          spawnFloatingNum(fgElId, `+9<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
+          spawnFloatingNum(fgElId, `+9<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
           renderStatusIcons(fg);
           addLog(`${fg.emoji}${fg.name} 被动：<span class="log-passive">阵亡金币+9（共${fg._goldCoins}）</span>`);
         }
@@ -4534,7 +4534,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
         const dotDmg = Math.round(e.maxHp * summon.passive.hpPct / 100);
         e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side });
         const eElId = getFighterElId(e);
-        spawnFloatingNum(eElId, `<img src="assets/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
+        spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
         renderStatusIcons(e);
       }
       addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">怨灵诅咒！</span>`);
@@ -4546,7 +4546,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
     if (fg.alive && fg.passive && fg.passive.type === 'fortuneGold') {
       fg._goldCoins += 9;
       const fgElId = getFighterElId(fg);
-      spawnFloatingNum(fgElId, `+9<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
+      spawnFloatingNum(fgElId, `+9<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 500, 0);
       renderStatusIcons(fg);
     }
   });
@@ -4620,12 +4620,12 @@ async function processLavaTransform() {
       f.name = '火山龟';
       f._lavaSmallImg = f.img;
       f._lavaSmallSprite = f.sprite;
-      f.img = 'assets/volcano-form-icon.png';
-      f.emoji = '<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">🐢';
+      f.img = 'assets/passive/volcano-form-icon.png';
+      f.emoji = '<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">🐢';
       f.sprite = null;
       const elId = getFighterElId(f);
       // Visual
-      spawnFloatingNum(elId, '<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">变身！', 'crit-label', 0, -30);
+      spawnFloatingNum(elId, '<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">变身！', 'crit-label', 0, -30);
       spawnFloatingNum(elId, `+${hpGain}HP +${atkGain}攻 +${defGain}甲 +${mrGain}抗`, 'passive-num', 200, 0);
       // Screen flash
       try {
@@ -4638,7 +4638,7 @@ async function processLavaTransform() {
       updateHpBar(f, elId);
       renderFighterCard(f, elId);
       renderStatusIcons(f);
-      addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">怒气爆发！变身为火山龟！+${hpGain}HP +${atkGain}攻 +${defGain}甲 +${mrGain}抗</span>`);
+      addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">怒气爆发！变身为火山龟！+${hpGain}HP +${atkGain}攻 +${defGain}甲 +${mrGain}抗</span>`);
       await sleep(800);
       // Transform AOE: 120% post-transform ATK magic damage + burn to all enemies
       const aoeDmg = Math.round(f.atk * p.transformAoeDmgScale);
@@ -4648,7 +4648,7 @@ async function processLavaTransform() {
         const dmg = Math.max(1, Math.round(aoeDmg * calcDmgMult(effMr)));
         applyRawDmg(f, e, dmg, false, false, 'magic');
         const eElId = getFighterElId(e);
-        spawnFloatingNum(eElId, `-${dmg}<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+        spawnFloatingNum(eElId, `-${dmg}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
         updateHpBar(e, eElId);
         if (!(e.passive && e.passive.burnImmune)) {
           applySkillDebuffs({burn:true}, e, f);
@@ -4691,7 +4691,7 @@ function processLavaCountdown(f) {
     if (f._lavaSmallSkills) f.skills = f._lavaSmallSkills;
     f.name = '熔岩龟';
     f.img = f._lavaSmallImg || '../../assets/pets/熔岩龟.png';
-    f.emoji = '<img src="assets/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">🐢';
+    f.emoji = '<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">🐢';
     const pet = ALL_PETS.find(p => p.id === f.id);
     if (pet && pet.sprite) f.sprite = pet.sprite;
     const elId = getFighterElId(f);
@@ -4720,7 +4720,7 @@ async function processHunterKill() {
           const targetEl = document.getElementById(eElId);
           const rect = targetEl ? targetEl.getBoundingClientRect() : {left:100,top:100,width:100,height:50};
           const icon = document.createElement('img');
-          icon.src = 'assets/hunter-kill-icon.png';
+          icon.src = 'assets/passive/hunter-kill-icon.png';
           icon.style.cssText = `position:fixed;width:120px;height:120px;z-index:9999;pointer-events:none;left:${rect.left+rect.width/2-60}px;top:${rect.top+rect.height/2-60}px;opacity:0.9;transition:opacity 0.3s,transform 0.3s;transform:scale(0.3)`;
           document.body.appendChild(icon);
           requestAnimationFrame(() => { icon.style.transform = 'scale(1)'; icon.style.opacity = '1'; });
@@ -4765,7 +4765,7 @@ async function processHunterKill() {
           setTimeout(() => flash.remove(), 400);
         } catch(err) {}
 
-        spawnFloatingNum(eElId, '<img src="assets/hunter-kill-icon.png" style="width:24px;height:24px;vertical-align:middle">猎杀!', 'crit-label', 0, -20);
+        spawnFloatingNum(eElId, '<img src="assets/passive/hunter-kill-icon.png" style="width:24px;height:24px;vertical-align:middle">猎杀!', 'crit-label', 0, -20);
         const execDmg = e.hp + e.shield;
         applyRawDmg(f, e, execDmg, false, false, 'true');
         // Keep alive temporarily for on-hit effects (bubble bind shield, etc.)
@@ -4791,7 +4791,7 @@ async function processFortuneGold() {
     const roll = 3 + Math.floor(Math.random() * 6); // 3~8
     f._goldCoins += roll;
     const fElId = getFighterElId(f);
-    spawnFloatingNum(fElId, `+${roll}<img src="assets/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
+    spawnFloatingNum(fElId, `+${roll}<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'passive-num', 0, 0);
     renderStatusIcons(f);
     addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">获得${roll}金币（共${f._goldCoins}）</span>`);
     await sleep(300);
@@ -4809,9 +4809,9 @@ async function processLightningStorm() {
     // Pierce damage through applyRawDmg
     applyRawDmg(f, target, shockDmg, true, false, 'true');
     const eElId = getFighterElId(target);
-    spawnFloatingNum(eElId, `<img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${shockDmg}`, 'pierce-dmg', 0, 0);
+    spawnFloatingNum(eElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);
-    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce"><img src="assets/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${target.emoji}${target.name} ${shockDmg}真实</span>`);
+    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce"><img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${target.emoji}${target.name} ${shockDmg}真实</span>`);
     // Trigger on-hit effects (shock stack, trap, reflect, etc.)
     await triggerOnHitEffects(f, target, shockDmg);
     checkDeaths(f);
@@ -4928,7 +4928,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     // Show "无法死亡" floating text when HP would have dropped to 0
     if (hpBefore - rem2 <= 0) {
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, '<img src="assets/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">无法死亡', 'crit-label', 0, -25);
+      spawnFloatingNum(tElId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">无法死亡', 'crit-label', 0, -25);
     }
     if (source && source._dmgDealt !== undefined) { source._dmgDealt += amount; }
     if (target._dmgTaken !== undefined) { target._dmgTaken += amount; }
@@ -4946,8 +4946,8 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
     target.hp = 1;
     target.alive = true;
     const elId = getFighterElId(target);
-    spawnFloatingNum(elId, '<img src="assets/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力!', 'crit-label', 0, -30);
-    addLog(`${target.emoji}${target.name} <span class="log-passive"><img src="assets/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力！锁血1HP 2回合！</span>`);
+    spawnFloatingNum(elId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力!', 'crit-label', 0, -30);
+    addLog(`${target.emoji}${target.name} <span class="log-passive"><img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力！锁血1HP 2回合！</span>`);
     renderStatusIcons(target);
   } else {
     if (target.hp <= 0) target.alive = false;

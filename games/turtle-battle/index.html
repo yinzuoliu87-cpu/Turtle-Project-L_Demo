@@ -32,8 +32,8 @@
 <meta name="apple-mobile-web-app-title" content="龟龟对战">
 
 <!-- Favicon -->
-<link rel="icon" type="image/png" href="assets/unyielding-icon.png">
-<link rel="apple-touch-icon" href="assets/unyielding-icon.png">
+<link rel="icon" type="image/png" href="assets/passive/unyielding-icon.png">
+<link rel="apple-touch-icon" href="assets/passive/unyielding-icon.png">
 
 <!-- Structured Data -->
 <script type="application/ld+json">
@@ -51,10 +51,10 @@
 <!-- Preload critical resources -->
 <link rel="preload" href="js/pets.js" as="script">
 <link rel="preload" href="js/engine.js" as="script">
-<link rel="preload" href="assets/hp-icon.png" as="image">
-<link rel="preload" href="assets/atk-icon.png" as="image">
-<link rel="preload" href="assets/def-icon.png" as="image">
-<link rel="preload" href="assets/mr-icon.png" as="image">
+<link rel="preload" href="assets/stats/hp-icon.png" as="image">
+<link rel="preload" href="assets/stats/atk-icon.png" as="image">
+<link rel="preload" href="assets/stats/def-icon.png" as="image">
+<link rel="preload" href="assets/stats/mr-icon.png" as="image">
 <!-- DNS prefetch for CDN -->
 <link rel="dns-prefetch" href="https://cdn.jsdelivr.net">
 </head>
@@ -101,7 +101,7 @@
       </span>
     </button>
     <button class="btn btn-lg" onclick="startMode('boss')" style="background:linear-gradient(135deg,#8b0000,#ff4500);border:2px solid #ff6600">
-      <span class="btn-icon"><img src="assets/equip-crown-icon.png" style="width:32px;height:32px"></span>
+      <span class="btn-icon"><img src="assets/equip/equip-crown-icon.png" style="width:32px;height:32px"></span>
       <span class="btn-text">
         <strong>Boss挑战</strong>
         <small>2v1 挑战强化Boss</small>
@@ -192,23 +192,23 @@
     <div class="help-title">术语说明 <span class="help-close" onclick="toggleHelp()">✕</span></div>
     <div class="help-grid">
       <div class="help-item">
-        <img src="assets/atk-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/atk-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>攻击力 (ATK)</b><br>技能伤害基于攻击力百分比计算，如"90%ATK"</div>
       </div>
       <div class="help-item">
-        <img src="assets/def-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/def-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>护甲</b><br>减少受到的物理伤害。减伤% = 护甲÷(护甲+40)</div>
       </div>
       <div class="help-item">
-        <img src="assets/mr-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/mr-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>魔抗</b><br>减少受到的魔法伤害。减伤% = 魔抗÷(魔抗+40)</div>
       </div>
       <div class="help-item">
-        <img src="assets/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/armor-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>护甲穿透</b><br>无视目标等量护甲值</div>
       </div>
       <div class="help-item">
-        <img src="assets/magic-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/magic-pen-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>魔法穿透</b><br>无视目标等量魔抗值</div>
       </div>
       <div class="help-item">
@@ -228,23 +228,23 @@
         <div><b>护盾（白色）</b><br>额外生命层，所有伤害先消耗护盾再扣血。血条上白色部分</div>
       </div>
       <div class="help-item">
-        <img src="assets/hp-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/hp-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>生命值（绿色回复）</b><br>恢复生命值，不超过最大HP</div>
       </div>
       <div class="help-item">
-        <img src="assets/crit-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/crit-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>暴击率</b><br>基础暴击率25%，暴击时触发额外伤害</div>
       </div>
       <div class="help-item">
-        <img src="assets/crit-dmg-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/crit-dmg-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>暴击伤害</b><br>暴击时伤害倍率，基础×1.5倍。暴击数字前显示此图标</div>
       </div>
       <div class="help-item">
-        <img src="assets/lifesteal-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/stats/lifesteal-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>生命偷取</b><br>造成伤害时按比例回复自身生命值</div>
       </div>
       <div class="help-item">
-        <img src="assets/dodge-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
+        <img src="assets/status/dodge-icon.png" class="help-icon" style="width:20px;height:20px" loading="lazy">
         <div><b>闪避率</b><br>有概率完全闪避一段攻击，不受伤害</div>
       </div>
       <div class="help-item">

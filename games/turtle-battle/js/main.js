@@ -37,7 +37,7 @@ function startMode(mode) {
     difficulty = 'hard';
     selecting = 'left';
     selectedIds = [];
-    showSelectScreen('<img src="assets/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选3只龟）');
+    showSelectScreen('<img src="assets/equip/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选3只龟）');
   } else if (mode === 'dungeon') {
     difficulty = 'normal';
     selecting = 'left';
@@ -444,10 +444,10 @@ function renderPetGrid() {
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
-        <span><img src="assets/hp-icon.png" class="stat-icon">${p.hp}</span>
-        <span><img src="assets/atk-icon.png" class="stat-icon">${p.atk}</span>
-        <span><img src="assets/def-icon.png" class="stat-icon">${p.def}</span>
-        <span><img src="assets/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
+        <span><img src="assets/stats/hp-icon.png" class="stat-icon">${p.hp}</span>
+        <span><img src="assets/stats/atk-icon.png" class="stat-icon">${p.atk}</span>
+        <span><img src="assets/stats/def-icon.png" class="stat-icon">${p.def}</span>
+        <span><img src="assets/stats/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
       </div>
       <div class="pet-skills-preview" title="${skillNames}">${skillNames}</div>
     </div>`;
@@ -1014,10 +1014,10 @@ function startBattle(seed) {
   }
   showScreen('screenBattle');
   // Set battle background based on mode
-  let bgFile = 'assets/bg-cave-alt.png';
-  if (gameMode === 'boss') bgFile = 'assets/bg-cave.png';
-  else if (gameMode === 'pvp-online') bgFile = 'assets/bg-shipwreck.png';
-  else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg-cave.png' : 'assets/bg-cave-alt.png';
+  let bgFile = 'assets/bg/bg-cave-alt.png';
+  if (gameMode === 'boss') bgFile = 'assets/bg/bg-cave.png';
+  else if (gameMode === 'pvp-online') bgFile = 'assets/bg/bg-shipwreck.png';
+  else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg/bg-cave.png' : 'assets/bg/bg-cave-alt.png';
   const battleScene = document.getElementById('battleScene');
   if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
   document.getElementById('screenBattle').style.backgroundImage = 'none';
@@ -1044,7 +1044,7 @@ function startBattle(seed) {
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
-  else if (gameMode === 'boss') { ll.textContent = '我方'; lr.innerHTML = '<img src="assets/equip-crown-icon.png" style="width:20px;height:20px;vertical-align:middle"> BOSS'; }
+  else if (gameMode === 'boss') { ll.textContent = '我方'; lr.innerHTML = '<img src="assets/equip/equip-crown-icon.png" style="width:20px;height:20px;vertical-align:middle"> BOSS'; }
   else if (gameMode === 'dungeon') { ll.textContent = '我方'; lr.textContent = dungeonState.stage >= 5 ? '👑 BOSS' : '第' + dungeonState.stage + '关'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
   // Boss mode: hide second enemy card
@@ -1194,7 +1194,7 @@ function startBattle(seed) {
       for (const f of pirates) {
         const fElId = getFighterElId(f);
         // Show passive trigger on pirate
-        spawnFloatingNum(fElId, '<img src="assets/pirate-plunder-icon.png" style="width:24px;height:24px;vertical-align:middle">掠夺！', 'debuff-label', 0, -10);
+        spawnFloatingNum(fElId, '<img src="assets/passive/pirate-plunder-icon.png" style="width:24px;height:24px;vertical-align:middle">掠夺！', 'debuff-label', 0, -10);
         await sleep(1000);
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         if (!enemies.length) continue;

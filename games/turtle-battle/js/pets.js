@@ -104,7 +104,7 @@ const ALL_PETS = [
     img:'../../assets/pets/竹叶龟v1.png', sprite:{frames:10,frameW:500,frameH:400,duration:1000},
     passive:{ type:'bambooCharge', name:'生长', atkPct:85, selfHpPct:12, healSelfHpPct:8, hpGainAtkPct:70, chargeDmgType:'magic',
               brief:'竹叶龟每隔1回合蓄力充能。充能后释放技能时追加一发强化攻击（<span class="val-magic">85%攻击力+12%最大HP</span> 魔法伤害），回复 <span class="val-heal">8%</span> 最大生命值，并永久增加 <span class="val-heal">70%攻击力</span> 的最大生命值。',
-              desc:'竹叶龟每隔1回合充能被动<img src="assets/bamboo-charge-icon.png" class="stat-icon">「生长」，充能完毕时，技能释放后追加一发强化普攻：\n\n造成 {M:ATK*0.85+HP*0.12} 魔法伤害（85%攻击力 + 12%<span class="val-heal">最大HP</span>）\n回复 {H:HP*0.08} <span class="val-heal">HP</span>（8%<span class="val-heal">最大HP</span>）\n永久增加 {H:ATK*0.70} <span class="val-heal">最大生命值</span>（70%攻击力）\n\n已通过被动累计获得 {H:bambooGainedHp} <span class="val-heal">最大生命值</span>' },
+              desc:'竹叶龟每隔1回合充能被动<img src="assets/passive/bamboo-charge-icon.png" class="stat-icon">「生长」，充能完毕时，技能释放后追加一发强化普攻：\n\n造成 {M:ATK*0.85+HP*0.12} 魔法伤害（85%攻击力 + 12%<span class="val-heal">最大HP</span>）\n回复 {H:HP*0.08} <span class="val-heal">HP</span>（8%<span class="val-heal">最大HP</span>）\n永久增加 {H:ATK*0.70} <span class="val-heal">最大生命值</span>（70%攻击力）\n\n已通过被动累计获得 {H:bambooGainedHp} <span class="val-heal">最大生命值</span>' },
     skillPool:[
       { name:'一叶刃', type:'bambooLeaf', hits:3, power:0, pierce:0, cd:0, atkScale:0.21, selfHpPct:6,
         brief:'竹叶龟甩出3片叶刃，共（{N:0.21*ATK*3+HP*0.06*3}）物理伤害',

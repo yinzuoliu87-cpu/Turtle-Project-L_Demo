@@ -302,7 +302,7 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
 .floating-num.crit-label{color:#ffd700;font-size:14px;font-weight:900}
 .floating-num.crit-dmg::before,.floating-num.crit-magic::before,.floating-num.crit-true::before,.floating-num.crit-pierce::before{
   content:'';display:inline-block;width:20px;height:20px;
-  background:url('assets/crit-dmg-icon.png') center/contain no-repeat;
+  background:url('assets/stats/crit-dmg-icon.png') center/contain no-repeat;
   vertical-align:middle;margin-right:1px;
 }
 /* DoT damage — ORANGE */
