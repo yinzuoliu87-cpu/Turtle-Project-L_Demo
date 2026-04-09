@@ -3847,7 +3847,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflectPct = target.passive.reflectBase + target.passive.reflectPerDef * target.def + (target.passive.reflectPerMr || 0) * (target.mr || target.def);
     const reflectDmg = Math.round(dmg * reflectPct / 100);
     if (reflectDmg > 0) {
-      applyRawDmg(null, attacker, reflectDmg);
+      applyRawDmg(target, attacker, reflectDmg);
       spawnFloatingNum(getFighterElId(attacker), `-${reflectDmg}`, 'counter-dmg', 250, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -3858,7 +3858,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (reflectBuff && attacker && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * reflectBuff.value / 100);
     if (reflDmg > 0) {
-      applyRawDmg(null, attacker, reflDmg);
+      applyRawDmg(target, attacker, reflDmg);
       spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -3916,8 +3916,8 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._auraReflect > 0 && target.alive && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * target._auraReflect);
     if (reflDmg > 0) {
-      attacker.hp = Math.max(0, attacker.hp - reflDmg);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}反伤`, 'counter-dmg', 400, 0);
+      applyRawDmg(target, attacker, reflDmg);
+      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 400, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
@@ -3949,8 +3949,8 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._equipReflect && target.alive && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * target._equipReflect / 100);
     if (reflDmg > 0) {
-      attacker.hp = Math.max(0, attacker.hp - reflDmg);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}🌵`, 'counter-dmg', 300, 0);
+      applyRawDmg(target, attacker, reflDmg);
+      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
