@@ -2765,20 +2765,25 @@ async function executeAction(action) {
           const frontSlots = ['front-0','front-1','front-2'];
           const emptyFront = frontSlots.find(s => !usedSlots.includes(s));
           if (emptyFront) target._slotKey = emptyFront;
-          // Move DOM element to new position
+          // Move DOM element to new position (same coord system as renderScene)
           const tEl = document.getElementById(getFighterElId(target));
           if (tEl) {
             const scene = document.getElementById('battleScene');
             const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
             const newPos = posSet[target._slotKey];
             if (scene && newPos) {
-              const rect = scene.getBoundingClientRect();
+              const cw = scene.offsetWidth, ch = scene.offsetHeight;
               const side = target.side;
               const imgX = side === 'left' ? newPos.x : 100 - newPos.x;
-              const pos = mapCoverPos(imgX, newPos.y, rect.width, rect.height);
-              tEl.style.transition = 'left 0.4s ease, top 0.4s ease';
-              tEl.style.left = pos.x + 'px';
-              tEl.style.top = pos.y + 'px';
+              const mapped = mapCoverPos(imgX, newPos.y, cw, ch);
+              const leftPct = mapped.px / cw * 100;
+              const bottomPct = (1 - mapped.py / ch) * 100;
+              tEl.style.transition = 'left 0.4s ease, bottom 0.4s ease';
+              tEl.style.left = leftPct + '%';
+              tEl.style.bottom = bottomPct + '%';
+              requestAnimationFrame(() => {
+                tEl.style.marginLeft = (-tEl.offsetWidth / 2) + 'px';
+              });
               setTimeout(() => { tEl.style.transition = ''; }, 500);
             }
           }
