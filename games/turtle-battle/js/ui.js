@@ -1224,14 +1224,14 @@ function renderStatusIcons(f) {
     if (b.type === 'dmgReduce') return `<span style="color:#4dabf7;background:rgba(77,171,247,.15);padding:1px 5px;border-radius:6px" title="受伤-${b.value}% 剩${b.turns}回合">🛡-${b.value}%${b.turns}</span>`;
     if (b.type === 'dodgeCounter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="闪避反击${b.value}伤害 剩${b.turns}回合">⚔️反击${b.turns}</span>`;
     if (b.type === 'lifesteal') return `<span style="color:#e74c3c;background:rgba(231,76,60,.15);padding:1px 5px;border-radius:6px" title="吸血+${b.value}% 剩${b.turns}回合">🩸+${b.value}%${b.turns}</span>`;
-    if (b.type === 'spdDown') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="减速-${b.value}% 剩${b.turns}回合">🐌减速${b.turns}</span>`;
+    if (b.type === 'spdDown') return ''; // no speed stat, spdDown is cosmetic only
     if (b.type === 'mrDown') return `<span class="status-defdown" title="魔抗-${b.value}% 剩${b.turns}回合">⬇魔抗${b.turns}</span>`;
     if (b.type === 'mrUp') return `<span class="status-defup" title="魔抗+${b.value} 剩${b.turns}回合">⬆魔抗${b.turns}</span>`;
     if (b.type === 'poison') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="中毒${b.value}/回合 剩${b.turns}回合"><img src="assets/poison-icon.png" style="width:14px;height:14px;vertical-align:middle">中毒${b.turns}</span>`;
     if (b.type === 'bleed') return `<span style="color:#cc3333;background:rgba(204,51,51,.15);padding:1px 5px;border-radius:6px" title="流血${b.value}/回合 剩${b.turns}回合"><img src="assets/bleed-icon.png" style="width:14px;height:14px;vertical-align:middle">流血${b.turns}</span>`;
     if (b.type === 'counter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="反击${b.value}伤害 剩${b.turns}回合">⚔️${b.turns}</span>`;
     if (b.type === 'physImmune') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="虚化：免疫物理伤害 剩${b.turns}回合">👻虚化${b.turns}</span>`;
-    if (b.type === 'hunterMark') return `<span style="color:#ff4444;background:rgba(255,68,68,.2);padding:1px 5px;border-radius:6px" title="猎杀印记：HP<${b.value}%时被斩杀 剩${b.turns}回合">🎯印记${b.turns}</span>`;
+    if (b.type === 'hunterMark') return `<span style="color:#ff4444;background:rgba(255,68,68,.2);padding:1px 5px;border-radius:6px" title="猎杀印记：HP<${b.value}%时被斩杀 剩${b.turns}回合"><img src="assets/hunter-kill-icon.png" style="width:14px;height:14px;vertical-align:middle">印记${b.turns}</span>`;
     return '';
   }).join('');
   // Star energy indicator
