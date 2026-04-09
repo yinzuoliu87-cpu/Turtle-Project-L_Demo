@@ -1591,7 +1591,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless' || skill.type === 'bubbleHeal' || skill.type === 'crystalResHeal' || skill.type === 'phoenixPurify' || skill.isAlly;
 
   // Self-cast: no target selection
-  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || skill.type === 'shellCopy' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
