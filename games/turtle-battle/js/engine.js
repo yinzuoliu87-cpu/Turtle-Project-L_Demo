@@ -4655,12 +4655,11 @@ async function processHunterKill() {
         spawnFloatingNum(eElId, `-99999`, 'true-dmg', 100, 0, { atkSide: f.side, amount: execDmg });
         await triggerOnHitEffects(f, e, execDmg);
         e.hp = 0; e.alive = false;
-        const deadEl = document.getElementById(eElId);
-        if (deadEl) { deadEl.classList.add('hit-shake'); setTimeout(() => deadEl.classList.add('dead'), 300); }
         updateHpBar(e, eElId);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🏹猎杀！</span>${e.emoji}${e.name} 被斩杀！`,'death');
         await sleep(500);
-        // Stat steal handled by checkDeaths → hunterKill trigger
+        // Process death (handles revives: phoenix, angel, 亡灵之日, etc.)
+        checkDeaths(f);
         if (checkBattleEnd()) return;
       }
     }
