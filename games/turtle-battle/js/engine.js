@@ -3895,7 +3895,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const healAmt = Math.round(dmg * totalLifestealPct / 100);
     const actual = applyHeal(attacker, healAmt);
     if (actual > 0) {
-      spawnFloatingNum(getFighterElId(attacker), `+${actual}吸血`, 'heal-num', 300, 0);
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
@@ -3911,7 +3911,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     attacker.hp = Math.min(attacker.maxHp, attacker.hp + auraHeal);
     const actual = Math.round(attacker.hp - before);
     if (actual > 0) {
-      spawnFloatingNum(getFighterElId(attacker), `+${actual}偷取`, 'heal-num', 350, 0);
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 350, 0);
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
