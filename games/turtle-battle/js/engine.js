@@ -2762,7 +2762,8 @@ async function executeAction(action) {
           target._position = 'front';
           spawnFloatingNum(getFighterElId(target), `击至前排!`, 'passive-num', 300, 0);
           addLog(`${target.emoji}${target.name} 被击至前排！`);
-          renderScene();
+          // Don't call renderScene() mid-action — just update position visually
+          updateSceneHp(target);
         }
       }
     }
@@ -4191,6 +4192,11 @@ function aiAction(f) {
   // Bubble turtle AI: only use bubbleBurst when bubbleStore > 0
   if (skill && skill.type === 'bubbleBurst' && (f.bubbleStore || 0) <= 0) {
     const other = ready.filter(s => s.type !== 'bubbleBurst');
+    if (other.length) skill = other[0];
+  }
+  // Fortune turtle AI: skip fortuneBuyEquip when coins < 20
+  if (skill && skill.type === 'fortuneBuyEquip' && (f._goldCoins||0) < 20) {
+    const other = ready.filter(s => s.type !== 'fortuneBuyEquip');
     if (other.length) skill = other[0];
   }
   // Star turtle AI: only use starShieldBreak when enemies have shields
