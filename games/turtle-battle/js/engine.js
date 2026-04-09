@@ -2177,6 +2177,17 @@ async function executeAction(action) {
     sfxShield();
     await sleep(800);
 
+  } else if (skill.type === 'starShield') {
+    // Self shield from star energy (不消耗星能)
+    const amount = Math.round(Math.round(f._starEnergy * (skill.shieldEnergyPct||80) / 100) * getShieldMult());
+    f.shield += amount;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">星能转化+${amount}护盾</span>`);
+    sfxShield();
+    await sleep(800);
+
   } else if (skill.type === 'starShieldBreak') {
     // Break 50% shield on all enemies, then gain star energy
     const enemies = getAliveEnemiesWithSummons(f.side);
