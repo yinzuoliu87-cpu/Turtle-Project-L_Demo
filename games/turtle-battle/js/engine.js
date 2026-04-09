@@ -862,17 +862,17 @@ async function beginTurn() {
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       const enhanced = f._enhancedPrism;
       // Colors: 0=red, 1=blue, 2=green, 3=orange, 4=yellow, 5=cyan, 6=purple
-      const maxColors = enhanced ? 7 : 3;
-      const pickCount = enhanced ? 2 : 1;
-      // First turn: skip green (heal useless at full HP)
-      const pool = [];
-      for (let c = 0; c < maxColors; c++) { if (turnNum <= 1 && c === 2) continue; pool.push(c); }
-      // Pick N unique colors
       const picks = [];
-      const available = [...pool];
-      for (let p = 0; p < pickCount && available.length > 0; p++) {
-        const idx = Math.floor(Math.random() * available.length);
-        picks.push(available.splice(idx, 1)[0]);
+      if (enhanced) {
+        // Enhanced: pick 1 from red/blue/green + 1 from orange/yellow/cyan/purple
+        const basePool = turnNum <= 1 ? [0, 1] : [0, 1, 2]; // skip green first turn
+        picks.push(basePool[Math.floor(Math.random() * basePool.length)]);
+        const extraPool = [3, 4, 5, 6];
+        picks.push(extraPool[Math.floor(Math.random() * extraPool.length)]);
+      } else {
+        // Normal: pick 1 from red/blue/green
+        const pool = turnNum <= 1 ? [0, 1] : [0, 1, 2];
+        picks.push(pool[Math.floor(Math.random() * pool.length)]);
       }
       f._prismColor = picks[0]; // primary color for skill 1 bonus
 
