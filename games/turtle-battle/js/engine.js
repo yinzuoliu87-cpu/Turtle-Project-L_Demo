@@ -164,6 +164,16 @@ function applyPassiveSkills(f) {
     if (ps.type === 'lavaEnhancedRage') {
       f._lavaStartFull = true;
     }
+    // 宝箱龟 寻宝直觉: lower thresholds
+    if (ps.type === 'chestIntuition') {
+      if (f.passive && f.passive.type === 'chestTreasure') {
+        f.passive = { ...f.passive, thresholds: [60, 120, 220, 350, 500] };
+      }
+    }
+    // 宝箱龟 贪婪: +4%ATK +7%HP per equip
+    if (ps.type === 'chestGreed') {
+      f._chestGreed = true;
+    }
     // 赌神龟 强化多重打击: lose 30% HP, multi-hit chance 40→60
     if (ps.type === 'gamblerEnhancedMulti') {
       const hpLoss = Math.round(f.maxHp * 0.3);
@@ -4746,6 +4756,16 @@ function applyChestEquip(f, equip) {
   if (equip.stat === 'crit') { f.crit += equip.pct / 100; }
   if (equip.stat === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + equip.pct; }
   if (equip.stat === 'crown') { f.baseAtk += Math.round(f.baseAtk * 40 / 100); f.crit += 0.4; f._extraCritDmgPerm = (f._extraCritDmgPerm || 0) + 0.25; f._lifestealPct = (f._lifestealPct || 0) + 15; }
+  // 贪婪 passive: +4% ATK +7% maxHP per equip
+  if (f._chestGreed) {
+    const atkBonus = Math.round(f.baseAtk * 0.04);
+    const hpBonus = Math.round(f.maxHp * 0.07);
+    f.baseAtk += atkBonus;
+    f.maxHp += hpBonus; f.hp += hpBonus;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `贪婪+${atkBonus}攻+${hpBonus}HP`, 'passive-num', 400, 0);
+    updateHpBar(f, elId);
+  }
   recalcStats();
 }
 

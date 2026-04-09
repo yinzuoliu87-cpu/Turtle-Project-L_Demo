@@ -631,7 +631,7 @@ const ALL_PETS = [
   { id:'chest',     name:'宝箱龟',   emoji:'📦🐢',    rarity:'S',   hp:345,  atk:40,  def:16, mr:14,crit:0.25,
     img:'../../assets/pets/宝箱龟v1.png', sprite:{frames:11,frameW:300,frameH:200,duration:1100},
     passive:{ type:'chestTreasure', name:'藏宝图',
-              thresholds:[50, 120, 220, 350, 500],
+              thresholds:[80, 130, 240, 360, 590],
               pools:[
                 // 基础池 (tier 0-1)
                 [
@@ -659,8 +659,8 @@ const ALL_PETS = [
                 ],
               ],
               brief:'宝箱龟根据造成的伤害积累财宝值，达到阈值时从丰富的战利品池中随机获得装备。一场战斗最多获得 <span class="val-atk">5</span> 件。',
-              desc:'宝箱龟会根据造成的伤害获得财宝进度，从战利品池中获得各种强力装备。\n\n造成伤害积累财宝值，达到阈值时随机抽取装备：\n第1-2件：基础池（短刃/木盾/朗姆酒/血筛子/铁链/石头）\n第3-4件：进阶池（长剑/吸血刀/火石/宝石甲/毒箭/凤凰雕像）\n第5件：传说池（王冠/雷刃/星辉）\n\n阈值：80 / 180 / 300 / 450 / 650' },
-    skills:[
+              desc:'宝箱龟会根据造成的伤害获得财宝进度，从战利品池中获得各种强力装备。\n\n造成伤害积累财宝值，达到阈值时随机抽取装备：\n第1-2件：基础池（短刃/木盾/朗姆酒/血筛子/铁链/石头）\n第3-4件：进阶池（长剑/吸血刀/火石/宝石甲/毒箭/凤凰雕像）\n第5件：传说池（王冠/雷刃/星辉）\n\n阈值：80 / 130 / 240 / 360 / 590' },
+    skillPool:[
       { name:'宝箱砸击', type:'chestSmash', hits:4, power:0, pierce:0, cd:0, atkScale:1.4,
         brief:'_chestSmashBrief_',
         detail:'_chestSmashDetail_' },
@@ -670,7 +670,13 @@ const ALL_PETS = [
       { name:'财宝风暴', type:'chestStorm', hits:10, power:0, pierce:0, cd:4, aoe:true, atkScale:0.09, pierceScale:0.04,
         brief:'宝箱龟对每个敌人飞射10段，共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害',
         detail:'宝箱龟对每个敌人飞射10段财宝。\n每段造成（9%×攻击力({ATK}) = {N:0.09*ATK}）物理 +（4%×攻击力({ATK}) = {T:0.04*ATK}）真实伤害。\n共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害（每个敌人）。\n冷却{cd}回合。' },
-    ]},
+      { name:'寻宝直觉', type:'chestIntuition', passiveSkill:true, hits:0, power:0, pierce:0, cd:0,
+        brief:'[被动] 携带后装备抽取阈值降低为 60/120/220/350/500',
+        detail:'被动技能：寻宝直觉。\n\n携带后财宝值阈值降低：\n80/130/240/360/590 → 60/120/220/350/500\n更快获得装备。' },
+      { name:'贪婪', type:'chestGreed', passiveSkill:true, hits:0, power:0, pierce:0, cd:0,
+        brief:'[被动] 每携带一件装备获得 <span class="val-atk">+4%</span> 攻击力和 <span class="val-heal">+7%</span> 最大生命值',
+        detail:'被动技能：贪婪。\n\n每携带一件装备（包括装备池抽取和宝箱龟日额外获得的装备），永久获得：\n· 攻击力 <span class="val-atk">+4%</span>\n· 最大生命值 <span class="val-heal">+7%</span>\n\n装备越多越强。' },
+    ], defaultSkills:[0,1,2], skills:[]},
   { id:'space',     name:'星际龟',   emoji:'🚀🐢',    rarity:'S',   hp:349,  atk:45,  def:13, mr:15,crit:0.25,
     img:'../../assets/pets/星际龟v1.png', sprite:{frames:12,frameW:500,frameH:500,duration:1200},
     passive:{ type:'starEnergy', name:'星能', chargeRate:62, maxChargePct:40, passiveFirePct:30, burstPct:100,
