@@ -949,13 +949,29 @@ function confirmTeam() {
 }
 
 function autoAssignPositions(team) {
-  // Sort by DEF descending — highest DEF go front
-  const sorted = [...team].sort((a,b) => b.def - a.def);
-  const slotKeys = ['front-0','front-1','back-0'];
-  sorted.forEach((f, i) => {
-    f._position = i < 2 ? 'front' : 'back';
-    if (!f._slotKey) f._slotKey = slotKeys[i] || 'back-' + (i-2);
-  });
+  // Boss: always front-1 (center)
+  if (team.length === 1 && team[0]._isBoss) {
+    team[0]._position = 'front';
+    team[0]._slotKey = 'front-1';
+    return;
+  }
+  // Sort by HP descending: A(highest), B, C(lowest)
+  const sorted = [...team].sort((a, b) => b.maxHp - a.maxHp);
+  // Two formations:
+  // 1) A front-center, B back-left, C back-right (1 front + 2 back)
+  // 2) A front-left, B front-right, C back-center (2 front + 1 back)
+  // Pick randomly
+  if (Math.random() < 0.5) {
+    // Formation 1: tank front, others back
+    sorted[0]._position = 'front'; sorted[0]._slotKey = 'front-1';
+    sorted[1]._position = 'back';  sorted[1]._slotKey = 'back-0';
+    sorted[2]._position = 'back';  sorted[2]._slotKey = 'back-2';
+  } else {
+    // Formation 2: two front, one back
+    sorted[0]._position = 'front'; sorted[0]._slotKey = 'front-0';
+    sorted[1]._position = 'front'; sorted[1]._slotKey = 'front-2';
+    sorted[2]._position = 'back';  sorted[2]._slotKey = 'back-1';
+  }
 }
 
 function goBackFromSelect() {
