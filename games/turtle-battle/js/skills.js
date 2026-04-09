@@ -1028,7 +1028,7 @@ async function doFortuneAllIn(attacker, target, skill) {
     if (!target.alive) continue; // keep animating remaining hits
     // Physical portion (reduced by armor)
     const effectiveDef = calcEffDef(attacker, target, 'physical');
-        const normalDmg = Math.max(1, Math.round(normalPer * calcDmgMult(eDef)));
+        const normalDmg = Math.max(1, Math.round(normalPer * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, normalDmg, false, false, 'physical');
     // True portion (ignores defense)
     applyRawDmg(attacker, target, piercePer, false, false, 'true');
@@ -1065,7 +1065,7 @@ async function doLightningStrike(attacker, mainTarget, skill) {
     const {isCrit, critMult} = calcCrit(attacker);
     // Main target: normal damage through DEF
     const effectiveDef = calcEffDef(attacker, mainTarget, 'magic');
-        const dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, mainTarget, dmg, false, false, 'magic');
     totalMain += dmg;
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
@@ -1120,7 +1120,7 @@ async function doLightningBarrage(attacker, skill) {
     const {isCrit, critMult} = calcCrit(attacker);
     // Normal damage through DEF
     const effectiveDef = calcEffDef(attacker, target, 'magic');
-        const dmg = Math.max(1, Math.round(perHitDmg * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(perHitDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'magic');
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i % 5) * 24);
@@ -1324,7 +1324,7 @@ async function doCrystalSpike(attacker, target, skill) {
     let baseDmg = Math.round(attacker.atk * skill.atkScale);
     if (skill.targetHpPct) baseDmg += Math.round(target.maxHp * skill.targetHpPct / 100);
     const effDef = calcEffDef(attacker, target, 'magic');
-        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'magic');
     totalDmg += dmg;
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:dmg});
@@ -1411,7 +1411,7 @@ async function doSoulReap(attacker, skill) {
     if (!enemy.alive) continue;
     const {isCrit, critMult} = calcCrit(attacker);
     const effDef = calcEffDef(attacker, enemy, 'physical');
-        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
@@ -1467,7 +1467,7 @@ async function doCandyBarrage(attacker, skill) {
       let baseDmg = Math.round(attacker.atk * skill.atkScale);
       if (skill.hpPct) baseDmg += Math.round(enemy.maxHp * skill.hpPct / 100);
       const effDef = calcEffDef(attacker, enemy, 'physical');
-            const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+            const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
       applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
       totalAll += dmg;
       const eElId = getFighterElId(enemy);
@@ -1491,7 +1491,7 @@ async function doLavaBolt(attacker, target, skill) {
   const {isCrit, critMult} = calcCrit(attacker);
   let baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effDef = calcEffDef(attacker, target, 'magic');
-    const mainDmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+    const mainDmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
   const hpBonusDmg = skill.targetHpPct ? Math.round(target.maxHp * skill.targetHpPct / 100 * critMult) : 0;
   const dmg = mainDmg + hpBonusDmg;
   const tElId = getFighterElId(target);
@@ -1515,7 +1515,7 @@ async function doLavaQuake(attacker, skill) {
     const {isCrit, critMult} = calcCrit(attacker);
     const baseDmg = Math.round(attacker.atk * skill.atkScale);
     const effDef = calcEffDef(attacker, enemy, 'magic');
-        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
@@ -1538,7 +1538,7 @@ async function doLavaSurge(attacker, target, skill) {
   const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effDef = calcEffDef(attacker, target, 'magic');
-    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
@@ -1560,7 +1560,7 @@ async function doVolcanoSmash(attacker, target, skill) {
   let baseDmg = Math.round(attacker.atk * skill.atkScale);
   if (skill.selfHpPct) baseDmg += Math.round(attacker.maxHp * skill.selfHpPct / 100);
   const effDef = calcEffDef(attacker, target, 'physical');
-    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
@@ -1739,7 +1739,7 @@ async function doPirateCannonBarrage(attacker, skill) {
       if (skill.hpPct) basePower += Math.round(enemy.maxHp * skill.hpPct / 100);
       const {isCrit, critMult} = calcCrit(attacker);
       const effectiveDef = calcEffDef(attacker, enemy, dmgType);
-            const dmg = Math.max(1, Math.round(basePower * critMult * calcDmgMult(eDef)));
+            const dmg = Math.max(1, Math.round(basePower * critMult * calcDmgMult(effectiveDef)));
       const eElId = getFighterElId(enemy);
       applyRawDmg(attacker, enemy, dmg, false, false, dmgType);
       const cls = isCrit ? 'crit-dmg' : 'direct-dmg';
@@ -1763,7 +1763,7 @@ async function doPhoenixBurn(attacker, target, skill) {
   const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effectiveDef = calcEffDef(attacker, target, 'magic');
-    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
@@ -1837,7 +1837,7 @@ async function doPhoenixScald(attacker, target, skill) {
   const {isCrit, critMult} = calcCrit(attacker);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const effectiveDef = calcEffDef(attacker, target, 'magic');
-    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
@@ -1878,7 +1878,7 @@ async function doNinjaShuriken(attacker, target, skill) {
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
     const effectiveDef = calcEffDef(attacker, target);
-        const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 100, 0);
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
@@ -1916,7 +1916,7 @@ async function doNinjaBomb(attacker, skill) {
   for (const e of enemies) {
     const {isCrit, critMult} = calcCrit(attacker);
     const effectiveDef = calcEffDef(attacker, e);
-        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, e, dmg, false, false, 'physical');
     const eId = getFighterElId(e);
     spawnFloatingNum(eId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
@@ -2746,7 +2746,7 @@ async function doDiceAllIn(attacker, skill) {
     if (isCrit) totalCrits++;
     const effDef = calcEffDef(attacker, e, dmgType);
 
-    const dmg = Math.max(1, Math.round(baseRaw * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(baseRaw * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, e, dmg, false, false, dmgType);
     totalDmg += dmg;
     const eElId = getFighterElId(e);
@@ -2802,7 +2802,7 @@ async function doChestSmash(attacker, target, skill) {
     const {isCrit, critMult} = calcCrit(attacker);
     const effDef = calcEffDef(attacker, target, dmgType);
 
-    const dmg = Math.max(1, Math.round(perHitBase * critMult * calcDmgMult(eDef)));
+    const dmg = Math.max(1, Math.round(perHitBase * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, target, dmg, false, false, dmgType);
     totalDmg += dmg;
     const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
@@ -2925,7 +2925,7 @@ async function doChestStorm(attacker, skill) {
       const physBase = Math.round(attacker.atk * skill.atkScale);
       const effDef = calcEffDef(attacker, enemy, dmgType);
   
-      const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(eDef)));
+      const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(effDef)));
       // True portion
       const trueDmg = Math.round(attacker.atk * (skill.pierceScale || 0) * critMult);
       const eElId = getFighterElId(enemy);
