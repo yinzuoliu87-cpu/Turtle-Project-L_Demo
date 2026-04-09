@@ -559,6 +559,25 @@ async function beginTurn() {
       f._summon.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
     }
   });
+  // Pirate ship: auto-fire cannon each turn (before passive loop, since ship has no passive)
+  for (const f of allFighters) {
+    if (!f._isPirateShip || !f.alive) continue;
+    const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+    if (enemies.length) {
+      const target = enemies[Math.floor(Math.random() * enemies.length)];
+      const dmg = Math.round(f.atk * (f._shipFireScale || 0.2));
+      const eDef = target.def - (f.armorPen || 0);
+      const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
+      applyRawDmg(f, target, finalDmg, false, false, 'physical');
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
+      updateHpBar(target, tElId);
+      addLog(`海盗船 开炮 → ${target.emoji}${target.name}：<span class="log-direct">${finalDmg}物理</span>`);
+      await triggerOnHitEffects(f, target, finalDmg);
+      checkDeaths(f);
+      if (checkBattleEnd()) return;
+    }
+  }
   // Passive: per-turn scaling
   for (const f of allFighters) {
     if (!f.alive || !f.passive) continue;
@@ -640,24 +659,7 @@ async function beginTurn() {
         addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
       }
     }
-    // Pirate ship: auto-fire cannon each turn
-    if (f._isPirateShip && f.alive) {
-      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-      if (enemies.length) {
-        const target = enemies[Math.floor(Math.random() * enemies.length)];
-        const dmg = Math.round(f.atk * (f._shipFireScale || 0.2));
-        const eDef = target.def - (f.armorPen || 0);
-        const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
-        applyRawDmg(f, target, finalDmg, false, false, 'physical');
-        const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
-        updateHpBar(target, tElId);
-        addLog(`海盗船 开炮 → ${target.emoji}${target.name}：<span class="log-direct">${finalDmg}物理</span>`);
-        await triggerOnHitEffects(f, target, finalDmg);
-        checkDeaths(f);
-        if (checkBattleEnd()) return;
-      }
-    }
+    // (Pirate ship cannon moved to before passive loop)
     // Passive: auraAwaken — awaken at turn N with full stat boost
     if (f.passive.type === 'auraAwaken' && !f._auraAwakened && turnNum >= f.passive.awakenTurn) {
       f._auraAwakened = true;
