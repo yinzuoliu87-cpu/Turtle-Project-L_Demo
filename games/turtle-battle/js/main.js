@@ -750,9 +750,12 @@ function showSkillPickModal(petId, onDone) {
         pairedHtml = `<div class="spc-paired"><span class="spc-paired-label">近战：</span><b>${ms.name}</b> — ${mBrief}</div>`;
       }
       const isFixed = i === 0;
+      const isConflicted = !isSel && s.conflictsWith !== undefined && selected.includes(s.conflictsWith);
+      const conflictLabel = isConflicted ? `<span style="color:#ff6b6b;font-size:10px">（与「${pool[s.conflictsWith].name}」互斥）</span>` : '';
       return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${isFixed ? 'spc-fixed' : ''} ${!isSel && !isFixed && selected.length >= 3 ? 'locked' : ''}" onclick="window._skillPickToggle(${i})">
         <div class="spc-header"><b>${s.name}</b> ${isFixed ? '<span class="spc-fixed-tag">基础</span>' : ''} ${isPassive} ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}${hasMelee && !s._isCommon ? ' <span class="spc-paired-label">远程</span>' : ''}</div>
         <div class="spc-brief">${brief}</div>
+        ${conflictLabel}
         ${pairedHtml}
         ${isSel ? '<div class="spc-check">✓</div>' : ''}
       </div>`;
@@ -776,6 +779,12 @@ function showSkillPickModal(petId, onDone) {
     if (selected.includes(i)) {
       selected = selected.filter(x => x !== i);
     } else if (selected.length < 3) {
+      // Check skill conflicts (e.g. 双头龟 融合 vs 切换近战)
+      const skill = pool[i];
+      if (skill.conflictsWith !== undefined && selected.includes(skill.conflictsWith)) {
+        // Remove the conflicting skill first
+        selected = selected.filter(x => x !== skill.conflictsWith);
+      }
       selected.push(i);
     }
     render();
