@@ -1176,7 +1176,7 @@ function startBattle(seed) {
           _summon:null, _summonElId:null,
           _isSummon: true,       // mark as summon (not independent fighter)
           _owner: f,             // reference to owner
-          skills: pick.skills.map(s => ({ ...s, cdLeft:0 })),
+          skills: (pick.skillPool || pick.skills || []).filter(s => !s.passiveSkill).slice(0, 3).map(s => ({ ...s, cdLeft:0 })),
         };
         f._summon = summon;
         // Add summon to allFighters so passives/buffs process correctly

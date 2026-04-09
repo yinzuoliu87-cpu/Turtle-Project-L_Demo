@@ -2767,7 +2767,9 @@ async function doDiceAllIn(attacker, skill) {
       updateHpBar(attacker, fElId);
     }
   }
-  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="log-pierce">${totalDmg}真实</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + 10%吸血`);
+  const dmgLabel = dmgType === 'magic' ? '魔法' : dmgType === 'true' ? '真实' : '物理';
+  const dmgClass = dmgType === 'magic' ? 'log-magic' : dmgType === 'true' ? 'log-pierce' : 'log-direct';
+  addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="${dmgClass}">${totalDmg}${dmgLabel}</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + ${skill.lifestealPct||10}%吸血`);
   await sleep(500);
 }
 
