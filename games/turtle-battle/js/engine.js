@@ -2787,6 +2787,101 @@ async function executeAction(action) {
     }
     await sleep(800);
 
+  } else if (skill.type === 'hidingBuffSummon') {
+    // Buff summon: +10%ATK, +10%DEF/MR, +10%lifesteal, +20%crit for 2 turns
+    const summon = f._summon;
+    if (summon && summon.alive) {
+      const atkGain = Math.round(summon.baseAtk * 0.10);
+      const defGain = Math.round(summon.baseDef * 0.10);
+      const mrGain = Math.round((summon.baseMr||summon.baseDef) * 0.10);
+      summon.buffs.push({ type:'atkUp', value:atkGain, turns:2 });
+      summon.buffs.push({ type:'defUp', value:defGain, turns:2 });
+      summon.buffs.push({ type:'mrUp', value:mrGain, turns:2 });
+      summon.buffs.push({ type:'lifesteal', value:10, turns:2 });
+      summon.crit += 0.20;
+      // Schedule crit removal after 2 turns via buff
+      summon.buffs.push({ type:'critUp', value:20, turns:2 });
+      recalcStats();
+      const sElId = getFighterElId(summon) || (summon._summonElId);
+      if (sElId) {
+        spawnFloatingNum(sElId, `强化!`, 'passive-num', 0, 0);
+        renderStatusIcons(summon);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：随从获得 +10%攻击/护甲/魔抗 +10%吸血 +20%暴击 2回合`);
+    } else {
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：随从已阵亡，无效`);
+    }
+    sfxBuff();
+    await sleep(800);
+
+  } else if (skill.type === 'shellAbsorb') {
+    // Steal 10% target maxHP
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const stealAmt = Math.round(target.maxHp * (skill.stealHpPct||10) / 100);
+      // Reduce target
+      target.maxHp -= stealAmt;
+      target.hp = Math.min(target.hp, target.maxHp);
+      if (target.hp <= 0) target.hp = 1;
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${stealAmt}HP`, 'pierce-dmg', 0, 0);
+      updateHpBar(target, tElId);
+      updateFighterStats(target, tElId);
+      // Add to self
+      f.maxHp += stealAmt;
+      f.hp += stealAmt;
+      f._initHp = f.maxHp;
+      const fElId = getFighterElId(f);
+      spawnFloatingNum(fElId, `+${stealAmt}HP`, 'heal-num', 0, 0);
+      updateHpBar(f, fElId);
+      updateFighterStats(f, fElId);
+      // Track as damage dealt for stats
+      f._dmgDealt += stealAmt;
+      target._dmgTaken += stealAmt;
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：偷取 ${target.emoji}${target.name} ${stealAmt}最大HP`);
+    }
+    await sleep(800);
+
+  } else if (skill.type === 'shellErode') {
+    // Magic damage + permanent MR shred + CD reduces per use
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      // Permanent MR reduction
+      const mrShred = Math.round(f.atk * (skill.mrShredAtkPct||0.1));
+      if (mrShred > 0) {
+        target.baseMr = Math.max(0, target.baseMr - mrShred);
+        recalcStats();
+        spawnFloatingNum(getFighterElId(target), `-${mrShred}魔抗`, 'debuff-num', 200, 0);
+        updateFighterStats(target, getFighterElId(target));
+        addLog(`${target.emoji}${target.name} 永久魔抗-${mrShred}`);
+      }
+      // Reduce own CD permanently
+      if (skill.cdReducePerUse && skill.cd > 0) {
+        skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse);
+      }
+    }
+
+  } else if (skill.type === 'shellFortify') {
+    // Physical damage + permanent self ATK gain + CD reduces per use
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      // Permanent ATK gain
+      const atkGain = Math.round(f.atk * (skill.selfAtkGainPct||0.1));
+      if (atkGain > 0) {
+        f.baseAtk += atkGain;
+        recalcStats();
+        spawnFloatingNum(getFighterElId(f), `+${atkGain}攻`, 'passive-num', 200, 0);
+        updateFighterStats(f, getFighterElId(f));
+        addLog(`${f.emoji}${f.name} 永久攻击+${atkGain}`);
+      }
+      // Reduce own CD permanently
+      if (skill.cdReducePerUse && skill.cd > 0) {
+        skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse);
+      }
+    }
+
   } else {
     const target = allFighters[action.targetId];
     await doDamage(f, target, skill);
