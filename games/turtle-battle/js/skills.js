@@ -23,7 +23,7 @@ async function doGamblerDraw(caster, _skill) {
     caster.shield += shieldAmt;
     spawnFloatingNum(fElId, `🃏回复牌`, 'passive-num', 0, -20);
     if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
-    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 400, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 400, 0);
     updateHpBar(caster, fElId);
     addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：🃏回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
   } else if (roll === 1) {
@@ -184,7 +184,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
     updateHpBar(caster, fElId);
     renderFighterCard(caster, fElId);
     spawnFloatingNum(fElId, '切换近战!', 'crit-label', 0, -20);
-    spawnFloatingNum(fElId, `+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}🛡`, 'passive-num', 200, 0);
+    spawnFloatingNum(fElId, `+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}`, 'passive-num', 200, 0);
     addLog(`${caster.emoji}${caster.name} <span class="log-passive">切换近战形态！+${hpGain}HP +${defGain}防 -${atkLoss}攻 +${shieldGain}护盾</span>`);
     // Switch attack: deal damage to lowest HP enemy on melee switch
     if (skill.switchAtkScale) {
@@ -278,7 +278,7 @@ async function doTwoHeadHammer(attacker, target, skill) {
     const shieldAmt = Math.round(dmg * skill.shieldFromDmgPct / 100);
     attacker.shield += shieldAmt;
     const fElId = getFighterElId(attacker);
-    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
     updateHpBar(attacker, fElId);
   }
   addLog(`${attacker.emoji}${attacker.name} <b>锤击</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
@@ -420,7 +420,7 @@ async function doHidingDefend(caster, skill) {
   // Track shield for expiry heal
   caster.buffs.push({ type:'hidingShield', turns:skill.shieldDuration, shieldVal:shieldAmt, healPct:skill.shieldHealPct });
   const elId = getFighterElId(caster);
-  spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0);
   updateHpBar(caster, elId);
   renderStatusIcons(caster);
   addLog(`${caster.emoji}${caster.name} <b>防御</b>：<span class="log-shield">+${shieldAmt}护盾</span>（${skill.shieldDuration}回合，到期回复剩余盾${skill.shieldHealPct}%HP）`);
@@ -671,7 +671,7 @@ async function doTurtleShieldBash(attacker, target, skill) {
   if (shieldGain > 0 && attacker.alive) {
     attacker.shield += shieldGain;
     const aElId = getFighterElId(attacker);
-    spawnFloatingNum(aElId, `+${shieldGain}🛡`, 'shield-num', 0, 0);
+    spawnFloatingNum(aElId, `+${shieldGain}`, 'shield-num', 0, 0);
     updateHpBar(attacker, aElId);
   }
 
@@ -878,7 +878,7 @@ async function doAngelBless(caster, target, skill) {
   target.buffs.push({ type:'mrUp', value:defGain, turns:skill.defBoostTurns });
   recalcStats();
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(tElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   spawnFloatingNum(tElId, `+${defGain}护甲&魔抗`, 'passive-num', 300, 0);
   updateHpBar(target, tElId);
   updateFighterStats(target, tElId);
@@ -1017,7 +1017,7 @@ async function doFortuneDice(caster, skill) {
   if (allInUsed && skill.postAllInShieldPct) {
     const shieldAmt = Math.round(caster.maxHp * skill.postAllInShieldPct / 100);
     caster.shield += shieldAmt;
-    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 400, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 400, 0);
     shieldStr = ` <span class="log-shield">+${shieldAmt}护盾</span>`;
   }
   updateHpBar(caster, fElId);
@@ -1366,7 +1366,7 @@ async function doCrystalBarrier(caster, skill) {
   // Self shield
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   // Team DEF/MR buff
   if (skill.defMrUpPct) {
     const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
@@ -1577,7 +1577,7 @@ async function doLavaSurge(attacker, target, skill) {
   const shieldAmt = Math.round(attacker.atk * skill.shieldAtkPct / 100);
   attacker.shield += shieldAmt;
   const fElId = getFighterElId(attacker);
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
   updateHpBar(attacker, fElId);
   addLog(`${attacker.emoji}${attacker.name} <b>岩浆涌动</b> → ${target.emoji}${target.name}：<span class="log-magic">${dmg}魔法</span> + <span class="log-shield">${shieldAmt}护盾</span>`);
   await sleep(600);
@@ -1616,7 +1616,7 @@ async function doVolcanoArmor(caster, skill) {
   const fElId = getFighterElId(caster);
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   if (skill.defMrUpPct) {
     const defGain = Math.round(caster.baseDef * skill.defMrUpPct / 100);
     const mrGain = Math.round((caster.baseMr || caster.baseDef) * skill.defMrUpPct / 100);
@@ -1750,7 +1750,7 @@ async function doPirateCannonBarrage(attacker, skill) {
     const eElId = getFighterElId(enemy);
     const eEl = document.getElementById(eElId);
     if (eEl) eEl.classList.add('hit-shake');
-    spawnFloatingNum(eElId, '💥炮击!', 'debuff-label', 0, -10);
+    spawnFloatingNum(eElId, '<img src="assets/pirate-plunder-icon.png" style="width:16px;height:16px;vertical-align:middle">炮击!', 'debuff-label', 0, -10);
   }
   addLog(`${attacker.emoji}${attacker.name} <b>火炮齐射</b> 全体敌方！`);
   await sleep(600);
@@ -1860,7 +1860,7 @@ async function doPhoenixScald(attacker, target, skill) {
     if (target.shield > 0) {
       const broken = Math.round(target.shield * breakPct);
       target.shield -= broken;
-      spawnFloatingNum(tElId, `-${broken}🛡`, 'shield-dmg', 100, -15);
+      spawnFloatingNum(tElId, `-${broken}`, 'shield-dmg', 100, -15);
     }
     addLog(`${attacker.emoji}${attacker.name} 烫伤破盾！<span class="log-debuff">破坏${skill.shieldBreak}%护盾</span>`);
     updateHpBar(target, tElId);
@@ -2037,7 +2037,7 @@ async function doHunterStealth(attacker, target, skill) {
   attacker.shield += shieldAmt;
 
   const fElId = getFighterElId(attacker);
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
   spawnFloatingNum(fElId, `闪避${skill.dodgePct}%`, 'passive-num', 400, -15);
   updateHpBar(attacker, fElId);
   renderStatusIcons(attacker);
@@ -2452,7 +2452,7 @@ async function doGhostPhase(caster, skill) {
   // Shield
   const shieldAmt = Math.round(caster.atk * skill.shieldScale);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   // Dodge buff
   caster.buffs.push({ type:'dodge', value:skill.dodgePct, turns:skill.dodgeTurns + 1 }); // +1 because processBuffs ticks at start
   spawnFloatingNum(fElId, `👻虚化！闪避${skill.dodgePct}%`, 'passive-num', 200, 0);
@@ -2502,7 +2502,7 @@ async function doIceShield(caster, skill) {
   // Self: 140% ATK permanent shield
   const selfShield = Math.round(caster.atk * skill.selfScale);
   caster.shield += selfShield;
-  spawnFloatingNum(fElId, `+${selfShield}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(fElId, `+${selfShield}`, 'shield-num', 0, 0);
   updateHpBar(caster, fElId);
   // Ally: 80% ATK permanent shield
   const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive && a !== caster);
@@ -2510,7 +2510,7 @@ async function doIceShield(caster, skill) {
     const allyShield = Math.round(caster.atk * skill.allyScale);
     a.shield += allyShield;
     const aElId = getFighterElId(a);
-    spawnFloatingNum(aElId, `+${allyShield}🛡`, 'shield-num', 0, 0);
+    spawnFloatingNum(aElId, `+${allyShield}`, 'shield-num', 0, 0);
     updateHpBar(a, aElId);
   }
   addLog(`${caster.emoji}${caster.name} <b>冰盾</b>：自身 <span class="log-shield">+${selfShield}护盾</span>，友方 <span class="log-shield">+${Math.round(caster.atk * skill.allyScale)}护盾</span>`);
@@ -2558,7 +2558,7 @@ async function doBambooHeal(caster, skill) {
       a.buffs.push({ type:'hidingShield', shieldVal:shieldAmt, healPct:0, turns:skill.shieldTurns + 1 });
       a.shield += shieldAmt;
       const aElId = getFighterElId(a);
-      spawnFloatingNum(aElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+      spawnFloatingNum(aElId, `+${shieldAmt}`, 'shield-num', 0, 0);
       updateHpBar(a, aElId);
     }
     addLog(`${caster.emoji}${caster.name} <b>自然恢复</b>：<span class="log-heal">+${actual}HP</span>，队友获得 <span class="log-shield">${Math.round(caster.maxHp * skill.shieldPct / 100)}护盾</span> ${skill.shieldTurns}回合`);
@@ -2641,7 +2641,7 @@ async function doBambooChargeAttack(attacker, target) {
   const tElId = getFighterElId(target);
 
   // ── 蓄力停顿 ──
-  spawnFloatingNum(fElId, '🎋蓄力...', 'passive-num', 0, -20);
+  spawnFloatingNum(fElId, '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">蓄力...', 'passive-num', 0, -20);
   try { sfxBambooCharge(); } catch(e) {}
   await sleep(1000);
 
@@ -2653,7 +2653,7 @@ async function doBambooChargeAttack(attacker, target) {
   const magicDmg = Math.max(1, Math.round(rawDmg * critMult * (1 - mrRed)));
   applyRawDmg(attacker, target, magicDmg, false, false, 'magic');
   try { sfxBambooHit(); } catch(e) {}
-  spawnFloatingNum(tElId, '🎋充能!', 'crit-label', 0, -20);
+  spawnFloatingNum(tElId, '<img src="assets/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'crit-label', 0, -20);
   spawnFloatingNum(tElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -2692,7 +2692,7 @@ async function doDiamondFortify(caster, skill) {
   // Shield: 15% maxHP
   const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   // Def + MR buff: 20%ATK each (diamondStructure passive will amplify in recalcStats)
   const defGain = Math.round(caster.atk * skill.defUpAtkPct / 100);
   const mrGain = Math.round(caster.atk * (skill.mrUpAtkPct || 0) / 100);
@@ -2940,7 +2940,7 @@ async function doChestCount(caster, skill) {
   // Shield
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale * treasureBonus);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
   updateHpBar(caster, fElId);
   const bonusPct = Math.round((treasureBonus - 1) * 100);
   addLog(`${caster.emoji}${caster.name} <b>清点财宝</b>：<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>${bonusPct > 0 ? ` (财宝加成+${bonusPct}%)` : ''}`);
@@ -3034,7 +3034,7 @@ async function doChestOpen(caster, skill) {
   // Shield 80%ATK
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
-  spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 200, 0);
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
   updateHpBar(caster, fElId);
   addLog(`${caster.emoji}${caster.name} <b>开箱惊喜</b>：<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
   await sleep(800);
@@ -3060,7 +3060,7 @@ async function processEnergyWave() {
     const shieldAmt = Math.round(stored * f.passive.energyShieldScale * f.atk);
     f.shield += shieldAmt;
     const fElId = getFighterElId(f);
-    spawnFloatingNum(fElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
     updateHpBar(f, fElId);
     // Log
     addLog(`${f.emoji}${f.name} <span class="log-passive">⚡储能波击！储存${stored}能量 → 全体${waveDmg}伤害 + ${shieldAmt}护盾</span>`);
