@@ -43,7 +43,11 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     dungeonState = { stage: 0, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [], battleIds: [], benchIds: [] };
-    showSelectScreen('🏰 深海闯关 — 选择6只龟（3上场 + 3替补）');
+    // Show bench row + expand slot keys
+    FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE, ...FG_SLOT_KEYS_BENCH];
+    const benchRow = document.getElementById('fgBenchRow');
+    if (benchRow) benchRow.style.display = '';
+    showSelectScreen('🏰 深海闯关 — 选择6只龟（前排/后排 + 替补）');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -394,6 +398,12 @@ function showSelectScreen(title) {
   _fgSlots = {};
   selectedIds = [];
   _fgSelectedSlot = null;
+  // Reset bench row visibility
+  if (gameMode !== 'dungeon') {
+    FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE];
+    const benchRow = document.getElementById('fgBenchRow');
+    if (benchRow) benchRow.style.display = 'none';
+  }
   document.getElementById('selectTitle').innerHTML = title;
   // Render mode guide
   const guide = document.getElementById('modeGuide');
@@ -454,9 +464,11 @@ function renderPetGrid() {
   }).join('');
 }
 
-// Formation slots: 6 slots (3 front + 3 back), place exactly 3 turtles
+// Formation slots: 6 slots (3 front + 3 back) + 3 bench for dungeon
 let _fgSlots = {};
-const FG_SLOT_KEYS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+const FG_SLOT_KEYS_BASE = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+const FG_SLOT_KEYS_BENCH = ['bench-0','bench-1','bench-2'];
+let FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE]; // updated when mode changes
 let _fgDragId = null; // pet id being dragged
 
 function togglePet(e, id) {
@@ -477,6 +489,12 @@ function togglePet(e, id) {
   // If there's an active slot, place into it
   if (_fgActiveSlot && !_fgSlots[_fgActiveSlot]) {
     if (placed >= maxPets) { showToast(`已选${maxPets}只`); _fgActiveSlot = null; renderFgSlots(); return; }
+    // Dungeon: sub-limit 3 battle + 3 bench
+    if (gameMode === 'dungeon') {
+      const isBench = _fgActiveSlot.startsWith('bench');
+      const subCount = (isBench ? FG_SLOT_KEYS_BENCH : FG_SLOT_KEYS_BASE).filter(k => _fgSlots[k]).length;
+      if (subCount >= 3) { showToast(isBench ? '替补已满' : '上场已满（3只）'); _fgActiveSlot = null; renderFgSlots(); return; }
+    }
     _fgSlots[_fgActiveSlot] = id;
     _fgActiveSlot = null;
     renderFgSlots();
@@ -662,11 +680,11 @@ function fgTouchEnd(e) {
 function renderFgSlots() {
   const isMobile = window.innerWidth <= 768;
   const isDungeon = gameMode === 'dungeon';
-  // Update row labels for dungeon mode
+  // Labels stay as-is: 前排/后排/替补 (bench row only visible in dungeon)
   const labels = document.querySelectorAll('.fg-label');
   if (labels.length >= 2) {
-    labels[0].textContent = isDungeon ? '上场' : '前排';
-    labels[1].textContent = isDungeon ? '替补' : '后排';
+    labels[0].textContent = '前排';
+    labels[1].textContent = '后排';
   }
   for (const key of FG_SLOT_KEYS) {
     const slot = document.getElementById('fgSlot-' + key);
@@ -707,8 +725,14 @@ function renderFgSlots() {
 
 function updateConfirmBtn() {
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
-  const required = gameMode === 'dungeon' ? 6 : 3;
-  document.getElementById('btnConfirmTeam').disabled = placed !== required;
+  if (gameMode === 'dungeon') {
+    const battleCount = FG_SLOT_KEYS_BASE.filter(k => _fgSlots[k]).length;
+    const benchCount = FG_SLOT_KEYS_BENCH.filter(k => _fgSlots[k]).length;
+    // Need exactly 3 battle + 3 bench = 6 total
+    document.getElementById('btnConfirmTeam').disabled = battleCount !== 3 || benchCount !== 3;
+  } else {
+    document.getElementById('btnConfirmTeam').disabled = placed !== 3;
+  }
 }
 
 // ── SKILL PICK MODAL ──────────────────────────────────────
@@ -871,8 +895,9 @@ function confirmTeam() {
   const requiredCount = gameMode === 'dungeon' ? 6 : 3;
   if (selectedIds.length !== requiredCount) return;
   if (gameMode === 'dungeon') {
-    const battleIds = ['front-0','front-1','front-2'].map(k => _fgSlots[k]).filter(Boolean);
-    const benchIds = ['back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
+    // Battle = front + back rows, bench = bench row
+    const battleIds = ['front-0','front-1','front-2','back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
+    const benchIds = ['bench-0','bench-1','bench-2'].map(k => _fgSlots[k]).filter(Boolean);
     // Skill loadout now configured in pet grid (宠物中心), no forced pick before battle
     dungeonState.stage = 1;
     dungeonState.teamIds = [...selectedIds];
