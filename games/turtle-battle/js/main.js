@@ -761,6 +761,7 @@ function showSkillPickModal(petId, onDone) {
     const fakeFighter = { atk:pet.atk, def:pet.def, mr:pet.mr||pet.def, maxHp:pet.hp, hp:pet.hp, crit:pet.crit||0.25, buffs:[], passive:pet.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
     const uniqueCount = pool.length;
     const hasMelee = pet.meleeSkills && pet.meleeSkills.length > 0;
+    const hasVolcano = pet.volcanoSkills && pet.volcanoSkills.length > 0;
     const renderCard = (s, i) => {
       const isSel = selected.includes(i);
       const brief = renderSkillTemplate(s.brief || '', fakeFighter, s);
@@ -772,6 +773,14 @@ function showSkillPickModal(petId, onDone) {
         const ms = pet.meleeSkills[i];
         const mBrief = renderSkillTemplate(ms.brief || '', fakeFighter, ms);
         pairedHtml = `<div class="spc-paired"><span class="spc-paired-label">近战：</span><b>${ms.name}</b> — ${mBrief}</div>`;
+      }
+      // Paired volcano skill for lava turtle
+      if (hasVolcano && i < pet.volcanoSkills.length && !s.passiveSkill) {
+        const vs = pet.volcanoSkills[i];
+        if (vs && !vs.passiveSkill) {
+          const vBrief = renderSkillTemplate(vs.brief || '', fakeFighter, vs);
+          pairedHtml += `<div class="spc-paired"><span class="spc-paired-label" style="color:#ff6600">火山：</span><b>${vs.name}</b> — ${vBrief}</div>`;
+        }
       }
       const isFixed = i === 0;
       const isConflicted = !isSel && s.conflictsWith !== undefined && selected.includes(s.conflictsWith);

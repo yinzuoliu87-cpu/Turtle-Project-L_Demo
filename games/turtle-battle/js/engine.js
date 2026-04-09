@@ -4639,8 +4639,16 @@ async function processLavaTransform() {
       f.baseMr = (f.baseMr || f.baseDef) + mrGain;
       recalcStats();
       // Switch to volcano skills
+      // Switch to volcano skills — paired 1:1 with small form skills
       const pet = ALL_PETS.find(p => p.id === f.id);
-      if (pet && pet.volcanoSkills) f.skills = pet.volcanoSkills.map(s => ({...s, cdLeft:0}));
+      if (pet && pet.volcanoSkills) {
+        const equippedIdxs = f._equippedIdxs || pet.defaultSkills || [0,1,2];
+        f.skills = equippedIdxs
+          .filter(i => i < pet.volcanoSkills.length && !pet.volcanoSkills[i].passiveSkill)
+          .map(i => ({...pet.volcanoSkills[i], cdLeft:0}));
+        // Fallback: if no valid volcano skills, use first 3
+        if (f.skills.length === 0) f.skills = pet.volcanoSkills.filter(s => !s.passiveSkill).slice(0,3).map(s => ({...s, cdLeft:0}));
+      }
       f.name = '火山龟';
       f._lavaSmallImg = f.img;
       f._lavaSmallSprite = f.sprite;
