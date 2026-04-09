@@ -379,7 +379,7 @@ const ALL_PETS = [
   },
   { id:'hunter',    name:'猎人龟',   emoji:'🏹🐢',    rarity:'A',   hp:339,  atk:43,  def:13, mr:11,crit:0.25,
     img:'../../assets/pets/猎人龟v1.png', sprite:{frames:15,frameW:500,frameH:500,duration:1500},
-    passive:{ type:'hunterKill', name:'猎杀', hpThresh:14, stealPct:20, lifesteal:10,
+    passive:{ type:'hunterKill', name:'猎杀', hpThresh:18, stealPct:20, lifesteal:10,
               brief:'猎人龟每次行动后检查，斩杀生命值低于 <span class="val-atk">18%</span> 的敌人。击杀敌人时窃取对方 <span class="val-atk">20%</span> 基础属性，并叠加 <span class="val-heal">10%</span> 生命偷取。',
               desc:'猎人龟的猎杀本能。\n\n每次行动后检查，生命值低于 <span class="val-atk">18%</span> 的敌人直接斩杀。\n斩杀或击杀敌人时，窃取对方 <span class="val-atk">20%</span> 基础属性，并叠加 <span class="val-heal">10%</span> 生命偷取。\n\n已猎杀 <span class="val-atk">{B:hunterKills}</span> 只敌方，累计获得：\n· 攻击力 +{N:hunterStolenAtk}\n· 护甲 +{D:hunterStolenDef}\n· 魔抗 +{M:hunterStolenMr}\n· 最大生命值 +{H:hunterStolenHp}\n· 生命偷取 {B:lifesteal}%' },
     skillPool:[
