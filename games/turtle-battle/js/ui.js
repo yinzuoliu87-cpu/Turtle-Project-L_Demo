@@ -139,12 +139,45 @@ function renderScene() {
   // Assign position based on slot key (fixed 6 positions)
   const assignPos = (team, side) => {
     team.forEach(f => {
+      if (f._isPirateShip) return; // rendered separately below
       const slot = f._slotKey || 'front-0';
       renderTurtle(f, `pos-${side}-${slot}`, side, slot);
     });
   };
   assignPos(leftTeam, 'left');
   assignPos(rightTeam, 'right');
+
+  // Pirate ships: render at an offset position (behind back row)
+  allFighters.forEach(f => {
+    if (!f._isPirateShip || !f.alive) return;
+    const side = f.side;
+    const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+    // Place behind back row, offset down
+    const basePos = posSet['back-2'] || posSet['back-0'];
+    const shipSlot = `ship-${side}`;
+    const shipX = side === 'left' ? basePos.x - 8 : (100 - basePos.x) + 8;
+    const shipY = basePos.y + 10;
+    // Use custom position
+    const el = document.createElement('div');
+    el.id = getFighterElId(f);
+    el.className = `scene-turtle side-${side}`;
+    el.dataset.side = side;
+    const isMob = window.innerWidth <= 768;
+    const scaleVal = isMob ? 0.5 : 0.75;
+    el.innerHTML = `<div class="st-img-wrap"><img src="${f.img}" class="st-turtle-img" style="transform:${side==='right'?'scaleX(-1)':'none'}"></div>
+      <div class="st-hp-bar"><div class="st-hp-ticks"></div><div class="st-hp-delay"></div><div class="st-hp-fill"></div><div class="st-shield-fill"></div></div>
+      <div class="st-name">${f.name}</div>
+      <div class="status-icons"></div>`;
+    el.style.transform = `scale(${scaleVal})`;
+    const rect = scene.getBoundingClientRect();
+    const pos = mapCoverPos(side === 'left' ? shipX : 100 - shipX, shipY, rect.width, rect.height);
+    el.style.left = pos.x + 'px';
+    el.style.top = pos.y + 'px';
+    el.style.marginLeft = -el.offsetWidth/2 + 'px';
+    scene.appendChild(el);
+    // Fix marginLeft after append
+    requestAnimationFrame(() => { el.style.marginLeft = -(el.offsetWidth/2) + 'px'; });
+  });
 
   // Summons
   allFighters.forEach(f => {
