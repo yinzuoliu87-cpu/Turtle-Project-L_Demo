@@ -217,7 +217,7 @@ function renderSceneBuffs(f) {
     else if (b.type === 'bleed') icons.push('<span style="color:#cc3333">🩸</span>');
   }
   // Special state icons (not in buffs array)
-  if (f._inkStacks > 0) icons.push(`<span style="color:#222" title="墨迹${f._inkStacks}层">🦑${f._inkStacks}</span>`);
+  if (f._inkStacks > 0) icons.push(`<span style="color:#222" title="墨迹${f._inkStacks}层"><img src="assets/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._inkStacks}</span>`);
   if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">⚡${f._shockStacks}</span>`);
   if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}</span>`);
   // Equipment icons
@@ -531,14 +531,14 @@ function showFighterDetail(f) {
       else if (b.type === 'bleed') html += tag('#cc3333', `<img src="assets/bleed-icon.png" style="width:14px;height:14px;vertical-align:middle">流血 ${b.value}/回 ${b.turns}回合`);
     });
     // Non-buff state tags
-    if (f._inkStacks > 0) html += tag('#222', `🦑墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
+    if (f._inkStacks > 0) html += tag('#222', `<img src="assets/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
     if (f._shockStacks > 0) html += tag('#ffd700', `⚡电击 ${f._shockStacks}层`);
     if (f._goldLightning > 0) html += tag('#ffd700', `⚡金闪电 ${f._goldLightning}/8`);
     html += '</div>';
   } else {
     // No buffs but might have special states
     const specials = [];
-    if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#222;color:#222;background:rgba(0,0,0,.2)">🦑墨迹 ${f._inkStacks}层</span>`);
+    if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#222;color:#222;background:rgba(0,0,0,.2)"><img src="assets/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层</span>`);
     if (f._shockStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡电击 ${f._shockStacks}层</span>`);
     if (f._goldLightning > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡金闪电 ${f._goldLightning}/8</span>`);
     if (specials.length) html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">' + specials.join('') + '</div>';
@@ -612,7 +612,7 @@ function showFighterDetail(f) {
     if (f.passive.type === 'stoneWall') st.push(`🪨 护甲已叠加：<span class="val-atk">+${f._stoneDefGained||0}</span> / +${f.passive.maxDef}`);
     if (f.passive.type === 'bambooCharge') st.push(`🎋 已增加HP：<span class="val-atk">+${f._bambooGainedHp||0}</span>`);
     if (f.passive.type === 'hunterKill') st.push(`🎯 击杀数：<span class="val-atk">${f._hunterKills||0}</span>　窃取攻+${f._hunterStolenAtk||0} 防+${f._hunterStolenDef||0} 抗+${f._hunterStolenMr||0} 血+${f._hunterStolenHp||0}`);
-    if (f.passive.type === 'inkMark') st.push(`🦑 墨迹层数：<span class="val-atk">${f._inkStacks||0}</span> / ${f.passive.maxStacks}`);
+    if (f.passive.type === 'inkMark') st.push(`<img src="assets/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle"> 墨迹层数：<span class="val-atk">${f._inkStacks||0}</span> / ${f.passive.maxStacks}`);
     if (f.passive.type === 'lightningStorm') st.push(`⚡ 全局电击层：<span class="val-atk">${f._shockStacks||0}</span> / ${f.passive.stackMax}`);
     if (f.passive.type === 'gamblerBlood') { const oc = Math.max(0, (f.crit||0) - 1.0); st.push(`<img src="assets/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"> 暴击溢出：<span class="val-atk">${oc > 0 ? Math.round(oc*100)+'%→+'+Math.round(oc*f.passive.overflowMult*100)+'%爆伤' : '无'}</span>`); }
     if (f.passive.type === 'crystalResonance') st.push(`💎 结晶层数：<span class="val-atk">${f._crystallizeStacks||0}</span> / ${f.passive.crystallizeMax}`);
