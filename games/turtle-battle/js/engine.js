@@ -1768,7 +1768,7 @@ async function executeAction(action) {
   await sleep(600);
 
   const atkEl = document.getElementById(getFighterElId(f));
-  atkEl.classList.add('attack-anim');
+  if (atkEl) atkEl.classList.add('attack-anim');
 
   if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor') {
     // AOE: hit all alive enemies (including summons)
@@ -2984,7 +2984,7 @@ async function executeAction(action) {
     await doDamage(f, target, skill);
   }
 
-  atkEl.classList.remove('attack-anim');
+  if (atkEl) atkEl.classList.remove('attack-anim');
 
   updateDmgStats();
 
@@ -3867,9 +3867,8 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
     await triggerOnHitEffects(attacker, target, critFinal);
 
     const tEl = document.getElementById(tElId);
-    tEl.classList.add('hit-shake');
-    await sleep(400);
-    tEl.classList.remove('hit-shake');
+    if (tEl) { tEl.classList.add('hit-shake'); await sleep(400); tEl.classList.remove('hit-shake'); }
+    else await sleep(400);
     await sleep(100);
     multiChance *= 0.8;
   }
@@ -3891,10 +3890,10 @@ async function doGamblerCards(attacker, target, skill) {
     spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 20);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
-    tEl.classList.add('hit-shake');
+    if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
     await sleep(700);
-    tEl.classList.remove('hit-shake');
+    if (tEl) tEl.classList.remove('hit-shake');
     await sleep(200);
     await tryGamblerMultiHit(attacker, target, tElId);
   }
@@ -4460,7 +4459,7 @@ function checkBattleEnd() {
   if (!lA || !rA) {
     battleOver = true;
     unseedBattleRng();
-    document.getElementById('actionPanel').classList.remove('show');
+    const _ap = document.getElementById('actionPanel'); if (_ap) _ap.classList.remove('show');
     // Host: notify guest of battle end
     if (gameMode === 'pvp-online' && onlineSide === 'left') {
       sendOnline({ type:'battle-end', leftWon: lA });
