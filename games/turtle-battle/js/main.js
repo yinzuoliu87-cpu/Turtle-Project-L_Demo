@@ -426,12 +426,21 @@ function renderPetGrid() {
       const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" class="stat-icon">` : iconRaw;
       passiveHtml = `<span class="pet-passive-icon" onclick="event.stopPropagation();showPetPassive(event,'${p.id}')">${iconH}</span>`;
     }
+    // Skill loadout button (only for turtles with >3 skills)
+    let skillBtnHtml = '';
+    if (p.skillPool && p.skillPool.length > 3) {
+      skillBtnHtml = `<span class="pet-skill-config-btn" onclick="event.stopPropagation();showSkillPickModal('${p.id}', function(){ renderPetGrid(); renderFgSlots(); })" title="配置技能">🎯</span>`;
+    }
+    // Show equipped skills preview
+    const loadout = getSavedLoadout(p.id) || p.defaultSkills || [0,1,2];
+    const pool = p.skillPool || p.skills || [];
+    const skillNames = loadout.filter(i => i < pool.length).map(i => pool[i].name).join(' / ');
     const _mob = window.innerWidth <= 768;
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
          ${_mob ? '' : `draggable="true" ondragstart="fgDragStart(event,'${p.id}')" ondragend="fgDragEnd(event)"`}
          onclick="togglePet(event,'${p.id}')">
-      <div class="pet-avatar">${buildPetImgHTML(p, _mob ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}</div>
+      <div class="pet-avatar">${buildPetImgHTML(p, _mob ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}${skillBtnHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
       <div class="pet-stats-mini">
@@ -440,6 +449,7 @@ function renderPetGrid() {
         <span><img src="assets/def-icon.png" class="stat-icon">${p.def}</span>
         <span><img src="assets/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
       </div>
+      <div class="pet-skills-preview" title="${skillNames}">${skillNames}</div>
     </div>`;
   }).join('');
 }
@@ -667,7 +677,15 @@ function renderFgSlots() {
     slot.classList.toggle('fg-active', _fgActiveSlot === key);
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
-      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
+      const loadout = getSavedLoadout(petId) || p.defaultSkills || [0,1,2];
+      const pool = p.skillPool || p.skills || [];
+      const sNames = loadout.filter(i => i < pool.length).map(i => {
+        const s = pool[i];
+        return s.passiveSkill ? `<span style="color:#ffa500">${s.name}</span>` : s.name;
+      }).join(' / ');
+      const hasConfig = p.skillPool && p.skillPool.length > 3;
+      const configBtn = hasConfig ? `<span class="fg-skill-btn" onclick="event.stopPropagation();showSkillPickModal('${petId}', function(){ renderPetGrid(); renderFgSlots(); })" title="配置技能">🎯</span>` : '';
+      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span>${configBtn}<div class="fg-skills">${sNames}</div></div>`;
       slot.classList.add('filled');
       if (!isMobile) {
         slot.draggable = true;
@@ -745,7 +763,7 @@ function showSkillPickModal(petId, onDone) {
         <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">基础攻击技能固定，从剩余技能中选择2个</div>
         <div class="skill-pick-grid">${pool.map((s, i) => renderCard(s, i)).join('')}</div>
         <div class="skill-pick-actions">
-          <button class="btn btn-secondary skill-pick-back" onclick="window._skillPickBack()">← 返回选龟</button>
+          <button class="btn btn-secondary skill-pick-back" onclick="window._skillPickBack()">← 关闭</button>
           <button class="btn btn-primary skill-pick-confirm" ${selected.length === 3 ? '' : 'disabled'} onclick="window._skillPickConfirm()">确认装配</button>
         </div>
       </div>
@@ -772,8 +790,6 @@ function showSkillPickModal(petId, onDone) {
 
   window._skillPickBack = () => {
     overlay.style.display = 'none';
-    // Go back to select screen
-    showScreen('screenSelect');
   };
 
   render();
@@ -848,36 +864,20 @@ function confirmTeam() {
   if (gameMode === 'dungeon') {
     const battleIds = ['front-0','front-1','front-2'].map(k => _fgSlots[k]).filter(Boolean);
     const benchIds = ['back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
-    const needsPickDg = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
-    const doDungeon = () => {
-      dungeonState.stage = 1;
-      dungeonState.teamIds = [...selectedIds];
-      dungeonState.battleIds = battleIds;
-      dungeonState.benchIds = benchIds;
-      dungeonState.teamHp = {};
-      dungeonState.deadIds = [];
-      dungeonState.rewards = 0;
-      dungeonState.buffs = [];
-      dungeonStartStage();
-    };
-    if (needsPickDg.length > 0) { showSkillPickChain(needsPickDg, 0, doDungeon); return; }
-    doDungeon();
+    // Skill loadout now configured in pet grid (宠物中心), no forced pick before battle
+    dungeonState.stage = 1;
+    dungeonState.teamIds = [...selectedIds];
+    dungeonState.battleIds = battleIds;
+    dungeonState.benchIds = benchIds;
+    dungeonState.teamHp = {};
+    dungeonState.deadIds = [];
+    dungeonState.rewards = 0;
+    dungeonState.buffs = [];
+    dungeonStartStage();
     return;
   }
   if (gameMode === 'pve') {
-    // Check if any turtle needs skill selection
-    const needsPick = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
-    if (needsPick.length > 0) {
-      showSkillPickChain(needsPick, 0, () => {
-        leftTeam = _buildTeamFromSlots('left');
-        const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
-        const shuffled = pool.sort(() => Math.random() - 0.5);
-        rightTeam = [_createAiFighter(shuffled[0].id,'right'), _createAiFighter(shuffled[1].id,'right'), _createAiFighter(shuffled[2].id,'right')];
-        autoAssignPositions(rightTeam);
-        startBattle();
-      });
-      return;
-    }
+    // Skill loadout now configured in pet grid (宠物中心), use saved loadouts directly
     leftTeam = _buildTeamFromSlots('left');
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
@@ -885,44 +885,32 @@ function confirmTeam() {
     autoAssignPositions(rightTeam);
     startBattle();
   } else if (gameMode === 'boss') {
-    const needsPick2 = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
-    const doBoss = () => {
-      leftTeam = _buildTeamFromSlots('left');
-      const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
-      const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
-      const boss = _createAiFighter(bossPet.id, 'right');
-    // Boss stat multipliers (3v1 balanced)
+    leftTeam = _buildTeamFromSlots('left');
+    const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
+    const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
+    const boss = _createAiFighter(bossPet.id, 'right');
     boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
     boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
     boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
     boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
     boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
-      boss._isBoss = true;
-      boss.name = 'BOSS ' + boss.name;
-      rightTeam = [boss];
-      boss._position = 'front';
-      startBattle();
-    };
-    if (needsPick2.length > 0) { showSkillPickChain(needsPick2, 0, doBoss); return; }
-    doBoss();
+    boss._isBoss = true;
+    boss.name = 'BOSS ' + boss.name;
+    rightTeam = [boss];
+    boss._position = 'front';
+    startBattle();
   } else if (gameMode === 'pvp-online') {
-    const needsPickPvp = selectedIds.filter(id => { const p = ALL_PETS.find(x=>x.id===id); return p && p.skillPool && p.skillPool.length > 3; });
-    const doPvp = () => {
-      const side = onlineSide, team = selectedIds.slice();
-      // Build loadout map to send
-      const loadouts = {};
-      team.forEach(id => { const s = getSavedLoadout(id); if (s) loadouts[id] = s; });
-      if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
-      if (side === 'right') rightTeam = _buildTeamFromSlots('right');
-      sendOnline({ type:'team-ready', side, team, loadouts });
-      showToast('等待对手选择…');
-      // Only host starts battle (generates seed); guest waits for battle-seed message
-      if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
-        autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
-      }
-    };
-    if (needsPickPvp.length > 0) { showSkillPickChain(needsPickPvp, 0, doPvp); return; }
-    doPvp();
+    const side = onlineSide, team = selectedIds.slice();
+    const loadouts = {};
+    team.forEach(id => { const s = getSavedLoadout(id); if (s) loadouts[id] = s; });
+    if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
+    if (side === 'right') rightTeam = _buildTeamFromSlots('right');
+    sendOnline({ type:'team-ready', side, team, loadouts });
+    showToast('等待对手选择…');
+    // Only host starts battle (generates seed); guest waits for battle-seed message
+    if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
+      autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
+    }
   }
 }
 

@@ -1164,6 +1164,8 @@ function addStarEnergy(f, dmg) {
   const gain = Math.round(dmg * f.passive.chargeRate / 100);
   f._starEnergy = Math.min(maxE, (f._starEnergy || 0) + gain);
   renderStatusIcons(f);
+  // Update energy bar visual
+  updateHpBar(f, getFighterElId(f));
 }
 
 // Helper: passive star fire — after each skill, deal 40% stored energy as true damage to target
@@ -1190,6 +1192,7 @@ async function starMeteorBurst(f) {
   const burstPct = f.passive.burstPct || 80;
   const burstDmg = Math.round(f._starEnergy * burstPct / 100);
   f._starEnergy = 0;
+  updateHpBar(f, getFighterElId(f)); // update energy bar to 0
   const enemies = getAliveEnemiesWithSummons(f.side);
   for (const e of enemies) {
     if (!e.alive) continue;

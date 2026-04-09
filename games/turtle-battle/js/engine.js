@@ -164,10 +164,50 @@ function applyPassiveSkills(f) {
     if (ps.type === 'lavaEnhancedRage') {
       f._lavaStartFull = true;
     }
+    // 水晶龟 不朽: mark for turn 10 bonus
+    if (ps.type === 'crystalImmortal') {
+      f._crystalImmortal = true;
+    }
+    // 缩头乌龟 强化喊龟: self HP -50%, summon HP 40%→110%
+    if (ps.type === 'hidingEnhancedSummon') {
+      f._enhancedSummon = true;
+      // Reduce own HP by 50%
+      const hpLoss = Math.round(f.maxHp * 0.5);
+      f.maxHp -= hpLoss;
+      f.hp = f.maxHp;
+      f._initHp = f.maxHp;
+      // Boost summon HP — change passive hpPct from 40 to 110
+      if (f.passive && f.passive.type === 'summonAlly') {
+        f.passive = { ...f.passive, hpPct: 110 };
+      }
+    }
+    // 海盗龟 海盗船: disable passive true damage, summon ship on turn 3
+    if (ps.type === 'pirateShipPassive') {
+      f._pirateShipEnabled = true;
+      // Disable the passive true damage
+      if (f.passive && f.passive.type === 'pirateBarrage') {
+        f.passive.bombardPct = 0;
+        f.passive.deathHookPct = 0;
+      }
+    }
+    // 彩虹龟 强化棱镜: 7 colors, pick 2
+    if (ps.type === 'rainbowEnhancedPrism') {
+      f._enhancedPrism = true;
+    }
     // 线条龟 速写: ink cap 7 + convert to true damage
     if (ps.type === 'lineSpeedWrite') {
       f._inkCapOverride = 7;
       f._inkTrueDmg = true;
+    }
+    // 骰子龟 真正的赌徒: convert all DEF→armorPen, MR→magicPen
+    if (ps.type === 'diceGamblerConvert') {
+      const defConvert = f.baseDef;
+      const mrConvert = f.baseMr;
+      f.armorPen += defConvert;
+      f.magicPen += mrConvert;
+      f.baseDef = 0; f.def = 0;
+      f.baseMr = 0; f.mr = 0;
+      f._diceGamblerConverted = true;
     }
   }
 }
@@ -557,9 +597,8 @@ async function beginTurn() {
         const alive = enemies.filter(e => e.alive);
         const target = alive[Math.floor(Math.random() * alive.length)];
         const dmg = Math.round(f.atk * f.passive.droneScale);
-        const eDef = Math.max(0, target.def - (f.armorPen || 0));
-        const defRed = eDef / (eDef + DEF_CONSTANT);
-        const finalDmg = Math.max(1, Math.round(dmg * (1 - defRed)));
+        const eDef = target.def - (f.armorPen || 0);
+        const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
         applyRawDmg(f, target, finalDmg, false, false, 'physical');
         totalDroneDmg += finalDmg;
         const tElId = getFighterElId(target);
@@ -575,6 +614,24 @@ async function beginTurn() {
       }
       if (droneCount > 0) {
         addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
+      }
+    }
+    // Pirate ship: auto-fire cannon each turn
+    if (f._isPirateShip && f.alive) {
+      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+      if (enemies.length) {
+        const target = enemies[Math.floor(Math.random() * enemies.length)];
+        const dmg = Math.round(f.atk * (f._shipFireScale || 0.2));
+        const eDef = target.def - (f.armorPen || 0);
+        const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
+        applyRawDmg(f, target, finalDmg, false, false, 'physical');
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${finalDmg}🚢`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
+        updateHpBar(target, tElId);
+        addLog(`🚢海盗船 开炮 → ${target.emoji}${target.name}：<span class="log-direct">${finalDmg}物理</span>`);
+        await triggerOnHitEffects(f, target, finalDmg);
+        checkDeaths(f);
+        if (checkBattleEnd()) return;
       }
     }
     // Passive: auraAwaken — awaken at turn N with full stat boost
@@ -680,43 +737,118 @@ async function beginTurn() {
         await sleep(800);
       }
     }
+    // Passive: pirateShip — summon pirate ship at turn 3
+    // Crystal immortal: turn 10 bonus
+    if (f._crystalImmortal && !f._crystalImmortalTriggered && turnNum >= 10) {
+      f._crystalImmortalTriggered = true;
+      const hpGain = 5000;
+      const atkGain = 400;
+      f.maxHp += hpGain;
+      f.hp += hpGain;
+      f._initHp = f.maxHp;
+      f.baseAtk += atkGain;
+      f.atk += atkGain;
+      f._initAtk = f.baseAtk;
+      recalcStats();
+      const elId = getFighterElId(f);
+      spawnFloatingNum(elId, `不朽!`, 'crit-label', 0, -25);
+      spawnFloatingNum(elId, `+${hpGain}HP +${atkGain}ATK`, 'passive-num', 200, 0);
+      updateHpBar(f, elId);
+      updateFighterStats(f, elId);
+      addLog(`${f.emoji}${f.name} <span class="log-passive">🔮不朽价值觉醒！+${hpGain}最大HP +${atkGain}攻击力！</span>`);
+      try { sfxRebirth(); } catch(e) {}
+      await sleep(1000);
+    }
+    if (f._pirateShipEnabled && !f._pirateShipSummoned && turnNum === 3) {
+      f._pirateShipSummoned = true;
+      const team = f.side === 'left' ? leftTeam : rightTeam;
+      const frontCount = team.filter(t => t.alive && t._position === 'front').length;
+      const shipPos = frontCount < 3 ? 'front' : 'back';
+      // Create ship as a fighter-like entity
+      const shipHp = Math.round(f.maxHp * 1.5);
+      const shipAtk = f.atk;
+      const ship = {
+        id:'pirateShip_'+f.id, name:'海盗船', emoji:'🚢', rarity:f.rarity, side:f.side,
+        img:f.img, sprite:null,
+        _equippedIdxs:[0], maxHp:shipHp, hp:shipHp, shield:0,
+        baseAtk:shipAtk, baseDef:0, baseMr:0, atk:shipAtk, def:0, mr:0,
+        _initHp:shipHp, _initAtk:shipAtk, _initDef:0, _initMr:0, _initCrit:0,
+        crit:0, armorPen:0, armorPenPct:0, magicPen:0, magicPenPct:0,
+        passive:null, passiveUsedThisTurn:false,
+        _position:shipPos, alive:true, buffs:[], bubbleStore:0,
+        bubbleShieldVal:0, bubbleShieldTurns:0, bubbleShieldOwner:null,
+        _shockStacks:0, _goldCoins:0, _drones:[], _twoHeadForm:'ranged',
+        _formHpGain:0, _formDefGain:0, _formAtkLoss:0, _rangedSkills:null,
+        _isMech:false, _starEnergy:0, _deathProcessed:false,
+        _dmgDealt:0, _dmgTaken:0, _physDmgDealt:0, _magicDmgDealt:0, _trueDmgDealt:0,
+        _physDmgTaken:0, _magicDmgTaken:0, _trueDmgTaken:0,
+        _summon:null, _summonElId:null, _storedEnergy:0, _auraAwakened:false,
+        _auraLifesteal:0, _auraReflect:0, _bambooCharged:false, _bambooCounter:0,
+        _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0,
+        _hunterStolenHp:0, _diamondCollideCount:{}, _inkStacks:0, _inkLink:null,
+        _undeadLockTurns:0, _undeadLockUsed:false, _lavaRage:0, _lavaTransformed:false,
+        _lavaTransformTurns:0, _lavaSpent:false, _lavaSmallSkills:null,
+        _chestTreasure:0, _chestEquips:[], _chestTier:0, _goldLightning:0,
+        _crystallize:0, _collideStacks:0,
+        _isPirateShip:true, _shipOwner:f, _shipFireScale:0.2,
+        skills:[{ name:'开炮', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.2 }],
+        _passiveSkills:[]
+      };
+      team.push(ship);
+      allFighters.push(ship);
+      f._pirateShip = ship;
+      const elId = getFighterElId(f);
+      spawnFloatingNum(elId, `🚢海盗船登场!`, 'crit-label', 0, -25);
+      addLog(`${f.emoji}${f.name} 的海盗船在${shipPos === 'front' ? '前排' : '后排'}登场！HP${shipHp} ATK${shipAtk}`);
+      renderScene();
+      await sleep(800);
+    }
     // Passive: rainbowPrism — random team buff each turn
     if (f.passive.type === 'rainbowPrism') {
       const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
-      // First turn: only red or blue (green heal is useless at full HP)
-      const maxRoll = (turnNum <= 1) ? 2 : 3;
-      const roll = Math.floor(Math.random() * maxRoll);
-      f._prismColor = roll; // 0=red, 1=blue, 2=green
-      if (roll === 0) {
-        // Red: ATK up
-        for (const a of allies) {
-          const gain = Math.round(a.baseAtk * f.passive.atkPct / 100);
-          a.buffs.push({ type:'atkUp', value:gain, turns:2 });
-          spawnFloatingNum(getFighterElId(a), `+${gain}攻🔴`, 'passive-num', 0, 0);
-        }
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔴红光！全体友方攻击+${f.passive.atkPct}% 1回合</span>`);
-      } else if (roll === 1) {
-        // Blue: DEF + MR up
-        for (const a of allies) {
-          const defGain = Math.round(a.baseDef * f.passive.defPct / 100);
-          const mrGain = Math.round((a.baseMr || a.baseDef) * f.passive.defPct / 100);
-          a.buffs.push({ type:'defUp', value:defGain, turns:2 });
-          a.buffs.push({ type:'mrUp', value:mrGain, turns:2 });
-          spawnFloatingNum(getFighterElId(a), `+${defGain}甲+${mrGain}抗🔵`, 'passive-num', 0, 0);
-        }
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🔵蓝光！全体友方护甲+${f.passive.defPct}% 魔抗+${f.passive.defPct}% 1回合</span>`);
-      } else {
-        // Green: heal
-        for (const a of allies) {
-          const heal = Math.round(a.maxHp * f.passive.healPct / 100);
-          const before = a.hp;
-          a.hp = Math.min(a.maxHp, a.hp + heal);
-          const actual = Math.round(a.hp - before);
-          if (actual > 0) spawnFloatingNum(getFighterElId(a), `+${actual}🟢`, 'heal-num', 0, 0);
-          updateHpBar(a, getFighterElId(a));
-        }
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🟢绿光！全体友方回复${f.passive.healPct}%最大HP</span>`);
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      const enhanced = f._enhancedPrism;
+      // Colors: 0=red, 1=blue, 2=green, 3=orange, 4=yellow, 5=cyan, 6=purple
+      const maxColors = enhanced ? 7 : 3;
+      const pickCount = enhanced ? 2 : 1;
+      // First turn: skip green (heal useless at full HP)
+      const pool = [];
+      for (let c = 0; c < maxColors; c++) { if (turnNum <= 1 && c === 2) continue; pool.push(c); }
+      // Pick N unique colors
+      const picks = [];
+      const available = [...pool];
+      for (let p = 0; p < pickCount && available.length > 0; p++) {
+        const idx = Math.floor(Math.random() * available.length);
+        picks.push(available.splice(idx, 1)[0]);
       }
+      f._prismColor = picks[0]; // primary color for skill 1 bonus
+
+      function applyPrismColor(color) {
+        if (color === 0) {
+          for (const a of allies) { const g = Math.round(a.baseAtk * f.passive.atkPct / 100); a.buffs.push({type:'atkUp',value:g,turns:2}); spawnFloatingNum(getFighterElId(a), `+${g}攻🔴`, 'passive-num', 0, 0); }
+          addLog(`${f.emoji}${f.name} 🔴红光：全体攻击+${f.passive.atkPct}%`);
+        } else if (color === 1) {
+          for (const a of allies) { const dg = Math.round(a.baseDef * f.passive.defPct / 100); const mg = Math.round((a.baseMr||a.baseDef) * f.passive.defPct / 100); a.buffs.push({type:'defUp',value:dg,turns:2}); a.buffs.push({type:'mrUp',value:mg,turns:2}); spawnFloatingNum(getFighterElId(a), `+${dg}甲+${mg}抗🔵`, 'passive-num', 0, 0); }
+          addLog(`${f.emoji}${f.name} 🔵蓝光：全体护甲/魔抗+${f.passive.defPct}%`);
+        } else if (color === 2) {
+          for (const a of allies) { const h = Math.round(a.maxHp * f.passive.healPct / 100); const b = a.hp; a.hp = Math.min(a.maxHp, a.hp + h); const ac = Math.round(a.hp - b); if (ac > 0) spawnFloatingNum(getFighterElId(a), `+${ac}🟢`, 'heal-num', 0, 0); updateHpBar(a, getFighterElId(a)); }
+          addLog(`${f.emoji}${f.name} 🟢绿光：全体回复${f.passive.healPct}%HP`);
+        } else if (color === 3) {
+          // Orange: 10% lifesteal for all allies 1 turn
+          for (const a of allies) { a.buffs.push({type:'lifesteal',value:10,turns:2}); spawnFloatingNum(getFighterElId(a), `+10%吸血🟠`, 'passive-num', 0, 0); }
+          addLog(`${f.emoji}${f.name} 🟠橙光：全体友方获得10%吸血1回合`);
+        } else if (color === 4) {
+          // Yellow: burn random enemy
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; applySkillDebuffs({burn:true}, t, f); spawnFloatingNum(getFighterElId(t), `🔥灼烧🟡`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟡黄光：${t.emoji}${t.name}被灼烧`); }
+        } else if (color === 5) {
+          // Cyan: chill random enemy 1 turn
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; t.buffs.push({type:'chilled',value:1,turns:2}); spawnFloatingNum(getFighterElId(t), `❄️冰寒🩵`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🩵青光：${t.emoji}${t.name}被冰寒`); }
+        } else if (color === 6) {
+          // Purple: curse random enemy 3 turns
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; const dotDmg = Math.round(t.maxHp * 0.09); t.buffs.push({type:'dot',value:dotDmg,turns:3,sourceSide:f.side}); spawnFloatingNum(getFighterElId(t), `💀诅咒🟣`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟣紫光：${t.emoji}${t.name}被诅咒3回合`); }
+        }
+      }
+      for (const c of picks) applyPrismColor(c);
       recalcStats();
       for (const a of allies) updateFighterStats(a, getFighterElId(a));
       renderStatusIcons(f);
@@ -958,6 +1090,10 @@ async function nextSideAction() {
     (gameMode === 'dungeon' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
+  // Skip pirate ships — they fire passively, not as regular actions
+  canAct.filter(f => f._isPirateShip).forEach(f => actedThisSide.add(allFighters.indexOf(f)));
+  canAct = canAct.filter(f => !f._isPirateShip);
+
   // Check for stunned fighters — auto-skip them (only once per stun)
   const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun') && !f._stunUsed);
   if (stunned.length > 0) {
@@ -1126,9 +1262,8 @@ async function processBuffs() {
     const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
     for (const pb of pBurns) {
       const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-      // Reduce by MR since burn is magic damage
-      const mrRed = f.mr / (f.mr + DEF_CONSTANT);
-      const burnDmg = Math.max(1, Math.round(rawBurn * (1 - mrRed)));
+      // Reduce by MR since burn is magic damage (negative MR = amplified)
+      const burnDmg = Math.max(1, Math.round(rawBurn * calcDmgMult(f.mr)));
       const burnSource = (pb.sourceIdx !== undefined && pb.sourceIdx >= 0) ? allFighters[pb.sourceIdx] : null;
       const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
       if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}🛡`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
@@ -1142,8 +1277,7 @@ async function processBuffs() {
     const poisons = f.buffs.filter(b => b.type === 'poison');
     for (const p of poisons) {
       const poisonRaw = p.value || 10;
-      const mrRed2 = f.mr / (f.mr + DEF_CONSTANT);
-      const poisonDmg = Math.max(1, Math.round(poisonRaw * (1 - mrRed2)));
+      const poisonDmg = Math.max(1, Math.round(poisonRaw * calcDmgMult(f.mr)));
       f.hp = Math.max(0, f.hp - poisonDmg);
       spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
       updateHpBar(f, elId);
@@ -1160,8 +1294,7 @@ async function processBuffs() {
     const bleeds = f.buffs.filter(b => b.type === 'bleed');
     for (const bl of bleeds) {
       const bleedRaw = bl.value || 10;
-      const defRed = f.def / (f.def + DEF_CONSTANT);
-      const bleedDmg = Math.max(1, Math.round(bleedRaw * (1 - defRed)));
+      const bleedDmg = Math.max(1, Math.round(bleedRaw * calcDmgMult(f.def)));
       f.hp = Math.max(0, f.hp - bleedDmg);
       spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
       updateHpBar(f, elId);
@@ -1180,8 +1313,7 @@ async function processBuffs() {
     if (hasChill && hasBurn) {
       f.buffs = f.buffs.filter(b => b.type !== 'chilled' && b.type !== 'phoenixBurnDot');
       const comboDmg = Math.round(f.maxHp * 0.3);
-      const mrRed = f.mr / (f.mr + DEF_CONSTANT);
-      const finalDmg = Math.max(1, Math.round(comboDmg * (1 - mrRed)));
+      const finalDmg = Math.max(1, Math.round(comboDmg * calcDmgMult(f.mr)));
       f.hp = Math.max(0, f.hp - finalDmg);
       spawnFloatingNum(elId, `-${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
       updateHpBar(f, elId);
@@ -1234,8 +1366,7 @@ async function processBuffs() {
           if (enemies.length) {
             const target = enemies[Math.floor(Math.random() * enemies.length)];
             const effMr = calcEffDef(f, target, 'magic');
-            const mrRed = effMr / (effMr + DEF_CONSTANT);
-            const finalDmg = Math.max(1, Math.round(dmgAmt * (1 - mrRed)));
+            const finalDmg = Math.max(1, Math.round(dmgAmt * calcDmgMult(effMr)));
             applyRawDmg(f, target, finalDmg, false, false, 'magic');
             const tElId = getFighterElId(target);
             spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
@@ -1245,6 +1376,7 @@ async function processBuffs() {
         }
       }
       if (f.bubbleStore < 1) f.bubbleStore = 0;
+      updateHpBar(f, elId); // refresh bubble store bar
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">泡泡回复${actual}HP` + (f.passive.dmgPct ? ` + 泡泡伤害` : '') + `</span>（剩余储存${Math.round(f.bubbleStore)}）`);
     }
     // BubbleShield tick down
@@ -1299,8 +1431,28 @@ async function processBuffs() {
       }
     }
     // Tick down all buffs, remove expired
+    const hadPhysImmune = f.buffs.some(b => b.type === 'physImmune');
     f.buffs.forEach(b => b.turns--);
     f.buffs = f.buffs.filter(b => b.turns > 0);
+    // Ghost phantom: physImmune expired → trigger stored strike
+    if (hadPhysImmune && !f.buffs.some(b => b.type === 'physImmune') && f._phantomStrike && f.alive) {
+      const ps = f._phantomStrike;
+      f._phantomStrike = null;
+      const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      if (enemies.length) {
+        const target = enemies.sort((a,b) => a.hp - b.hp)[0]; // auto-target lowest HP
+        for (let h = 0; h < ps.hits; h++) {
+          const dmg = Math.round(f.atk * ps.atkScale);
+          applyRawDmg(f, target, dmg, false, false, 'true');
+          spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
+        }
+        updateHpBar(target, getFighterElId(target));
+        const totalDmg = Math.round(f.atk * ps.atkScale * ps.hits);
+        addLog(`${f.emoji}${f.name} 虚化结束 → 幽冥突袭 ${target.emoji}${target.name}：${totalDmg} 真实伤害`);
+        await triggerOnHitEffects(f, target, totalDmg);
+        hadTick = true;
+      }
+    }
     renderStatusIcons(f);
   }
   if (hadTick) await sleep(800);
@@ -1378,7 +1530,7 @@ function pickSkill(idx) {
   if (!f) return;
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless' || skill.type === 'bubbleHeal' || skill.type === 'crystalResHeal' || skill.type === 'phoenixPurify' || skill.isAlly;
 
   // Self-cast: no target selection
   if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
@@ -1401,10 +1553,18 @@ function pickSkill(idx) {
   // bubbleBind targets enemies
   const targetsFromSide = (isAlly ? (f.side==='left'?leftTeam:rightTeam) : (f.side==='left'?rightTeam:leftTeam));
   let targets = targetsFromSide.filter(a => a.alive);
-  // Front row priority for enemy single-target skills (unless ignoreRow)
+  // Taunt: if any enemy has taunt, forced to target them (single-target enemy skills only)
   if (!isAlly && !skill.ignoreRow) {
-    const frontTargets = targets.filter(t => t._position === 'front');
-    if (frontTargets.length > 0) targets = frontTargets;
+    const taunters = targets.filter(t => t.buffs.some(b => b.type === 'taunt'));
+    if (taunters.length > 0) { targets = taunters; }
+    else {
+      // Stealth: filter out stealthed enemies
+      const nonStealth = targets.filter(t => !t.buffs.some(b => b.type === 'stealth'));
+      if (nonStealth.length > 0) targets = nonStealth;
+      // Front row priority
+      const frontTargets = targets.filter(t => t._position === 'front');
+      if (frontTargets.length > 0) targets = frontTargets;
+    }
   }
   if (targets.length === 1) executePlayerAction(f, skill, targets[0]);
   else showTargetSelect(targets, f, skill);
@@ -1762,6 +1922,16 @@ async function executeAction(action) {
     await doDiceAllIn(f, skill);
   } else if (skill.type === 'diceFate') {
     await doDiceFate(f, skill);
+  } else if (skill.type === 'diceStableShield') {
+    // Permanent shield: 10% ATK + crit*100
+    const shieldAmt = Math.round(Math.round(f.atk * 0.1 + f.crit * 100) * getShieldMult());
+    f.shield += shieldAmt;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}永久护盾</span>（10%ATK+暴击率×100）`);
+    sfxShield();
+    await sleep(800);
   } else if (skill.type === 'chestOpen') {
     await doChestOpen(f, skill);
   } else if (skill.type === 'mechAttack') {
@@ -1779,6 +1949,7 @@ async function executeAction(action) {
       const mainDmg = Math.round(f.atk * skill.atkScale) + Math.round(target.maxHp * skill.targetHpPct / 100);
       const result = applyRawDmg(f, target, mainDmg, false, false, 'physical');
       spawnFloatingNum(getFighterElId(target), `-${result.hpLoss||mainDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:mainDmg});
+      updateHpBar(target, getFighterElId(target));
       addLog(`${f.emoji}${f.name} 过肩摔 ${target.emoji}${target.name}！造成 ${mainDmg} 物理伤害`);
       await triggerOnHitEffects(f, target, mainDmg);
       // Splash to other enemies
@@ -1787,6 +1958,7 @@ async function executeAction(action) {
         const splashDmg = Math.round(f.atk * (skill.splashAtkScale||0.3)) + Math.round(target.maxHp * (skill.splashHpPct||20) / 100);
         applyRawDmg(f, o, splashDmg, false, false, 'physical');
         spawnFloatingNum(getFighterElId(o), `-${splashDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:splashDmg});
+        updateHpBar(o, getFighterElId(o));
         addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理伤害`);
       }
     }
@@ -1801,6 +1973,820 @@ async function executeAction(action) {
     await doDamage(f, target, skill);
     // Remove temp armor pen after
     if (skill.armorPenBuff) f.armorPen -= skill.armorPenBuff;
+
+  // ═══════════════════════════════════════════════════
+  // NEW SKILL HANDLERS (batch implementation)
+  // ═══════════════════════════════════════════════════
+
+  // ── AOE Ally Heals ──
+  } else if (skill.type === 'bambooAoeHeal' || skill.type === 'rainbowHeal' || skill.type === 'fortuneBless') {
+    // AOE ally heal: healAtkPct + healHpPct
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const healAmt = Math.round(f.atk * (skill.healAtkPct||0) / 100) + Math.round(f.maxHp * (skill.healHpPct||0) / 100);
+      const actual = applyHeal(ally, healAmt);
+      const elId = getFighterElId(ally);
+      if (actual > 0) {
+        spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+        updateHpBar(ally, elId);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-heal">回复${actual}HP</span>`);
+    }
+    sfxHeal();
+    await sleep(800);
+
+  } else if (skill.type === 'bubbleHeal') {
+    // Single ally heal: healAtkPct + healHpPct
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const healAmt = Math.round(f.atk * (skill.healAtkPct||0) / 100) + Math.round(f.maxHp * (skill.healHpPct||0) / 100);
+      const actual = applyHeal(target, healAmt);
+      const elId = getFighterElId(target);
+      if (actual > 0) {
+        spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+        updateHpBar(target, elId);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
+      sfxHeal();
+    }
+    await sleep(800);
+
+  } else if (skill.type === 'crystalResHeal') {
+    // Single ally heal: healMrScale * MR + healAtkPct * ATK
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const healAmt = Math.round(f.mr * (skill.healMrScale||0)) + Math.round(f.atk * (skill.healAtkPct||0) / 100);
+      const actual = applyHeal(target, healAmt);
+      const elId = getFighterElId(target);
+      if (actual > 0) {
+        spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+        updateHpBar(target, elId);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
+      sfxHeal();
+    }
+    await sleep(800);
+
+  } else if (skill.type === 'phoenixPurify') {
+    // Purify: remove all debuffs from ally, heal 10% maxHP per debuff removed
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const debuffTypes = ['atkDown','defDown','mrDown','healReduce','poison','bleed','burn','cursed','chilled','spdDown'];
+      const removed = target.buffs.filter(b => debuffTypes.includes(b.type));
+      target.buffs = target.buffs.filter(b => !debuffTypes.includes(b.type));
+      recalcStats();
+      const healAmt = Math.round(target.maxHp * 0.10 * removed.length);
+      let actual = 0;
+      if (healAmt > 0) {
+        actual = applyHeal(target, healAmt);
+        const elId = getFighterElId(target);
+        if (actual > 0) {
+          spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+          updateHpBar(target, elId);
+        }
+      }
+      const elId = getFighterElId(target);
+      if (removed.length > 0) spawnFloatingNum(elId, `净化×${removed.length}`, 'passive-num', 200, 0);
+      renderStatusIcons(target);
+      updateFighterStats(target, elId);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">净化${removed.length}个减益，回复${actual}HP</span>`);
+      sfxHeal();
+    }
+    await sleep(800);
+
+  } else if (skill.type === 'headlessRegen') {
+    // Self heal: 25% lost HP + lifesteal buff
+    const lostHp = f.maxHp - f.hp;
+    const healAmt = Math.round(lostHp * (skill.healLostPct||25) / 100);
+    const actual = applyHeal(f, healAmt);
+    const elId = getFighterElId(f);
+    if (actual > 0) {
+      spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+      updateHpBar(f, elId);
+    }
+    if (skill.lifestealUp) {
+      f.buffs.push({ type:'lifesteal', value:skill.lifestealUp.pct, turns:skill.lifestealUp.turns });
+      spawnFloatingNum(elId, `+${skill.lifestealUp.pct}%吸血`, 'passive-num', 200, 0);
+      renderStatusIcons(f);
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-heal">回复${actual}HP</span>${skill.lifestealUp ? ` <span class="log-passive">+${skill.lifestealUp.pct}%吸血 ${skill.lifestealUp.turns}回合</span>` : ''}`);
+    sfxHeal();
+    await sleep(800);
+
+  // ── Shield Skills ──
+  } else if (skill.type === 'commonTeamShield') {
+    // AOE ally shield: shieldScale * ATK
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const amount = Math.round(Math.round(f.atk * (skill.shieldScale||0.5)) * getShieldMult());
+      ally.shield += amount;
+      const elId = getFighterElId(ally);
+      spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+      updateHpBar(ally, elId);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span>`);
+    }
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'rainbowBarrier') {
+    // AOE ally shield: shieldAtkScale * ATK
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const amount = Math.round(Math.round(f.atk * (skill.shieldAtkScale||0.8)) * getShieldMult());
+      ally.shield += amount;
+      const elId = getFighterElId(ally);
+      spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+      updateHpBar(ally, elId);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span>`);
+    }
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'cyberFirewall') {
+    // AOE ally shield + damage reduction buff
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const amount = Math.round(Math.round(f.atk * (skill.shieldAtkScale||0.6)) * getShieldMult());
+      ally.shield += amount;
+      const elId = getFighterElId(ally);
+      spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+      updateHpBar(ally, elId);
+      if (skill.dmgReduction) {
+        ally.buffs.push({ type:'dmgReduce', value:skill.dmgReduction.pct, turns:skill.dmgReduction.turns });
+        spawnFloatingNum(elId, `-${skill.dmgReduction.pct}%受伤`, 'passive-num', 200, 0);
+      }
+      renderStatusIcons(ally);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span> <span class="log-passive">-${skill.dmgReduction?.pct||15}%受伤 ${skill.dmgReduction?.turns||3}回合</span>`);
+    }
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'starShield') {
+    // Self shield from star energy
+    const amount = Math.round(Math.round(f._starEnergy * (skill.shieldEnergyPct||80) / 100) * getShieldMult());
+    f.shield += amount;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">星能转化+${amount}护盾</span>`);
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'shellEnergyShield') {
+    // Self shield from stored energy (不消耗)
+    const amount = Math.round(Math.round(f._storedEnergy * (skill.energyShieldScale||1.5)) * getShieldMult());
+    f.shield += amount;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">储能转化+${amount}护盾</span>`);
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'lightningShield') {
+    // Self shield + counter
+    const amount = Math.round(Math.round(f.atk * (skill.shieldScale||0.9)) * getShieldMult());
+    f.shield += amount;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${amount}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    if (skill.counterScale) {
+      f.buffs.push({ type:'counter', value:Math.round(f.atk * skill.counterScale), turns:3 });
+      spawnFloatingNum(elId, `反击`, 'passive-num', 200, 0);
+    }
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${amount}护盾</span> <span class="log-passive">反击${Math.round(f.atk*(skill.counterScale||0.1))}</span>`);
+    sfxShield();
+    await sleep(800);
+
+  // ── Buff/Debuff Skills ──
+  } else if (skill.type === 'commonAtkBuff') {
+    // AOE ally ATK buff
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const atkGain = Math.round(ally.baseAtk * (skill.atkUpPct||15) / 100);
+      ally.buffs.push({ type:'atkUp', value:atkGain, turns:skill.atkUpTurns||3 });
+      const elId = getFighterElId(ally);
+      spawnFloatingNum(elId, `+${atkGain}攻`, 'passive-num', 0, 0);
+      renderStatusIcons(ally);
+      updateFighterStats(ally, elId);
+    }
+    recalcStats();
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">全体攻击+${skill.atkUpPct||15}% ${skill.atkUpTurns||3}回合</span>`);
+    sfxBuff();
+    await sleep(800);
+
+  } else if (skill.type === 'pirateFlag') {
+    // AOE ally ATK buff (pct object)
+    const pct = typeof skill.atkUpPct === 'object' ? skill.atkUpPct.pct : (skill.atkUpPct||25);
+    const turns = typeof skill.atkUpPct === 'object' ? skill.atkUpPct.turns : 3;
+    const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
+    for (const ally of allies) {
+      const atkGain = Math.round(ally.baseAtk * pct / 100);
+      ally.buffs.push({ type:'atkUp', value:atkGain, turns });
+      const elId = getFighterElId(ally);
+      spawnFloatingNum(elId, `+${atkGain}攻`, 'passive-num', 0, 0);
+      renderStatusIcons(ally);
+      updateFighterStats(ally, elId);
+    }
+    recalcStats();
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">全体攻击+${pct}% ${turns}回合</span>`);
+    sfxBuff();
+    await sleep(800);
+
+  } else if (skill.type === 'stoneTaunt') {
+    // Self DEF buff + taunt (enemies forced to target this)
+    if (skill.defUp) {
+      f.buffs.push({ type:'defUp', value:skill.defUp.val, turns:skill.defUp.turns });
+      const elId = getFighterElId(f);
+      spawnFloatingNum(elId, `+${skill.defUp.val}护甲`, 'passive-num', 0, 0);
+    }
+    f.buffs.push({ type:'taunt', value:1, turns:skill.defUp?.turns||3 });
+    recalcStats();
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `嘲讽`, 'passive-num', 200, 0);
+    renderStatusIcons(f);
+    updateFighterStats(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">护甲+${skill.defUp?.val||8} ${skill.defUp?.turns||3}回合，嘲讽敌方</span>`);
+    sfxBuff();
+    await sleep(800);
+
+  } else if (skill.type === 'ghostPhantom') {
+    // Enter phantom state: immune to physical for N turns, then strike
+    f.buffs.push({ type:'physImmune', value:1, turns:skill.phantomTurns||2 });
+    // Store pending strike info
+    f._phantomStrike = { turns:skill.phantomTurns||2, hits:skill.hits||2, atkScale:skill.atkScale||0.6 };
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `虚化!`, 'passive-num', 0, 0);
+    spawnFloatingNum(elId, `免疫物理${skill.phantomTurns||2}回合`, 'passive-num', 200, 0);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：进入虚化状态${skill.phantomTurns||2}回合，免疫物理伤害`);
+    sfxDodge();
+    await sleep(800);
+
+  } else if (skill.type === 'ghostShadow') {
+    // Self dodge + stealth
+    f.buffs.push({ type:'dodge', value:skill.dodgePct||80, turns:skill.dodgeTurns||2 });
+    if (skill.stealthTurns) f.buffs.push({ type:'stealth', value:1, turns:skill.stealthTurns });
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `闪避${skill.dodgePct||80}%`, 'passive-num', 0, 0);
+    if (skill.stealthTurns) spawnFloatingNum(elId, `隐身`, 'passive-num', 200, 0);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">闪避${skill.dodgePct||80}% ${skill.dodgeTurns||2}回合</span>${skill.stealthTurns ? ` <span class="log-passive">隐身${skill.stealthTurns}回合</span>` : ''}`);
+    sfxDodge();
+    await sleep(800);
+
+  } else if (skill.type === 'starWarp') {
+    // Self dodge + counter on dodge
+    f.buffs.push({ type:'dodge', value:skill.dodgePct||60, turns:skill.dodgeTurns||2 });
+    if (skill.counterScale) f.buffs.push({ type:'dodgeCounter', value:Math.round(f.atk * skill.counterScale), turns:skill.dodgeTurns||2, dmgType:skill.counterDmgType||'magic' });
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `闪避${skill.dodgePct||60}%`, 'passive-num', 0, 0);
+    if (skill.counterScale) spawnFloatingNum(elId, `闪避反击`, 'passive-num', 200, 0);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">闪避${skill.dodgePct||60}% ${skill.dodgeTurns||2}回合</span>${skill.counterScale ? ` <span class="log-passive">闪避时反击${Math.round(f.atk*skill.counterScale)}</span>` : ''}`);
+    sfxDodge();
+    await sleep(800);
+
+  } else if (skill.type === 'hidingReflect') {
+    // Self shield + reflect damage
+    const shieldAmt = Math.round(Math.round(f.maxHp * (skill.shieldHpPct||15) / 100) * getShieldMult());
+    f.shield += shieldAmt;
+    f.buffs.push({ type:'reflect', value:skill.reflectPct||40, turns:skill.reflectTurns||3 });
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    spawnFloatingNum(elId, `反弹${skill.reflectPct||40}%`, 'passive-num', 200, 0);
+    updateHpBar(f, elId);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">反弹${skill.reflectPct||40}% ${skill.reflectTurns||3}回合</span>`);
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'gamblerCheat') {
+    // Damage + steal one buff from target
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      // Steal a random buff
+      const stealable = target.buffs.filter(b => ['atkUp','defUp','mrUp','critUp','shield','dodge','lifesteal'].includes(b.type));
+      if (stealable.length > 0) {
+        const stolen = stealable[Math.floor(Math.random() * stealable.length)];
+        target.buffs = target.buffs.filter(b => b !== stolen);
+        f.buffs.push({ ...stolen });
+        recalcStats();
+        const tElId = getFighterElId(target);
+        const fElId = getFighterElId(f);
+        spawnFloatingNum(tElId, `被偷取`, 'debuff-num', 0, 0);
+        spawnFloatingNum(fElId, `偷取成功`, 'passive-num', 0, 0);
+        renderStatusIcons(target);
+        renderStatusIcons(f);
+        updateFighterStats(target, tElId);
+        updateFighterStats(f, fElId);
+        addLog(`${f.emoji}${f.name} 偷取了 ${target.emoji}${target.name} 的增益效果！`);
+      }
+    }
+
+  // ── Medium-priority: Special Mechanic Skills ──
+  } else if (skill.type === 'gamblerAllIn') {
+    // Self-damage + high damage + crit bonus
+    const selfDmg = Math.round(f.hp * (skill.selfDmgPct||30) / 100);
+    f.hp -= selfDmg;
+    if (f.hp < 1) f.hp = 1;
+    const fElId = getFighterElId(f);
+    spawnFloatingNum(fElId, `-${selfDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side==='left'?'right':'left', amount:selfDmg});
+    updateHpBar(f, fElId);
+    addLog(`${f.emoji}${f.name} 消耗 ${selfDmg}HP！`);
+    // Temporarily boost crit
+    const origCrit = f.crit;
+    if (skill.critBonus) f.crit += skill.critBonus / 100;
+    const target = allFighters[action.targetId];
+    await doDamage(f, target, skill);
+    f.crit = origCrit;
+
+  } else if (skill.type === 'hunterSnipe') {
+    // High damage, target below threshold = guaranteed crit
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const origCrit = f.crit;
+      if (skill.execThresh && (target.hp / target.maxHp * 100) <= skill.execThresh) {
+        f.crit = 1.0; // guaranteed crit
+      }
+      await doDamage(f, target, skill);
+      f.crit = origCrit;
+    }
+
+  } else if (skill.type === 'hunterPoison') {
+    // Damage + poison DOT + heal reduction
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      if (skill.dot) {
+        target.buffs.push({ type:'poison', value:skill.dot.dmg, turns:skill.dot.turns });
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `中毒`, 'debuff-num', 200, 0);
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 中毒 ${skill.dot.turns}回合（每回合${skill.dot.dmg}伤害）`);
+      }
+      if (skill.healReduce) {
+        target.buffs.push({ type:'healReduce', value:50, turns:skill.dot?.turns||3 });
+        addLog(`${target.emoji}${target.name} 治疗效果 -50%`);
+      }
+    }
+
+  } else if (skill.type === 'fortuneGoldRain') {
+    // AOE magic damage + coin gain per hit
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      for (let h = 0; h < (skill.hits||8); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.12));
+        applyRawDmg(f, enemy, dmg, false, false, 'magic');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', h * 60, 0, {atkSide:f.side, amount:dmg});
+        if (skill.coinGain) f._goldCoins += skill.coinGain;
+        if (battleOver) break;
+      }
+      updateHpBar(enemy, getFighterElId(enemy));
+      await triggerOnHitEffects(f, enemy, Math.round(f.atk * (skill.atkScale||0.12) * (skill.hits||8)));
+      if (battleOver) break;
+    }
+    if (f._goldCoins > 0) {
+      spawnFloatingNum(getFighterElId(f), `+${(skill.coinGain||2)*(skill.hits||8)}💰`, 'passive-num', 0, -20);
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：对全体敌方${skill.hits||8}段魔法伤害，获得${(skill.coinGain||2)*(skill.hits||8)}金币`);
+    await sleep(400);
+
+  } else if (skill.type === 'crystalDetonate') {
+    // Consume crystallize stacks on target for bonus damage
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const stacks = target._crystallize || 0;
+      const baseDmg = Math.round(f.atk * (skill.atkScale||0.5));
+      const stackDmg = Math.round(f.atk * (skill.perStackScale||0.6) * stacks);
+      const totalDmg = baseDmg + stackDmg;
+      applyRawDmg(f, target, totalDmg, false, false, 'magic');
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(target, tElId);
+      if (stacks > 0) spawnFloatingNum(tElId, `引爆${stacks}层`, 'debuff-num', 200, 0);
+      if (skill.consumeStacks) target._crystallize = 0;
+      renderStatusIcons(target);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：引爆${stacks}层结晶，造成 ${totalDmg} 魔法伤害`);
+      await triggerOnHitEffects(f, target, totalDmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'bubbleBurst') {
+    // Consume bubble store for damage
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const consumed = Math.round(f.bubbleStore * (skill.bubbleConsumePct||60) / 100);
+      f.bubbleStore -= consumed;
+      updateHpBar(f, getFighterElId(f)); // refresh bubble bar
+      applyRawDmg(f, target, consumed, false, false, 'magic');
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${consumed}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:consumed});
+      updateHpBar(target, tElId);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：消耗${consumed}泡泡值，造成 ${consumed} 魔法伤害`);
+      await triggerOnHitEffects(f, target, consumed);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'shellAuraBurst') {
+    // Consume all stored energy for AOE damage
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    const baseDmg = Math.round(f.atk * (skill.atkScale||0.5));
+    const energyDmg = Math.round(f._storedEnergy * (skill.energyDmgScale||1.2));
+    const totalDmg = baseDmg + energyDmg;
+    for (const enemy of enemies) {
+      applyRawDmg(f, enemy, totalDmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(enemy), `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(enemy, getFighterElId(enemy));
+      await triggerOnHitEffects(f, enemy, totalDmg);
+      if (battleOver) break;
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：消耗${f._storedEnergy}储能，对全体造成 ${totalDmg} 物理伤害`);
+    f._storedEnergy = 0;
+    updateHpBar(f, getFighterElId(f)); // refresh energy bar
+    await sleep(400);
+
+  } else if (skill.type === 'piratePlunder') {
+    // Damage + steal def
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      const defSteal = Math.round(target.baseDef * (skill.stealDefPct||20) / 100);
+      if (defSteal > 0) {
+        target.buffs.push({ type:'defDown', value:defSteal, turns:skill.stealDefTurns||3 });
+        f.buffs.push({ type:'defUp', value:defSteal, turns:skill.stealDefTurns||3 });
+        recalcStats();
+        const tElId = getFighterElId(target);
+        const fElId = getFighterElId(f);
+        spawnFloatingNum(tElId, `-${defSteal}护甲`, 'debuff-num', 200, 0);
+        spawnFloatingNum(fElId, `+${defSteal}护甲`, 'passive-num', 200, 0);
+        renderStatusIcons(target);
+        renderStatusIcons(f);
+        updateFighterStats(target, tElId);
+        updateFighterStats(f, fElId);
+        addLog(`${f.emoji}${f.name} 偷取 ${target.emoji}${target.name} ${defSteal}护甲！`);
+      }
+    }
+
+  } else if (skill.type === 'candyTrap') {
+    // Damage + speed down + atk down
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      if (skill.atkDown) {
+        const atkLoss = Math.round(target.baseAtk * skill.atkDown.pct / 100);
+        target.buffs.push({ type:'atkDown', value:atkLoss, turns:skill.atkDown.turns });
+        spawnFloatingNum(getFighterElId(target), `-${atkLoss}攻`, 'debuff-num', 200, 0);
+      }
+      if (skill.spdDown) {
+        target.buffs.push({ type:'spdDown', value:skill.spdDown.pct, turns:skill.spdDown.turns });
+        spawnFloatingNum(getFighterElId(target), `减速`, 'debuff-num', 300, 0);
+      }
+      recalcStats();
+      renderStatusIcons(target);
+      updateFighterStats(target, getFighterElId(target));
+    }
+
+  } else if (skill.type === 'lineInkBomb') {
+    // AOE damage + add ink stacks
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      for (let h = 0; h < (skill.hits||3); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.3));
+        applyRawDmg(f, enemy, dmg, false, false, 'physical');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', h * 60, 0, {atkSide:f.side, amount:dmg});
+        if (battleOver) break;
+      }
+      updateHpBar(enemy, getFighterElId(enemy));
+      if (skill.inkStacks) {
+        enemy._inkStacks = (enemy._inkStacks||0) + skill.inkStacks;
+        const maxInk = (f._passiveSkills && f._passiveSkills.some(p => p.type === 'lineRapid')) ? 7 : 5;
+        enemy._inkStacks = Math.min(enemy._inkStacks, maxInk);
+        spawnFloatingNum(getFighterElId(enemy), `+${skill.inkStacks}墨迹`, 'debuff-num', 200, 0);
+        renderStatusIcons(enemy);
+      }
+      await triggerOnHitEffects(f, enemy, Math.round(f.atk * (skill.atkScale||0.3) * (skill.hits||3)));
+      if (battleOver) break;
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：对全体${skill.hits||3}段物理伤害，叠加${skill.inkStacks||2}层墨迹`);
+    await sleep(400);
+
+  } else if (skill.type === 'lightningSurge') {
+    // AOE true damage based on shock stacks, consume all
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      const stacks = enemy._shockStacks || 0;
+      if (stacks > 0) {
+        const dmg = Math.round(f.atk * (skill.shockPerStackScale||0.10) * stacks);
+        applyRawDmg(f, enemy, dmg, false, false, 'true');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+        updateHpBar(enemy, getFighterElId(enemy));
+        addLog(`${f.emoji}${f.name} 感电 ${enemy.emoji}${enemy.name}：${stacks}层电击 → ${dmg} 真实伤害`);
+        enemy._shockStacks = 0;
+        renderStatusIcons(enemy);
+        await triggerOnHitEffects(f, enemy, dmg);
+        if (battleOver) break;
+      }
+    }
+    await sleep(400);
+
+  // ── Damage Skills with Special Modifiers ──
+  } else if (skill.type === 'angelSmite') {
+    // Damage, convert to true if target rarity <= A
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const rarityOrder = ['D','C','B','A','S'];
+      const targetRarityIdx = rarityOrder.indexOf(target.rarity);
+      const threshIdx = rarityOrder.indexOf(skill.convertTrueBelow || 'A');
+      const dmgType = (targetRarityIdx >= 0 && targetRarityIdx <= threshIdx) ? 'true' : (skill.dmgType || 'physical');
+      const baseDmg = Math.round(f.atk * (skill.atkScale||1.0));
+      const hpDmg = Math.round(target.maxHp * (skill.hpPct||8) / 100);
+      const totalDmg = baseDmg + hpDmg;
+      applyRawDmg(f, target, totalDmg, false, false, dmgType);
+      spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(target, getFighterElId(target));
+      if (dmgType === 'true') spawnFloatingNum(getFighterElId(target), `神罚`, 'debuff-num', 200, 0);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${totalDmg} ${dmgType==='true'?'真实':'物理'}伤害`);
+      await triggerOnHitEffects(f, target, totalDmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'headlessStorm') {
+    // AOE physical 3 hits with temp lifesteal
+    const origLifesteal = f._lifestealPct || 0;
+    f._lifestealPct = origLifesteal + (skill.tempLifesteal||22);
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      for (let h = 0; h < (skill.hits||3); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.5));
+        applyRawDmg(f, enemy, dmg, false, false, 'physical');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', h * 60, 0, {atkSide:f.side, amount:dmg});
+        if (battleOver) break;
+      }
+      updateHpBar(enemy, getFighterElId(enemy));
+      await triggerOnHitEffects(f, enemy, Math.round(f.atk * (skill.atkScale||0.5) * (skill.hits||3)));
+      if (battleOver) break;
+    }
+    f._lifestealPct = origLifesteal; // restore
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：+${skill.tempLifesteal||22}%吸血，对全体3段共${Math.round(f.atk*(skill.atkScale||0.5)*(skill.hits||3))}物理伤害`);
+    await sleep(400);
+
+  } else if (skill.type === 'headlessSoulStrike') {
+    // Single target: 1.5ATK + 25% target current HP magic damage
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const baseDmg = Math.round(f.atk * (skill.atkScale||1.5));
+      const hpDmg = Math.round(target.hp * (skill.targetCurrentHpPct||25) / 100);
+      const totalDmg = baseDmg + hpDmg;
+      applyRawDmg(f, target, totalDmg, false, false, 'magic');
+      spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(target, getFighterElId(target));
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${baseDmg}+${hpDmg}(25%当前HP) = ${totalDmg} 魔法伤害`);
+      await triggerOnHitEffects(f, target, totalDmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'stoneShield') {
+    // Self shield: 20% maxHP, 3 turns
+    const shieldAmt = Math.round(Math.round(f.maxHp * (skill.shieldHpPct||20) / 100) * getShieldMult());
+    f.shield += shieldAmt;
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}护盾</span>`);
+    sfxShield();
+    await sleep(800);
+
+  } else if (skill.type === 'bambooSmack') {
+    // Single target (ignoreRow): physical damage + chilled + knock to front
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      await doDamage(f, target, skill);
+      // Apply chilled
+      if (skill.chilled) {
+        target.buffs.push({ type:'chilled', value:1, turns:skill.chilled });
+        spawnFloatingNum(getFighterElId(target), `❄️冰寒`, 'debuff-num', 200, 0);
+        recalcStats();
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 被冰寒${skill.chilled}回合！`);
+      }
+      // Knock to front if target is in back row and front has space
+      if (skill.knockToFront && target._position === 'back' && target.alive) {
+        const enemyTeam = target.side === 'left' ? leftTeam : rightTeam;
+        const frontCount = enemyTeam.filter(t => t.alive && t._position === 'front').length;
+        if (frontCount < 3) {
+          target._position = 'front';
+          spawnFloatingNum(getFighterElId(target), `击至前排!`, 'passive-num', 300, 0);
+          addLog(`${target.emoji}${target.name} 被击至前排！`);
+          renderScene();
+        }
+      }
+    }
+
+  } else if (skill.type === 'stoneQuake') {
+    // AOE magic damage: atkScale*ATK + defScale*DEF, stun chance
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      const dmg = Math.round(f.atk * (skill.atkScale||0.4)) + Math.round(f.def * (skill.defScale||0.8));
+      applyRawDmg(f, enemy, dmg, false, false, 'magic');
+      spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+      updateHpBar(enemy, getFighterElId(enemy));
+      // Stun chance
+      if (skill.stunChance && Math.random() * 100 < skill.stunChance) {
+        enemy.buffs.push({ type:'stun', value:1, turns:1 });
+        spawnFloatingNum(getFighterElId(enemy), `眩晕`, 'debuff-num', 200, 0);
+        renderStatusIcons(enemy);
+        addLog(`${enemy.emoji}${enemy.name} 被眩晕！`);
+      }
+      await triggerOnHitEffects(f, enemy, dmg);
+      if (battleOver) break;
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：对全体造成魔法伤害`);
+    await sleep(400);
+
+  } else if (skill.type === 'volcanoStomp') {
+    // AOE magic damage + stun chance + self heal lost HP
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      const dmg = Math.round(f.atk * (skill.atkScale||0.8));
+      applyRawDmg(f, enemy, dmg, false, false, 'magic');
+      spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+      updateHpBar(enemy, getFighterElId(enemy));
+      if (skill.stunChance && Math.random() * 100 < skill.stunChance) {
+        enemy.buffs.push({ type:'stun', value:1, turns:1 });
+        spawnFloatingNum(getFighterElId(enemy), `眩晕`, 'debuff-num', 200, 0);
+        renderStatusIcons(enemy);
+        addLog(`${enemy.emoji}${enemy.name} 被眩晕！`);
+      }
+      await triggerOnHitEffects(f, enemy, dmg);
+      if (battleOver) break;
+    }
+    // Self heal lost HP
+    if (skill.healLostPct) {
+      const lostHp = f.maxHp - f.hp;
+      const heal = Math.round(lostHp * skill.healLostPct / 100);
+      const actual = applyHeal(f, heal);
+      if (actual > 0) {
+        spawnFloatingNum(getFighterElId(f), `+${actual}`, 'heal-num', 0, 0);
+        updateHpBar(f, getFighterElId(f));
+      }
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：对全体造成魔法伤害`);
+    await sleep(400);
+
+  } else if (skill.type === 'bambooSpikes') {
+    // AOE multi-hit: atkScale*ATK + selfHpPct*maxHP per hit
+    const enemies = getAliveEnemiesWithSummons(f.side);
+    for (const enemy of enemies) {
+      for (let h = 0; h < (skill.hits||5); h++) {
+        const dmg = Math.round(f.atk * (skill.atkScale||0.18)) + Math.round(f.maxHp * (skill.selfHpPct||3) / 100);
+        applyRawDmg(f, enemy, dmg, false, false, 'physical');
+        spawnFloatingNum(getFighterElId(enemy), `-${dmg}`, 'direct-dmg', h * 60, 0, {atkSide:f.side, amount:dmg});
+        if (battleOver) break;
+      }
+      updateHpBar(enemy, getFighterElId(enemy));
+      await triggerOnHitEffects(f, enemy, (Math.round(f.atk * (skill.atkScale||0.18)) + Math.round(f.maxHp * (skill.selfHpPct||3) / 100)) * (skill.hits||5));
+      if (battleOver) break;
+    }
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：对全体${skill.hits||5}段物理伤害`);
+    await sleep(400);
+
+  } else if (skill.type === 'hidingStrike') {
+    // Single target: atkScale*ATK + defScale*DEF
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const dmg = Math.round(f.atk * (skill.atkScale||2.2)) + Math.round(f.def * (skill.defScale||0.5));
+      applyRawDmg(f, target, dmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+      updateHpBar(target, getFighterElId(target));
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${dmg} 物理伤害`);
+      await triggerOnHitEffects(f, target, dmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'diceDeathBet') {
+    // Damage based on lost HP
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const baseDmg = Math.round(f.atk * (skill.atkScale||0.5));
+      const lostHp = f.maxHp - f.hp;
+      const lostHpBonus = Math.round(lostHp * (skill.lostHpBonusPct||200) / 100);
+      const totalDmg = baseDmg + lostHpBonus;
+      applyRawDmg(f, target, totalDmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(target, getFighterElId(target));
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${totalDmg} 物理伤害（+${lostHpBonus}已损生命加成）`);
+      await triggerOnHitEffects(f, target, totalDmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'diceLuckyCrit') {
+    // Guaranteed crit with random multiplier
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const baseDmg = Math.round(f.atk * (skill.atkScale||1.0));
+      const critRange = skill.randomCritMult || {min:150,max:350};
+      const critMult = (critRange.min + Math.random() * (critRange.max - critRange.min)) / 100;
+      const totalDmg = Math.round(baseDmg * critMult);
+      applyRawDmg(f, target, totalDmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, 'crit-dmg', 0, 0, {atkSide:f.side, amount:totalDmg});
+      updateHpBar(target, getFighterElId(target));
+      spawnFloatingNum(getFighterElId(target), `暴击×${Math.round(critMult*100)}%`, 'passive-num', 200, 0);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：暴击×${Math.round(critMult*100)}% = ${totalDmg} 物理伤害`);
+      sfxCrit();
+      await triggerOnHitEffects(f, target, totalDmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'diamondSmash') {
+    // Single target: DEF + MR + 0.1ATK physical damage + bleed
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const dmg = Math.round(f.def * (skill.defScale||1.0)) + Math.round(f.mr * (skill.mrScale||1.0)) + Math.round(f.atk * (skill.atkScale||0.1));
+      applyRawDmg(f, target, dmg, false, false, 'physical');
+      spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+      updateHpBar(target, getFighterElId(target));
+      // Apply bleed
+      if (skill.bleedTurns) {
+        target.buffs.push({ type:'bleed', value:skill.bleedValue||12, turns:skill.bleedTurns, sourceSide:f.side });
+        spawnFloatingNum(getFighterElId(target), `🩸流血`, 'debuff-num', 200, 0);
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 流血${skill.bleedTurns}回合！`);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${dmg} 物理伤害`);
+      await triggerOnHitEffects(f, target, dmg);
+    }
+    await sleep(400);
+
+  } else if (skill.type === 'fortuneBuyEquip') {
+    // Consume 20 coins, draw equipment from chest pool, equip on chosen ally
+    if ((f._goldCoins||0) < (skill.coinCost||20)) {
+      addLog(`${f.emoji}${f.name} 金币不足（需要${skill.coinCost||20}枚，当前${f._goldCoins||0}枚）`);
+      spawnFloatingNum(getFighterElId(f), `金币不足!`, 'debuff-num', 0, 0);
+    } else {
+      f._goldCoins -= (skill.coinCost||20);
+      // Draw from chest equipment pools (basic→advanced→legend based on total draws)
+      const drawCount = f._fortuneEquipDraws || 0;
+      f._fortuneEquipDraws = drawCount + 1;
+      // Use chest turtle's equipment pool definition
+      const chestPet = ALL_PETS.find(p => p.id === 'chest');
+      if (chestPet && chestPet.passive && chestPet.passive.pools) {
+        const pools = chestPet.passive.pools;
+        const poolIdx = drawCount < 2 ? 0 : drawCount < 4 ? 1 : 2;
+        const pool = pools[Math.min(poolIdx, pools.length-1)];
+        const owned = (f._fortuneEquips || []).map(e => e.id);
+        const available = pool.filter(e => !owned.includes(e.id));
+        if (available.length > 0) {
+          const equip = available[Math.floor(Math.random() * available.length)];
+          if (!f._fortuneEquips) f._fortuneEquips = [];
+          f._fortuneEquips.push(equip);
+          // Apply to self for now (TODO: ally selection UI)
+          if (typeof applyChestEquip === 'function') applyChestEquip(f, equip);
+          spawnFloatingNum(getFighterElId(f), `${equip.icon ? '' : '📦'}${equip.name}`, 'passive-num', 0, 0);
+          addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：消耗20金币，获得装备「${equip.name}」！`);
+        } else {
+          addLog(`${f.emoji}${f.name} 装备池已空！`);
+        }
+      }
+    }
+    renderStatusIcons(f);
+    sfxCoin();
+    await sleep(800);
+
+  } else if (skill.type === 'fortuneGainCoins') {
+    // Gain coins
+    f._goldCoins = (f._goldCoins||0) + (skill.coinGain||9);
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `+${skill.coinGain||9}💰`, 'passive-num', 0, 0);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：获得${skill.coinGain||9}枚金币（共${f._goldCoins}枚）`);
+    sfxCoin();
+    await sleep(600);
+
+  } else if (skill.type === 'rainbowGuard') {
+    // Single ally: shield + ATK buff
+    const target = allFighters[action.targetId];
+    if (target && target.alive) {
+      const shieldAmt = Math.round(Math.round(f.atk * (skill.shieldAtkScale||1.0)) * getShieldMult());
+      target.shield += shieldAmt;
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `+${shieldAmt}🛡`, 'shield-num', 0, 0);
+      updateHpBar(target, tElId);
+      if (skill.atkUpPct) {
+        const atkGain = Math.round(target.baseAtk * skill.atkUpPct / 100);
+        target.buffs.push({ type:'atkUp', value:atkGain, turns:skill.atkUpTurns||3 });
+        spawnFloatingNum(tElId, `+${atkGain}攻`, 'passive-num', 200, 0);
+        recalcStats();
+        renderStatusIcons(target);
+        updateFighterStats(target, tElId);
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${skill.atkUpPct}%攻击 ${skill.atkUpTurns||3}回合</span>`);
+      sfxShield();
+    }
+    await sleep(800);
+
   } else {
     const target = allFighters[action.targetId];
     await doDamage(f, target, skill);
@@ -2093,6 +3079,15 @@ async function doDamage(attacker, target, skill) {
     if (totalDodge > 0 && Math.random() < totalDodge / 100) {
       const yOff = i * 28;
       spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, yOff);
+      // Dodge counter (e.g. starWarp): deal damage back on dodge
+      const dodgeCounterBuff = target.buffs.find(b => b.type === 'dodgeCounter');
+      if (dodgeCounterBuff && attacker.alive) {
+        const cDmg = dodgeCounterBuff.value;
+        applyRawDmg(target, attacker, cDmg, false, false, dodgeCounterBuff.dmgType || 'magic');
+        spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 100, yOff);
+        updateHpBar(attacker, getFighterElId(attacker));
+        if (attacker.hp <= 0) attacker.alive = false;
+      }
       await sleep(280);
       continue;
     }
@@ -2123,15 +3118,15 @@ async function doDamage(attacker, target, skill) {
     // Determine damage type: physical (default), magic, true
     const dmgType = skill.dmgType || 'physical';
 
-    // Defense reduction based on damage type
+    // Defense reduction based on damage type (negative def = damage amplified)
     const effectiveDef = calcEffDef(attacker, target, dmgType);
-    const defReduction = dmgType === 'true' ? 0 : effectiveDef / (effectiveDef + DEF_CONSTANT);
+    const defDmgMult = dmgType === 'true' ? 1 : calcDmgMult(effectiveDef);
 
-    // Main damage = basePower (minus true damage flat) × crit, reduced by armor/mr
+    // Main damage = basePower (minus true damage flat) × crit, reduced/amplified by armor/mr
     let trueFlat = skill.trueDmg || skill.pierce || 0;
     if (skill.trueDmgScale || skill.pierceScale) trueFlat += Math.round(attacker.atk * (skill.trueDmgScale || skill.pierceScale));
     const mainBase = Math.max(0, basePower - (skill.trueDmg || skill.pierce || 0));
-    let mainDmg = Math.max(1, Math.round(mainBase * critMult * (1 - defReduction)));
+    let mainDmg = Math.max(1, Math.round(mainBase * critMult * defDmgMult));
 
     // Passive: bonusDmgAbove60
     if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
@@ -2215,8 +3210,7 @@ async function doDamage(attacker, target, skill) {
       const judgeRaw = Math.round(target.hp * judgePct);
       // Apply as magic damage (reduced by MR)
       const effMr = calcEffDef(attacker, target, 'magic');
-      const mrReduction = effMr / (effMr + DEF_CONSTANT);
-      const judgeReduced = Math.max(1, Math.round(judgeRaw * (1 - mrReduction) * critMult));
+      const judgeReduced = Math.max(1, Math.round(judgeRaw * calcDmgMult(effMr) * critMult));
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalDirect += judgeReduced;
       if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
@@ -2505,8 +3499,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       target._crystallize = 0;
       const detonateDmg = Math.round(target.maxHp * attacker.passive.crystallizeHpPct / 100);
       const effMr = calcEffDef(attacker, target, 'magic');
-      const mrRed = effMr / (effMr + DEF_CONSTANT);
-      const finalDmg = Math.max(1, Math.round(detonateDmg * (1 - mrRed)));
+      const finalDmg = Math.max(1, Math.round(detonateDmg * calcDmgMult(effMr)));
       applyRawDmg(attacker, target, finalDmg, false, true, 'magic');
       spawnFloatingNum(tElCryst, `-${finalDmg}💎`, 'crit-magic', 350, -15, {atkSide:attacker.side, amount:finalDmg});
       updateHpBar(target, tElCryst);
@@ -2525,9 +3518,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Trap
   const trapB = target.buffs.find(b => b.type === 'trap');
   if (trapB && attacker.alive) {
-    const tDef = Math.max(0, attacker.def);
-    const tRed = tDef / (tDef + DEF_CONSTANT);
-    const tDmg = Math.max(1, Math.round(trapB.value * (1 - tRed)));
+    const tDmg = Math.max(1, Math.round(trapB.value * calcDmgMult(attacker.def)));
     attacker.hp = Math.max(0, attacker.hp - tDmg);
     const aElId = getFighterElId(attacker);
     spawnFloatingNum(aElId, `-${tDmg}`, 'counter-dmg', 0, 0);
@@ -2548,6 +3539,18 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       if (attacker.hp <= 0) attacker.alive = false;
     }
   }
+  // Buff-based reflect (e.g. hidingReflect skill)
+  const reflectBuff = target.buffs ? target.buffs.find(b => b.type === 'reflect') : null;
+  if (reflectBuff && attacker && attacker.alive && dmg > 0) {
+    const reflDmg = Math.round(dmg * reflectBuff.value / 100);
+    if (reflDmg > 0) {
+      applyRawDmg(null, attacker, reflDmg);
+      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
+      updateHpBar(attacker, getFighterElId(attacker));
+      if (attacker.hp <= 0) attacker.alive = false;
+    }
+  }
+  // Dodge counter (e.g. starWarp) — handled in dodge check above, not here
   // Lava shield counter
   if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && attacker.alive) {
     const cDmg = Math.round(target.atk * target._lavaShieldCounter);
@@ -2568,9 +3571,12 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       spawnFloatingNum(tElId, `⚡${sDmg}`, 'pierce-dmg', 300, 0);
     }
   }
-  // Lifesteal
-  if (attacker._lifestealPct && attacker.alive && dmg > 0) {
-    const healAmt = Math.round(dmg * attacker._lifestealPct / 100);
+  // Lifesteal (equipment/passive-based + buff-based)
+  let totalLifestealPct = attacker._lifestealPct || 0;
+  const lifestealBuff = attacker.buffs ? attacker.buffs.find(b => b.type === 'lifesteal') : null;
+  if (lifestealBuff) totalLifestealPct += lifestealBuff.value;
+  if (totalLifestealPct > 0 && attacker.alive && dmg > 0) {
+    const healAmt = Math.round(dmg * totalLifestealPct / 100);
     const actual = applyHeal(attacker, healAmt);
     if (actual > 0) {
       spawnFloatingNum(getFighterElId(attacker), `+${actual}吸血`, 'heal-num', 300, 0);
@@ -2622,8 +3628,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (attacker._equipMultiHit && target.alive && Math.random() < attacker._equipMultiHit / 100) {
     const extraDmg = Math.round(attacker.atk * 0.5);
     const eDef = calcEffDef(attacker, target);
-    const defRed = eDef / (eDef + DEF_CONSTANT);
-    const finalDmg = Math.max(1, Math.round(extraDmg * (1 - defRed)));
+    const finalDmg = Math.max(1, Math.round(extraDmg * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, finalDmg, false, false, 'physical');
     spawnFloatingNum(tElId, `-${finalDmg}🐙`, 'direct-dmg', 200, 0, {atkSide:attacker.side, amount:finalDmg});
     updateHpBar(target, tElId);
@@ -2656,8 +3661,7 @@ async function tryGamblerMultiHit(attacker, target, tElId) {
   while (target.alive && attacker.alive && Math.random() * 100 < multiChance) {
     const extraDmg = Math.round(attacker.atk * attacker.passive.dmgScale);
     const eDef = calcEffDef(attacker, target);
-    const eRed = eDef / (eDef + DEF_CONSTANT);
-    const eFinal = Math.max(1, Math.round(extraDmg * (1 - eRed)));
+    const eFinal = Math.max(1, Math.round(extraDmg * calcDmgMult(eDef)));
     const {isCrit, critMult} = calcCrit(attacker);
     const critFinal = Math.max(1, Math.round(eFinal * critMult));
     applyRawDmg(attacker, target, critFinal, false, false, 'physical');
@@ -2689,8 +3693,7 @@ async function doGamblerCards(attacker, target, skill) {
     const scale = skill.minScale + Math.random() * (skill.maxScale - skill.minScale);
     const baseDmg = Math.round(attacker.atk * scale);
     const eDef = calcEffDef(attacker, target);
-    const defRed = eDef / (eDef + DEF_CONSTANT);
-    const dmg = Math.max(1, Math.round(baseDmg * (1 - defRed)));
+    const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
     spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 20);
@@ -2897,34 +3900,64 @@ function aiAction(f) {
   }
 
   let target;
-  if (skill.type==='heal' || skill.type==='bambooHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
-  else if (skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='chestCount' || skill.type==='iceShield') target = f; // self-cast
-  else if (skill.type==='angelBless' || skill.type==='bubbleShield' || skill.type==='ninjaTrap' || skill.type==='bubbleBind') {
+  if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
+  else if (skill.selfCast || skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='chestCount' || skill.type==='iceShield' || skill.type==='headlessRegen' || skill.type==='stoneTaunt' || skill.type==='ghostShadow' || skill.type==='starWarp' || skill.type==='hidingReflect' || skill.type==='starShield' || skill.type==='shellEnergyShield' || skill.type==='lightningShield') target = f; // self-cast
+  else if (skill.type==='angelBless' || skill.type==='bubbleShield' || skill.type==='ninjaTrap' || skill.type==='bubbleBind' || skill.type==='phoenixPurify' || skill.type==='rainbowGuard') {
     // Ally-target skills: pick weakest ally (bubbleBind targets enemy but is listed in isAlly wrongly — fix here)
     if (skill.type==='bubbleBind') target = enemies.sort((a,b)=>a.hp-b.hp)[0]; // bubbleBind marks enemy
+    else if (skill.type==='phoenixPurify') {
+      // Prefer ally with most debuffs
+      const debuffTypes = ['atkDown','defDown','mrDown','healReduce','poison','bleed','burn','cursed','chilled','spdDown'];
+      target = allies.sort((a,b) => b.buffs.filter(bb=>debuffTypes.includes(bb.type)).length - a.buffs.filter(bb=>debuffTypes.includes(bb.type)).length)[0];
+      if (!target.buffs.some(b=>debuffTypes.includes(b.type))) target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0]; // no debuffs, heal lowest
+    }
     else target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   }
+  else if (skill.aoe || skill.aoeAlly) { target = f; /* AOE skills don't need specific target */ }
   else {
     // Smart targeting: front row priority, prefer low HP, avoid undead lock
-    // Filter to front row if any alive front row exists
-    const frontEnemies = enemies.filter(e => e._position === 'front');
-    const targetPool = frontEnemies.length > 0 ? frontEnemies : enemies; // back row only if front all dead
-    if (targetPool.length === 1) {
-      target = targetPool[0];
+    // Taunt: if any enemy has taunt, forced to target them
+    const taunters = enemies.filter(e => e.buffs.some(b => b.type === 'taunt'));
+    if (taunters.length > 0 && !skill.ignoreRow && !skill.aoe) {
+      target = taunters[0];
     } else {
-      const sorted = targetPool.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
-      const lowest = sorted[0];
-      const lowestRatio = lowest.hp / lowest.maxHp;
-      // Undead lock: avoid locked target
-      if (lowest._undeadLockTurns > 0) {
-        const nonLocked = sorted.find(e => !e._undeadLockTurns);
-        target = nonLocked || lowest;
+      // Filter to front row if any alive front row exists
+      let filteredEnemies = enemies;
+      // Stealth: filter out stealthed enemies for single-target
+      const nonStealth = filteredEnemies.filter(e => !e.buffs.some(b => b.type === 'stealth'));
+      if (nonStealth.length > 0) filteredEnemies = nonStealth;
+      let targetPool;
+      if (skill.ignoreRow) {
+        // ignoreRow skills can target anyone; prefer back row if knockToFront
+        if (skill.knockToFront) {
+          const backEnemies = filteredEnemies.filter(e => e._position === 'back');
+          targetPool = backEnemies.length > 0 ? backEnemies : filteredEnemies;
+        } else {
+          targetPool = filteredEnemies;
+        }
+      } else {
+        const frontEnemies = filteredEnemies.filter(e => e._position === 'front');
+        targetPool = frontEnemies.length > 0 ? frontEnemies : filteredEnemies;
       }
-      // HP < 20%: 90% chance to focus
-      else if (lowestRatio < 0.2 && Math.random() < 0.9) { target = lowest; }
-      // General: 70% chance to target lowest HP, 30% random
-      else if (Math.random() < 0.7) { target = lowest; }
-      else { target = targetPool[Math.floor(Math.random() * targetPool.length)]; }
+      if (targetPool.length === 1) {
+        target = targetPool[0];
+      } else if (targetPool.length > 1) {
+        const sorted = targetPool.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+        const lowest = sorted[0];
+        const lowestRatio = lowest.hp / lowest.maxHp;
+        // Undead lock: avoid locked target
+        if (lowest._undeadLockTurns > 0) {
+          const nonLocked = sorted.find(e => !e._undeadLockTurns);
+          target = nonLocked || lowest;
+        }
+        // HP < 20%: 90% chance to focus
+        else if (lowestRatio < 0.2 && Math.random() < 0.9) { target = lowest; }
+        // General: 70% chance to target lowest HP, 30% random
+        else if (Math.random() < 0.7) { target = lowest; }
+        else { target = targetPool[Math.floor(Math.random() * targetPool.length)]; }
+      } else {
+        target = enemies[0]; // fallback
+      }
     }
   }
 
@@ -3303,8 +4336,7 @@ async function processLavaTransform() {
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
       for (const e of enemies) {
         const effMr = calcEffDef(f, e, 'magic');
-        const mrRed = effMr / (effMr + DEF_CONSTANT);
-        const dmg = Math.max(1, Math.round(aoeDmg * (1 - mrRed)));
+        const dmg = Math.max(1, Math.round(aoeDmg * calcDmgMult(effMr)));
         applyRawDmg(f, e, dmg, false, false, 'magic');
         const eElId = getFighterElId(e);
         spawnFloatingNum(eElId, `-${dmg}🌋`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
@@ -3542,6 +4574,16 @@ function hasChestEquip(f, equipId) {
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
 function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
+  // physImmune: block all physical damage (ghost phantom state)
+  if (dmgType === 'physical' && target.buffs && target.buffs.some(b => b.type === 'physImmune')) {
+    spawnFloatingNum(getFighterElId(target), '免疫!', 'dodge-num', 0, 0);
+    return { hpLoss:0, shieldAbs:0, bubbleAbs:0 };
+  }
+  // dmgReduce buff: percentage damage reduction
+  const dmgReduceBuff = target.buffs ? target.buffs.find(b => b.type === 'dmgReduce') : null;
+  if (dmgReduceBuff && amount > 0) {
+    amount = Math.round(amount * (1 - dmgReduceBuff.value / 100));
+  }
   // Ink mark amplification: all damage to marked target is increased
   if (target._inkStacks > 0 && amount > 0) {
     amount = Math.round(amount * (1 + target._inkStacks * 0.05));
@@ -3614,11 +4656,13 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   if (source && source.passive && source.passive.type === 'lavaRage' && !source._lavaSpent && !source._lavaTransformed && amount > 0) {
     source._lavaRage = Math.min(source.passive.rageMax, (source._lavaRage || 0) + Math.round(amount * source.passive.rageDmgPct / 100));
     renderStatusIcons(source);
+    updateHpBar(source, getFighterElId(source)); // refresh rage bar
   }
   // Lava turtle: accumulate rage from damage taken
   if (target && target.passive && target.passive.type === 'lavaRage' && !target._lavaSpent && !target._lavaTransformed && amount > 0) {
     target._lavaRage = Math.min(target.passive.rageMax, (target._lavaRage || 0) + Math.round(amount * target.passive.rageTakenPct / 100));
     renderStatusIcons(target);
+    updateHpBar(target, getFighterElId(target)); // refresh rage bar
   }
   updateDmgStats();
   // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner

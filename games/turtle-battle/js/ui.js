@@ -473,8 +473,8 @@ function showFighterDetail(f) {
   // ── Buffs / Status (right after stats) ──
   if (f.buffs && f.buffs.length) {
     html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">';
+    const tag = (color, text) => `<span class="fdp-buff-tag" style="border-color:${color};color:${color}">${text}</span>`;
     f.buffs.forEach(b => {
-      const tag = (color, text) => `<span class="fdp-buff-tag" style="border-color:${color};color:${color}">${text}</span>`;
       if (b.type === 'phoenixBurnDot') html += tag('#ff6600', `🔥灼烧 ${b.turns}回合`);
       else if (b.type === 'dot') html += tag('#9b59b6', `💀诅咒 ${b.turns}回合`);
       else if (b.type === 'atkUp') html += tag('#06d6a0', `⬆攻+${b.value} ${b.turns}回合`);
@@ -1218,6 +1218,19 @@ function renderStatusIcons(f) {
     if (b.type === 'stun') return `<span style="color:#ff0;background:rgba(255,255,0,.2);padding:1px 5px;border-radius:6px" title="眩晕：跳过下次行动">💫眩晕</span>`;
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合">🎲+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合">☠️-${b.value}%治疗${b.turns}</span>`;
+    if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合">😤嘲讽${b.turns}</span>`;
+    if (b.type === 'stealth') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="隐身 剩${b.turns}回合">👻隐身${b.turns}</span>`;
+    if (b.type === 'reflect') return `<span style="color:#ff8c00;background:rgba(255,140,0,.15);padding:1px 5px;border-radius:6px" title="反弹${b.value}% 剩${b.turns}回合">🪞反弹${b.turns}</span>`;
+    if (b.type === 'dmgReduce') return `<span style="color:#4dabf7;background:rgba(77,171,247,.15);padding:1px 5px;border-radius:6px" title="受伤-${b.value}% 剩${b.turns}回合">🛡-${b.value}%${b.turns}</span>`;
+    if (b.type === 'dodgeCounter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="闪避反击${b.value}伤害 剩${b.turns}回合">⚔️反击${b.turns}</span>`;
+    if (b.type === 'lifesteal') return `<span style="color:#e74c3c;background:rgba(231,76,60,.15);padding:1px 5px;border-radius:6px" title="吸血+${b.value}% 剩${b.turns}回合">🩸+${b.value}%${b.turns}</span>`;
+    if (b.type === 'spdDown') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="减速-${b.value}% 剩${b.turns}回合">🐌减速${b.turns}</span>`;
+    if (b.type === 'mrDown') return `<span class="status-defdown" title="魔抗-${b.value}% 剩${b.turns}回合">⬇魔抗${b.turns}</span>`;
+    if (b.type === 'mrUp') return `<span class="status-defup" title="魔抗+${b.value} 剩${b.turns}回合">⬆魔抗${b.turns}</span>`;
+    if (b.type === 'poison') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="中毒${b.value}/回合 剩${b.turns}回合">🧪中毒${b.turns}</span>`;
+    if (b.type === 'bleed') return `<span style="color:#cc3333;background:rgba(204,51,51,.15);padding:1px 5px;border-radius:6px" title="流血${b.value}/回合 剩${b.turns}回合">🩸流血${b.turns}</span>`;
+    if (b.type === 'counter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="反击${b.value}伤害 剩${b.turns}回合">⚔️${b.turns}</span>`;
+    if (b.type === 'physImmune') return `<span style="color:#9b59b6;background:rgba(155,89,182,.15);padding:1px 5px;border-radius:6px" title="虚化：免疫物理伤害 剩${b.turns}回合">👻虚化${b.turns}</span>`;
     return '';
   }).join('');
   // Star energy indicator
@@ -1750,13 +1763,6 @@ function toggleDmgStats() {
   if (window.innerWidth <= 768) {
     const showing = panel.classList.toggle('mobile-show');
     panel.style.display = showing ? 'block' : 'none';
-    if (showing && !panel.querySelector('.mobile-overlay-close')) {
-      const btn = document.createElement('button');
-      btn.className = 'btn mobile-overlay-close';
-      btn.textContent = '✕ 关闭';
-      btn.onclick = () => { panel.classList.remove('mobile-show'); panel.style.display = 'none'; };
-      panel.insertBefore(btn, panel.firstChild);
-    }
   } else {
     // Desktop: floating panel in scene
     panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
