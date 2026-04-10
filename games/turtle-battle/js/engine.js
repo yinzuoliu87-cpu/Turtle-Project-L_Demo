@@ -42,25 +42,25 @@ const _floatStacks = {};
 // ── EQUIPMENT SYSTEM (装备之日) ──────────────────────────
 const EQUIP_POOL = [
   // Stat boost (8)
-  { id:'e_blade', name:'海藻短刃', icon:'⚔️', desc:'攻击力 +15%', apply(f) { f.baseAtk = Math.round(f.baseAtk * 1.15); f.atk = f.baseAtk; } },
-  { id:'e_armor', name:'珊瑚护甲', icon:'️', desc:'护甲 +20%', apply(f) { f.baseDef = Math.round(f.baseDef * 1.2); f.def = f.baseDef; } },
-  { id:'e_shell', name:'深海贝壳', icon:'🐚', desc:'魔抗 +20%', apply(f) { f.baseMr = Math.round((f.baseMr||f.baseDef) * 1.2); f.mr = f.baseMr; } },
-  { id:'e_pearl', name:'生命珍珠', icon:'💎', desc:'最大生命值 +60', apply(f) { f.maxHp += 60; f.hp += 60; } },
-  { id:'e_tooth', name:'锋利鲨齿', icon:'🦷', desc:'暴击率 +20%', apply(f) { f.crit += 0.2; } },
-  { id:'e_hammer', name:'重击锤', icon:'🔨', desc:'暴击伤害 +25%', apply(f) { f._extraCritDmgPerm = (f._extraCritDmgPerm||0) + 0.25; } },
-  { id:'e_spike', name:'穿甲珊瑚刺', icon:'📌', desc:'护甲穿透 +6', apply(f) { f.armorPen += 6; } },
-  { id:'e_crystal', name:'灵能水晶', icon:'🔮', desc:'魔法穿透 +6', apply(f) { f.magicPen = (f.magicPen||0) + 6; } },
+  { id:'e_blade', name:'海藻短刃', icon:'equip/dungeon-blade.png', desc:'攻击力 +15%', apply(f) { f.baseAtk = Math.round(f.baseAtk * 1.15); f.atk = f.baseAtk; } },
+  { id:'e_armor', name:'珊瑚护甲', icon:'equip/dungeon-armor.png', desc:'护甲 +20%', apply(f) { f.baseDef = Math.round(f.baseDef * 1.2); f.def = f.baseDef; } },
+  { id:'e_shell', name:'深海贝壳', icon:'equip/dungeon-shell.png', desc:'魔抗 +20%', apply(f) { f.baseMr = Math.round((f.baseMr||f.baseDef) * 1.2); f.mr = f.baseMr; } },
+  { id:'e_pearl', name:'生命珍珠', icon:'equip/dungeon-pearl.png', desc:'最大生命值 +60', apply(f) { f.maxHp += 60; f.hp += 60; } },
+  { id:'e_tooth', name:'锋利鲨齿', icon:'equip/dungeon-tooth.png', desc:'暴击率 +20%', apply(f) { f.crit += 0.2; } },
+  { id:'e_hammer', name:'重击锤', icon:'equip/dungeon-hammer.png', desc:'暴击伤害 +25%', apply(f) { f._extraCritDmgPerm = (f._extraCritDmgPerm||0) + 0.25; } },
+  { id:'e_spike', name:'穿甲珊瑚刺', icon:'equip/dungeon-spike.png', desc:'护甲穿透 +6', apply(f) { f.armorPen += 6; } },
+  { id:'e_crystal', name:'灵能水晶', icon:'equip/dungeon-crystal.png', desc:'魔法穿透 +6', apply(f) { f.magicPen = (f.magicPen||0) + 6; } },
   // Special effect (10)
-  { id:'e_star', name:'吸血海星', icon:'🩸', desc:'生命偷取 +12%', apply(f) { f._lifestealPct = (f._lifestealPct||0) + 12; } },
-  { id:'e_urchin', name:'荆棘海胆', icon:'🌵', desc:'受伤反弹 10%', apply(f) { f._equipReflect = (f._equipReflect||0) + 10; } },
-  { id:'e_fire', name:'灼热火珊瑚', icon:'🔥', desc:'攻击附带灼烧4回合', apply(f) { f._equipBurn = true; } },
-  { id:'e_jelly', name:'冰封水母', icon:'❄️', desc:'攻击15%概率眩晕1回合', apply(f) { f._equipStun = 15; } },
-  { id:'e_anemone', name:'治愈海葵', icon:'💚', desc:'每回合回复5%最大HP', apply(f) { f._equipHot = 5; } },
-  { id:'e_ghost', name:'幽灵墨鱼', icon:'👻', desc:'闪避率 +15%', apply(f) { f.buffs.push({type:'dodge',value:15,turns:999}); } },
-  { id:'e_puffer', name:'愤怒河豚', icon:'🐡', desc:'HP低于30%时攻击力翻倍', apply(f) { f._equipRage = true; } },
-  { id:'e_tshell', name:'坚韧龟壳', icon:'🐢', desc:'每段受伤固定减免5点', apply(f) { f._equipFlatReduce = (f._equipFlatReduce||0) + 5; } },
-  { id:'e_octo', name:'连击章鱼爪', icon:'🐙', desc:'20%概率追加50%攻击力打击', apply(f) { f._equipMultiHit = 20; } },
-  { id:'e_conch', name:'复活海螺', icon:'🐌', desc:'首次死亡以20%HP复活', apply(f) { f._equipRevive = true; } },
+  { id:'e_star', name:'吸血海星', icon:'equip/dungeon-starfish.png', desc:'生命偷取 +12%', apply(f) { f._lifestealPct = (f._lifestealPct||0) + 12; } },
+  { id:'e_urchin', name:'荆棘海胆', icon:'equip/dungeon-urchin.png', desc:'受伤反弹 10%', apply(f) { f._equipReflect = (f._equipReflect||0) + 10; } },
+  { id:'e_fire', name:'灼热火珊瑚', icon:'equip/dungeon-fire-coral.png', desc:'攻击附带灼烧4回合', apply(f) { f._equipBurn = true; } },
+  { id:'e_jelly', name:'冰封水母', icon:'equip/dungeon-jelly.png', desc:'攻击15%概率眩晕1回合', apply(f) { f._equipStun = 15; } },
+  { id:'e_anemone', name:'治愈海葵', icon:'equip/dungeon-anemone.png', desc:'每回合回复5%最大HP', apply(f) { f._equipHot = 5; } },
+  { id:'e_ghost', name:'幽灵墨鱼', icon:'equip/dungeon-ghost.png', desc:'闪避率 +15%', apply(f) { f.buffs.push({type:'dodge',value:15,turns:999}); } },
+  { id:'e_puffer', name:'愤怒河豚', icon:'equip/dungeon-puffer.png', desc:'HP低于30%时攻击力翻倍', apply(f) { f._equipRage = true; } },
+  { id:'e_tshell', name:'坚韧龟壳', icon:'equip/dungeon-tshell.png', desc:'每段受伤固定减免5点', apply(f) { f._equipFlatReduce = (f._equipFlatReduce||0) + 5; } },
+  { id:'e_octo', name:'连击章鱼爪', icon:'equip/dungeon-octo.png', desc:'20%概率追加50%攻击力打击', apply(f) { f._equipMultiHit = 20; } },
+  { id:'e_conch', name:'复活海螺', icon:'equip/dungeon-conch.png', desc:'首次死亡以20%HP复活', apply(f) { f._equipRevive = true; } },
 ];
 
 // ── UTILITY FUNCTIONS (used across all files) ────────────
