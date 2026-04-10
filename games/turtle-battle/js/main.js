@@ -55,6 +55,11 @@ function startMode(mode) {
   }
 }
 
+function toggleCustomModes() {
+  const panel = document.getElementById('customModesPanel');
+  if (panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
+}
+
 // ── ONLINE LOBBY (PeerJS) ─────────────────────────────────
 function cleanupPeer() {
   if (onlineConn) { try { onlineConn.close(); } catch(e){} onlineConn = null; }

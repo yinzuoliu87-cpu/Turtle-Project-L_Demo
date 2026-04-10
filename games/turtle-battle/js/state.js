@@ -12,16 +12,30 @@ function buildStateSync() {
     fighters: allFighters.map(f => ({
       hp: f.hp, maxHp: f.maxHp, shield: f.shield,
       atk: f.atk, def: f.def, mr: f.mr, baseAtk: f.baseAtk, baseDef: f.baseDef, baseMr: f.baseMr,
-      alive: f.alive, crit: f.crit, armorPen: f.armorPen, armorPenPct: f.armorPenPct, magicPen: f.magicPen, magicPenPct: f.magicPenPct,
+      alive: f.alive, crit: f.crit, armorPen: f.armorPen, armorPenPct: f.armorPenPct, magicPen: f.magicPen || 0, magicPenPct: f.magicPenPct || 0,
       _deathProcessed: f._deathProcessed, _isMech: f._isMech,
+      _position: f._position, // front/back row
       _inkStacks: f._inkStacks, _shockStacks: f._shockStacks,
       _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
+      _storedEnergy: f._storedEnergy || 0, // shell energy
+      _lavaRage: f._lavaRage || 0, _lavaTransformed: f._lavaTransformed || false,
+      _lavaTransformTurns: f._lavaTransformTurns || 0, _lavaSpent: f._lavaSpent || false,
+      _chestTreasure: f._chestTreasure || 0, _chestTier: f._chestTier || 0,
+      _goldLightning: f._goldLightning || 0,
+      _crystallize: f._crystallize || 0, _collideStacks: f._collideStacks || 0,
+      _undeadLockTurns: f._undeadLockTurns || 0, _undeadLockUsed: f._undeadLockUsed || false,
+      _stoneDefGained: f._stoneDefGained || 0,
+      _bambooGainedHp: f._bambooGainedHp || 0,
       _dmgDealt: f._dmgDealt, _dmgTaken: f._dmgTaken,
       _physDmgDealt: f._physDmgDealt, _magicDmgDealt: f._magicDmgDealt, _trueDmgDealt: f._trueDmgDealt,
       _physDmgTaken: f._physDmgTaken, _magicDmgTaken: f._magicDmgTaken, _trueDmgTaken: f._trueDmgTaken,
       _bambooCharged: f._bambooCharged, _bambooCounter: f._bambooCounter,
-      _hunterKills: f._hunterKills, _lifestealPct: f._lifestealPct || 0,
+      _hunterKills: f._hunterKills, _hunterStolenAtk: f._hunterStolenAtk || 0,
+      _hunterStolenDef: f._hunterStolenDef || 0, _hunterStolenHp: f._hunterStolenHp || 0,
+      _lifestealPct: f._lifestealPct || 0,
       _drones: f._drones ? f._drones.length : 0,
+      _isPirateShip: f._isPirateShip || false,
+      _phantomStrike: f._phantomStrike || null,
       bubbleStore: f.bubbleStore, bubbleShieldVal: f.bubbleShieldVal, bubbleShieldTurns: f.bubbleShieldTurns,
       name: f.name, emoji: f.emoji,
       buffs: f.buffs.map(b => ({...b})),
@@ -42,13 +56,27 @@ function applyStateSync(state) {
     f.alive = sf.alive; f.crit = sf.crit;
     f.armorPen = sf.armorPen; f.armorPenPct = sf.armorPenPct; f.magicPen = sf.magicPen || 0; f.magicPenPct = sf.magicPenPct || 0;
     f._deathProcessed = sf._deathProcessed; f._isMech = sf._isMech;
+    f._position = sf._position || f._position;
     f._inkStacks = sf._inkStacks; f._shockStacks = sf._shockStacks;
     f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
+    f._storedEnergy = sf._storedEnergy || 0;
+    f._lavaRage = sf._lavaRage || 0; f._lavaTransformed = sf._lavaTransformed || false;
+    f._lavaTransformTurns = sf._lavaTransformTurns || 0; f._lavaSpent = sf._lavaSpent || false;
+    f._chestTreasure = sf._chestTreasure || 0; f._chestTier = sf._chestTier || 0;
+    f._goldLightning = sf._goldLightning || 0;
+    f._crystallize = sf._crystallize || 0; f._collideStacks = sf._collideStacks || 0;
+    f._undeadLockTurns = sf._undeadLockTurns || 0; f._undeadLockUsed = sf._undeadLockUsed || false;
+    f._stoneDefGained = sf._stoneDefGained || 0;
+    f._bambooGainedHp = sf._bambooGainedHp || 0;
     f._dmgDealt = sf._dmgDealt; f._dmgTaken = sf._dmgTaken;
     f._physDmgDealt = sf._physDmgDealt; f._magicDmgDealt = sf._magicDmgDealt; f._trueDmgDealt = sf._trueDmgDealt;
     f._physDmgTaken = sf._physDmgTaken; f._magicDmgTaken = sf._magicDmgTaken; f._trueDmgTaken = sf._trueDmgTaken;
     f._bambooCharged = sf._bambooCharged; f._bambooCounter = sf._bambooCounter;
-    f._hunterKills = sf._hunterKills; f._lifestealPct = sf._lifestealPct || 0;
+    f._hunterKills = sf._hunterKills; f._hunterStolenAtk = sf._hunterStolenAtk || 0;
+    f._hunterStolenDef = sf._hunterStolenDef || 0; f._hunterStolenHp = sf._hunterStolenHp || 0;
+    f._lifestealPct = sf._lifestealPct || 0;
+    f._isPirateShip = sf._isPirateShip || false;
+    f._phantomStrike = sf._phantomStrike || null;
     f.bubbleStore = sf.bubbleStore; f.bubbleShieldVal = sf.bubbleShieldVal; f.bubbleShieldTurns = sf.bubbleShieldTurns;
     if (sf.name) f.name = sf.name;
     if (sf.emoji) f.emoji = sf.emoji;

@@ -86,25 +86,18 @@
     <p class="menu-sub">3V3 回合制战斗</p>
   </div>
   <div class="menu-buttons">
-    <button class="btn btn-primary btn-lg" onclick="startMode('pve')">
-      <span class="btn-icon">🌿</span>
-      <span class="btn-text">
-        <strong>野生对局</strong>
-        <small>遭遇野生龟队</small>
-      </span>
-    </button>
     <button class="btn btn-gold btn-lg" onclick="startMode('pvp-online')">
       <span class="btn-icon">🌐</span>
       <span class="btn-text">
-        <strong>线上对战</strong>
-        <small>房间匹配对战</small>
+        <strong>快速匹配</strong>
+        <small>线上随机对战</small>
       </span>
     </button>
-    <button class="btn btn-lg" onclick="startMode('boss')" style="background:linear-gradient(135deg,#8b0000,#ff4500);border:2px solid #ff6600">
-      <span class="btn-icon"><img src="assets/equip/equip-crown-icon.png" style="width:32px;height:32px"></span>
+    <button class="btn btn-primary btn-lg" onclick="startMode('pvp-online')">
+      <span class="btn-icon">🔑</span>
       <span class="btn-text">
-        <strong>Boss挑战</strong>
-        <small>2v1 挑战强化Boss</small>
+        <strong>房间对战</strong>
+        <small>邀请好友对战</small>
       </span>
     </button>
     <button class="btn btn-lg" onclick="startMode('dungeon')" style="background:linear-gradient(135deg,#1a1a4e,#4a2080);border:2px solid #8b5cf6">
@@ -114,6 +107,29 @@
         <small>5关挑战 · 血量延续</small>
       </span>
     </button>
+    <button class="btn btn-lg btn-custom-toggle" onclick="toggleCustomModes()" style="background:linear-gradient(135deg,#2a2a2a,#444);border:1px solid #666">
+      <span class="btn-icon">⚙️</span>
+      <span class="btn-text">
+        <strong>自定义模式</strong>
+        <small>野生对局 · Boss挑战</small>
+      </span>
+    </button>
+    <div class="custom-modes-panel" id="customModesPanel" style="display:none">
+      <button class="btn btn-lg" onclick="startMode('pve')" style="background:linear-gradient(135deg,#1a3a1a,#2d5a27);border:1px solid #4a8">
+        <span class="btn-icon">🌿</span>
+        <span class="btn-text">
+          <strong>野生对局</strong>
+          <small>遭遇野生龟队</small>
+        </span>
+      </button>
+      <button class="btn btn-lg" onclick="startMode('boss')" style="background:linear-gradient(135deg,#8b0000,#ff4500);border:2px solid #ff6600">
+        <span class="btn-icon"><img src="assets/equip/equip-crown-icon.png" style="width:32px;height:32px"></span>
+        <span class="btn-text">
+          <strong>Boss挑战</strong>
+          <small>3v1 挑战强化Boss</small>
+        </span>
+      </button>
+    </div>
   </div>
   <!-- Battle Record -->
   <div class="record-box" id="recordBox">
