@@ -321,7 +321,7 @@ async function executeAction(action) {
   currentActingFighter = f;
   // Track this fighter as acted (needed for online: opponent actions come via network)
   actedThisSide.add(action.attackerId);
-  if (gameMode === 'boss' && allFighters[action.attackerId]._isBoss) _bossActionsThisRound++;
+  if (allFighters[action.attackerId]._isBoss) _bossActionsThisRound++;
   const skill = f.skills[action.skillIdx];
   if (!skill) { console.error('executeAction: skill not found', action, 'fighter:', f.name, 'skills:', f.skills.length); animating=false; onActionComplete(); return; }
 
