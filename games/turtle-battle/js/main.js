@@ -1844,7 +1844,22 @@ function dungeonSwap(deadId, benchId) {
   // Move deadId to bench
   const bIdx = ds.benchIds.indexOf(benchId);
   if (bIdx !== -1) ds.benchIds[bIdx] = deadId;
-  showToast(`${ALL_PETS.find(x=>x.id===benchId).name} 替换上场！`);
+  // Give new turtle the dead turtle's position (or first empty slot)
+  if (!ds.positions) ds.positions = {};
+  const deadPos = ds.positions[deadId];
+  if (deadPos) {
+    ds.positions[benchId] = { ...deadPos };
+    delete ds.positions[deadId];
+  } else {
+    // Find first empty front/back slot
+    const usedSlots = Object.values(ds.positions).map(p => p.slotKey);
+    const emptySlot = ['front-0','front-1','front-2','back-0','back-1','back-2'].find(s => !usedSlots.includes(s));
+    if (emptySlot) ds.positions[benchId] = { position: emptySlot.startsWith('front') ? 'front' : 'back', slotKey: emptySlot };
+  }
+  // Set HP for new turtle (full HP since fresh from bench)
+  const bp = ALL_PETS.find(x => x.id === benchId);
+  if (bp && !ds.teamHp[benchId]) ds.teamHp[benchId] = bp.hp;
+  showToast(`${bp?.name || benchId} 替换上场！`);
   renderDungeonTeamSwap();
 }
 
