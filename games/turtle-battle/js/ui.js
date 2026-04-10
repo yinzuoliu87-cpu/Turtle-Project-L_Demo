@@ -1726,8 +1726,12 @@ function renderActionButtons(f) {
   box.innerHTML = f.skills.map((s,i) => {
     let ready = s.cdLeft === 0;
     if (s.type === 'hidingCommand' && (!f._summon || !f._summon.alive)) ready = false;
+    if (s.type === 'hidingBuffSummon' && (!f._summon || !f._summon.alive)) ready = false;
     if (s.type === 'gamblerBet' && f.hp / f.maxHp <= 0.4) ready = false;
     if (s.type === 'fortuneAllIn' && (f._goldCoins || 0) <= 0) ready = false;
+    if (s.type === 'fortuneBuyEquip' && (f._goldCoins || 0) < (s.coinCost || 20)) ready = false;
+    if (s.type === 'bubbleBurst' && (f.bubbleStore || 0) <= 0) ready = false;
+    if (s.type === 'starShieldBreak') { const enemies = allFighters.filter(e=>e.alive&&e.side!==f.side); if (!enemies.some(e=>e.shield>0||e.bubbleShieldVal>0)) ready = false; }
     const shieldImg = '<img src="assets/status/shield-icon.png" style="width:16px;height:16px;vertical-align:middle">';
     const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';

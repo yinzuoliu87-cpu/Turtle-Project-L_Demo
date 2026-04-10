@@ -496,6 +496,14 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
   }
+  // Counter buff (e.g. lightningShield): reflect damage only while shield > 0
+  const counterBuff = target.buffs ? target.buffs.find(b => b.type === 'counter') : null;
+  if (counterBuff && target.shield > 0 && attacker && attacker.alive && dmg > 0) {
+    applyRawDmg(target, attacker, counterBuff.value);
+    spawnFloatingNum(getFighterElId(attacker), `-${counterBuff.value}`, 'counter-dmg', 350, 0);
+    updateHpBar(attacker, getFighterElId(attacker));
+    if (attacker.hp <= 0) attacker.alive = false;
+  }
   // Lightning shock stacks
   if (attacker.passive && attacker.passive.type === 'lightningStorm' && target.alive) {
     target._shockStacks = (target._shockStacks || 0) + 1;
