@@ -850,14 +850,14 @@ async function nextSideAction() {
   let canAct;
   if (isBossSide) {
     if (!_bossActionsThisRound) _bossActionsThisRound = 0;
-    canAct = (_bossActionsThisRound < 3) ? sideTeam.filter(f => f.alive) : [];
+    canAct = (_bossActionsThisRound < 2) ? sideTeam.filter(f => f.alive) : [];
   } else {
     canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
   }
 
   // First round: left only sends 1
   const totalAlive = sideTeam.filter(f => f.alive).length;
-  const maxActions = (isFirstRound && activeSide === 'left') ? Math.min(2, totalAlive) : (isBossSide ? 3 : totalAlive);
+  const maxActions = (isFirstRound && activeSide === 'left') ? Math.min(2, totalAlive) : (isBossSide ? 2 : totalAlive);
   const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
