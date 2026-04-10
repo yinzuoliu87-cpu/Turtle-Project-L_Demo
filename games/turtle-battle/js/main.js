@@ -1734,110 +1734,134 @@ function renderDungeonTeamSwap() {
   const ds = dungeonState;
   const statusEl = document.getElementById('dungeonTeamStatus');
   if (!statusEl) return;
+  if (!ds.positions) ds.positions = {};
 
-  const renderTurtle = (id, label) => {
+  const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
+  const aliveBench = ds.benchIds.filter(id => !ds.deadIds.includes(id));
+  const floating = window._dungeonFloatingTurtle;
+
+  const turtleCard = (id, clickAction) => {
     const p = ALL_PETS.find(x => x.id === id);
     const dead = ds.deadIds.includes(id);
     const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
     const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
     const hpPct = Math.round(hp / maxHp * 100);
-    return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
-      <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
-      <div class="dts-name">${p.name}</div>
-      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
-      ${label ? `<div class="dts-label">${label}</div>` : ''}
+    const isFloating = floating === id;
+    return `<div class="dts-pos-slot filled ${dead ? 'dead' : ''} ${isFloating ? 'floating' : ''}" onclick="${clickAction}">
+      ${buildPetImgHTML(p, 32)}
+      <span class="dts-pos-name">${p.name}</span>
+      <span class="dts-pos-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀' : hpPct + '%'}</span>
     </div>`;
   };
 
-  // Alive battle turtles (for repositioning)
-  const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
-  const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
-  const aliveBench = ds.benchIds.filter(id => !ds.deadIds.includes(id));
-  const canSwap = deadBattle.length > 0 && aliveBench.length > 0;
-
   let html = '';
 
-  // Repositioning: show alive battle turtles with position buttons
-  html += '<div class="dts-section-label">⚔ 上场阵型（点击调整位置）</div>';
+  // === Position grid ===
+  html += '<div class="dts-section-label">⚔ 上场阵型（点击龟拿起，点空位放下；点替补可互换）</div>';
   html += '<div class="dts-position-grid">';
-  html += '<div class="dts-pos-row"><span class="dts-pos-label">前排</span>';
-  for (let i = 0; i < 3; i++) {
-    const slotId = 'front-' + i;
-    const turtleInSlot = aliveBattle.find(id => {
-      const pos = ds.positions && ds.positions[id];
-      return pos && pos.slotKey === slotId;
-    });
-    if (turtleInSlot) {
-      const p = ALL_PETS.find(x => x.id === turtleInSlot);
-      html += `<div class="dts-pos-slot filled" onclick="dungeonReposition('${turtleInSlot}','${slotId}')">${buildPetImgHTML(p, 32)}<span class="dts-pos-name">${p.name}</span></div>`;
-    } else {
-      html += `<div class="dts-pos-slot empty" onclick="dungeonPlaceInSlot('${slotId}')">空</div>`;
-    }
-  }
-  html += '</div><div class="dts-pos-row"><span class="dts-pos-label">后排</span>';
-  for (let i = 0; i < 3; i++) {
-    const slotId = 'back-' + i;
-    const turtleInSlot = aliveBattle.find(id => {
-      const pos = ds.positions && ds.positions[id];
-      return pos && pos.slotKey === slotId;
-    });
-    if (turtleInSlot) {
-      const p = ALL_PETS.find(x => x.id === turtleInSlot);
-      html += `<div class="dts-pos-slot filled" onclick="dungeonReposition('${turtleInSlot}','${slotId}')">${buildPetImgHTML(p, 32)}<span class="dts-pos-name">${p.name}</span></div>`;
-    } else {
-      html += `<div class="dts-pos-slot empty" onclick="dungeonPlaceInSlot('${slotId}')">空</div>`;
-    }
-  }
-  html += '</div></div>';
-
-  // Dead + bench
-  const deadHtml = ds.deadIds.map(id => renderTurtle(id, '')).join('');
-  if (deadHtml) { html += '<div class="dts-section-label">💀 阵亡</div><div class="dts-row">' + deadHtml + '</div>'; }
-  html += '<div class="dts-section-label">🪑 替补</div><div class="dts-row">';
-  html += ds.benchIds.filter(id => !ds.deadIds.includes(id)).map(id => renderTurtle(id, '')).join('');
-  html += aliveBench.length === 0 ? '<span style="color:var(--fg2)">无存活替补</span>' : '';
-  html += '</div>';
-
-  // Swap buttons
-  if (canSwap) {
-    html += `<div class="dts-swap-area"><div class="dts-swap-hint">替换阵亡龟：</div>`;
-    for (const deadId of deadBattle) {
-      const dp = ALL_PETS.find(x => x.id === deadId);
-      for (const benchId of aliveBench) {
-        const bp = ALL_PETS.find(x => x.id === benchId);
-        html += `<button class="btn btn-sm dts-swap-btn" onclick="dungeonSwap('${deadId}','${benchId}')">💀${dp.name} → ${bp.name}</button>`;
+  for (const row of ['front', 'back']) {
+    html += `<div class="dts-pos-row"><span class="dts-pos-label">${row === 'front' ? '前排' : '后排'}</span>`;
+    for (let i = 0; i < 3; i++) {
+      const slotId = row + '-' + i;
+      const turtleInSlot = aliveBattle.find(id => ds.positions[id] && ds.positions[id].slotKey === slotId);
+      if (turtleInSlot) {
+        html += turtleCard(turtleInSlot, `dungeonPickUp('${turtleInSlot}')`);
+      } else {
+        html += `<div class="dts-pos-slot empty" onclick="dungeonPlaceInSlot('${slotId}')">${floating ? '放这里' : '空'}</div>`;
       }
     }
-    html += `</div>`;
+    html += '</div>';
+  }
+  html += '</div>';
+
+  // === Floating indicator ===
+  if (floating) {
+    const fp = ALL_PETS.find(x => x.id === floating);
+    html += `<div class="dts-floating-hint">🔄 正在移动：${fp?.name || floating}（点击上方空位放置，或点替补互换）</div>`;
+  }
+
+  // === Bench ===
+  html += '<div class="dts-section-label">🪑 替补（点击可与上场龟互换）</div><div class="dts-row">';
+  if (aliveBench.length === 0 && ds.benchIds.filter(id => ds.deadIds.includes(id)).length === 0) {
+    html += '<span style="color:var(--fg2)">无替补</span>';
+  }
+  for (const id of ds.benchIds) {
+    const dead = ds.deadIds.includes(id);
+    if (dead) {
+      const p = ALL_PETS.find(x => x.id === id);
+      html += `<div class="dts-pos-slot dead"><span class="dts-pos-name">${p.name}</span><span class="dts-pos-hp">💀</span></div>`;
+    } else {
+      html += turtleCard(id, `dungeonBenchSwap('${id}')`);
+    }
+  }
+  html += '</div>';
+
+  // === Dead battle turtles ===
+  const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
+  if (deadBattle.length > 0) {
+    html += '<div class="dts-section-label">💀 上场阵亡</div><div class="dts-row">';
+    for (const id of deadBattle) {
+      const p = ALL_PETS.find(x => x.id === id);
+      html += `<div class="dts-pos-slot dead"><span class="dts-pos-name">${p.name}</span><span class="dts-pos-hp">💀</span></div>`;
+    }
+    html += '</div>';
   }
 
   statusEl.innerHTML = html;
 }
 
-// Reposition a turtle to a different slot
-function dungeonReposition(turtleId, currentSlot) {
-  // Remove from current slot, becomes "floating" — next click on empty slot places it
-  const ds = dungeonState;
-  if (!ds.positions) ds.positions = {};
-  delete ds.positions[turtleId];
+// Pick up a battle turtle (for repositioning or swapping with bench)
+function dungeonPickUp(turtleId) {
   window._dungeonFloatingTurtle = turtleId;
-  showToast('点击空位放置 ' + (ALL_PETS.find(p=>p.id===turtleId)?.name || turtleId));
+  const ds = dungeonState;
+  if (ds.positions) delete ds.positions[turtleId];
   renderDungeonTeamSwap();
 }
 
+// Place floating turtle into a slot
 function dungeonPlaceInSlot(slotId) {
   const ds = dungeonState;
   if (!ds.positions) ds.positions = {};
   const floatingId = window._dungeonFloatingTurtle;
   if (!floatingId) return;
-  // Check slot not already occupied
-  const occupied = Object.values(ds.positions).some(p => p.slotKey === slotId);
+  const occupied = Object.entries(ds.positions).find(([id, p]) => p.slotKey === slotId);
   if (occupied) { showToast('该位置已有龟'); return; }
-  ds.positions[floatingId] = {
-    position: slotId.startsWith('front') ? 'front' : 'back',
-    slotKey: slotId
-  };
+  ds.positions[floatingId] = { position: slotId.startsWith('front') ? 'front' : 'back', slotKey: slotId };
+  // Make sure this turtle is in battleIds
+  if (!ds.battleIds.includes(floatingId)) {
+    // Swap with a dead battle slot or add
+    const deadIdx = ds.battleIds.findIndex(id => ds.deadIds.includes(id));
+    if (deadIdx >= 0) ds.battleIds[deadIdx] = floatingId;
+  }
   window._dungeonFloatingTurtle = null;
+  renderDungeonTeamSwap();
+}
+
+// Click bench turtle: swap with floating battle turtle, or pick up bench turtle
+function dungeonBenchSwap(benchId) {
+  const ds = dungeonState;
+  const floatingId = window._dungeonFloatingTurtle;
+  if (floatingId) {
+    // Swap floating (battle) ↔ bench
+    const battleIdx = ds.battleIds.indexOf(floatingId);
+    const benchIdx = ds.benchIds.indexOf(benchId);
+    if (battleIdx >= 0 && benchIdx >= 0) {
+      ds.battleIds[battleIdx] = benchId;
+      ds.benchIds[benchIdx] = floatingId;
+      // Bench turtle gets the floating turtle's old position or first empty
+      if (!ds.positions) ds.positions = {};
+      const usedSlots = Object.values(ds.positions).map(p => p.slotKey);
+      const emptySlot = ['front-0','front-1','front-2','back-0','back-1','back-2'].find(s => !usedSlots.includes(s));
+      if (emptySlot) ds.positions[benchId] = { position: emptySlot.startsWith('front') ? 'front' : 'back', slotKey: emptySlot };
+      delete ds.positions[floatingId];
+      // Bench turtle gets full HP if not tracked
+      if (!ds.teamHp[benchId]) { const bp = ALL_PETS.find(x => x.id === benchId); ds.teamHp[benchId] = bp ? bp.hp : 100; }
+    }
+    window._dungeonFloatingTurtle = null;
+  } else {
+    // No floating — just pick up this bench turtle? No, swap needs a battle turtle first
+    showToast('先点击上场龟，再点替补互换');
+  }
   renderDungeonTeamSwap();
 }
 
