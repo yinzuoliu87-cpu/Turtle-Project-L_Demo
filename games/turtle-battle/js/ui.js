@@ -1020,6 +1020,11 @@ function toggleFighterStats(e, fIdx) {
 }
 
 // Sprite / static image helper — matches pet center (petImgHTML) approach
+// Avatar helper: use headshot image if available
+function buildPetAvatarHTML(pet, size) {
+  return `<img src="assets/avatars/${pet.id}.png" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`;
+}
+
 // Uses background-position animation for sprite sheets
 var _spriteKF = {};
 function buildPetImgHTML(pet, size) {

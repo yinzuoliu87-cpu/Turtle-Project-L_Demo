@@ -699,7 +699,7 @@ function renderFgSlots() {
     slot.classList.toggle('fg-active', _fgActiveSlot === key);
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
-      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
+      slot.innerHTML = `<div class="fg-turtle">${buildPetAvatarHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
       slot.classList.add('filled');
       if (!isMobile) {
         slot.draggable = true;
