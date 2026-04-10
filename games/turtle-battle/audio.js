@@ -53,13 +53,32 @@ function _noise(dur, vol) {
 }
 
 // ═══════════════════════════════════════════════════
+// ── SFX file player (preloaded) ──
+const _sfxFiles = {};
+function _loadSfx(name, src) {
+  const a = new Audio(src);
+  a.preload = 'auto';
+  _sfxFiles[name] = a;
+}
+function _playSfx(name, volume) {
+  if (soundMuted) return;
+  const a = _sfxFiles[name];
+  if (!a) return;
+  // Clone for overlapping plays
+  const clone = a.cloneNode();
+  clone.volume = volume || 0.4;
+  clone.play().catch(() => {});
+}
+
+// Preload SFX files
+_loadSfx('hit-physical', 'assets/sfx/hit-physical.wav');
+
 // BATTLE SFX
 // ═══════════════════════════════════════════════════
 
-// ── Hit: quick thud ──
+// ── Hit: physical attack ──
 function sfxHit() {
-  _osc('triangle', 200, 0.08, 0.15, 80);
-  _noise(0.05, 0.06);
+  _playSfx('hit-physical', 0.35);
 }
 
 // ── Crit: sharp impact ──
