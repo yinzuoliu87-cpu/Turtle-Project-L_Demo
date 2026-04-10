@@ -3,13 +3,51 @@
 // Depends on: engine.js (globals)
 // ══════════════════════════════════════════════════════════
 
+// ── LEVEL SYSTEM ─────────────────────────────────────────
+function getPetLevel(petId) {
+  try {
+    const ps = JSON.parse(localStorage.getItem('petState') || '{}');
+    return (ps.levels && ps.levels[petId]) || 1;
+  } catch(e) { return 1; }
+}
+
+function setPetLevel(petId, level) {
+  level = Math.max(1, Math.min(10, Math.round(level)));
+  try {
+    const ps = JSON.parse(localStorage.getItem('petState') || '{}');
+    if (!ps.levels) ps.levels = {};
+    ps.levels[petId] = level;
+    localStorage.setItem('petState', JSON.stringify(ps));
+  } catch(e) {}
+}
+
+function getLevelBonus(petId) {
+  const lv = getPetLevel(petId);
+  return 1 + (lv - 1) * 0.05; // lv1=1.0, lv5=1.20, lv10=1.45
+}
+
+// Returns which skill indices are available based on level
+function getAvailableSkillIndices(petId) {
+  const lv = getPetLevel(petId);
+  const b = ALL_PETS.find(p => p.id === petId);
+  const pool = b ? (b.skillPool || b.skills || []) : [];
+  const indices = [];
+  for (let i = 0; i < pool.length; i++) {
+    if (i <= 2) indices.push(i);            // 0,1,2 always available
+    else if (i === 3 && lv >= 5) indices.push(i);  // index 3 at lv5
+    else if (i === 4 && lv >= 10) indices.push(i);  // index 4 at lv10
+  }
+  return indices;
+}
+
 // ── FIGHTER FACTORY ───────────────────────────────────────
 function createFighter(petId, side, equippedIdxs) {
   const b = ALL_PETS.find(p => p.id === petId);
-  const hp  = b.hp;
-  const atk = b.atk;
-  const def = b.def;
-  const mr  = b.mr !== undefined ? b.mr : b.def;
+  const bonus = getLevelBonus(petId);
+  const hp  = Math.round(b.hp * bonus);
+  const atk = Math.round(b.atk * bonus);
+  const def = Math.round(b.def * bonus);
+  const mr  = Math.round((b.mr !== undefined ? b.mr : b.def) * bonus);
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
@@ -253,10 +291,11 @@ function aiPickSkills(petId) {
   const b = ALL_PETS.find(p => p.id === petId);
   if (!b || !b.skillPool || b.skillPool.length <= 3) return null;
   const pool = b.skillPool;
+  const unlockedIndices = getAvailableSkillIndices(petId);
   // Always include skill 0 (basic attack)
   const indices = [0];
-  // Pick 2 more from remaining (exclude passiveSkills for AI, at most 1 passive allowed)
-  const available = pool.map((s,i) => i).filter(i => i !== 0);
+  // Pick 2 more from unlocked skills (exclude passiveSkills for AI, at most 1 passive allowed)
+  const available = unlockedIndices.filter(i => i !== 0);
   // Prefer active skills, allow max 1 passive
   const actives = available.filter(i => !pool[i].passiveSkill);
   const passives = available.filter(i => pool[i].passiveSkill);

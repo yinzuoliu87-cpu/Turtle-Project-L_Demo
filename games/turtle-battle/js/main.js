@@ -458,11 +458,12 @@ function renderPetGrid() {
       <div class="pet-avatar">${buildPetImgHTML(p, _mob ? (p.sprite ? 80 : 60) : 96)}${passiveHtml}${skillBtnHtml}</div>
       <div class="pet-name">${p.name}</div>
       <div class="pet-rarity" style="color:${RARITY_COLORS[p.rarity]}">${p.rarity}</div>
+      <span class="pet-level-badge">Lv.${getPetLevel(p.id)}</span>
       <div class="pet-stats-mini">
-        <span><img src="assets/stats/hp-icon.png" class="stat-icon">${p.hp}</span>
-        <span><img src="assets/stats/atk-icon.png" class="stat-icon">${p.atk}</span>
-        <span><img src="assets/stats/def-icon.png" class="stat-icon">${p.def}</span>
-        <span><img src="assets/stats/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
+        <span><img src="assets/stats/hp-icon.png" class="stat-icon">${Math.round(p.hp * getLevelBonus(p.id))}</span>
+        <span><img src="assets/stats/atk-icon.png" class="stat-icon">${Math.round(p.atk * getLevelBonus(p.id))}</span>
+        <span><img src="assets/stats/def-icon.png" class="stat-icon">${Math.round(p.def * getLevelBonus(p.id))}</span>
+        <span><img src="assets/stats/mr-icon.png" class="stat-icon">${Math.round((p.mr !== undefined ? p.mr : p.def) * getLevelBonus(p.id))}</span>
       </div>
     </div>`;
   }).join('');
@@ -779,10 +780,13 @@ function showSkillPickModal(petId, onDone) {
         }
       }
       const isFixed = i === 0;
+      const unlockedIdxs = getAvailableSkillIndices(petId);
+      const isLevelLocked = !unlockedIdxs.includes(i);
+      const lockLabel = isLevelLocked ? (i === 3 ? '<span class="spc-lock-tag">Lv.5 解锁</span>' : '<span class="spc-lock-tag">Lv.10 解锁</span>') : '';
       const isConflicted = !isSel && s.conflictsWith !== undefined && selected.includes(s.conflictsWith);
       const conflictLabel = isConflicted ? `<span style="color:#ff6b6b;font-size:10px">（与「${pool[s.conflictsWith].name}」互斥）</span>` : '';
-      return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${isFixed ? 'spc-fixed' : ''} ${!isSel && !isFixed && selected.length >= 3 ? 'locked' : ''}" onclick="window._skillPickToggle(${i})">
-        <div class="spc-header"><b>${s.name}</b> ${isFixed ? '<span class="spc-fixed-tag">基础</span>' : ''} ${isPassive} ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}${hasMelee && !s._isCommon ? ' <span class="spc-paired-label">远程</span>' : ''}</div>
+      return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${isFixed ? 'spc-fixed' : ''} ${isLevelLocked ? 'spc-locked' : ''} ${!isSel && !isFixed && !isLevelLocked && selected.length >= 3 ? 'locked' : ''}" onclick="${isLevelLocked ? '' : `window._skillPickToggle(${i})`}">
+        <div class="spc-header"><b>${s.name}</b> ${isFixed ? '<span class="spc-fixed-tag">基础</span>' : ''} ${isPassive} ${lockLabel} ${cdText ? `<span class="spc-cd">${cdText}</span>` : ''}${hasMelee && !s._isCommon ? ' <span class="spc-paired-label">远程</span>' : ''}</div>
         <div class="spc-brief">${brief}</div>
         ${conflictLabel}
         ${pairedHtml}
@@ -1409,13 +1413,14 @@ function showCodexDetail(petId) {
   const defaults = p.defaultSkills || [0,1,2];
   const fakeFighter = { atk:p.atk, def:p.def, mr:p.mr||p.def, maxHp:p.hp, hp:p.hp, crit:p.crit||0.25, buffs:[], passive:p.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
 
-  // Stats
+  // Stats (with level bonus)
+  const _lb = getLevelBonus(p.id);
   const statsHtml = `
     <div class="codex-stats">
-      <span><img src="assets/stats/hp-icon.png" class="stat-icon">${p.hp}</span>
-      <span><img src="assets/stats/atk-icon.png" class="stat-icon">${p.atk}</span>
-      <span><img src="assets/stats/def-icon.png" class="stat-icon">${p.def}</span>
-      <span><img src="assets/stats/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
+      <span><img src="assets/stats/hp-icon.png" class="stat-icon">${Math.round(p.hp * _lb)}</span>
+      <span><img src="assets/stats/atk-icon.png" class="stat-icon">${Math.round(p.atk * _lb)}</span>
+      <span><img src="assets/stats/def-icon.png" class="stat-icon">${Math.round(p.def * _lb)}</span>
+      <span><img src="assets/stats/mr-icon.png" class="stat-icon">${Math.round((p.mr !== undefined ? p.mr : p.def) * _lb)}</span>
       <span><img src="assets/stats/crit-icon.png" class="stat-icon">${Math.round((p.crit||0.25)*100)}%</span>
     </div>`;
 
@@ -1436,12 +1441,16 @@ function showCodexDetail(petId) {
   pool.forEach((s, i) => {
     const isDefault = defaults.includes(i);
     const isPassive = s.passiveSkill;
+    const unlocked = getAvailableSkillIndices(p.id);
+    const isSkillLocked = !unlocked.includes(i);
+    const lockReq = i === 3 ? 'Lv.5' : i === 4 ? 'Lv.10' : '';
     const brief = renderSkillTemplate ? renderSkillTemplate(s.brief || '', fakeFighter, s) : (s.brief || '');
     const cdText = s.cd ? `CD${s.cd}` : '';
-    skillsHtml += `<div class="codex-skill ${isDefault ? 'default' : ''}">
+    skillsHtml += `<div class="codex-skill ${isDefault ? 'default' : ''} ${isSkillLocked ? 'skill-locked' : ''}">
       <div class="codex-skill-header">
         <span class="codex-skill-name">${isDefault ? '★ ' : ''}${s.name}</span>
         ${isPassive ? '<span class="codex-skill-tag passive">被动</span>' : ''}
+        ${isSkillLocked ? `<span class="codex-skill-tag locked">${lockReq}解锁</span>` : ''}
         ${cdText ? `<span class="codex-skill-tag cd">${cdText}</span>` : ''}
       </div>
       <div class="codex-skill-brief">${brief}</div>
@@ -1456,8 +1465,15 @@ function showCodexDetail(petId) {
         <div class="codex-detail-info">
           <h2 style="color:${RARITY_COLORS[p.rarity]};margin:0">${p.emoji} ${p.name}</h2>
           <div class="codex-rarity-badge" style="background:${RARITY_COLORS[p.rarity]}">${p.rarity}级</div>
+          <span class="codex-level-badge">Lv.${getPetLevel(p.id)}</span>
           ${statsHtml}
         </div>
+      </div>
+      <div class="codex-level-control">
+        <label>等级：</label>
+        <input type="number" min="1" max="10" value="${getPetLevel(p.id)}" id="codexLevelInput" style="width:50px;text-align:center">
+        <button class="btn btn-sm" onclick="const v=parseInt(document.getElementById('codexLevelInput').value);if(v>=1&&v<=10){setPetLevel('${p.id}',v);showCodexDetail('${p.id}');renderPetGrid&&renderPetGrid();}">确认</button>
+        <span style="font-size:11px;color:var(--fg2);margin-left:6px">每级+5%属性 | Lv.5解锁技能4 | Lv.10解锁技能5</span>
       </div>
       ${passiveHtml}
       <h3 style="margin:12px 0 6px;color:var(--fg)">技能池</h3>
