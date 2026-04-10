@@ -1532,6 +1532,16 @@ function dungeonOnStageClear() {
       }
     }
   }
+  // Save positions from actual battle state (fighter._slotKey)
+  if (!ds.positions) ds.positions = {};
+  for (const f of leftTeam) {
+    if (f.alive && f._slotKey && !f._isPirateShip && !f._isMech) {
+      ds.positions[f.id] = {
+        position: f._position || (f._slotKey.startsWith('front') ? 'front' : 'back'),
+        slotKey: f._slotKey
+      };
+    }
+  }
   // Stage rewards
   const stageCoins = [10, 20, 40, 70, 120];
   ds.rewards += stageCoins[ds.stage - 1] || 10;
