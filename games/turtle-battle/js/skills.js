@@ -2254,7 +2254,7 @@ function addInkStack(target, count, attacker) {
   const gained = target._inkStacks - before;
   if (gained > 0) {
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `+${gained}🖊️`, 'passive-num', 300, 0);
+    renderStatusIcons(target);
     // Ink link: sync stacks to partner
     if (target._inkLink && target._inkLink.partner && target._inkLink.partner.alive) {
       const partner = target._inkLink.partner;
@@ -2263,7 +2263,7 @@ function addInkStack(target, count, attacker) {
       const pGained = partner._inkStacks - pBefore;
       if (pGained > 0) {
         const pElId = getFighterElId(partner);
-        spawnFloatingNum(pElId, `+${pGained}🖊️🔗`, 'passive-num', 300, 0);
+        renderStatusIcons(partner);
         renderStatusIcons(partner);
       }
     }

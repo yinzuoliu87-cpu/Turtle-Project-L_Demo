@@ -192,34 +192,46 @@ function renderSceneBuffs(f) {
   if (!el) return;
   const box = el.querySelector('.st-buffs');
   if (!box) return;
+  const ic = (src) => `<img src="assets/${src}" style="width:14px;height:14px;vertical-align:middle">`;
   const icons = [];
   for (const b of (f.buffs || [])) {
-    if (b.type === 'phoenixBurnDot') icons.push('<span style="color:#ff6600">🔥</span>');
-    else if (b.type === 'dot') icons.push('<span style="color:#9b59b6">💀</span>');
+    if (b.type === 'phoenixBurnDot') icons.push(ic('status/burn-icon.png'));
+    else if (b.type === 'dot') icons.push(ic('status/curse-debuff-icon.png'));
     else if (b.type === 'atkUp') icons.push('<span style="color:#06d6a0">⬆</span>');
     else if (b.type === 'atkDown') icons.push('<span style="color:#ff6b6b">⬇</span>');
-    else if (b.type === 'defUp') icons.push('<span style="color:#06d6a0">🛡</span>');
-    else if (b.type === 'defDown') icons.push('<span style="color:#ff6b6b">🛡</span>');
-    else if (b.type === 'mrUp') icons.push('<span style="color:#4dabf7">🛡</span>');
-    else if (b.type === 'mrDown') icons.push('<span style="color:#ff6b6b">🔮</span>');
-    else if (b.type === 'dodge') icons.push('💨');
-    else if (b.type === 'stun') icons.push('<span style="color:#ffee00">💫</span>');
-    else if (b.type === 'healReduce') icons.push('<span style="color:#6b8e23">☠</span>');
-    else if (b.type === 'hot') icons.push('<span style="color:#06d6a0">💚</span>');
-    else if (b.type === 'fear') icons.push('<span style="color:#9b59b6">😨</span>');
-    else if (b.type === 'bubbleBind') icons.push('<span style="color:#4cc9f0">🫧</span>');
-    else if (b.type === 'trap') icons.push('<span style="color:#ff9f43">⚡</span>');
-    else if (b.type === 'diceFateCrit') icons.push('<span style="color:#ff4757"><img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"></span>');
-    else if (b.type === 'gamblerPierceConvert') icons.push('<span style="color:#ffd93d">🎰</span>');
-    else if (b.type === 'hidingShield') icons.push('<span style="color:#fff">🐢</span>');
-    else if (b.type === 'poison') icons.push('<span style="color:#6b8e23">🧪</span>');
-    else if (b.type === 'chilled') icons.push('<img src="assets/status/chilled-icon.png" style="width:14px;height:14px;vertical-align:middle">');
-    else if (b.type === 'bleed') icons.push('<span style="color:#cc3333">🩸</span>');
+    else if (b.type === 'defUp') icons.push('<span style="color:#06d6a0">⬆</span>');
+    else if (b.type === 'defDown') icons.push('<span style="color:#ff6b6b">⬇</span>');
+    else if (b.type === 'mrUp') icons.push('<span style="color:#4dabf7">⬆</span>');
+    else if (b.type === 'mrDown') icons.push('<span style="color:#ff6b6b">⬇</span>');
+    else if (b.type === 'dodge') icons.push(ic('status/dodge-new-icon.png'));
+    else if (b.type === 'stun') icons.push(ic('status/stun-icon.png'));
+    else if (b.type === 'healReduce') icons.push(ic('status/heal-reduce-icon.png'));
+    else if (b.type === 'hot') icons.push('<span style="color:#06d6a0">+</span>');
+    else if (b.type === 'fear') icons.push(ic('status/fear-icon.png'));
+    else if (b.type === 'bubbleBind') icons.push(ic('passive/bubble-store-icon.png'));
+    else if (b.type === 'trap') icons.push(ic('passive/ninja-instinct-icon.png'));
+    else if (b.type === 'diceFateCrit') icons.push(ic('passive/gambler-blood-icon.png'));
+    else if (b.type === 'gamblerPierceConvert') icons.push(ic('passive/gambler-blood-icon.png'));
+    else if (b.type === 'hidingShield') icons.push(ic('status/shield-icon.png'));
+    else if (b.type === 'poison') icons.push(ic('status/poison-icon.png'));
+    else if (b.type === 'chilled') icons.push(ic('status/chilled-icon.png'));
+    else if (b.type === 'bleed') icons.push(ic('status/bleed-icon.png'));
+    else if (b.type === 'taunt') icons.push(ic('status/taunt-icon.png'));
+    else if (b.type === 'stealth') icons.push(ic('status/stealth-icon.png'));
+    else if (b.type === 'physImmune') icons.push(ic('status/stealth-icon.png'));
+    else if (b.type === 'reflect') icons.push(ic('status/reflect-icon.png'));
+    else if (b.type === 'hunterMark') icons.push(ic('passive/hunter-kill-icon.png'));
+    else if (b.type === 'wormhole') icons.push(ic('status/wormhole-icon.png'));
+    else if (b.type === 'counter' || b.type === 'dodgeCounter') icons.push(ic('status/counter-icon.png'));
+    else if (b.type === 'lifesteal') icons.push(ic('stats/lifesteal-icon.png'));
+    else if (b.type === 'dmgReduce') icons.push(ic('status/shield-icon.png'));
   }
   // Special state icons (not in buffs array)
-  if (f._inkStacks > 0) icons.push(`<span style="color:#b8b8ff" title="墨迹${f._inkStacks}层"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._inkStacks}</span>`);
-  if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">⚡${f._shockStacks}</span>`);
-  if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}</span>`);
+  if (f._inkStacks > 0) icons.push(`<span style="color:#b8b8ff" title="墨迹${f._inkStacks}层">${ic('passive/ink-mark-icon.png')}${f._inkStacks}</span>`);
+  if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">${ic('passive/lightning-storm-icon.png')}${f._shockStacks}</span>`);
+  if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">${ic('passive/lightning-storm-icon.png')}${f._goldLightning}</span>`);
+  if (f._collideStacks > 0) icons.push(`<span title="碰撞${f._collideStacks}/2">${ic('passive/diamond-structure-icon.png')}${f._collideStacks}</span>`);
+  if (f._crystallize > 0) icons.push(`<span title="结晶${f._crystallize}/4">${ic('passive/crystal-resonance-icon.png')}${f._crystallize}</span>`);
   // Equipment icons
   if (f._equips && f._equips.length) {
     for (const eq of f._equips) {
@@ -508,8 +520,8 @@ function showFighterDetail(f) {
     html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">';
     const tag = (color, text) => `<span class="fdp-buff-tag" style="border-color:${color};color:${color}">${text}</span>`;
     f.buffs.forEach(b => {
-      if (b.type === 'phoenixBurnDot') html += tag('#ff6600', `🔥灼烧 ${b.turns}回合`);
-      else if (b.type === 'dot') html += tag('#9b59b6', `💀诅咒 ${b.turns}回合`);
+      if (b.type === 'phoenixBurnDot') html += tag('#ff6600', `<img src="assets/status/burn-icon.png" style="width:14px;height:14px;vertical-align:middle">灼烧 ${b.turns}回合`);
+      else if (b.type === 'dot') html += tag('#9b59b6', `<img src="assets/status/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">诅咒 ${b.turns}回合`);
       else if (b.type === 'atkUp') html += tag('#06d6a0', `⬆攻+${b.value} ${b.turns}回合`);
       else if (b.type === 'atkDown') html += tag('#ff6b6b', `⬇攻-${b.value}% ${b.turns}回合`);
       else if (b.type === 'defUp') html += tag('#06d6a0', `⬆护+${b.value} ${b.turns}回合`);
@@ -519,20 +531,20 @@ function showFighterDetail(f) {
       else if (b.type === 'dodge') html += tag('#aaa', `<img src="assets/status/dodge-new-icon.png" style="width:14px;height:14px;vertical-align:middle">闪避${b.value}% ${b.turns}回合`);
       else if (b.type === 'stun') html += tag('#ffee00', `<img src="assets/status/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`);
       else if (b.type === 'healReduce') html += tag('#6b8e23', `<img src="assets/status/heal-reduce-icon.png" style="width:14px;height:14px;vertical-align:middle">治疗削减 ${b.value}%`);
-      else if (b.type === 'hot') html += tag('#06d6a0', `💚持续回复 ${b.hpPerTurn}/回 ${b.turns}回合`);
+      else if (b.type === 'hot') html += tag('#06d6a0', `持续回复 ${b.hpPerTurn}/回 ${b.turns}回合`);
       else if (b.type === 'fear') html += tag('#9b59b6', `<img src="assets/status/fear-icon.png" style="width:14px;height:14px;vertical-align:middle">恐惧 ${b.turns}回合`);
-      else if (b.type === 'bubbleBind') html += tag('#4cc9f0', `🫧泡泡束缚 ${b.turns}回合`);
-      else if (b.type === 'trap') html += tag('#ff9f43', `⚡陷阱`);
+      else if (b.type === 'bubbleBind') html += tag('#4cc9f0', `<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">泡泡束缚 ${b.turns}回合`);
+      else if (b.type === 'trap') html += tag('#ff9f43', `<img src="assets/passive/ninja-instinct-icon.png" style="width:14px;height:14px;vertical-align:middle">陷阱`);
       else if (b.type === 'diceFateCrit') html += tag('#ff4757', `<img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">暴击+${b.value}% ${b.turns}回合`);
-      else if (b.type === 'gamblerPierceConvert') html += tag('#ffd93d', `🎰穿透转换 ${b.turns}回合`);
-      else if (b.type === 'hidingShield') html += tag('#fff', `🐢缩头护盾 ${b.turns}回合`);
+      else if (b.type === 'gamblerPierceConvert') html += tag('#ffd93d', `<img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">穿透转换 ${b.turns}回合`);
+      else if (b.type === 'hidingShield') html += tag('#fff', `<img src="assets/status/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">缩头护盾 ${b.turns}回合`);
       else if (b.type === 'poison') html += tag('#6b8e23', `<img src="assets/status/poison-icon.png" style="width:14px;height:14px;vertical-align:middle">中毒 ${b.value}/回 ${b.turns}回合`);
       else if (b.type === 'chilled') html += tag('#87ceeb', `<img src="assets/status/chilled-icon.png" style="width:14px;height:14px;vertical-align:middle">冰寒 ATK-20% ${b.turns}回合`);
       else if (b.type === 'bleed') html += tag('#cc3333', `<img src="assets/status/bleed-icon.png" style="width:14px;height:14px;vertical-align:middle">流血 ${b.value}/回 ${b.turns}回合`);
     });
     // Non-buff state tags
     if (f._inkStacks > 0) html += tag('#222', `<img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
-    if (f._shockStacks > 0) html += tag('#ffd700', `⚡电击 ${f._shockStacks}层`);
+    if (f._shockStacks > 0) html += tag('#ffd700', `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击 ${f._shockStacks}层`);
     if (f._goldLightning > 0) html += tag('#ffd700', `⚡金闪电 ${f._goldLightning}/8`);
     html += '</div>';
   } else {
