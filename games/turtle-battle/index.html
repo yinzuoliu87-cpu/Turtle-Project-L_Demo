@@ -136,7 +136,24 @@
     <h3>战绩记录</h3>
     <div class="record-stats" id="recordStats">暂无战绩</div>
   </div>
-  <button class="btn btn-sm" onclick="TutorialSystem.reset();TutorialSystem.init()" style="margin-top:12px;opacity:0.6">📖 新手引导</button>
+  <button class="btn btn-sm" onclick="showCodex()" style="margin-top:12px">📖 龟龟图鉴</button>
+  <button class="btn btn-sm" onclick="TutorialSystem.reset();TutorialSystem.init()" style="margin-top:6px;opacity:0.6">📖 新手引导</button>
+</section>
+
+<!-- ══════ SCREEN: CODEX ══════ -->
+<section id="screenCodex" class="screen">
+  <div class="codex-layout">
+    <div class="codex-sidebar">
+      <div class="codex-header">
+        <button class="btn btn-sm" onclick="showScreen('screenMenu')" style="margin-bottom:8px">← 返回</button>
+        <h3>龟龟图鉴</h3>
+      </div>
+      <div class="codex-list" id="codexList"></div>
+    </div>
+    <div class="codex-detail" id="codexDetail">
+      <div class="codex-empty">← 选择一只龟查看详情</div>
+    </div>
+  </div>
 </section>
 
 <!-- DIFFICULTY screen removed — wild encounter mode -->

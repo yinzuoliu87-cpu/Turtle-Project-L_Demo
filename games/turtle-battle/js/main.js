@@ -1393,6 +1393,102 @@ function loadCoins() {
   } catch(e){}
 }
 
+// ── CODEX (图鉴) ─────────────────────────────────────────
+
+function showCodex() {
+  renderCodexList();
+  showScreen('screenCodex');
+}
+
+function renderCodexList() {
+  const list = document.getElementById('codexList');
+  if (!list) return;
+  const groups = { C:[], B:[], A:[], S:[], SS:[], SSS:[] };
+  ALL_PETS.forEach(p => { if (groups[p.rarity]) groups[p.rarity].push(p); });
+
+  let html = '';
+  for (const [rarity, pets] of Object.entries(groups)) {
+    if (pets.length === 0) continue;
+    html += `<div class="codex-rarity-label" style="color:${RARITY_COLORS[rarity]}">${rarity}级</div>`;
+    for (const p of pets) {
+      html += `<div class="codex-item" data-id="${p.id}" onclick="showCodexDetail('${p.id}')">
+        <div class="codex-item-img">${buildPetImgHTML(p, 36)}</div>
+        <div class="codex-item-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</div>
+      </div>`;
+    }
+  }
+  list.innerHTML = html;
+}
+
+function showCodexDetail(petId) {
+  const p = ALL_PETS.find(x => x.id === petId);
+  if (!p) return;
+  const detail = document.getElementById('codexDetail');
+  if (!detail) return;
+
+  // Highlight active item in sidebar
+  document.querySelectorAll('.codex-item').forEach(el => el.classList.toggle('active', el.dataset.id === petId));
+
+  const pool = p.skillPool || p.skills || [];
+  const defaults = p.defaultSkills || [0,1,2];
+  const fakeFighter = { atk:p.atk, def:p.def, mr:p.mr||p.def, maxHp:p.hp, hp:p.hp, crit:p.crit||0.25, buffs:[], passive:p.passive, _goldCoins:0, _drones:null, _bambooGainedHp:0, _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0, _lifestealPct:0, _stoneDefGained:0 };
+
+  // Stats
+  const statsHtml = `
+    <div class="codex-stats">
+      <span><img src="assets/stats/hp-icon.png" class="stat-icon">${p.hp}</span>
+      <span><img src="assets/stats/atk-icon.png" class="stat-icon">${p.atk}</span>
+      <span><img src="assets/stats/def-icon.png" class="stat-icon">${p.def}</span>
+      <span><img src="assets/stats/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
+      <span><img src="assets/stats/crit-icon.png" class="stat-icon">${Math.round((p.crit||0.25)*100)}%</span>
+    </div>`;
+
+  // Passive
+  let passiveHtml = '';
+  if (p.passive) {
+    const iconRaw = PASSIVE_ICONS[p.passive.type] || '⭐';
+    const iconH = iconRaw.endsWith('.png') ? `<img src="assets/${iconRaw}" style="width:20px;height:20px;vertical-align:middle">` : iconRaw;
+    const brief = renderSkillTemplate ? renderSkillTemplate(p.passive.brief || '', fakeFighter, p.passive) : (p.passive.brief || '');
+    passiveHtml = `<div class="codex-passive">
+      <div class="codex-passive-title">${iconH} ${p.passive.name || '被动'}</div>
+      <div class="codex-passive-desc">${brief}</div>
+    </div>`;
+  }
+
+  // Skills
+  let skillsHtml = '<div class="codex-skills">';
+  pool.forEach((s, i) => {
+    const isDefault = defaults.includes(i);
+    const isPassive = s.passiveSkill;
+    const brief = renderSkillTemplate ? renderSkillTemplate(s.brief || '', fakeFighter, s) : (s.brief || '');
+    const cdText = s.cd ? `CD${s.cd}` : '';
+    skillsHtml += `<div class="codex-skill ${isDefault ? 'default' : ''}">
+      <div class="codex-skill-header">
+        <span class="codex-skill-name">${isDefault ? '★ ' : ''}${s.name}</span>
+        ${isPassive ? '<span class="codex-skill-tag passive">被动</span>' : ''}
+        ${cdText ? `<span class="codex-skill-tag cd">${cdText}</span>` : ''}
+      </div>
+      <div class="codex-skill-brief">${brief}</div>
+    </div>`;
+  });
+  skillsHtml += '</div>';
+
+  detail.innerHTML = `
+    <div class="codex-detail-inner">
+      <div class="codex-detail-header">
+        <div class="codex-detail-img">${buildPetImgHTML(p, 96)}</div>
+        <div class="codex-detail-info">
+          <h2 style="color:${RARITY_COLORS[p.rarity]};margin:0">${p.emoji} ${p.name}</h2>
+          <div class="codex-rarity-badge" style="background:${RARITY_COLORS[p.rarity]}">${p.rarity}级</div>
+          ${statsHtml}
+        </div>
+      </div>
+      ${passiveHtml}
+      <h3 style="margin:12px 0 6px;color:var(--fg)">技能池</h3>
+      ${skillsHtml}
+    </div>`;
+}
+
 // ── DUNGEON MODE ─────────────────────────────────────────
 let dungeonState = { stage:0, maxStage:5, teamIds:[], teamHp:{}, deadIds:[], rewards:0, buffs:[] };
 let _dungeonChoicePicked = null;
