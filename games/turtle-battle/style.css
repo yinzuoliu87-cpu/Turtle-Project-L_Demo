@@ -1889,6 +1889,13 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
 .fg-bench{border-color:rgba(255,165,0,.2)}
 .fg-bench.filled{border-color:#ffa500;background:rgba(255,165,0,.08)}
 .fg-bench-row .fg-label{color:#ffa500}
+.dts-position-grid{margin:8px 0}
+.dts-pos-row{display:flex;align-items:center;gap:6px;margin:4px 0}
+.dts-pos-label{width:36px;font-size:11px;color:var(--fg2);text-align:right}
+.dts-pos-slot{width:60px;height:50px;border:2px dashed rgba(255,255,255,.15);border-radius:8px;display:flex;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;font-size:10px;color:var(--fg2);transition:.2s}
+.dts-pos-slot.filled{border-style:solid;border-color:var(--green);background:rgba(6,214,160,.06)}
+.dts-pos-slot.empty:hover{border-color:var(--accent);background:rgba(88,166,255,.08)}
+.dts-pos-name{font-size:9px;margin-top:2px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:56px}
 .fg-slot.drag-over{border-color:var(--accent);background:rgba(88,166,255,.12);transform:scale(1.05)}
 .fg-slot.fg-selected{border-color:#ffcc00;border-style:solid;background:rgba(255,204,0,.1);box-shadow:0 0 8px rgba(255,204,0,.4)}
 .fg-slot.fg-active{border-color:var(--accent);border-style:solid;background:rgba(88,166,255,.12);box-shadow:0 0 10px rgba(88,166,255,.4);animation:slotPulse 1s ease-in-out infinite}

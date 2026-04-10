@@ -916,6 +916,18 @@ function confirmTeam() {
     dungeonState.deadIds = [];
     dungeonState.rewards = 0;
     dungeonState.buffs = [];
+    dungeonState.carryState = {};
+    // Save initial positions from selection grid
+    dungeonState.positions = {};
+    for (const key of FG_SLOT_KEYS_BASE) {
+      const id = _fgSlots[key];
+      if (id && battleIds.includes(id)) {
+        dungeonState.positions[id] = {
+          position: key.startsWith('front') ? 'front' : 'back',
+          slotKey: key
+        };
+      }
+    }
     dungeonStartStage();
     return;
   }
@@ -1382,10 +1394,10 @@ let _dungeonChoicePicked = null;
 
 // Stage config: enemies and multipliers
 const DUNGEON_STAGES = [
-  { enemies:3, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第1关' },
-  { enemies:3, hpMult:1.15, atkMult:1.1, defMult:1.1, label:'第2关' },
-  { enemies:3, hpMult:1.3, atkMult:1.2, defMult:1.2, label:'第3关 · 精英' },
-  { enemies:3, hpMult:1.5, atkMult:1.3, defMult:1.3, label:'第4关' },
+  { enemies:3, hpMult:0.9, atkMult:0.9, defMult:0.9, label:'第1关' },
+  { enemies:3, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第2关' },
+  { enemies:3, hpMult:1.1, atkMult:1.1, defMult:1.1, label:'第3关' },
+  { enemies:3, hpMult:1.2, atkMult:1.2, defMult:1.2, label:'第4关' },
   { enemies:1, hpMult:3.5, atkMult:1.3, defMult:1.5, boss:true, label:'第5关 · Boss' },
 ];
 
@@ -1403,12 +1415,45 @@ function dungeonStartStage() {
     if (ds.teamHp[id] !== undefined) {
       f.hp = Math.min(f.maxHp, ds.teamHp[id]);
     }
-    // Apply dungeon buffs
+    // Apply dungeon buffs (from reward choices)
     for (const buff of ds.buffs) {
       if (buff.type === 'atk') { f.baseAtk += buff.value; f.atk = f.baseAtk; }
       if (buff.type === 'def') { f.baseDef += buff.value; f.def = f.baseDef; }
       if (buff.type === 'crit') { f.crit += buff.value / 100; }
       if (buff.type === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + buff.value; }
+    }
+    // Restore carried-over special state from previous stage
+    if (ds.carryState && ds.carryState[id]) {
+      const cs = ds.carryState[id];
+      f._chestTreasure = cs._chestTreasure;
+      f._chestEquips = cs._chestEquips ? [...cs._chestEquips] : [];
+      f._chestTier = cs._chestTier;
+      f.bubbleStore = cs.bubbleStore;
+      f._storedEnergy = cs._storedEnergy;
+      f._starEnergy = cs._starEnergy;
+      if (cs._drones > 0) { f._drones = []; for (let d = 0; d < cs._drones; d++) f._drones.push({age:0}); }
+      f._goldCoins = cs._goldCoins;
+      f._stoneDefGained = cs._stoneDefGained;
+      if (cs._stoneDefGained > 0) { f.baseDef += cs._stoneDefGained; f.def = f.baseDef; }
+      f._hunterKills = cs._hunterKills;
+      f._hunterStolenAtk = cs._hunterStolenAtk;
+      f._hunterStolenDef = cs._hunterStolenDef;
+      f._hunterStolenHp = cs._hunterStolenHp;
+      if (cs._hunterStolenAtk) { f.baseAtk += cs._hunterStolenAtk; f.atk = f.baseAtk; }
+      if (cs._hunterStolenDef) { f.baseDef += cs._hunterStolenDef; f.def = f.baseDef; }
+      if (cs._hunterStolenHp) { f.maxHp += cs._hunterStolenHp; f.hp += cs._hunterStolenHp; }
+      f._lifestealPct = cs._lifestealPct;
+      f._bambooGainedHp = cs._bambooGainedHp;
+      if (cs._bambooGainedHp > 0) { f.maxHp += cs._bambooGainedHp; f.hp = Math.min(f.maxHp, f.hp + cs._bambooGainedHp); }
+      // Re-apply chest equips
+      for (const eq of f._chestEquips) {
+        if (typeof applyChestEquip === 'function') applyChestEquip(f, eq);
+      }
+    }
+    // Restore position if saved
+    if (ds.positions && ds.positions[id]) {
+      f._position = ds.positions[id].position;
+      f._slotKey = ds.positions[id].slotKey;
     }
     return f;
   });
@@ -1436,22 +1481,67 @@ function dungeonStartStage() {
 
 function dungeonOnStageClear() {
   const ds = dungeonState;
-  // Save HP of alive team members
+  // Save state of alive team members
   for (const f of leftTeam) {
-    if (f.alive) ds.teamHp[f.id] = f.hp;
-    else if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
+    // Mech alive but owner dead → owner counts as dead
+    if (f._isMech && !f.alive) {
+      // mech died, owner was already dead
+    }
+    if (f.alive) {
+      ds.teamHp[f.id] = f.hp;
+      // Save special state for carry-over
+      if (!ds.carryState) ds.carryState = {};
+      ds.carryState[f.id] = {
+        _chestTreasure: f._chestTreasure || 0,
+        _chestEquips: f._chestEquips ? [...f._chestEquips] : [],
+        _chestTier: f._chestTier || 0,
+        bubbleStore: f.bubbleStore || 0,
+        _storedEnergy: f._storedEnergy || 0,
+        _starEnergy: f._starEnergy || 0,
+        _drones: f._drones ? f._drones.length : 0,
+        _goldCoins: f._goldCoins || 0,
+        _stoneDefGained: f._stoneDefGained || 0,
+        _hunterKills: f._hunterKills || 0,
+        _hunterStolenAtk: f._hunterStolenAtk || 0,
+        _hunterStolenDef: f._hunterStolenDef || 0,
+        _hunterStolenHp: f._hunterStolenHp || 0,
+        _lifestealPct: f._lifestealPct || 0,
+        _bambooGainedHp: f._bambooGainedHp || 0,
+        _inkStacks: 0, // reset per stage
+        _lavaRage: 0, // reset per stage
+      };
+    } else {
+      if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
+    }
+  }
+  // Mech/ship: if owner died but mech/ship survived, owner is still dead
+  for (const f of allFighters) {
+    if (f._isMech && f.alive) {
+      // Find original owner (cyber turtle)
+      const ownerId = f.id.replace('_mech','');
+      if (!leftTeam.some(t => t.id === ownerId && t.alive)) {
+        if (!ds.deadIds.includes(ownerId)) ds.deadIds.push(ownerId);
+        delete ds.teamHp[ownerId];
+      }
+    }
+    if (f._isPirateShip && f.alive) {
+      const owner = f._shipOwner;
+      if (owner && !owner.alive) {
+        if (!ds.deadIds.includes(owner.id)) ds.deadIds.push(owner.id);
+        delete ds.teamHp[owner.id];
+      }
+    }
   }
   // Stage rewards
   const stageCoins = [10, 20, 40, 70, 120];
   ds.rewards += stageCoins[ds.stage - 1] || 10;
 
   if (ds.stage >= ds.maxStage) {
-    // All stages cleared!
     dungeonComplete(true);
     return;
   }
 
-  // Show stage clear screen with choices
+  // Show stage clear screen with choices + repositioning
   showDungeonClearScreen();
 }
 
@@ -1462,14 +1552,19 @@ function dungeonOnStageFail() {
     if (f.alive) ds.teamHp[f.id] = f.hp;
     else if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
   }
-  // Check if any alive turtles remain
-  const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
-  if (aliveIds.length > 0 && leftTeam.some(f => f.alive)) {
-    // Still have turtles, lost this battle but can retry? No — stage fail = show result
-    dungeonComplete(false);
-  } else {
-    dungeonComplete(false);
+  // Mech/ship owner death handling (same as stage clear)
+  for (const f of allFighters) {
+    if (f._isMech && f.alive) {
+      const ownerId = f.id.replace('_mech','');
+      if (!leftTeam.some(t => t.id === ownerId && t.alive)) {
+        if (!ds.deadIds.includes(ownerId)) ds.deadIds.push(ownerId);
+      }
+    }
+    if (f._isPirateShip && f.alive && f._shipOwner && !f._shipOwner.alive) {
+      if (!ds.deadIds.includes(f._shipOwner.id)) ds.deadIds.push(f._shipOwner.id);
+    }
   }
+  dungeonComplete(false);
 }
 
 function dungeonComplete(cleared) {
@@ -1519,13 +1614,33 @@ function showDungeonClearScreen() {
   }
   // Title
   document.getElementById('dungeonClearTitle').textContent = DUNGEON_STAGES[ds.stage-1].label + ' 通过！';
-  // Team status: battle team + bench with swap
+  // Team status: battle team + bench with swap AND repositioning
   renderDungeonTeamSwap();
   // Generate 3 choices
   _dungeonChoicePicked = null;
   document.getElementById('dungeonNextBtn').disabled = true;
   renderDungeonChoices();
   showScreen('screenDungeonClear');
+}
+
+// Save current positions from dungeon clear screen
+function dungeonSavePositions() {
+  const ds = dungeonState;
+  if (!ds.positions) ds.positions = {};
+  // Save positions for all alive battle turtles
+  for (const id of ds.battleIds) {
+    if (ds.deadIds.includes(id)) continue;
+    // Find which slot this turtle is in
+    for (const key of FG_SLOT_KEYS_BASE) {
+      if (_fgSlots[key] === id) {
+        ds.positions[id] = {
+          position: key.startsWith('front') ? 'front' : 'back',
+          slotKey: key
+        };
+        break;
+      }
+    }
+  }
 }
 
 function renderDungeonChoices() {
@@ -1575,7 +1690,7 @@ function dungeonNextStage() {
   const el = document.getElementById('dungeonChoices');
   const choice = el._choices[_dungeonChoicePicked];
   if (choice && choice.apply) choice.apply();
-  // Refresh team status display to show effect of choice (e.g. revive)
+  // Positions are already saved in ds.positions via dungeonReposition/dungeonPlaceInSlot
   showDungeonTeamStatus();
   dungeonState.stage++;
   setTimeout(() => dungeonStartStage(), 500);
@@ -1618,34 +1733,96 @@ function renderDungeonTeamSwap() {
     </div>`;
   };
 
-  // Check if any battle turtle is dead and bench has alive replacements
+  // Alive battle turtles (for repositioning)
+  const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
   const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
   const aliveBench = ds.benchIds.filter(id => !ds.deadIds.includes(id));
   const canSwap = deadBattle.length > 0 && aliveBench.length > 0;
 
-  let html = '<div class="dts-section-label">⚔ 上场</div><div class="dts-row">';
-  html += ds.battleIds.map(id => renderTurtle(id, '')).join('');
-  html += '</div>';
+  let html = '';
+
+  // Repositioning: show alive battle turtles with position buttons
+  html += '<div class="dts-section-label">⚔ 上场阵型（点击调整位置）</div>';
+  html += '<div class="dts-position-grid">';
+  html += '<div class="dts-pos-row"><span class="dts-pos-label">前排</span>';
+  for (let i = 0; i < 3; i++) {
+    const slotId = 'front-' + i;
+    const turtleInSlot = aliveBattle.find(id => {
+      const pos = ds.positions && ds.positions[id];
+      return pos && pos.slotKey === slotId;
+    });
+    if (turtleInSlot) {
+      const p = ALL_PETS.find(x => x.id === turtleInSlot);
+      html += `<div class="dts-pos-slot filled" onclick="dungeonReposition('${turtleInSlot}','${slotId}')">${buildPetImgHTML(p, 32)}<span class="dts-pos-name">${p.name}</span></div>`;
+    } else {
+      html += `<div class="dts-pos-slot empty" onclick="dungeonPlaceInSlot('${slotId}')">空</div>`;
+    }
+  }
+  html += '</div><div class="dts-pos-row"><span class="dts-pos-label">后排</span>';
+  for (let i = 0; i < 3; i++) {
+    const slotId = 'back-' + i;
+    const turtleInSlot = aliveBattle.find(id => {
+      const pos = ds.positions && ds.positions[id];
+      return pos && pos.slotKey === slotId;
+    });
+    if (turtleInSlot) {
+      const p = ALL_PETS.find(x => x.id === turtleInSlot);
+      html += `<div class="dts-pos-slot filled" onclick="dungeonReposition('${turtleInSlot}','${slotId}')">${buildPetImgHTML(p, 32)}<span class="dts-pos-name">${p.name}</span></div>`;
+    } else {
+      html += `<div class="dts-pos-slot empty" onclick="dungeonPlaceInSlot('${slotId}')">空</div>`;
+    }
+  }
+  html += '</div></div>';
+
+  // Dead + bench
+  const deadHtml = ds.deadIds.map(id => renderTurtle(id, '')).join('');
+  if (deadHtml) { html += '<div class="dts-section-label">💀 阵亡</div><div class="dts-row">' + deadHtml + '</div>'; }
   html += '<div class="dts-section-label">🪑 替补</div><div class="dts-row">';
-  html += ds.benchIds.map(id => renderTurtle(id, '')).join('');
+  html += ds.benchIds.filter(id => !ds.deadIds.includes(id)).map(id => renderTurtle(id, '')).join('');
+  html += aliveBench.length === 0 ? '<span style="color:var(--fg2)">无存活替补</span>' : '';
   html += '</div>';
 
+  // Swap buttons
   if (canSwap) {
-    html += `<div class="dts-swap-area">`;
-    html += `<div class="dts-swap-hint">可替换阵亡龟：</div>`;
+    html += `<div class="dts-swap-area"><div class="dts-swap-hint">替换阵亡龟：</div>`;
     for (const deadId of deadBattle) {
       const dp = ALL_PETS.find(x => x.id === deadId);
       for (const benchId of aliveBench) {
         const bp = ALL_PETS.find(x => x.id === benchId);
-        html += `<button class="btn btn-sm dts-swap-btn" onclick="dungeonSwap('${deadId}','${benchId}')">
-          💀${dp.name} → ${bp.name}
-        </button>`;
+        html += `<button class="btn btn-sm dts-swap-btn" onclick="dungeonSwap('${deadId}','${benchId}')">💀${dp.name} → ${bp.name}</button>`;
       }
     }
     html += `</div>`;
   }
 
   statusEl.innerHTML = html;
+}
+
+// Reposition a turtle to a different slot
+function dungeonReposition(turtleId, currentSlot) {
+  // Remove from current slot, becomes "floating" — next click on empty slot places it
+  const ds = dungeonState;
+  if (!ds.positions) ds.positions = {};
+  delete ds.positions[turtleId];
+  window._dungeonFloatingTurtle = turtleId;
+  showToast('点击空位放置 ' + (ALL_PETS.find(p=>p.id===turtleId)?.name || turtleId));
+  renderDungeonTeamSwap();
+}
+
+function dungeonPlaceInSlot(slotId) {
+  const ds = dungeonState;
+  if (!ds.positions) ds.positions = {};
+  const floatingId = window._dungeonFloatingTurtle;
+  if (!floatingId) return;
+  // Check slot not already occupied
+  const occupied = Object.values(ds.positions).some(p => p.slotKey === slotId);
+  if (occupied) { showToast('该位置已有龟'); return; }
+  ds.positions[floatingId] = {
+    position: slotId.startsWith('front') ? 'front' : 'back',
+    slotKey: slotId
+  };
+  window._dungeonFloatingTurtle = null;
+  renderDungeonTeamSwap();
 }
 
 function dungeonSwap(deadId, benchId) {
