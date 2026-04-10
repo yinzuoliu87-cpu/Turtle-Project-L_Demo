@@ -9,7 +9,7 @@ function getAvailableCombos(side) {
   if (typeof COMBO_SKILLS === 'undefined') return [];
   const team = side === 'left' ? leftTeam : rightTeam;
   const aliveIds = team.filter(f => f.alive).map(f => f.id);
-  return COMBO_SKILLS.filter((c, i) => c.ids.every(id => aliveIds.includes(id)) && !(_comboCdLeft[i] > 0));
+  return COMBO_SKILLS.filter((c, i) => c.ids.every(id => aliveIds.includes(id) && getPetLevel(id) >= 9) && !(_comboCdLeft[i] > 0));
 }
 
 async function executeCombo(combo, side) {
