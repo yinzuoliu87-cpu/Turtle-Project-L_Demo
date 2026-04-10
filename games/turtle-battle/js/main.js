@@ -1476,7 +1476,10 @@ function showCodexDetail(petId) {
         <span style="font-size:11px;color:var(--fg2);margin-left:6px">每级+5%属性 | Lv.5解锁技能4 | Lv.10解锁技能5</span>
       </div>
       ${passiveHtml}
-      <h3 style="margin:12px 0 6px;color:var(--fg)">技能池</h3>
+      <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px">
+        <h3 style="margin:0;color:var(--fg)">技能池</h3>
+        ${pool.length > 3 ? `<button class="btn btn-sm" onclick="showSkillPickModal('${p.id}', function(){ showCodexDetail('${p.id}'); })">🎯 配置技能</button>` : ''}
+      </div>
       ${skillsHtml}
     </div>`;
 }
