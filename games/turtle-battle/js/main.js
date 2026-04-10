@@ -464,7 +464,6 @@ function renderPetGrid() {
         <span><img src="assets/stats/def-icon.png" class="stat-icon">${p.def}</span>
         <span><img src="assets/stats/mr-icon.png" class="stat-icon">${p.mr !== undefined ? p.mr : p.def}</span>
       </div>
-      <div class="pet-skills-preview" title="${skillNames}">${skillNames}</div>
     </div>`;
   }).join('');
 }
