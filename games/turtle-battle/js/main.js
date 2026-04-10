@@ -1477,6 +1477,12 @@ function dungeonStartStage() {
   autoAssignPositions(rightTeam);
   gameMode = 'dungeon';
   startBattle();
+  // Force refresh HP bars after render (dungeon carries over HP)
+  requestAnimationFrame(() => {
+    for (const f of leftTeam) {
+      updateHpBar(f, getFighterElId(f));
+    }
+  });
 }
 
 function dungeonOnStageClear() {
