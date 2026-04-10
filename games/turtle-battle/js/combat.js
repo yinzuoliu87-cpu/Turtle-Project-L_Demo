@@ -489,10 +489,10 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   }
   // Dodge counter (e.g. starWarp) — handled in dodge check above, not here
   // Lava shield counter
-  if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && attacker.alive) {
+  if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && target.shield > 0 && attacker.alive) {
     const cDmg = Math.round(target.atk * target._lavaShieldCounter);
-    attacker.hp = Math.max(0, attacker.hp - cDmg);
-    spawnFloatingNum(getFighterElId(attacker), `-${cDmg}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'counter-dmg', 300, 0);
+    applyRawDmg(target, attacker, cDmg);
+    spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 300, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
   }

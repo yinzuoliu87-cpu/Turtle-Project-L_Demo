@@ -115,10 +115,12 @@ function checkDeaths(attacker) {
         f._deathProcessed = false;
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
+        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); card.style.opacity = ''; card.style.filter = ''; }
         spawnFloatingNum(elId, '涅槃重生!', 'crit-label', 0, -25);
         spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
         updateHpBar(f, elId);
+        // Ensure visual state is correct after revive
+        requestAnimationFrame(() => { const c = document.getElementById(elId); if (c) { c.classList.remove('dead','death-anim'); c.style.opacity = ''; } });
         addLog(`${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`);
         // Apply burn + healReduce to all enemies on rebirth
         const rebirthEnemies = allFighters.filter(e => e.alive && e.side !== f.side);
