@@ -55,6 +55,7 @@ const TutorialSystem = (() => {
     if (!shouldShow()) return;
     overlay = document.getElementById('tutorialOverlay');
     if (!overlay) return;
+    overlay.style.display = ''; // clear inline display:none from previous complete()
     showStep(0);
     overlay.classList.add('tut-visible');
   }
