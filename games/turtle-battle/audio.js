@@ -275,12 +275,13 @@ Object.entries(BGM_TRACKS).forEach(([k, src]) => {
   const a = new Audio(); a.preload = 'auto'; a.src = src; _bgmCache[k] = a;
 });
 
+let _currentBgmTrack = null; // track name for resuming after unmute
+
 function playBgm(track) {
   stopBgm();
-  if (soundMuted) return;
+  _currentBgmTrack = track;
   const src = BGM_TRACKS[track];
   if (!src) return;
-  // Use cached audio or create new
   if (_bgmCache[track]) {
     _currentBgm = _bgmCache[track];
     _currentBgm.currentTime = 0;
@@ -289,7 +290,7 @@ function playBgm(track) {
   }
   _currentBgm.loop = true;
   _currentBgm.volume = _bgmVolume;
-  _currentBgm.play().catch(() => {});
+  if (!soundMuted) _currentBgm.play().catch(() => {});
 }
 
 function stopBgm() {
@@ -309,8 +310,14 @@ function setBgmVolume(vol) {
 const _origToggleSound = toggleSound;
 toggleSound = function() {
   _origToggleSound();
-  if (_currentBgm) {
-    if (soundMuted) _currentBgm.pause();
-    else _currentBgm.play().catch(() => {});
+  if (soundMuted) {
+    if (_currentBgm) _currentBgm.pause();
+  } else {
+    // Unmuted: if BGM was set but not playing, start it
+    if (_currentBgm) {
+      _currentBgm.play().catch(() => {});
+    } else if (_currentBgmTrack) {
+      playBgm(_currentBgmTrack);
+    }
   }
 };
