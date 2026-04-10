@@ -699,15 +699,7 @@ function renderFgSlots() {
     slot.classList.toggle('fg-active', _fgActiveSlot === key);
     if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
-      const loadout = getSavedLoadout(petId) || p.defaultSkills || [0,1,2];
-      const pool = p.skillPool || p.skills || [];
-      const sNames = loadout.filter(i => i < pool.length).map(i => {
-        const s = pool[i];
-        return s.passiveSkill ? `<span style="color:#ffa500">${s.name}</span>` : s.name;
-      }).join(' / ');
-      const hasConfig = p.skillPool && p.skillPool.length > 3;
-      const configBtn = hasConfig ? `<span class="fg-skill-btn" onclick="event.stopPropagation();showSkillPickModal('${petId}', function(){ renderPetGrid(); renderFgSlots(); })" title="配置技能">🎯</span>` : '';
-      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span>${configBtn}<div class="fg-skills">${sNames}</div></div>`;
+      slot.innerHTML = `<div class="fg-turtle">${buildPetImgHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
       slot.classList.add('filled');
       if (!isMobile) {
         slot.draggable = true;
