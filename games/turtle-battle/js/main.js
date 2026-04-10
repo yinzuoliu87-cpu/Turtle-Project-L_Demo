@@ -782,7 +782,7 @@ function showSkillPickModal(petId, onDone) {
       const isFixed = i === 0;
       const unlockedIdxs = getAvailableSkillIndices(petId);
       const isLevelLocked = !unlockedIdxs.includes(i);
-      const lockLabel = isLevelLocked ? (i === 3 ? '<span class="spc-lock-tag">Lv.5 解锁</span>' : '<span class="spc-lock-tag">Lv.10 解锁</span>') : '';
+      const lockLabel = isLevelLocked ? (i === 3 ? '<span class="spc-lock-tag">Lv.4 解锁</span>' : '<span class="spc-lock-tag">Lv.7 解锁</span>') : '';
       const isConflicted = !isSel && s.conflictsWith !== undefined && selected.includes(s.conflictsWith);
       const conflictLabel = isConflicted ? `<span style="color:#ff6b6b;font-size:10px">（与「${pool[s.conflictsWith].name}」互斥）</span>` : '';
       return `<div class="skill-pick-card ${isSel ? 'selected' : ''} ${isFixed ? 'spc-fixed' : ''} ${isLevelLocked ? 'spc-locked' : ''} ${!isSel && !isFixed && !isLevelLocked && selected.length >= 3 ? 'locked' : ''}" onclick="${isLevelLocked ? '' : `window._skillPickToggle(${i})`}">
@@ -1473,7 +1473,7 @@ function showCodexDetail(petId) {
         <label>等级：</label>
         <input type="number" min="1" max="10" value="${getPetLevel(p.id)}" id="codexLevelInput" style="width:50px;text-align:center">
         <button class="btn btn-sm" onclick="const v=parseInt(document.getElementById('codexLevelInput').value);if(v>=1&&v<=10){setPetLevel('${p.id}',v);showCodexDetail('${p.id}');renderPetGrid&&renderPetGrid();}">确认</button>
-        <span style="font-size:11px;color:var(--fg2);margin-left:6px">每级+5%属性 | Lv.5解锁技能4 | Lv.10解锁技能5</span>
+        <span style="font-size:11px;color:var(--fg2);margin-left:6px">每级+5%属性 | Lv.4解锁技能4 | Lv.7解锁技能5</span>
       </div>
       ${passiveHtml}
       <div style="display:flex;align-items:center;justify-content:space-between;margin:12px 0 6px">

@@ -34,8 +34,8 @@ function getAvailableSkillIndices(petId) {
   const indices = [];
   for (let i = 0; i < pool.length; i++) {
     if (i <= 2) indices.push(i);            // 0,1,2 always available
-    else if (i === 3 && lv >= 5) indices.push(i);  // index 3 at lv5
-    else if (i === 4 && lv >= 10) indices.push(i);  // index 4 at lv10
+    else if (i === 3 && lv >= 4) indices.push(i);  // index 3 at lv4
+    else if (i === 4 && lv >= 7) indices.push(i);  // index 4 at lv7
   }
   return indices;
 }
