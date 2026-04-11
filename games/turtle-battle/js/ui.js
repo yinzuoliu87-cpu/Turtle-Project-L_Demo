@@ -217,7 +217,6 @@ function renderSceneBuffs(f) {
     else if (b.type === 'chilled') icons.push(ic('status/chilled-icon.png'));
     else if (b.type === 'bleed') icons.push(ic('status/bleed-icon.png'));
     else if (b.type === 'taunt') icons.push(ic('status/taunt-icon.png'));
-    else if (b.type === 'stealth') icons.push(ic('status/stealth-icon.png'));
     else if (b.type === 'physImmune') icons.push(ic('status/stealth-icon.png'));
     else if (b.type === 'reflect') icons.push(ic('status/reflect-icon.png'));
     else if (b.type === 'hunterMark') icons.push(ic('passive/hunter-kill-icon.png'));
@@ -1285,7 +1284,6 @@ function renderStatusIcons(f) {
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合"><img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合"><img src="assets/status/heal-reduce-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%治疗${b.turns}</span>`;
     if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合"><img src="assets/status/taunt-icon.png" style="width:14px;height:14px;vertical-align:middle">嘲讽${b.turns}</span>`;
-    if (b.type === 'stealth') return `<span style="color:#888;background:rgba(136,136,136,.15);padding:1px 5px;border-radius:6px" title="隐身 剩${b.turns}回合"><img src="assets/status/stealth-icon.png" style="width:14px;height:14px;vertical-align:middle">隐身${b.turns}</span>`;
     if (b.type === 'reflect') return `<span style="color:#ff8c00;background:rgba(255,140,0,.15);padding:1px 5px;border-radius:6px" title="反弹${b.value}% 剩${b.turns}回合"><img src="assets/status/reflect-icon.png" style="width:14px;height:14px;vertical-align:middle">反弹${b.turns}</span>`;
     if (b.type === 'dmgReduce') return `<span style="color:#4dabf7;background:rgba(77,171,247,.15);padding:1px 5px;border-radius:6px" title="受伤-${b.value}% 剩${b.turns}回合"><img src="assets/status/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%${b.turns}</span>`;
     if (b.type === 'dodgeCounter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="闪避反击${b.value}伤害 剩${b.turns}回合"><img src="assets/status/counter-icon.png" style="width:14px;height:14px;vertical-align:middle">反击${b.turns}</span>`;

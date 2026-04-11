@@ -104,9 +104,6 @@ function aiAction(f) {
     } else {
       // Filter to front row if any alive front row exists
       let filteredEnemies = enemies;
-      // Stealth: filter out stealthed enemies for single-target
-      const nonStealth = filteredEnemies.filter(e => !e.buffs.some(b => b.type === 'stealth'));
-      if (nonStealth.length > 0) filteredEnemies = nonStealth;
       let targetPool;
       if (skill.ignoreRow) {
         // ignoreRow skills can target anyone; prefer back row if knockToFront

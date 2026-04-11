@@ -502,9 +502,6 @@ async function summonAutoAction(summon, owner) {
       const front = enemies.filter(e => e._position === 'front');
       if (front.length > 0) pool = front;
     }
-    // Filter out stealthed
-    const nonStealth = pool.filter(e => !e.buffs.some(b => b.type === 'stealth'));
-    if (nonStealth.length > 0) pool = nonStealth;
     // Taunt check
     const taunters = pool.filter(e => e.buffs.some(b => b.type === 'taunt'));
     if (taunters.length > 0) { target = taunters[0]; }

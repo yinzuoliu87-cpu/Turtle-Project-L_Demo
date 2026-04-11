@@ -187,9 +187,6 @@ function pickSkill(idx) {
     const taunters = targets.filter(t => t.buffs.some(b => b.type === 'taunt'));
     if (taunters.length > 0) { targets = taunters; }
     else {
-      // Stealth: filter out stealthed enemies
-      const nonStealth = targets.filter(t => !t.buffs.some(b => b.type === 'stealth'));
-      if (nonStealth.length > 0) targets = nonStealth;
       // Front row priority
       const frontTargets = targets.filter(t => t._position === 'front');
       if (frontTargets.length > 0) targets = frontTargets;
@@ -844,12 +841,10 @@ async function executeAction(action) {
     sfxDodge(); await sleep(800);
   } else if (skill.type === 'ghostShadow') {
     f.buffs.push({ type:'dodge', value:skill.dodgePct||80, turns:skill.dodgeTurns||2 });
-    if (skill.stealthTurns) f.buffs.push({ type:'stealth', value:1, turns:skill.stealthTurns });
     const elId = getFighterElId(f);
     spawnFloatingNum(elId, `闪避${skill.dodgePct||80}%`, 'passive-num', 0, 0);
-    if (skill.stealthTurns) spawnFloatingNum(elId, `隐身`, 'passive-num', 200, 0);
     renderStatusIcons(f);
-    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">闪避${skill.dodgePct||80}% ${skill.dodgeTurns||2}回合</span>${skill.stealthTurns ? ` <span class="log-passive">隐身${skill.stealthTurns}回合</span>` : ''}`);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">闪避${skill.dodgePct||80}% ${skill.dodgeTurns||2}回合</span>`);
     sfxDodge(); await sleep(800);
   } else if (skill.type === 'starWarp') {
     f.buffs.push({ type:'dodge', value:skill.dodgePct||60, turns:skill.dodgeTurns||2 });
