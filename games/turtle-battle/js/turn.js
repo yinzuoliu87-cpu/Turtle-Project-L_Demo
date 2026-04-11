@@ -40,7 +40,7 @@ async function beginTurn() {
     if (!f.alive || !f.passive) continue;
     if (f._isSummon) continue; // summon passives handled in dedicated loop below
     f.passiveUsedThisTurn = false; // reset once-per-turn passives
-    if (f.passive.type === 'turnScaleAtk' && turnNum > 1) {
+    if (f.passive.type === 'turnScaleAtk') {
       const gain = Math.round(f.baseAtk * f.passive.pct / 100);
       f.baseAtk += gain;
       recalcStats();
@@ -49,7 +49,7 @@ async function beginTurn() {
       spawnFloatingNum(elId, `+${gain}攻`, 'passive-num', 0, 0);
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">攻击+${gain}</span>`);
     }
-    if (f.passive.type === 'turnScaleHp' && turnNum > 1) {
+    if (f.passive.type === 'turnScaleHp') {
       const gain = Math.round(f.maxHp * f.passive.pct / 100);
       f.maxHp += gain;
       f.hp += gain;
@@ -59,7 +59,7 @@ async function beginTurn() {
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">最大HP+${gain}</span>`);
       spawnFloatingNum(elId, `+${gain}HP`, 'passive-num', 0, 0);
     }
-    if (f.passive.type === 'stoneWall' && turnNum > 1) {
+    if (f.passive.type === 'stoneWall') {
       // Permanent def gain per turn, capped
       if (!f._stoneDefGained) f._stoneDefGained = 0;
       if (f._stoneDefGained < f.passive.maxDef) {
@@ -187,7 +187,7 @@ async function beginTurn() {
     // Lava turtle: transform countdown + check rage
     processLavaCountdown(f);
     // Chest turtle: rum HoT (3% maxHP per turn)
-    if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum') && turnNum > 1) {
+    if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
       const heal = Math.round(f.maxHp * 0.06);
       const before = f.hp;
       f.hp = Math.min(f.maxHp, f.hp + heal);
@@ -246,7 +246,7 @@ async function beginTurn() {
       await sleep(1000);
     }
     // Gambler fate wheel: draw a suit each turn for permanent stat gain
-    if (f._fateWheel && f.alive && turnNum > 1) {
+    if (f._fateWheel && f.alive) {
       const suit = Math.floor(Math.random() * 4); // 0=spade, 1=heart, 2=diamond, 3=club
       const elId = getFighterElId(f);
       const suits = ['♠','♥','♦','♣'];
@@ -317,7 +317,7 @@ async function beginTurn() {
       await sleep(800);
     }
     // Passive: rainbowPrism — random team buff each turn
-    if (f.passive.type === 'rainbowPrism' && turnNum > 1) {
+    if (f.passive.type === 'rainbowPrism') {
       const allies = (f.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       const enhanced = f._enhancedPrism;
