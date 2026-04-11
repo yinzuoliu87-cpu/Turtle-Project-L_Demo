@@ -90,29 +90,29 @@ function _playSfxThrottled(name, volume, cooldownMs) {
 
 // ── Hit: physical attack ──
 function sfxHit() {
-  _playSfxThrottled('hit-physical', 0.35, 200);
+  _playSfxThrottled('hit-physical', 0.35, 50);
 }
 
 // ── Crit: heavier hit ──
 function sfxCrit() {
-  _playSfxThrottled('hit-crit', 0.5, 200);
+  _playSfxThrottled('hit-crit', 0.5, 50);
 }
 
 // ── Pierce (true damage): same as physical hit ──
 function sfxPierce() {
-  _playSfxThrottled('hit-physical', 0.35, 200);
+  _playSfxThrottled('hit-physical', 0.35, 50);
 }
 
 // ── Fire: same as physical hit ──
 
 // ── Shield gain ──
 function sfxShield() {
-  _playSfxThrottled('shield-gain', 0.35, 300);
+  _playSfxThrottled('shield-gain', 0.35, 100);
 }
 
 // ── Shield break ──
 function sfxShieldBreak() {
-  _playSfxThrottled('shield-break', 0.4, 300);
+  _playSfxThrottled('shield-break', 0.4, 100);
 }
 
 // ── Heal: soft chime ──
@@ -168,12 +168,12 @@ function sfxDodge() {
 
 // ── Fire/Burn: crackle ──
 function sfxFire() {
-  _playSfxThrottled('hit-physical', 0.35, 200);
+  _playSfxThrottled('hit-physical', 0.35, 50);
 }
 
 // ── Lightning: same as physical hit ──
 function sfxLightning() {
-  _playSfxThrottled('hit-physical', 0.35, 200);
+  _playSfxThrottled('hit-physical', 0.35, 50);
 }
 
 // ── Coin: bling ──
