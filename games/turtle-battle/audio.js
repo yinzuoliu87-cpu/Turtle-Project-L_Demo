@@ -180,9 +180,8 @@ function sfxExplosion() {
   _osc('square', 60, 0.2, 0.08, 20);
 }
 
-// ── Counter/Reflect: same hit sound ──
+// ── Counter/Reflect: no sound for now ──
 function sfxCounter() {
-  _playSfx('hit-physical', 0.35);
 }
 
 // ── Trap trigger: snap ──
