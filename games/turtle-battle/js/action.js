@@ -93,7 +93,7 @@ function triggerEquipPick() {
       <h3 style="color:#ffd93d;margin-bottom:12px">🎁 选择一件装备</h3>
       <div class="equip-pick-items">${pool.map((e, i) => `
         <div class="equip-pick-item" onclick="pickEquipItem(${i})">
-          <div style="font-size:32px">${e.icon}</div>
+          <div style="font-size:32px">${e.icon.endsWith('.png') ? `<img src="assets/${e.icon}" style="width:32px;height:32px">` : e.icon}</div>
           <div style="font-weight:700;font-size:14px">${e.name}</div>
           <div style="font-size:11px;color:var(--fg2)">${e.desc}</div>
         </div>
@@ -143,8 +143,9 @@ function applyEquipToFighter(fIdx) {
   updateFighterStats(f, getFighterElId(f));
   updateHpBar(f, getFighterElId(f));
   renderStatusIcons(f);
-  addLog(`${f.emoji}${f.name} 装备了 <span style="color:#ffd93d">${equip.icon} ${equip.name}</span>：${equip.desc}`);
-  spawnFloatingNum(getFighterElId(f), `${equip.icon}${equip.name}`, 'crit-label', 0, -20);
+  const _eqIcon = equip.icon.endsWith('.png') ? `<img src="assets/${equip.icon}" style="width:14px;height:14px;vertical-align:middle">` : equip.icon;
+  addLog(`${f.emoji}${f.name} 装备了 <span style="color:#ffd93d">${_eqIcon} ${equip.name}</span>：${equip.desc}`);
+  spawnFloatingNum(getFighterElId(f), `${_eqIcon}${equip.name}`, 'crit-label', 0, -20);
   // Close overlay
   overlay.classList.remove('show');
   setTimeout(() => overlay.remove(), 300);

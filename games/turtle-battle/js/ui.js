@@ -665,7 +665,7 @@ function showFighterDetail(f) {
 
   // ── Equipment ──
   if (f._equips && f._equips.length) {
-    html += `<div class="fdp-equips"><b>装备：</b>${f._equips.map(e => e.icon + e.name).join('、')}</div>`;
+    html += `<div class="fdp-equips"><b>装备：</b>${f._equips.map(e => (e.icon.endsWith && e.icon.endsWith('.png') ? `<img src="assets/${e.icon}" style="width:14px;height:14px;vertical-align:middle">` : e.icon) + e.name).join('、')}</div>`;
   }
 
   document.getElementById('fdpBody').innerHTML = html;
