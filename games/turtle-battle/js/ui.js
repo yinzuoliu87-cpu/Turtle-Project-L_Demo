@@ -246,6 +246,18 @@ function updateSceneHp(f) {
   const el = document.getElementById(getFighterElId(f));
   if (!el) return;
 
+  // Body size scales with maxHp change (0.9 ~ 1.15)
+  if (f._initHp && f.maxHp !== f._lastMaxHp) {
+    f._lastMaxHp = f.maxHp;
+    const ratio = f.maxHp / f._initHp;
+    const sizeScale = Math.max(0.9, Math.min(1.15, 0.85 + ratio * 0.15));
+    const sprite = el.querySelector('.st-sprite');
+    if (sprite) {
+      sprite.style.transition = 'transform 0.4s ease';
+      sprite.style.transform = `scale(${sizeScale.toFixed(3)})`;
+    }
+  }
+
   const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
   const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
   const barMax = Math.max(f.maxHp, totalEff);
