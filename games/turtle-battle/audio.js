@@ -81,17 +81,14 @@ function sfxHit() {
   _playSfx('hit-physical', 0.35);
 }
 
-// ── Crit: sharp impact ──
+// ── Crit: same hit sound, louder ──
 function sfxCrit() {
-  _osc('sawtooth', 400, 0.06, 0.12, 800);
-  _osc('sine', 800, 0.1, 0.08, 1200);
-  _noise(0.08, 0.1);
+  _playSfx('hit-physical', 0.5);
 }
 
-// ── Pierce: high whistle ──
+// ── Pierce (true damage): same hit sound ──
 function sfxPierce() {
-  _osc('sine', 600, 0.12, 0.1, 1400);
-  _osc('triangle', 1200, 0.08, 0.06, 1800);
+  _playSfx('hit-physical', 0.4);
 }
 
 // ── Shield gain: ascending chime ──
@@ -183,10 +180,9 @@ function sfxExplosion() {
   _osc('square', 60, 0.2, 0.08, 20);
 }
 
-// ── Counter/Reflect: ricochet ──
+// ── Counter/Reflect: same hit sound ──
 function sfxCounter() {
-  _osc('triangle', 300, 0.06, 0.1, 600);
-  _osc('sine', 600, 0.08, 0.06, 300);
+  _playSfx('hit-physical', 0.35);
 }
 
 // ── Trap trigger: snap ──
