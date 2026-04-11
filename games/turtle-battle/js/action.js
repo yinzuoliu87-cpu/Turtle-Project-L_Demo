@@ -622,7 +622,6 @@ async function executeAction(action) {
     spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0);
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}永久护盾</span>（10%ATK+暴击率×100）`);
-    sfxShield();
     await sleep(800);
   } else if (skill.type === 'chestOpen') {
     await doChestOpen(f, skill);
@@ -680,7 +679,7 @@ async function executeAction(action) {
       if (actual > 0) { spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0); updateHpBar(ally, elId); }
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-heal">回复${actual}HP</span>`);
     }
-    sfxHeal(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'bubbleHeal') {
     const target = allFighters[action.targetId];
     if (target && target.alive) {
@@ -689,7 +688,7 @@ async function executeAction(action) {
       const elId = getFighterElId(target);
       if (actual > 0) { spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0); updateHpBar(target, elId); }
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
-      sfxHeal();
+
     }
     await sleep(800);
   } else if (skill.type === 'crystalResHeal') {
@@ -700,7 +699,7 @@ async function executeAction(action) {
       const elId = getFighterElId(target);
       if (actual > 0) { spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0); updateHpBar(target, elId); }
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
-      sfxHeal();
+
     }
     await sleep(800);
   } else if (skill.type === 'phoenixPurify') {
@@ -721,7 +720,7 @@ async function executeAction(action) {
       if (removed.length > 0) spawnFloatingNum(elId, `净化×${removed.length}`, 'passive-num', 200, 0);
       renderStatusIcons(target); updateFighterStats(target, elId);
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">净化${removed.length}个减益，回复${actual}HP</span>`);
-      sfxHeal();
+
     }
     await sleep(800);
   } else if (skill.type === 'headlessRegen') {
@@ -736,7 +735,7 @@ async function executeAction(action) {
       renderStatusIcons(f);
     }
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-heal">回复${actual}HP</span>${skill.lifestealUp ? ` <span class="log-passive">+${skill.lifestealUp.pct}%吸血 ${skill.lifestealUp.turns}回合</span>` : ''}`);
-    sfxHeal(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'commonTeamShield') {
     const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
     for (const ally of allies) {
@@ -746,7 +745,7 @@ async function executeAction(action) {
       spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0); updateHpBar(ally, elId);
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span>`);
     }
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'rainbowBarrier') {
     const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
     for (const ally of allies) {
@@ -756,7 +755,7 @@ async function executeAction(action) {
       spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0); updateHpBar(ally, elId);
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span>`);
     }
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'cyberFirewall') {
     const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
     for (const ally of allies) {
@@ -768,13 +767,13 @@ async function executeAction(action) {
       renderStatusIcons(ally);
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span> <span class="log-passive">-${skill.dmgReduction?.pct||15}%受伤 ${skill.dmgReduction?.turns||3}回合</span>`);
     }
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'starShield') {
     const amount = Math.round(Math.round(f._starEnergy * (skill.shieldEnergyPct||80) / 100) * getShieldMult());
     f.shield += amount; const elId = getFighterElId(f);
     spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0); updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">星能转化+${amount}护盾</span>`);
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'starShieldBreak') {
     const enemies = getAliveEnemiesWithSummons(f.side); let totalBroken = 0;
     for (const enemy of enemies) {
@@ -791,7 +790,7 @@ async function executeAction(action) {
     f.shield += amount; const elId = getFighterElId(f);
     spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0); updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">储能转化+${amount}护盾</span>`);
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'lightningShield') {
     const amount = Math.round(Math.round(f.atk * (skill.shieldScale||0.9)) * getShieldMult());
     f.shield += amount; const elId = getFighterElId(f);
@@ -799,7 +798,7 @@ async function executeAction(action) {
     if (skill.counterScale) { f.buffs.push({ type:'counter', value:Math.round(f.atk * skill.counterScale), turns:3 }); spawnFloatingNum(elId, `反击`, 'passive-num', 200, 0); }
     renderStatusIcons(f);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${amount}护盾</span> <span class="log-passive">反击${Math.round(f.atk*(skill.counterScale||0.1))}</span>`);
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'commonAtkBuff') {
     const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
     for (const ally of allies) { const atkGain = Math.round(ally.baseAtk * (skill.atkUpPct||15) / 100); ally.buffs.push({ type:'atkUp', value:atkGain, turns:skill.atkUpTurns||3 }); const elId = getFighterElId(ally); spawnFloatingNum(elId, `+${atkGain}攻`, 'passive-num', 0, 0); renderStatusIcons(ally); updateFighterStats(ally, elId); }
@@ -852,7 +851,7 @@ async function executeAction(action) {
     spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0); spawnFloatingNum(elId, `反弹${skill.reflectPct||40}%`, 'passive-num', 200, 0);
     updateHpBar(f, elId); renderStatusIcons(f);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">反弹${skill.reflectPct||40}% ${skill.reflectTurns||3}回合</span>`);
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'gamblerCheat') {
     const target = allFighters[action.targetId];
     if (target && target.alive) {
@@ -929,7 +928,7 @@ async function executeAction(action) {
     f.shield += shieldAmt; const elId = getFighterElId(f);
     spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0); updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}护盾</span>`);
-    sfxShield(); await sleep(800);
+    await sleep(800);
   } else if (skill.type === 'bambooSmack') {
     const target = allFighters[action.targetId];
     if (target && target.alive) { await doDamage(f, target, skill); if (skill.chilled) { target.buffs.push({ type:'chilled', value:1, turns:skill.chilled }); spawnFloatingNum(getFighterElId(target), `❄️冰寒`, 'debuff-num', 200, 0); recalcStats(); renderStatusIcons(target); addLog(`${target.emoji}${target.name} 被冰寒${skill.chilled}回合！`); }
@@ -969,7 +968,7 @@ async function executeAction(action) {
     sfxCoin(); await sleep(600);
   } else if (skill.type === 'rainbowGuard') {
     const target = allFighters[action.targetId];
-    if (target && target.alive) { const shieldAmt = Math.round(Math.round(f.atk * (skill.shieldAtkScale||1.0)) * getShieldMult()); target.shield += shieldAmt; const tElId = getFighterElId(target); spawnFloatingNum(tElId, `+${shieldAmt}`, 'shield-num', 0, 0); updateHpBar(target, tElId); if (skill.atkUpPct) { const atkGain = Math.round(target.baseAtk * skill.atkUpPct / 100); target.buffs.push({ type:'atkUp', value:atkGain, turns:skill.atkUpTurns||3 }); spawnFloatingNum(tElId, `+${atkGain}攻`, 'passive-num', 200, 0); recalcStats(); renderStatusIcons(target); updateFighterStats(target, tElId); } addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${skill.atkUpPct}%攻击 ${skill.atkUpTurns||3}回合</span>`); sfxShield(); } await sleep(800);
+    if (target && target.alive) { const shieldAmt = Math.round(Math.round(f.atk * (skill.shieldAtkScale||1.0)) * getShieldMult()); target.shield += shieldAmt; const tElId = getFighterElId(target); spawnFloatingNum(tElId, `+${shieldAmt}`, 'shield-num', 0, 0); updateHpBar(target, tElId); if (skill.atkUpPct) { const atkGain = Math.round(target.baseAtk * skill.atkUpPct / 100); target.buffs.push({ type:'atkUp', value:atkGain, turns:skill.atkUpTurns||3 }); spawnFloatingNum(tElId, `+${atkGain}攻`, 'passive-num', 200, 0); recalcStats(); renderStatusIcons(target); updateFighterStats(target, tElId); } addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span> <span class="log-passive">+${skill.atkUpPct}%攻击 ${skill.atkUpTurns||3}回合</span>`); } await sleep(800);
   } else if (skill.type === 'hunterMark') {
     const target = allFighters[action.targetId];
     if (target && target.alive) { await doDamage(f, target, skill); if (target.alive && skill.markTurns) { target.buffs.push({ type:'hunterMark', value:skill.markExecPct||24, turns:skill.markTurns, sourceIdx:allFighters.indexOf(f) }); spawnFloatingNum(getFighterElId(target), `🎯猎杀印记`, 'debuff-num', 200, 0); renderStatusIcons(target); addLog(`${target.emoji}${target.name} 被标记！HP<${skill.markExecPct||24}%时将被斩杀`); } }

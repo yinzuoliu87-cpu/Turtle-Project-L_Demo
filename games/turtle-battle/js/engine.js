@@ -115,6 +115,8 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     'true-dmg': sfxPierce, 'pierce-dmg': sfxPierce,
     'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit,
     'shield-dmg': sfxShieldBreak,
+    'shield-num': sfxShield,
+    'heal-num': sfxHeal,
     'dodge-num': sfxDodge,
   };
   const _sfxFn = _sfxMap[cls];

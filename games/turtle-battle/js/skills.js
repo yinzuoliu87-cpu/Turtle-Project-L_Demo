@@ -415,7 +415,7 @@ async function doHidingDefend(caster, skill) {
   spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0);
   updateHpBar(caster, elId);
   renderStatusIcons(caster);
-  sfxShield();
+
   addLog(`${caster.emoji}${caster.name} <b>防御</b>：<span class="log-shield">+${shieldAmt}护盾</span>（${skill.shieldDuration}回合，到期回复剩余盾${skill.shieldHealPct}%HP）`);
   await sleep(800);
 }
@@ -880,7 +880,7 @@ async function doAngelBless(caster, target, skill) {
   updateHpBar(target, tElId);
   updateFighterStats(target, tElId);
   renderStatusIcons(target);
-  sfxShield();
+
   addLog(`${caster.emoji}${caster.name} <b>祝福</b> → ${target.emoji}${target.name}：<span class="log-shield">+${shieldAmt}护盾</span>(${skill.shieldTurns}回合) + <span class="log-passive">护甲&魔抗+${defGain}</span>(${skill.defBoostTurns}回合)`);
   await sleep(1000);
 }
@@ -1356,7 +1356,7 @@ async function doCrystalBarrier(caster, skill) {
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
   spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
-  sfxShield();
+
   // Team DEF/MR buff
   if (skill.defMrUpPct) {
     const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive);
@@ -1600,7 +1600,7 @@ async function doVolcanoArmor(caster, skill) {
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
   spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
-  sfxShield();
+
   if (skill.defMrUpPct) {
     const defGain = Math.round(caster.baseDef * skill.defMrUpPct / 100);
     const mrGain = Math.round((caster.baseMr || caster.baseDef) * skill.defMrUpPct / 100);
@@ -2430,7 +2430,7 @@ async function doGhostPhase(caster, skill) {
   const shieldAmt = Math.round(caster.atk * skill.shieldScale);
   caster.shield += shieldAmt;
   spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
-  sfxShield();
+
   // Dodge buff
   caster.buffs.push({ type:'dodge', value:skill.dodgePct, turns:skill.dodgeTurns + 1 }); // +1 because processBuffs ticks at start
   spawnFloatingNum(fElId, `👻虚化！闪避${skill.dodgePct}%`, 'passive-num', 200, 0);
@@ -2481,7 +2481,7 @@ async function doIceShield(caster, skill) {
   const selfShield = Math.round(caster.atk * skill.selfScale);
   caster.shield += selfShield;
   spawnFloatingNum(fElId, `+${selfShield}`, 'shield-num', 0, 0);
-  sfxShield();
+
   updateHpBar(caster, fElId);
   // Ally: 80% ATK permanent shield
   const allies = (caster.side === 'left' ? leftTeam : rightTeam).filter(a => a.alive && a !== caster);
@@ -2529,7 +2529,7 @@ async function doBambooHeal(caster, skill) {
     caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
     const actual = Math.round(caster.hp - before);
     if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
-    sfxHeal();
+
     updateHpBar(caster, fElId);
     // Shield ally 15% of caster's maxHP
     for (const a of allies) {
@@ -2548,7 +2548,7 @@ async function doBambooHeal(caster, skill) {
     caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
     const actual = Math.round(caster.hp - before);
     if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
-    sfxHeal();
+
     updateHpBar(caster, fElId);
     addLog(`${caster.emoji}${caster.name} <b>自然恢复</b>（无队友）：<span class="log-heal">+${actual}HP</span>`);
   }
@@ -2672,7 +2672,7 @@ async function doDiamondFortify(caster, skill) {
   const shieldAmt = Math.round(caster.maxHp * skill.shieldHpPct / 100);
   caster.shield += shieldAmt;
   spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
-  sfxShield();
+
   // Def + MR buff: 20%ATK each (diamondStructure passive will amplify in recalcStats)
   const defGain = Math.round(caster.atk * skill.defUpAtkPct / 100);
   const mrGain = Math.round(caster.atk * (skill.mrUpAtkPct || 0) / 100);
@@ -2917,7 +2917,7 @@ async function doChestCount(caster, skill) {
   caster.hp = Math.min(caster.maxHp, caster.hp + finalHeal);
   const actual = Math.round(caster.hp - before);
   if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
-  sfxHeal();
+
   // Shield
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale * treasureBonus);
   caster.shield += shieldAmt;
@@ -3012,7 +3012,7 @@ async function doChestOpen(caster, skill) {
   caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
   const actual = Math.round(caster.hp - before);
   if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 0, 0);
-  sfxHeal();
+
   // Shield 80%ATK
   const shieldAmt = Math.round(caster.atk * skill.shieldAtkScale);
   caster.shield += shieldAmt;
