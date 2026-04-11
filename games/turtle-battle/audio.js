@@ -75,6 +75,9 @@ _loadSfx('hit-physical', 'assets/sfx/hit-physical.wav');
 _loadSfx('hit-crit', 'assets/sfx/hit-crit.wav');
 _loadSfx('shield-gain', 'assets/sfx/shield-gain.wav');
 _loadSfx('shield-break', 'assets/sfx/shield-break.wav');
+_loadSfx('heal', 'assets/sfx/heal.wav');
+_loadSfx('defeat', 'assets/sfx/defeat.wav');
+_loadSfx('rebirth', 'assets/sfx/rebirth.wav');
 
 // Anti-spam: prevent same sound playing too close together
 const _sfxLastPlay = {};
@@ -117,16 +120,7 @@ function sfxShieldBreak() {
 
 // ── Heal: soft chime ──
 function sfxHeal() {
-  const c = ensureAudio(), t = c.currentTime;
-  [523, 659, 784].forEach((f, i) => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(f, t + i * 0.06);
-    g.gain.setValueAtTime(0.08, t + i * 0.06);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.06 + 0.15);
-    o.connect(g); g.connect(masterGain);
-    o.start(t + i * 0.06); o.stop(t + i * 0.06 + 0.15);
-  });
+  _playSfxThrottled('heal', 0.35, 100);
 }
 
 // ── Death: low crunch ──
@@ -135,18 +129,9 @@ function sfxDeath() {
   _noise(0.15, 0.12);
 }
 
-// ── Rebirth: phoenix rising ──
+// ── Rebirth: revival ──
 function sfxRebirth() {
-  const c = ensureAudio(), t = c.currentTime;
-  [262, 330, 392, 523, 659].forEach((f, i) => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(f, t + i * 0.08);
-    g.gain.setValueAtTime(0.1, t + i * 0.08);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.08 + 0.2);
-    o.connect(g); g.connect(masterGain);
-    o.start(t + i * 0.08); o.stop(t + i * 0.08 + 0.2);
-  });
+  _playSfx('rebirth', 0.4);
 }
 
 // ── Buff: warm tone ──
@@ -228,18 +213,9 @@ function sfxVictory() {
   });
 }
 
-// ── Defeat: descending ──
+// ── Defeat ──
 function sfxDefeat() {
-  const c = ensureAudio(), t = c.currentTime;
-  [392, 330, 262, 196].forEach((f, i) => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'triangle';
-    o.frequency.setValueAtTime(f, t + i * 0.15);
-    g.gain.setValueAtTime(0.1, t + i * 0.15);
-    g.gain.exponentialRampToValueAtTime(0.001, t + i * 0.15 + 0.3);
-    o.connect(g); g.connect(masterGain);
-    o.start(t + i * 0.15); o.stop(t + i * 0.15 + 0.3);
-  });
+  _playSfx('defeat', 0.45);
 }
 
 // ── Select/Click: soft pop ──
