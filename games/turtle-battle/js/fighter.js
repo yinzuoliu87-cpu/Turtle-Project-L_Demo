@@ -123,11 +123,19 @@ function createFighter(petId, side, equippedIdxs) {
     })(),
     _passiveSkills: (function() {
       const pool = b.skillPool || b.skills || [];
+      const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
+      let passives = [];
       if (pool.length > 0) {
-        const idxs = equippedIdxs || b.defaultSkills || [0,1,2];
-        return idxs.filter(i => i < pool.length).map(i => ({ ...pool[i] })).filter(s => s.passiveSkill);
+        passives = idxs.filter(i => i < pool.length).map(i => ({ ...pool[i] })).filter(s => s.passiveSkill);
+      } else {
+        passives = (b.skills || []).map(s => ({ ...s })).filter(s => s.passiveSkill);
       }
-      return (b.skills || []).map(s => ({ ...s })).filter(s => s.passiveSkill);
+      // Also collect passives from meleeSkills (two-head turtle paired passives)
+      if (b.meleeSkills) {
+        const meleePassives = idxs.filter(i => i < b.meleeSkills.length).map(i => ({ ...b.meleeSkills[i] })).filter(s => s.passiveSkill);
+        passives = passives.concat(meleePassives);
+      }
+      return passives;
     })(),
   };
 }
