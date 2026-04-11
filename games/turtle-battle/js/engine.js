@@ -150,22 +150,14 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const y0 = -(15 + (yOffset || 0) + autoOffset);
 
     if (isDmg) {
-      // ── DAMAGE: jump away from attacker ──
-      let dir = 1;
-      if (opts && opts.atkSide) {
-        dir = opts.atkSide === 'left' ? 1 : -1;
-      } else if (typeof currentActingFighter !== 'undefined' && currentActingFighter) {
-        dir = currentActingFighter.side === 'left' ? 1 : -1;
-      } else {
-        try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
-      }
-      const jumpX = dir * (15 + _vr() * 10);
-      const jumpY = -(12 + _vr() * 8); // upward
-      const gravity = 150;
-      const totalDur = 1400;
+      // ── DAMAGE: pop from center, jump to random side ──
+      const dir = _vr() < 0.5 ? -1 : 1;
+      const jumpX = dir * (12 + _vr() * 14);
+      const jumpY = -(10 + _vr() * 8);
+      const gravity = 200;
+      const totalDur = 800;
       const start = performance.now();
 
-      // Base size from amount for impact pop
       const popSize = amount < 20 ? 1.6 : amount < 60 ? 1.8 : amount < 150 ? 2.2 : 2.5;
 
       function tickDmg(now) {
@@ -173,18 +165,18 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
         if (elapsed >= totalDur) { num.remove(); return; }
         const t = elapsed / 1000;
 
-        // Impact pop: big -> shrink to 0.5 -> hold at 0.5
+        // Impact pop: big -> shrink -> hold
         let scale;
-        if (elapsed < 60) scale = (elapsed / 60) * popSize;           // 0 -> big
-        else if (elapsed < 180) scale = popSize - (popSize - 0.7) * ((elapsed - 60) / 120);  // big -> 0.7
+        if (elapsed < 50) scale = (elapsed / 50) * popSize;
+        else if (elapsed < 150) scale = popSize - (popSize - 0.7) * ((elapsed - 50) / 100);
         else scale = 0.7;
 
         // Parabolic arc
         const x = ox + jumpX * t * 2;
         const y = y0 + jumpY * t * 2 + 0.5 * gravity * t * t;
 
-        // Fade in second half
-        const opacity = elapsed < 600 ? 1 : 1 - (elapsed - 600) / (totalDur - 600);
+        // Fade out faster
+        const opacity = elapsed < 350 ? 1 : 1 - (elapsed - 350) / (totalDur - 350);
 
         num.style.transform = `translate(calc(-50% + ${x}px), ${y}px) scale(${scale})`;
         num.style.opacity = String(Math.max(0, opacity));
