@@ -282,16 +282,26 @@ function sfxBambooCharge() {
 }
 function sfxBambooHit() {
   const c = ensureAudio(), t = c.currentTime;
-  // Nature chime: two harmonics
-  [392, 784, 1175].forEach((f, i) => {
-    const o = c.createOscillator(), g = c.createGain();
-    o.type = 'sine';
-    o.frequency.setValueAtTime(f, t);
-    g.gain.setValueAtTime(0.07 - i * 0.015, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
-    o.connect(g); g.connect(masterGain);
-    o.start(t); o.stop(t + 0.3);
-  });
+  // Life steal impact: short low thud + ascending "absorb" tone
+  // Thud (impact)
+  const o1 = c.createOscillator(), g1 = c.createGain();
+  o1.type = 'sine';
+  o1.frequency.setValueAtTime(100, t);
+  o1.frequency.exponentialRampToValueAtTime(60, t + 0.15);
+  g1.gain.setValueAtTime(0.15, t);
+  g1.gain.exponentialRampToValueAtTime(0.001, t + 0.2);
+  o1.connect(g1); g1.connect(masterGain);
+  o1.start(t); o1.stop(t + 0.2);
+  // Absorb: ascending tone (life flowing back)
+  const o2 = c.createOscillator(), g2 = c.createGain();
+  o2.type = 'sine';
+  o2.frequency.setValueAtTime(150, t + 0.05);
+  o2.frequency.exponentialRampToValueAtTime(400, t + 0.35);
+  g2.gain.setValueAtTime(0, t);
+  g2.gain.linearRampToValueAtTime(0.1, t + 0.1);
+  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  o2.connect(g2); g2.connect(masterGain);
+  o2.start(t + 0.05); o2.stop(t + 0.4);
   // Soft thud
   _osc('triangle', 220, 0.15, 0.08, 110);
 }
