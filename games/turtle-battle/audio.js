@@ -73,37 +73,46 @@ function _playSfx(name, volume) {
 // Preload SFX files
 _loadSfx('hit-physical', 'assets/sfx/hit-physical.wav');
 _loadSfx('hit-crit', 'assets/sfx/hit-crit.wav');
+_loadSfx('shield-gain', 'assets/sfx/shield-gain.wav');
+_loadSfx('shield-break', 'assets/sfx/shield-break.wav');
+
+// Anti-spam: prevent same sound playing too close together
+const _sfxLastPlay = {};
+function _playSfxThrottled(name, volume, cooldownMs) {
+  const now = Date.now();
+  if (_sfxLastPlay[name] && now - _sfxLastPlay[name] < (cooldownMs || 150)) return;
+  _sfxLastPlay[name] = now;
+  _playSfx(name, volume);
+}
 
 // BATTLE SFX
 // ═══════════════════════════════════════════════════
 
 // ── Hit: physical attack ──
 function sfxHit() {
-  _playSfx('hit-physical', 0.35);
+  _playSfxThrottled('hit-physical', 0.35, 200);
 }
 
 // ── Crit: heavier hit ──
 function sfxCrit() {
-  _playSfx('hit-crit', 0.5);
+  _playSfxThrottled('hit-crit', 0.5, 200);
 }
 
 // ── Pierce (true damage): same as physical hit ──
 function sfxPierce() {
-  _playSfx('hit-physical', 0.35);
+  _playSfxThrottled('hit-physical', 0.35, 200);
 }
 
 // ── Fire: same as physical hit ──
 
-// ── Shield gain: ascending chime ──
+// ── Shield gain ──
 function sfxShield() {
-  _osc('sine', 440, 0.15, 0.1, 880);
-  _osc('sine', 660, 0.12, 0.06, 1100);
+  _playSfxThrottled('shield-gain', 0.35, 300);
 }
 
-// ── Shield break: glass shatter ──
+// ── Shield break ──
 function sfxShieldBreak() {
-  _noise(0.15, 0.15);
-  _osc('square', 300, 0.08, 0.08, 80);
+  _playSfxThrottled('shield-break', 0.4, 300);
 }
 
 // ── Heal: soft chime ──
@@ -159,12 +168,12 @@ function sfxDodge() {
 
 // ── Fire/Burn: crackle ──
 function sfxFire() {
-  _playSfx('hit-physical', 0.35);
+  _playSfxThrottled('hit-physical', 0.35, 200);
 }
 
 // ── Lightning: same as physical hit ──
 function sfxLightning() {
-  _playSfx('hit-physical', 0.35);
+  _playSfxThrottled('hit-physical', 0.35, 200);
 }
 
 // ── Coin: bling ──
