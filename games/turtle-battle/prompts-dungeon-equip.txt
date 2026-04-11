@@ -1,0 +1,57 @@
+地牢装备图标生成提示词（17个）
+全部统一风格：pixel art, game icon, transparent background, 64x64
+每个单独生成一张图，去背景后放到 assets/equip/ 目录
+
+1. e_blade 海藻短刃
+A pixel art seaweed blade sword, green blade with small bubbles, game icon, transparent background, 64x64
+
+2. e_armor 珊瑚护甲
+A pixel art coral armor chestplate, pink-red branching coral texture, game icon, transparent background, 64x64
+
+3. e_shell 深海贝壳
+A pixel art deep sea clam shell with blue magic glow inside, game icon, transparent background, 64x64
+
+4. e_pearl 生命珍珠
+A pixel art glowing white-pink pearl on a small shell base, game icon, transparent background, 64x64
+
+5. e_tooth 锋利鲨齿
+A pixel art sharp white shark tooth with blood stain, game icon, transparent background, 64x64
+
+6. e_hammer 重击锤
+A pixel art heavy stone war hammer with coral handle, game icon, transparent background, 64x64
+
+7. e_spike 穿甲珊瑚刺
+A pixel art sharp coral spike projectile, red-orange pointed, game icon, transparent background, 64x64
+
+8. e_crystal 灵能水晶
+A pixel art glowing purple magic crystal cluster, game icon, transparent background, 64x64
+
+9. e_star 吸血海星
+A pixel art dark red starfish with dripping blood drops, game icon, transparent background, 64x64
+
+10. e_urchin 荆棘海胆
+A pixel art spiky black sea urchin with purple thorn tips, game icon, transparent background, 64x64
+
+11. e_fire 灼热火珊瑚
+A pixel art burning coral branch with orange flames, game icon, transparent background, 64x64
+
+12. e_jelly 冰封水母
+A pixel art frozen jellyfish encased in ice crystals, blue glow, game icon, transparent background, 64x64
+
+13. e_anemone 治愈海葵
+A pixel art green sea anemone with golden healing sparkle particles, game icon, transparent background, 64x64
+
+14. e_ghost 幽灵墨鱼
+A pixel art translucent ghostly cuttlefish, pale blue, game icon, transparent background, 64x64
+
+15. e_puffer 愤怒河豚
+A pixel art angry red pufferfish fully inflated with spikes out, game icon, transparent background, 64x64
+
+16. e_tshell 坚韧龟壳
+A pixel art tough dark green turtle shell used as a shield, game icon, transparent background, 64x64
+
+17. e_octo 连击章鱼爪
+A pixel art purple octopus tentacle claw reaching forward, game icon, transparent background, 64x64
+
+18. e_conch 复活海螺
+A pixel art golden conch shell with divine white light beam, game icon, transparent background, 64x64
