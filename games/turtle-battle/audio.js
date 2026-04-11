@@ -243,17 +243,40 @@ function sfxTurnStart() {
   _osc('triangle', 523, 0.06, 0.06, 784);
 }
 
-// ── Bamboo charge: wind-up whoosh → nature chime impact ──
+// ── Bamboo charge: life drain / absorb feel ──
 function sfxBambooCharge() {
   const c = ensureAudio(), t = c.currentTime;
-  // Whoosh: rising filtered noise
-  const buf = c.createBuffer(1, c.sampleRate * 0.4, c.sampleRate);
+  // Deep drone: low frequency descending hum (life being drained)
+  const o1 = c.createOscillator(), g1 = c.createGain();
+  o1.type = 'sine';
+  o1.frequency.setValueAtTime(220, t);
+  o1.frequency.exponentialRampToValueAtTime(80, t + 0.5);
+  g1.gain.setValueAtTime(0.12, t);
+  g1.gain.linearRampToValueAtTime(0.15, t + 0.2);
+  g1.gain.exponentialRampToValueAtTime(0.001, t + 0.6);
+  o1.connect(g1); g1.connect(masterGain);
+  o1.start(t); o1.stop(t + 0.6);
+  // Eerie overtone: slight dissonance for "dark" feel
+  const o2 = c.createOscillator(), g2 = c.createGain();
+  o2.type = 'triangle';
+  o2.frequency.setValueAtTime(330, t);
+  o2.frequency.exponentialRampToValueAtTime(110, t + 0.45);
+  g2.gain.setValueAtTime(0.06, t);
+  g2.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
+  o2.connect(g2); g2.connect(masterGain);
+  o2.start(t); o2.stop(t + 0.5);
+  // Suction whoosh: filtered noise pulling inward
+  const buf = c.createBuffer(1, c.sampleRate * 0.5, c.sampleRate);
   const d = buf.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = ((_origMathRandom ? _origMathRandom() : Math.random()) * 2 - 1) * Math.sin(i / d.length * Math.PI);
+  for (let i = 0; i < d.length; i++) d[i] = ((_origMathRandom ? _origMathRandom() : Math.random()) * 2 - 1) * Math.pow(1 - i / d.length, 2);
   const n = c.createBufferSource(), gn = c.createGain(), flt = c.createBiquadFilter();
   n.buffer = buf;
-  flt.type = 'bandpass'; flt.frequency.setValueAtTime(400, t); flt.frequency.exponentialRampToValueAtTime(2000, t + 0.35); flt.Q.value = 2;
-  gn.gain.setValueAtTime(0.1, t); gn.gain.exponentialRampToValueAtTime(0.001, t + 0.4);
+  flt.type = 'lowpass';
+  flt.frequency.setValueAtTime(1200, t);
+  flt.frequency.exponentialRampToValueAtTime(150, t + 0.45); // descending = pulling in
+  flt.Q.value = 3;
+  gn.gain.setValueAtTime(0.08, t);
+  gn.gain.exponentialRampToValueAtTime(0.001, t + 0.5);
   n.connect(flt); flt.connect(gn); gn.connect(masterGain);
   n.start(t);
 }
