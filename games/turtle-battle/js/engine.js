@@ -109,7 +109,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
   _floatStacks[elId]++;
   setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 600);
 
-  // SFX fires slightly before visual — sound leads impact
+  // SFX + visual fire together at delayMs (Web Audio API buffer = <5ms latency)
   const _sfxMap = {
     'direct-dmg': sfxHit, 'magic-dmg': sfxHit,
     'true-dmg': sfxPierce, 'pierce-dmg': sfxPierce,
@@ -118,9 +118,9 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     'dodge-num': sfxDodge,
   };
   const _sfxFn = _sfxMap[cls];
-  if (_sfxFn) setTimeout(() => { try { _sfxFn(); } catch(e) {} }, Math.max(0, (delayMs || 0) - 30));
 
   setTimeout(() => {
+    if (_sfxFn) try { _sfxFn(); } catch(e) {}
     const parent = document.getElementById(elId);
     if (!parent) return;
     const num = document.createElement('div');
@@ -225,7 +225,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       }
       requestAnimationFrame(tickHeal);
     }
-  }, delayMs);
+  }, delayMs || 0);
 }
 
 // ── BATTLE START ──────────────────────────────────────────
