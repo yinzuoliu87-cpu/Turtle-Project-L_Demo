@@ -149,8 +149,9 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const ox = (_vr() - 0.5) * 8;
 
     if (isDmg) {
-      // Damage numbers always start from center, small random y spread only
-      const y0 = -((_vr() - 0.5) * 10);
+      // Damage numbers start from center, use yOffset for within-hit stacking (e.g. true+phys)
+      // but ignore autoOffset to prevent flying off-screen on multi-hit
+      const y0 = -((yOffset || 0) + (_vr() - 0.5) * 6);
       // ── DAMAGE: pop from center, jump away from attacker ──
       let dir = 1;
       if (opts && opts.atkSide) {
