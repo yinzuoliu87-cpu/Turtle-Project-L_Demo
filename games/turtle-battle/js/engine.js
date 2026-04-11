@@ -109,6 +109,17 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
   _floatStacks[elId]++;
   setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 800);
 
+  // SFX fires slightly before visual — sound leads impact
+  const _sfxMap = {
+    'direct-dmg': sfxHit, 'magic-dmg': sfxHit,
+    'true-dmg': sfxPierce, 'pierce-dmg': sfxPierce,
+    'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit,
+    'shield-dmg': sfxShieldBreak,
+    'dodge-num': sfxDodge,
+  };
+  const _sfxFn = _sfxMap[cls];
+  if (_sfxFn) setTimeout(() => { try { _sfxFn(); } catch(e) {} }, Math.max(0, (delayMs || 0) - 30));
+
   setTimeout(() => {
     const parent = document.getElementById(elId);
     if (!parent) return;
@@ -212,16 +223,6 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       }
       requestAnimationFrame(tickHeal);
     }
-    // SFX based on type
-    const sfxMap = {
-      'direct-dmg': sfxHit, 'magic-dmg': sfxHit,
-      'true-dmg': sfxPierce, 'pierce-dmg': sfxPierce,
-      'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit,
-      'shield-dmg': sfxShieldBreak,
-      'dodge-num': sfxDodge,
-    };
-    const fn = sfxMap[cls];
-    if (fn) try { fn(); } catch(e) {}
   }, delayMs);
 }
 
