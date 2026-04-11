@@ -214,14 +214,11 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     }
     // SFX based on type
     const sfxMap = {
-      'direct-dmg': sfxHit, 'magic-dmg': sfxHit, 'true-dmg': sfxPierce,
-      'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit, 'crit-label': sfxCrit,
-      'pierce-dmg': sfxPierce, 'shield-dmg': sfxShieldBreak,
-      'shield-num': sfxShield, 'heal-num': sfxHeal,
-      'dot-dmg': sfxFire, 'counter-dmg': sfxCounter,
-      'bubble-num': sfxShield, 'bubble-burst': sfxExplosion,
-      'passive-num': sfxBuff, 'debuff-label': sfxDebuff,
-      'dodge-num': sfxDodge, 'death-explode': sfxExplosion,
+      'direct-dmg': sfxHit, 'magic-dmg': sfxHit,
+      'true-dmg': sfxPierce, 'pierce-dmg': sfxPierce,
+      'crit-dmg': sfxCrit, 'crit-magic': sfxCrit, 'crit-true': sfxCrit, 'crit-pierce': sfxCrit,
+      'shield-dmg': sfxShieldBreak,
+      'dodge-num': sfxDodge,
     };
     const fn = sfxMap[cls];
     if (fn) try { fn(); } catch(e) {}
