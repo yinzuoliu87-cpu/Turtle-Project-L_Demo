@@ -72,6 +72,7 @@ function _playSfx(name, volume) {
 
 // Preload SFX files
 _loadSfx('hit-physical', 'assets/sfx/hit-physical.wav');
+_loadSfx('hit-crit', 'assets/sfx/hit-crit.wav');
 
 // BATTLE SFX
 // ═══════════════════════════════════════════════════
@@ -81,9 +82,9 @@ function sfxHit() {
   _playSfx('hit-physical', 0.35);
 }
 
-// ── Crit: same hit sound, louder ──
+// ── Crit: heavier hit ──
 function sfxCrit() {
-  _playSfx('hit-physical', 0.5);
+  _playSfx('hit-crit', 0.5);
 }
 
 // ── Pierce (true damage): same hit sound ──
