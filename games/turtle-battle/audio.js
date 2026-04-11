@@ -13,6 +13,8 @@ function ensureAudio() {
     masterGain = audioCtx.createGain();
     masterGain.gain.setValueAtTime(soundMuted ? 0 : 0.5, audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
+    // Decode all preloaded SFX buffers now that AudioContext exists
+    _decodeAllSfx();
   }
   if (audioCtx.state === 'suspended') audioCtx.resume();
   return audioCtx;
@@ -53,21 +55,43 @@ function _noise(dur, vol) {
 }
 
 // ═══════════════════════════════════════════════════
-// ── SFX file player (preloaded) ──
-const _sfxFiles = {};
+// ── SFX file player (Web Audio API buffer — low latency) ──
+const _sfxBuffers = {};
+const _sfxRawData = {};
 function _loadSfx(name, src) {
-  const a = new Audio(src);
-  a.preload = 'auto';
-  _sfxFiles[name] = a;
+  // Fetch raw ArrayBuffer immediately; decode when AudioContext is ready
+  fetch(src)
+    .then(r => r.arrayBuffer())
+    .then(buf => {
+      _sfxRawData[name] = buf;
+      // If AudioContext already exists, decode immediately
+      if (audioCtx) _decodeSfx(name);
+    })
+    .catch(() => {});
+}
+function _decodeSfx(name) {
+  if (_sfxBuffers[name] || !_sfxRawData[name] || !audioCtx) return;
+  const raw = _sfxRawData[name];
+  delete _sfxRawData[name];
+  audioCtx.decodeAudioData(raw)
+    .then(decoded => { _sfxBuffers[name] = decoded; })
+    .catch(() => {});
+}
+function _decodeAllSfx() {
+  Object.keys(_sfxRawData).forEach(name => _decodeSfx(name));
 }
 function _playSfx(name, volume) {
   if (soundMuted) return;
-  const a = _sfxFiles[name];
-  if (!a) return;
-  // Clone for overlapping plays
-  const clone = a.cloneNode();
-  clone.volume = volume || 0.4;
-  clone.play().catch(() => {});
+  const buf = _sfxBuffers[name];
+  if (!buf) return;
+  const c = ensureAudio();
+  const src = c.createBufferSource();
+  const g = c.createGain();
+  src.buffer = buf;
+  g.gain.setValueAtTime(volume || 0.4, c.currentTime);
+  src.connect(g);
+  g.connect(masterGain);
+  src.start(c.currentTime);
 }
 
 // Preload SFX files
