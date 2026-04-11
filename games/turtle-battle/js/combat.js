@@ -153,8 +153,8 @@ async function doDamage(attacker, target, skill) {
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalDirect += judgeReduced;
       if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
-      // Blue number above the main hit (yOff - 20 to sit above)
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: judgeReduced });
+      // Blue number above the main hit
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, -20, { atkSide: attacker.side, amount: judgeReduced });
       updateHpBar(target, tElId);
       await sleep(200);
     }
