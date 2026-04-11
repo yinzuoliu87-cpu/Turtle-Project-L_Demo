@@ -150,8 +150,15 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const y0 = -(15 + (yOffset || 0) + autoOffset);
 
     if (isDmg) {
-      // ── DAMAGE: pop from center, jump to random side ──
-      const dir = _vr() < 0.5 ? -1 : 1;
+      // ── DAMAGE: pop from center, jump away from attacker ──
+      let dir = 1;
+      if (opts && opts.atkSide) {
+        dir = opts.atkSide === 'left' ? 1 : -1;
+      } else if (typeof currentActingFighter !== 'undefined' && currentActingFighter) {
+        dir = currentActingFighter.side === 'left' ? 1 : -1;
+      } else {
+        try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
+      }
       const jumpX = dir * (12 + _vr() * 14);
       const jumpY = -(10 + _vr() * 8);
       const gravity = 200;
