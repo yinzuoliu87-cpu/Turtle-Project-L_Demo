@@ -251,11 +251,8 @@ function updateSceneHp(f) {
     f._lastMaxHp = f.maxHp;
     const ratio = f.maxHp / f._initHp;
     const sizeScale = Math.max(0.9, Math.min(1.15, 0.85 + ratio * 0.15));
-    const sprite = el.querySelector('.st-sprite');
-    if (sprite) {
-      sprite.style.transition = 'transform 0.4s ease';
-      sprite.style.transform = `scale(${sizeScale.toFixed(3)})`;
-    }
+    // Use CSS variable so we don't override the scaleX(-1) flip from stylesheet
+    el.style.setProperty('--body-scale', sizeScale.toFixed(3));
   }
 
   const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');

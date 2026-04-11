@@ -1845,11 +1845,14 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
 .scene-turtle .st-buffs{display:flex;gap:2px;margin-top:1px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center}
 
 /* Turtle positions now set by JS via BATTLE_POSITIONS config */
-.scene-turtle[class*="pos-left"] .st-sprite{transform:scaleX(-1)}
-.scene-turtle[class*="pos-left"][data-pid="hiding"] .st-sprite{transform:scaleX(1)}
-.scene-turtle[class*="pos-right"][data-pid="hiding"] .st-sprite{transform:scaleX(-1)}
-.scene-turtle[class*="pos-left"][data-pid="mech"] .st-sprite{transform:scaleX(1)}
-.scene-turtle[class*="pos-right"][data-pid="mech"] .st-sprite{transform:scaleX(-1)}
+/* Body size scales with maxHp (--body-scale set by updateSceneHp, default 1) */
+.scene-turtle{--body-scale:1}
+.scene-turtle .st-sprite{transition:transform 0.4s ease;transform:scale(var(--body-scale))}
+.scene-turtle[class*="pos-left"] .st-sprite{transform:scaleX(-1) scale(var(--body-scale))}
+.scene-turtle[class*="pos-left"][data-pid="hiding"] .st-sprite{transform:scale(var(--body-scale))}
+.scene-turtle[class*="pos-right"][data-pid="hiding"] .st-sprite{transform:scaleX(-1) scale(var(--body-scale))}
+.scene-turtle[class*="pos-left"][data-pid="mech"] .st-sprite{transform:scale(var(--body-scale))}
+.scene-turtle[class*="pos-right"][data-pid="mech"] .st-sprite{transform:scaleX(-1) scale(var(--body-scale))}
 
 /* Hit animations on scene turtles */
 .scene-turtle.hit-shake{animation:shake .3s ease}
