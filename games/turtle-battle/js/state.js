@@ -230,6 +230,7 @@ function checkDeaths(attacker) {
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
         updateHpBar(attacker, aElId);
+        try { sfxExplosion(); } catch(e) {}
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">死亡爆炸！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${dmg}物理</span>`);
         if (attacker.hp <= 0) { attacker.alive = false; }
       }
@@ -336,6 +337,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
       const aElId = getFighterElId(attacker);
       spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
       updateHpBar(attacker, aElId);
+      try { sfxExplosion(); } catch(e) {}
       addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">死亡爆炸！${dmg}伤害</span>`);
       if (attacker.hp <= 0) attacker.alive = false;
     }

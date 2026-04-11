@@ -657,6 +657,7 @@ async function processBuffs() {
             const eId = getFighterElId(e);
             spawnFloatingNum(eId, `-${burstDmg}`, 'bubble-burst', 0, 0);
             updateHpBar(e, eId);
+            try { sfxExplosion(); } catch(e2) {}
             if (e.hp <= 0) e.alive = false;
           }
           addLog(`${f.emoji}${f.name} 的泡泡盾自然破碎！<span class="log-passive">对敌方全体造成${burstDmg}伤害</span>`);
