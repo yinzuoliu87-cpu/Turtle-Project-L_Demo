@@ -87,7 +87,9 @@ async function beginTurn() {
         spawnFloatingNum(elId, `+${spawned}<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成${spawned}个浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
       }
-      // Every drone fires every turn at random enemy — speed scales with count
+      // Drones fire from turn 2 onwards (turn 1 = spawn only)
+      if (turnNum <= 1) { renderStatusIcons(f); await sleep(300); }
+      if (turnNum > 1) {
       const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
       const droneCount = f._drones.length;
       const perDroneDelay = 550;
@@ -115,6 +117,7 @@ async function beginTurn() {
       if (droneCount > 0) {
         addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
       }
+      } // end turnNum > 1
     }
     // (Pirate ship cannon moved to before passive loop)
     // Passive: auraAwaken — awaken at turn N with full stat boost
