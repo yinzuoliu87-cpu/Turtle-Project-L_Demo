@@ -123,21 +123,21 @@ async function doDamage(attacker, target, skill) {
     // Floating number classes by damage type
     const mainCls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
     const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-    const yOff = (i % 4) * 32;
-    // Floating numbers: top→bottom: true(white) → magic(blue) → physical(red), no overlap
-    if (bubbleAbs > 0) spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, yOff - 20, { atkSide: attacker.side, amount: bubbleAbs });
-    if (shieldAbs > 0) spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, yOff - 10, { atkSide: attacker.side, amount: shieldAbs });
+    // Floating numbers: stacked vertically from center, no per-hit yOffset
+    // Order top→bottom: shield absorb → true(white) → main(red/blue)
+    let ySlot = 0;
+    if (bubbleAbs > 0) { spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: bubbleAbs }); ySlot += 18; }
+    if (shieldAbs > 0) { spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: shieldAbs }); ySlot += 18; }
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
       const trueHp = hpLoss - mainHp;
-      // True on top, main below
-      if (trueHp > 0) spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, yOff, { atkSide: attacker.side, amount: trueHp });
-      if (mainHp > 0) spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, yOff + 20, { atkSide: attacker.side, amount: mainHp });
+      if (trueHp > 0) { spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: trueHp }); ySlot += 18; }
+      if (mainHp > 0) { spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: mainHp }); }
     } else if (hpLoss > 0) {
-      spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, yOff, { atkSide: attacker.side, amount: hpLoss });
+      spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: hpLoss });
     }
     if (truePart > 0 && shieldAbs >= totalHit) {
-      spawnFloatingNum(tElId, `-${truePart}`, trueCls, 0, yOff, { atkSide: attacker.side, amount: truePart });
+      spawnFloatingNum(tElId, `-${truePart}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: truePart });
     }
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
