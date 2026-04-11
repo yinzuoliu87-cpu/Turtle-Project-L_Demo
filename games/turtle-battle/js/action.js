@@ -530,38 +530,27 @@ async function executeAction(action) {
         renderStatusIcons(target);
       }
     }
-  } else if (skill.type === 'twoHeadDualStrike') {
-    // Two hits: first physical, second true damage
+  } else if (skill.type === 'twoHeadMindBlast') {
+    // Magic damage + heal reduce + shield break
     const target = allFighters[action.targetId];
     if (target && target.alive) {
-      const physDmg = Math.round(f.atk * (skill.normalScale||0.8));
-      applyRawDmg(f, target, physDmg, false, false, 'physical');
-      spawnFloatingNum(getFighterElId(target), `-${physDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:physDmg});
-      const trueDmg = Math.round(f.atk * (skill.pierceScale||0.6));
-      applyRawDmg(f, target, trueDmg, false, false, 'true');
-      spawnFloatingNum(getFighterElId(target), `-${trueDmg}`, 'true-dmg', 100, 0, {atkSide:f.side, amount:trueDmg});
-      updateHpBar(target, getFighterElId(target));
-      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${physDmg}物理 + ${trueDmg}真实`);
-      await triggerOnHitEffects(f, target, physDmg + trueDmg);
-    }
-    await sleep(400);
-  } else if (skill.type === 'twoHeadSmash') {
-    // 2-hit physical with stun chance per hit
-    const target = allFighters[action.targetId];
-    if (target && target.alive) {
-      for (let h = 0; h < (skill.hits||2); h++) {
-        const dmg = Math.round(f.atk * (skill.atkScale||0.9));
-        applyRawDmg(f, target, dmg, false, false, 'physical');
-        spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
-        if (Math.random() < 0.20 && target.alive) {
-          target.buffs.push({ type:'stun', value:1, turns:1 });
-          spawnFloatingNum(getFighterElId(target), `<img src="assets/status/stun-icon.png" style="width:14px;height:14px;vertical-align:middle">眩晕`, 'debuff-num', 200, h * 80);
-          renderStatusIcons(target);
-        }
-        if (battleOver) break;
+      await doDamage(f, target, skill);
+      // Shield break 50%
+      if (target.shield > 0) {
+        const broken = Math.round(target.shield * (skill.shieldBreakPct||50) / 100);
+        target.shield -= broken;
+        const tElId = getFighterElId(target);
+        spawnFloatingNum(tElId, `-${broken}🛡️`, 'shield-dmg', 0, 0);
+        updateHpBar(target, tElId);
+        addLog(`${target.emoji}${target.name} 护盾被破坏 ${broken}！`);
       }
-      updateHpBar(target, getFighterElId(target));
-      await triggerOnHitEffects(f, target, Math.round(f.atk * (skill.atkScale||0.9) * (skill.hits||2)));
+      // Heal reduce
+      if (target.alive) {
+        target.buffs.push({ type:'healReduce', value:skill.healReducePct||50, turns:(skill.healReduceTurns||3) + 1 });
+        spawnFloatingNum(getFighterElId(target), '☠️治疗削减', 'debuff-label', 200, -10);
+        renderStatusIcons(target);
+        addLog(`${target.emoji}${target.name} 治疗效果 -${skill.healReducePct||50}%，${skill.healReduceTurns||3}回合`);
+      }
     }
     await sleep(400);
   } else if (skill.type === 'lavaBolt') {

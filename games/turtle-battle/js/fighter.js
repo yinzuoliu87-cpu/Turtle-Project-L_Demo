@@ -170,6 +170,11 @@ function applyPassiveSkills(f) {
       // Remove switch skills from active skills
       f.skills = f.skills.filter(s => s.type !== 'twoHeadSwitch');
     }
+    // 双头龟 双头坚韧: +1 DEF/MR per hit received, cap 20
+    if (ps.type === 'twoHeadResilience') {
+      f._resilienceDefGain = 0;
+      f._resilienceMrGain = 0;
+    }
     // 幽灵龟 强化怨灵: curse on spawn + 50% curse damage
     if (ps.type === 'ghostEnhancedCurse') {
       f._ghostCurseOnSpawn = true;

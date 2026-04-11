@@ -408,6 +408,15 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     spawnFloatingNum(tElId, `+${s}`, 'shield-num', 100, 0);
     updateHpBar(target, tElId);
   }
+  // TwoHead Resilience — +1 DEF/MR per hit, cap 20
+  if (target._resilienceDefGain !== undefined && target._resilienceDefGain < 20) {
+    const gain = 1;
+    if (target._resilienceDefGain < 20) { target._resilienceDefGain += gain; target.baseDef += gain; target.def += gain; }
+    if (target._resilienceMrGain < 20) { target._resilienceMrGain += gain; target.baseMr += gain; target.mr += gain; }
+    if ((target._resilienceDefGain + target._resilienceMrGain) % 5 === 0) {
+      spawnFloatingNum(tElId, `+${target._resilienceDefGain}甲/${target._resilienceMrGain}抗`, 'passive-num', 200, 0);
+    }
+  }
   // ShieldOnHit
   if (target.passive && target.passive.type === 'shieldOnHit' && !target.passiveUsedThisTurn) {
     target.shield += target.passive.amount;
