@@ -856,9 +856,25 @@ function updateSummonHpBar(summon) {
   const el = document.getElementById(summon._summonElId);
   if (!el) return;
 
-  const hpPct = Math.max(0, summon.hp / summon.maxHp * 100);
+  const totalEff = summon.hp + (summon.shield || 0);
+  const barMax = Math.max(summon.maxHp, totalEff);
+  const hpPct = Math.max(0, summon.hp / barMax * 100);
+  const shieldPct = (summon.shield || 0) / barMax * 100;
   const hpFill = el.querySelector('.st-hp-fill');
   if (hpFill) hpFill.style.width = hpPct + '%';
+  // Shield bar
+  let shieldFill = el.querySelector('.st-shield-fill');
+  if (!shieldFill && summon.shield > 0) {
+    shieldFill = document.createElement('div');
+    shieldFill.className = 'st-shield-fill';
+    const bar = el.querySelector('.st-hp-bar');
+    if (bar) bar.appendChild(shieldFill);
+  }
+  if (shieldFill) {
+    shieldFill.style.width = shieldPct + '%';
+    shieldFill.style.left = hpPct + '%';
+    shieldFill.style.display = summon.shield > 0 ? '' : 'none';
+  }
 
   // Delay trail
   const hpDelay = el.querySelector('.st-hp-delay');

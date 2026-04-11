@@ -496,13 +496,26 @@ async function summonAutoAction(summon, owner) {
   } else if (ALLY_TYPES.has(skill.type)) {
     target = allies.sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp))[0];
   } else {
-    // Smart target: lowest HP enemy
-    const sorted = enemies.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
-    const lowest = sorted[0];
-    if (lowest._undeadLockTurns > 0) { target = sorted.find(e => !e._undeadLockTurns) || lowest; }
-    else if (lowest.hp / lowest.maxHp < 0.2 && Math.random() < 0.9) target = lowest;
-    else if (Math.random() < 0.7) target = lowest;
-    else target = enemies[Math.floor(Math.random() * enemies.length)];
+    // Smart target: front row priority (same as main AI), then lowest HP
+    let pool = enemies;
+    if (!skill.ignoreRow) {
+      const front = enemies.filter(e => e._position === 'front');
+      if (front.length > 0) pool = front;
+    }
+    // Filter out stealthed
+    const nonStealth = pool.filter(e => !e.buffs.some(b => b.type === 'stealth'));
+    if (nonStealth.length > 0) pool = nonStealth;
+    // Taunt check
+    const taunters = pool.filter(e => e.buffs.some(b => b.type === 'taunt'));
+    if (taunters.length > 0) { target = taunters[0]; }
+    else {
+      const sorted = pool.slice().sort((a,b) => (a.hp/a.maxHp) - (b.hp/b.maxHp));
+      const lowest = sorted[0];
+      if (lowest._undeadLockTurns > 0) { target = sorted.find(e => !e._undeadLockTurns) || lowest; }
+      else if (lowest.hp / lowest.maxHp < 0.2 && Math.random() < 0.9) target = lowest;
+      else if (Math.random() < 0.7) target = lowest;
+      else target = pool[Math.floor(Math.random() * pool.length)];
+    }
   }
 
   // Execute via real engine action
