@@ -462,6 +462,8 @@ async function beginTurn() {
       recalcStats();
     }
   }
+  addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
+  try { sfxTurnStart(); } catch(e) {}
   // Process buffs/debuffs at turn start
   await processBuffs();
   // Recalculate stats after buff changes
@@ -483,8 +485,6 @@ async function beginTurn() {
     }
   }
 
-  addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
-  try { sfxTurnStart(); } catch(e) {}
 
   // Tick down combo CDs
   for (const k in _comboCdLeft) { if (_comboCdLeft[k] > 0) _comboCdLeft[k]--; }
