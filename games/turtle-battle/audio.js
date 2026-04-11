@@ -87,10 +87,12 @@ function sfxCrit() {
   _playSfx('hit-crit', 0.5);
 }
 
-// ── Pierce (true damage): same hit sound ──
+// ── Pierce (true damage): same as physical hit ──
 function sfxPierce() {
-  _playSfx('hit-physical', 0.4);
+  _playSfx('hit-physical', 0.35);
 }
+
+// ── Fire: same as physical hit ──
 
 // ── Shield gain: ascending chime ──
 function sfxShield() {
@@ -157,15 +159,12 @@ function sfxDodge() {
 
 // ── Fire/Burn: crackle ──
 function sfxFire() {
-  _noise(0.12, 0.1);
-  _osc('sawtooth', 200, 0.15, 0.06, 100);
+  _playSfx('hit-physical', 0.35);
 }
 
-// ── Lightning: zap ──
+// ── Lightning: same as physical hit ──
 function sfxLightning() {
-  _noise(0.06, 0.14);
-  _osc('square', 1000, 0.04, 0.1, 200);
-  _osc('sawtooth', 500, 0.06, 0.08, 100);
+  _playSfx('hit-physical', 0.35);
 }
 
 // ── Coin: bling ──
