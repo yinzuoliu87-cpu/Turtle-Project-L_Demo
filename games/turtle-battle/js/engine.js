@@ -103,11 +103,11 @@ function getMagicDmgMult() {
 // opts: { atkSide:'left'|'right', amount:number } — optional
 // Track active floating numbers per element to auto-stack
 function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
-  // Auto-stack: add offset based on how many floats are active on this element
+  // Auto-stack: small offset for non-damage floats to avoid overlap
   if (!_floatStacks[elId]) _floatStacks[elId] = 0;
-  const autoOffset = _floatStacks[elId] * 22;
+  const autoOffset = _floatStacks[elId] * 16;
   _floatStacks[elId]++;
-  setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 800);
+  setTimeout(() => { if (_floatStacks[elId] > 0) _floatStacks[elId]--; }, (delayMs || 0) + 600);
 
   // SFX fires slightly before visual — sound leads impact
   const _sfxMap = {
@@ -147,9 +147,10 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     // Use original random for visual offsets (don't consume seeded RNG)
     const _vr = _origMathRandom;
     const ox = (_vr() - 0.5) * 8;
-    const y0 = -(15 + (yOffset || 0) + autoOffset);
 
     if (isDmg) {
+      // Damage numbers always start from center, small random y spread only
+      const y0 = -((_vr() - 0.5) * 10);
       // ── DAMAGE: pop from center, jump away from attacker ──
       let dir = 1;
       if (opts && opts.atkSide) {
@@ -192,6 +193,7 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       requestAnimationFrame(tickDmg);
     } else {
       // ── HEAL/SHIELD/STATUS: float up gently, fade ──
+      const y0 = -(15 + (yOffset || 0) + autoOffset);
       const totalDur = 1500;
       const start = performance.now();
 
