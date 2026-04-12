@@ -1569,7 +1569,7 @@ function dungeonStartStage() {
     rightTeam.push(e);
   }
 
-  autoAssignPositions(leftTeam);
+  // leftTeam positions already set from ds.positions (line 1549-1553), don't override
   autoAssignPositions(rightTeam);
   gameMode = 'dungeon';
   startBattle();
