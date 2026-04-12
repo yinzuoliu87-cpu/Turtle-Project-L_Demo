@@ -685,11 +685,11 @@ function fgTouchEnd(e) {
 function renderFgSlots() {
   const isMobile = window.innerWidth <= 768;
   const isDungeon = gameMode === 'dungeon';
-  // Labels stay as-is: 后排/前排/替补 (bench row only visible in dungeon)
+  // Labels stay as-is: 前排/后排/替补 (bench row only visible in dungeon)
   const labels = document.querySelectorAll('.fg-label');
   if (labels.length >= 2) {
-    labels[0].textContent = '后排';
-    labels[1].textContent = '前排';
+    labels[0].textContent = '前排';
+    labels[1].textContent = '后排';
   }
   for (const key of FG_SLOT_KEYS) {
     const slot = document.getElementById('fgSlot-' + key);
@@ -1855,7 +1855,7 @@ function renderDungeonTeamSwap() {
   // === Position grid ===
   html += '<div class="dts-section-label">⚔ 上场阵型（点击龟拿起，点空位放下；点替补可互换）</div>';
   html += '<div class="dts-position-grid">';
-  for (const row of ['back', 'front']) {
+  for (const row of ['front', 'back']) {
     html += `<div class="dts-pos-row"><span class="dts-pos-label">${row === 'front' ? '前排' : '后排'}</span>`;
     for (let i = 0; i < 3; i++) {
       const slotId = row + '-' + i;
