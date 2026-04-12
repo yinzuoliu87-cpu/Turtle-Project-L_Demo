@@ -1923,11 +1923,25 @@ function dungeonPlaceInSlot(slotId) {
   const occupied = Object.entries(ds.positions).find(([id, p]) => p.slotKey === slotId);
   if (occupied) { showToast('该位置已有龟'); return; }
   ds.positions[floatingId] = { position: slotId.startsWith('front') ? 'front' : 'back', slotKey: slotId };
-  // Make sure this turtle is in battleIds
-  if (!ds.battleIds.includes(floatingId)) {
-    // Swap with a dead battle slot or add
+  // If floating came from bench, swap into battleIds (replacing a dead battle member)
+  if (ds.benchIds.includes(floatingId)) {
+    const benchIdx = ds.benchIds.indexOf(floatingId);
     const deadIdx = ds.battleIds.findIndex(id => ds.deadIds.includes(id));
-    if (deadIdx >= 0) ds.battleIds[deadIdx] = floatingId;
+    if (deadIdx >= 0) {
+      const deadId = ds.battleIds[deadIdx];
+      ds.battleIds[deadIdx] = floatingId;
+      ds.benchIds[benchIdx] = deadId;
+    } else {
+      // No dead battle member — find any battle slot without position (shouldn't usually happen)
+      const orphanIdx = ds.battleIds.findIndex(id => !ds.positions[id]);
+      if (orphanIdx >= 0) {
+        const orphan = ds.battleIds[orphanIdx];
+        ds.battleIds[orphanIdx] = floatingId;
+        ds.benchIds[benchIdx] = orphan;
+      }
+    }
+    // Full HP for bench turtle entering battle if not tracked
+    if (!ds.teamHp[floatingId]) { const bp = ALL_PETS.find(x => x.id === floatingId); ds.teamHp[floatingId] = bp ? bp.hp : 100; }
   }
   window._dungeonFloatingTurtle = null;
   renderDungeonTeamSwap();
@@ -1938,25 +1952,33 @@ function dungeonBenchSwap(benchId) {
   const ds = dungeonState;
   const floatingId = window._dungeonFloatingTurtle;
   if (floatingId) {
+    // If floating is a bench turtle being put back, swap bench↔bench
+    if (ds.benchIds.includes(floatingId)) {
+      const idxA = ds.benchIds.indexOf(floatingId);
+      const idxB = ds.benchIds.indexOf(benchId);
+      [ds.benchIds[idxA], ds.benchIds[idxB]] = [ds.benchIds[idxB], ds.benchIds[idxA]];
+      window._dungeonFloatingTurtle = null;
+      renderDungeonTeamSwap();
+      return;
+    }
     // Swap floating (battle) ↔ bench
     const battleIdx = ds.battleIds.indexOf(floatingId);
     const benchIdx = ds.benchIds.indexOf(benchId);
     if (battleIdx >= 0 && benchIdx >= 0) {
       ds.battleIds[battleIdx] = benchId;
       ds.benchIds[benchIdx] = floatingId;
-      // Bench turtle gets the floating turtle's old position or first empty
+      // Bench turtle takes the floating turtle's former slot
       if (!ds.positions) ds.positions = {};
-      const usedSlots = Object.values(ds.positions).map(p => p.slotKey);
-      const emptySlot = ['front-0','front-1','front-2','back-0','back-1','back-2'].find(s => !usedSlots.includes(s));
-      if (emptySlot) ds.positions[benchId] = { position: emptySlot.startsWith('front') ? 'front' : 'back', slotKey: emptySlot };
+      const oldPos = ds.positions[floatingId];
+      if (oldPos) ds.positions[benchId] = { ...oldPos };
       delete ds.positions[floatingId];
       // Bench turtle gets full HP if not tracked
       if (!ds.teamHp[benchId]) { const bp = ALL_PETS.find(x => x.id === benchId); ds.teamHp[benchId] = bp ? bp.hp : 100; }
     }
     window._dungeonFloatingTurtle = null;
   } else {
-    // No floating — just pick up this bench turtle? No, swap needs a battle turtle first
-    showToast('先点击上场龟，再点替补互换');
+    // Pick up bench turtle as floating — can then place in empty slot or swap
+    window._dungeonFloatingTurtle = benchId;
   }
   renderDungeonTeamSwap();
 }
