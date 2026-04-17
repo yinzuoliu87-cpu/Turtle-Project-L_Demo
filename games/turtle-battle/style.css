@@ -877,11 +877,11 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
-  .scene-turtle{transform:scale(.5);transform-origin:center bottom;padding:10px;margin:-10px}
-  .scene-turtle:hover{transform:scale(.5)}
-  .scene-turtle.targetable{transform:scale(.5);padding:14px;margin:-14px}
-  .scene-turtle.targetable:hover{transform:scale(.55)}
-  .scene-turtle.active-turn{transform:scale(.5)}
+  .scene-turtle{transform:scale(.4);transform-origin:center bottom;padding:10px;margin:-10px}
+  .scene-turtle:hover{transform:scale(.4)}
+  .scene-turtle.targetable{transform:scale(.4);padding:14px;margin:-14px}
+  .scene-turtle.targetable:hover{transform:scale(.44)}
+  .scene-turtle.active-turn{transform:scale(.4)}
   .scene-turtle .st-buffs{max-width:50px;font-size:7px}
 
   /* Mobile position adjustments — spread out slightly */
@@ -891,16 +891,16 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
   .scene-turtle.attack-anim[class*="pos-left"]{animation:mobileAttackRight .5s ease}
   .scene-turtle.attack-anim[class*="pos-right"]{animation:mobileAttackLeft .5s ease}
   @keyframes mobileAttackRight{
-    0%{transform:translateX(0) scale(.5)}
-    25%{transform:translateX(12px) scale(.53);filter:brightness(1.3)}
-    50%{transform:translateX(16px) scale(.55);filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(.5);filter:brightness(1)}
+    0%{transform:translateX(0) scale(.4)}
+    25%{transform:translateX(10px) scale(.43);filter:brightness(1.3)}
+    50%{transform:translateX(14px) scale(.45);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(.4);filter:brightness(1)}
   }
   @keyframes mobileAttackLeft{
-    0%{transform:translateX(0) scale(.5)}
-    25%{transform:translateX(-12px) scale(.53);filter:brightness(1.3)}
-    50%{transform:translateX(-16px) scale(.55);filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(.5);filter:brightness(1)}
+    0%{transform:translateX(0) scale(.4)}
+    25%{transform:translateX(-10px) scale(.43);filter:brightness(1.3)}
+    50%{transform:translateX(-14px) scale(.45);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(.4);filter:brightness(1)}
   }
 
   /* Scene summon */

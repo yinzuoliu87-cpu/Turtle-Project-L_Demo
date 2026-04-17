@@ -147,7 +147,7 @@ function applyPassiveSkills(f) {
     // 竹叶龟 强化生长: enhance charge values
     if (ps.type === 'bambooCharged') {
       if (f.passive && f.passive.type === 'bambooCharge') {
-        f.passive = { ...f.passive, atkPct:100, selfHpPct:16, healSelfHpPct:12, hpGainAtkPct:130 };
+        f.passive = { ...f.passive, atkPct:100, selfHpPct:13, healSelfHpPct:12, hpGainAtkPct:105 };
       }
     }
     // 天使龟 圣光(重生): grant revive

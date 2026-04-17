@@ -938,6 +938,7 @@ function confirmTeam() {
     boss.name = 'BOSS ' + boss.name;
     rightTeam = [boss];
     boss._position = 'front';
+    boss._slotKey = 'front-1';
     startBattle();
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
@@ -1443,7 +1444,7 @@ function showCodexDetail(petId) {
     const isPassive = s.passiveSkill;
     const unlocked = getAvailableSkillIndices(p.id);
     const isSkillLocked = !unlocked.includes(i);
-    const lockReq = i === 3 ? 'Lv.5' : i === 4 ? 'Lv.10' : '';
+    const lockReq = i === 3 ? 'Lv.4' : i === 4 ? 'Lv.7' : '';
     const brief = renderSkillTemplate ? renderSkillTemplate(s.brief || '', fakeFighter, s) : (s.brief || '');
     const cdText = s.cd ? `CD${s.cd}` : '';
     skillsHtml += `<div class="codex-skill ${isDefault ? 'default' : ''} ${isSkillLocked ? 'skill-locked' : ''}">
