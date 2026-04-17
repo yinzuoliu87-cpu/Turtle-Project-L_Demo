@@ -79,6 +79,11 @@ function aiAction(f) {
       if (other.length) skill = other[0];
     }
   }
+  // Hiding turtle AI: skip hidingCommand/hidingBuffSummon when summon dead
+  if (skill && (skill.type === 'hidingCommand' || skill.type === 'hidingBuffSummon') && (!f._summon || !f._summon.alive)) {
+    const other = ready.filter(s => s.type !== 'hidingCommand' && s.type !== 'hidingBuffSummon');
+    if (other.length) skill = other[0];
+  }
 
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];

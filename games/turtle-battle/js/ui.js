@@ -1748,7 +1748,18 @@ function renderActionButtons(f) {
     const iconMap = {physical:'⚔️',magic:'✨',heal:'💚',shield:shieldImg,bubbleShield:'<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',bubbleBind:'<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">',hidingDefend:shieldImg,hidingCommand:'🫣'};
     const icon = iconMap[s.type] || '⚔️';
     const hitsLabel = s.hits > 1 ? ` ×${s.hits}` : '';
-    const cdStr = !ready ? ` <span class="cd-tag">CD${s.cdLeft}</span>` : '';
+    let reasonStr = '';
+    if (!ready) {
+      if (s.cdLeft > 0) reasonStr = `CD${s.cdLeft}`;
+      else if ((s.type === 'hidingCommand' || s.type === 'hidingBuffSummon') && (!f._summon || !f._summon.alive)) reasonStr = '随从已阵亡';
+      else if (s.type === 'fortuneAllIn') reasonStr = '无金币';
+      else if (s.type === 'fortuneBuyEquip') reasonStr = '金币不足';
+      else if (s.type === 'bubbleBurst') reasonStr = '无泡沫';
+      else if (s.type === 'starShieldBreak') reasonStr = '无敌方护盾';
+      else if (s.type === 'gamblerBet') reasonStr = 'HP过低';
+      else reasonStr = '不可用';
+    }
+    const cdStr = reasonStr ? ` <span class="cd-tag">${reasonStr}</span>` : '';
 
     if (isMobile) {
       const brief = buildSkillBrief(f, s);

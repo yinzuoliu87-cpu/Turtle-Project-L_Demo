@@ -727,8 +727,13 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
   if (target.alive && target.hp > 0 && target.buffs) {
     const mark = target.buffs.find(b => b.type === 'hunterMark');
     if (mark && (target.hp / target.maxHp * 100) <= mark.value) {
+      const execAmt = target.hp;
       target.hp = 0;
       target.alive = false;
+      // Credit execute damage to hunter (mark source) and track target taken
+      const hunter = typeof allFighters !== 'undefined' && mark.sourceIdx != null ? allFighters[mark.sourceIdx] : null;
+      if (hunter && hunter._dmgDealt !== undefined) { hunter._dmgDealt += execAmt; hunter._trueDmgDealt = (hunter._trueDmgDealt||0) + execAmt; }
+      if (target._dmgTaken !== undefined) { target._dmgTaken += execAmt; target._trueDmgTaken = (target._trueDmgTaken||0) + execAmt; }
       const tElId = getFighterElId(target);
       spawnFloatingNum(tElId, `🎯斩杀!`, 'crit-label', 0, -25);
       addLog(`${target.emoji}${target.name} <span class="log-passive">🎯猎杀印记触发！HP<${mark.value}% 被斩杀！</span>`);
