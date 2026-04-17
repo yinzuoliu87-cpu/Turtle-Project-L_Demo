@@ -60,19 +60,23 @@ async function beginTurn() {
       spawnFloatingNum(elId, `+${gain}HP`, 'passive-num', 0, 0);
     }
     if (f.passive.type === 'stoneWall') {
-      // Permanent def gain per turn: 25% ATK, capped at 50% of initial DEF
+      // Permanent def gain: reach cap (50% initial DEF) in capTurns (6) turns
       if (!f._stoneDefGained) f._stoneDefGained = 0;
+      if (!f._stoneDefFraction) f._stoneDefFraction = 0;
       const maxCap = Math.round((f._initDef || f.baseDef) * (f.passive.maxDefInitPct || 50) / 100);
       if (f._stoneDefGained < maxCap) {
-        const perTurn = Math.max(1, Math.round(f.atk * (f.passive.defGainAtkPct || 25) / 100));
-        const gain = Math.min(perTurn, maxCap - f._stoneDefGained);
-        f.baseDef += gain;
-        f._stoneDefGained += gain;
-        recalcStats();
-        const elId = getFighterElId(f);
-        updateFighterStats(f, elId);
-        spawnFloatingNum(elId, `+${gain}护甲`, 'passive-num', 0, 0);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">护甲+${gain}(已+${f._stoneDefGained}/${maxCap})</span>`);
+        f._stoneDefFraction += maxCap / (f.passive.capTurns || 6);
+        const target = Math.min(maxCap, Math.round(f._stoneDefFraction));
+        const gain = target - f._stoneDefGained;
+        if (gain > 0) {
+          f.baseDef += gain;
+          f._stoneDefGained += gain;
+          recalcStats();
+          const elId = getFighterElId(f);
+          updateFighterStats(f, elId);
+          spawnFloatingNum(elId, `+${gain}护甲`, 'passive-num', 0, 0);
+          addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">护甲+${gain}(已+${f._stoneDefGained}/${maxCap})</span>`);
+        }
       }
     }
     // Passive: cyberDrone — generate drones per turn
@@ -395,13 +399,17 @@ async function beginTurn() {
     }
     if (p.type === 'stoneWall') {
       if (!s._stoneDefGained) s._stoneDefGained = 0;
+      if (!s._stoneDefFraction) s._stoneDefFraction = 0;
       const maxCap = Math.round((s._initDef || s.baseDef) * (p.maxDefInitPct || 50) / 100);
       if (s._stoneDefGained < maxCap) {
-        const perTurn = Math.max(1, Math.round(s.atk * (p.defGainAtkPct || 25) / 100));
-        const gain = Math.min(perTurn, maxCap - s._stoneDefGained);
-        s.baseDef += gain; s.def = s.baseDef; s._stoneDefGained += gain;
-        spawnFloatingNum(sElId, `+${gain}护甲`, 'passive-num', 0, 0);
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">护甲+${gain}(已+${s._stoneDefGained}/${maxCap})</span>`);
+        s._stoneDefFraction += maxCap / (p.capTurns || 6);
+        const target = Math.min(maxCap, Math.round(s._stoneDefFraction));
+        const gain = target - s._stoneDefGained;
+        if (gain > 0) {
+          s.baseDef += gain; s.def = s.baseDef; s._stoneDefGained += gain;
+          spawnFloatingNum(sElId, `+${gain}护甲`, 'passive-num', 0, 0);
+          addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">护甲+${gain}(已+${s._stoneDefGained}/${maxCap})</span>`);
+        }
       }
     }
     if (p.type === 'lightningStorm') {
