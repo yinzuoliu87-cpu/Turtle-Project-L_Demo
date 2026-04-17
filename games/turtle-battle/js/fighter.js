@@ -269,12 +269,9 @@ function applyPassiveSkills(f) {
       f._inkCapOverride = 7;
       f._inkTrueDmg = true;
     }
-    // 骰子龟 真正的赌徒: convert all DEF→armorPen, MR→magicPen
+    // 骰子龟 真正的赌徒: convert all DEF + MR → armorPen
     if (ps.type === 'diceGamblerConvert') {
-      const defConvert = f.baseDef;
-      const mrConvert = f.baseMr;
-      f.armorPen += defConvert;
-      f.magicPen += mrConvert;
+      f.armorPen += f.baseDef + f.baseMr;
       f.baseDef = 0; f.def = 0;
       f.baseMr = 0; f.mr = 0;
       f._diceGamblerConverted = true;
