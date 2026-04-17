@@ -73,6 +73,14 @@
 <button class="btn-sound-global" id="soundBtn" onclick="toggleSound()">🔊</button>
 
 <!-- ══════ SCREEN: MENU ══════ -->
+<div id="audioGate" class="audio-gate" onclick="this.classList.add('hidden')">
+  <div class="audio-gate-inner">
+    <div class="audio-gate-icon">🔊</div>
+    <div class="audio-gate-text">点击任意位置开始</div>
+    <div class="audio-gate-sub">启用音效与背景音乐</div>
+  </div>
+</div>
+
 <section id="screenMenu" class="screen active">
   <div class="menu-top-bar">
     <a class="back-link" href="../../index.html">← 返回龟投</a>
@@ -147,6 +155,7 @@
       <div class="codex-header">
         <button class="btn btn-sm" onclick="showScreen('screenMenu')" style="margin-bottom:8px">← 返回</button>
         <h3>龟龟图鉴</h3>
+        <button class="btn btn-sm" onclick="debugSetAllLevels()" style="margin-top:6px;font-size:11px;background:#7c3aed">🛠 全体改等级</button>
       </div>
       <div class="codex-list" id="codexList"></div>
     </div>

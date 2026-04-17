@@ -25,7 +25,11 @@ function toggleSound() {
   localStorage.setItem('battleSoundMuted', soundMuted ? '1' : '0');
   const btn = document.getElementById('soundBtn');
   if (btn) btn.textContent = soundMuted ? '🔇' : '🔊';
-  if (masterGain) masterGain.gain.linearRampToValueAtTime(soundMuted ? 0 : 0.5, audioCtx.currentTime + 0.1);
+  // Ensure AudioContext is active (iOS Safari suspends on tab switch/lock)
+  if (!soundMuted) ensureAudio();
+  if (masterGain && audioCtx) {
+    try { masterGain.gain.linearRampToValueAtTime(soundMuted ? 0 : 0.5, audioCtx.currentTime + 0.1); } catch(e) {}
+  }
 }
 
 // ── Helper: oscillator + gain shorthand ──
@@ -333,27 +337,57 @@ Object.entries(BGM_TRACKS).forEach(([k, src]) => {
 
 let _currentBgmTrack = null; // track name for resuming after unmute
 
-function playBgm(track) {
-  stopBgm();
+function _fadeBgm(audio, from, to, durMs, onDone) {
+  if (!audio) { if (onDone) onDone(); return; }
+  const start = performance.now();
+  const tick = () => {
+    const elapsed = performance.now() - start;
+    const t = Math.min(1, elapsed / durMs);
+    audio.volume = from + (to - from) * t;
+    if (t < 1) requestAnimationFrame(tick);
+    else if (onDone) onDone();
+  };
+  requestAnimationFrame(tick);
+}
+
+function playBgm(track, fadeMs) {
+  // Skip if already playing the same track (avoid restart)
+  if (_currentBgmTrack === track && _currentBgm && !_currentBgm.paused) return;
   _currentBgmTrack = track;
   const src = BGM_TRACKS[track];
   if (!src) return;
-  if (_bgmCache[track]) {
-    _currentBgm = _bgmCache[track];
-    _currentBgm.currentTime = 0;
-  } else {
-    _currentBgm = new Audio(src);
+  const oldBgm = _currentBgm;
+  const newBgm = _bgmCache[track] || new Audio(src);
+  newBgm.loop = true;
+  newBgm.currentTime = 0;
+  newBgm.volume = 0;
+  _currentBgm = newBgm;
+  if (!soundMuted) newBgm.play().catch(() => {});
+  _fadeBgm(newBgm, 0, _bgmVolume, fadeMs || 500);
+  if (oldBgm && oldBgm !== newBgm) {
+    _fadeBgm(oldBgm, oldBgm.volume, 0, fadeMs || 500, () => {
+      oldBgm.pause();
+      oldBgm.currentTime = 0;
+    });
   }
-  _currentBgm.loop = true;
-  _currentBgm.volume = _bgmVolume;
-  if (!soundMuted) _currentBgm.play().catch(() => {});
 }
 
-function stopBgm() {
+function stopBgm(fadeMs) {
   if (_currentBgm) {
-    _currentBgm.pause();
-    _currentBgm.currentTime = 0;
+    const bgm = _currentBgm;
     _currentBgm = null;
+    _currentBgmTrack = null;
+    _fadeBgm(bgm, bgm.volume, 0, fadeMs || 500, () => {
+      bgm.pause();
+      bgm.currentTime = 0;
+    });
+  }
+}
+
+function duckBgm(volPct, fadeMs) {
+  // Lower BGM volume (for result screen) without stopping
+  if (_currentBgm && !soundMuted) {
+    _fadeBgm(_currentBgm, _currentBgm.volume, _bgmVolume * volPct, fadeMs || 400);
   }
 }
 

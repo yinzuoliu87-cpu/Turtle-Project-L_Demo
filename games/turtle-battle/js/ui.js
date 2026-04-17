@@ -113,6 +113,8 @@ function renderScene() {
 
     el.innerHTML = `
       <div class="st-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
+      <div class="st-hp-row" style="display:flex;align-items:center;gap:3px">
+        ${f._level && !f._isSummon && !f._isBoss ? `<span class="st-level-badge">Lv.${f._level}</span>` : ''}
       <div class="st-hp-wrap">
         <div class="st-hp-bar">
           <div class="st-hp-delay" style="width:${hpPct}%"></div>
@@ -125,6 +127,7 @@ function renderScene() {
         ${f.passive && f.passive.type === 'lavaRage' ? `<div class="st-rage-bar"><div class="st-rage-fill" style="width:0%"></div></div>` : ''}
         ${f.passive && f.passive.type === 'starEnergy' ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
         ${f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
+      </div>
       </div>
       <div class="st-sprite">${spriteHTML}</div>
       <div class="st-buffs"></div>

@@ -1276,7 +1276,7 @@ function startBattle(seed) {
 
 // ── RESULT ────────────────────────────────────────────────
 function showResult(leftWon) {
-  stopBgm();
+  duckBgm(0.3);  // lower volume instead of stopping
   // Dungeon mode: route to dungeon handler
   if (gameMode === 'dungeon') {
     if (leftWon) dungeonOnStageClear();
@@ -1341,8 +1341,8 @@ function showResult(leftWon) {
 }
 
 function rematch() {
-  playBgm('menu');
-  if (gameMode==='pvp-online') showScreen('screenLobby');
+  // Don't switch to menu BGM — startBattle will set battle BGM directly
+  if (gameMode==='pvp-online') { playBgm('menu'); showScreen('screenLobby'); }
   else startMode(gameMode);
 }
 
@@ -1381,6 +1381,17 @@ function showCodex() {
   showScreen('screenCodex');
 }
 
+function debugSetAllLevels() {
+  const input = prompt('把所有龟改到什么等级？(1-10)', '10');
+  if (input === null) return;
+  const lv = Math.max(1, Math.min(10, parseInt(input) || 1));
+  for (const p of ALL_PETS) setPetLevel(p.id, lv);
+  renderCodexList();
+  const currentId = window._codexCurrentPet;
+  if (currentId) showCodexDetail(currentId);
+  showToast(`全体28只龟已设为 Lv.${lv}`);
+}
+
 function renderCodexList() {
   const list = document.getElementById('codexList');
   if (!list) return;
@@ -1404,6 +1415,7 @@ function renderCodexList() {
 function showCodexDetail(petId) {
   const p = ALL_PETS.find(x => x.id === petId);
   if (!p) return;
+  window._codexCurrentPet = petId;
   const detail = document.getElementById('codexDetail');
   if (!detail) return;
 
