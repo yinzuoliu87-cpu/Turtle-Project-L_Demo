@@ -2052,9 +2052,9 @@ function buildSkillDetail(s, f) {
     lines.push(`<b>⬆护甲</b> +${s.defBoostScale}×ATK ${s.defBoostTurns}回合`);
   }
   if (s.type === 'angelEquality') {
-    lines.push(`<b>⚔️第一段</b> ${s.normalScale}×ATK 物理伤害`);
-    lines.push(`<b>💜第二段</b> <span class="detail-pierce">${s.pierceScale}×ATK 真实伤害</span>`);
-    lines.push(`<b>⚖️克制</b> 对S/SS级目标：<span class="log-crit">必定暴击</span> + 回复总伤${s.healPctOfDmg}%HP`);
+    lines.push(`<b>🔵第一段</b> ${s.normalScale}×ATK 魔法伤害`);
+    lines.push(`<b>⚪第二段</b> <span class="detail-pierce">${s.pierceScale}×ATK 真实伤害</span>`);
+    lines.push(`<b>⚖️克制</b> 对A级及以上目标：<span class="log-crit">必定暴击</span> + 回复总伤${s.healPctOfDmg}%HP`);
   }
 
   return lines.map(l => `<div class="detail-line">${l}</div>`).join('');

@@ -976,7 +976,7 @@ async function doAngelEquality(attacker, target, skill) {
   if (isCrit) parts.push(`<span class="log-crit">暴击</span>`);
   addLog(`${attacker.emoji}${attacker.name} <b>平等</b> → ${target.emoji}${target.name}：${parts.join(' + ')}${isHighRarity ? ' <span class="log-crit">[克制S级以上]</span>' : ''}`);
 
-  // Anti-high-rarity heal
+  // Anti-high-rarity heal (lifesteal-like, silent)
   if (isHighRarity && attacker.alive) {
     const healAmt = Math.round(totalDmgDealt * skill.healPctOfDmg / 100);
     const before = attacker.hp;
@@ -984,9 +984,8 @@ async function doAngelEquality(attacker, target, skill) {
     const actual = Math.round(attacker.hp - before);
     if (actual > 0) {
       const aElId = getFighterElId(attacker);
-      spawnFloatingNum(aElId, `+${actual}`, 'heal-num', 0, 0);
+      spawnFloatingNum(aElId, `+${actual}`, 'passive-num', 0, 0);
       updateHpBar(attacker, aElId);
-      addLog(`${attacker.emoji}${attacker.name} 平等克制：<span class="log-heal">回复${actual}HP</span>（总伤${totalDmgDealt}×${skill.healPctOfDmg}%）`);
     }
   }
 
