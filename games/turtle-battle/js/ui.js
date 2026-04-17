@@ -251,8 +251,10 @@ function updateSceneHp(f) {
   // ── Delay trail ──
   const hpDelay = el.querySelector('.st-hp-delay');
   if (hpDelay) {
-    const oldHp = hpDelay._hp !== undefined ? hpDelay._hp : f.maxHp;
-    const oldPct = hpDelay._pct !== undefined ? hpDelay._pct : 100;
+    // First-time init: treat current HP as baseline (no damage animation)
+    const isFirstCall = hpDelay._hp === undefined;
+    const oldHp = isFirstCall ? f.hp : hpDelay._hp;
+    const oldPct = isFirstCall ? hpPct : (hpDelay._pct !== undefined ? hpDelay._pct : hpPct);
     hpDelay._hp = f.hp;
 
     if (f.hp < oldHp) {

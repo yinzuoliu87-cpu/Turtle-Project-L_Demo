@@ -2104,12 +2104,16 @@ function dungeonPickEquipItem(idx) {
 }
 
 function dungeonSkipEquip() {
+  // Skipping the equipment pick: convert to an alternative buff so the reward isn't lost
   const overlay = document.getElementById('dungeonEquipOverlay');
   if (overlay) {
     overlay.classList.remove('show');
     setTimeout(() => overlay.remove(), 300);
   }
   const ds = dungeonState;
+  // Compensate: give team a free permanent ATK+6 buff (equivalent value)
+  ds.buffs.push({ type:'atk', value:6 });
+  showToast('🎁 装备无处可装，已转化为全队攻击力+6');
   showDungeonTeamStatus();
   ds.stage++;
   setTimeout(() => dungeonStartStage(), 500);
