@@ -333,7 +333,7 @@ function updateSceneHp(f) {
   if (bBar) {
     if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
       bBar.style.display = '';
-      const maxStore = f.maxHp * 0.5;
+      const maxStore = f.maxHp * 1.5;  // cap is 150% maxHp
       bBar.querySelector('.st-bubble-store-fill').style.width = Math.min(f.bubbleStore / maxStore * 100, 100) + '%';
     } else {
       bBar.style.display = 'none';
@@ -355,12 +355,12 @@ function updateSceneHp(f) {
     energyBar.style.width = ePct + '%';
   }
 
-  // ── Aura energy bar (龟壳 stored energy) ──
+  // ── Aura energy bar (龟壳 stored energy, cap 150% maxHp) ──
   if (f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore) {
     const allEBars = el.querySelectorAll('.st-energy-fill');
     const auraBar = allEBars[allEBars.length - 1]; // last energy bar is aura's
     if (auraBar) {
-      const maxVisual = f.maxHp * 2;
+      const maxVisual = f.maxHp * 1.5;  // cap is 150% maxHp
       const storePct = Math.min(100, (f._storedEnergy || 0) / maxVisual * 100);
       auraBar.style.width = storePct + '%';
     }

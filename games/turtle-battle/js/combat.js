@@ -423,11 +423,14 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     target.passiveUsedThisTurn = true;
     spawnFloatingNum(tElId, `+${target.passive.amount}`, 'passive-num', 150, 0);
   }
-  // BubbleStore
+  // BubbleStore (capped at 150% maxHp)
   if (target.passive && target.passive.type === 'bubbleStore') {
     const stored = Math.round(dmg * target.passive.pct / 100);
-    target.bubbleStore += stored;
-    spawnFloatingNum(tElId, `+${stored}🫧`, 'bubble-num', 200, 0);
+    const cap = Math.round(target.maxHp * 1.5);
+    const before = target.bubbleStore || 0;
+    target.bubbleStore = Math.min(cap, before + stored);
+    const actual = target.bubbleStore - before;
+    if (actual > 0) spawnFloatingNum(tElId, `+${actual}🫧`, 'bubble-num', 200, 0);
   }
   // BubbleBind — attacker gains shield
   const bindBuff = target.buffs.find(b => b.type === 'bubbleBind');
@@ -536,9 +539,10 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
-  // AuraAwaken: energy store — target stores received damage as energy
+  // AuraAwaken: energy store — target stores received damage as energy (capped at 150% maxHp)
   if (target.passive && target.passive.type === 'auraAwaken' && target.passive.energyStore && target.alive) {
-    target._storedEnergy = (target._storedEnergy || 0) + dmg;
+    const cap = Math.round(target.maxHp * 1.5);
+    target._storedEnergy = Math.min(cap, (target._storedEnergy || 0) + dmg);
     updateHpBar(target, tElId); // refresh energy bar in real-time
   }
   // AuraAwaken: lifesteal — attacker heals from damage dealt
