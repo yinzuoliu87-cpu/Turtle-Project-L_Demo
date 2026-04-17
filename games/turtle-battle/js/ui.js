@@ -1311,6 +1311,13 @@ function renderStatusIcons(f) {
   if (f._goldCoins > 0) {
     box.innerHTML += `<span class="status-defup" title="金币${f._goldCoins}" style="color:#ffd93d;background:rgba(255,217,61,.15)"><img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._goldCoins}</span>`;
   }
+  // Shell energy wave countdown (auraAwaken with energyStore)
+  if (f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore && f.passive.energyReleaseTurn && typeof turnNum !== 'undefined') {
+    const period = f.passive.energyReleaseTurn;
+    const turnsUntil = (period - (turnNum % period)) % period || period;
+    const stored = Math.round(f._storedEnergy || 0);
+    box.innerHTML += `<span style="color:#e17055;background:rgba(225,112,85,.18);padding:1px 5px;border-radius:6px;font-weight:700" title="储能: ${stored} · ${turnsUntil}回合后释放冲击波">⚡${turnsUntil}回合</span>`;
+  }
   // Shock stacks indicator
   if (f._shockStacks > 0) {
     box.innerHTML += `<span class="status-dot" title="电击层${f._shockStacks}/8" style="color:#ffd700;background:rgba(255,215,0,.15)">⚡${f._shockStacks}</span>`;
