@@ -41,9 +41,10 @@ function getAvailableSkillIndices(petId) {
 }
 
 // ── FIGHTER FACTORY ───────────────────────────────────────
-function createFighter(petId, side, equippedIdxs) {
+function createFighter(petId, side, equippedIdxs, levelOverride) {
   const b = ALL_PETS.find(p => p.id === petId);
-  const bonus = getLevelBonus(petId);
+  const lv = (levelOverride != null) ? Math.max(1, Math.min(10, levelOverride)) : getPetLevel(petId);
+  const bonus = 1 + (lv - 1) * 0.05;
   const hp  = Math.round(b.hp * bonus);
   const atk = Math.round(b.atk * bonus);
   const def = Math.round(b.def * bonus);
@@ -51,7 +52,7 @@ function createFighter(petId, side, equippedIdxs) {
   return {
     id:b.id, name:b.name, emoji:b.emoji, rarity:b.rarity, side,
     img:b.img, sprite:b.sprite || null,
-    _level: getPetLevel(petId),
+    _level: lv,
     _equippedIdxs: equippedIdxs || (b.defaultSkills) || [0,1,2],
     maxHp:hp, hp:hp, shield:0,
     baseAtk:atk, baseDef:def, baseMr:mr,

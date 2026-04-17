@@ -327,8 +327,9 @@ function handleOnlineMessage(msg) {
       break;
     case 'team-ready':
       const opLoadouts = msg.loadouts || {};
-      if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left', opLoadouts[id]||null));
-      if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right', opLoadouts[id]||null));
+      const opLevels = msg.levels || {};
+      if (msg.side === 'left')  leftTeam  = msg.team.map(id => createFighter(id,'left', opLoadouts[id]||null, opLevels[id]));
+      if (msg.side === 'right') rightTeam = msg.team.map(id => createFighter(id,'right', opLoadouts[id]||null, opLevels[id]));
       // Only host (left) starts battle — it will generate seed and send it
       if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
       autoAssignPositions(leftTeam); autoAssignPositions(rightTeam); startBattle();
@@ -880,9 +881,15 @@ function _buildTeamFromSlots(side, loadoutMap) {
   });
 }
 
-function _createAiFighter(petId, side) {
+function _createAiFighter(petId, side, levelOverride) {
   const idxs = aiPickSkills(petId);
-  return createFighter(petId, side, idxs);
+  return createFighter(petId, side, idxs, levelOverride);
+}
+
+function _avgLevel(team) {
+  if (!team || !team.length) return 1;
+  const sum = team.reduce((s, f) => s + (f._level || 1), 0);
+  return Math.max(1, Math.min(10, Math.round(sum / team.length)));
 }
 
 function confirmTeam() {
@@ -921,14 +928,15 @@ function confirmTeam() {
     leftTeam = _buildTeamFromSlots('left');
     const pool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const shuffled = pool.sort(() => Math.random() - 0.5);
-    rightTeam = [_createAiFighter(shuffled[0].id,'right'), _createAiFighter(shuffled[1].id,'right'), _createAiFighter(shuffled[2].id,'right')];
+    const avgLv = _avgLevel(leftTeam);
+    rightTeam = [_createAiFighter(shuffled[0].id,'right',avgLv), _createAiFighter(shuffled[1].id,'right',avgLv), _createAiFighter(shuffled[2].id,'right',avgLv)];
     autoAssignPositions(rightTeam);
     startBattle();
   } else if (gameMode === 'boss') {
     leftTeam = _buildTeamFromSlots('left');
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
-    const boss = _createAiFighter(bossPet.id, 'right');
+    const boss = _createAiFighter(bossPet.id, 'right', 10);
     boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
     boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
     boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
@@ -943,10 +951,11 @@ function confirmTeam() {
   } else if (gameMode === 'pvp-online') {
     const side = onlineSide, team = selectedIds.slice();
     const loadouts = {};
-    team.forEach(id => { const s = getSavedLoadout(id); if (s) loadouts[id] = s; });
+    const levels = {};
+    team.forEach(id => { const s = getSavedLoadout(id); if (s) loadouts[id] = s; levels[id] = getPetLevel(id); });
     if (side === 'left')  leftTeam  = _buildTeamFromSlots('left');
     if (side === 'right') rightTeam = _buildTeamFromSlots('right');
-    sendOnline({ type:'team-ready', side, team, loadouts });
+    sendOnline({ type:'team-ready', side, team, loadouts, levels });
     showToast('等待对手选择…');
     // Only host starts battle (generates seed); guest waits for battle-seed message
     if (leftTeam.length === 3 && rightTeam.length === 3 && onlineSide === 'left') {
@@ -1182,6 +1191,7 @@ function startBattle(seed) {
           _dmgDealt:0, _dmgTaken:0, _pierceDmgDealt:0, _normalDmgDealt:0,
           _summon:null, _summonElId:null,
           _isSummon: true,       // mark as summon (not independent fighter)
+          _level: f._level || 1, // follow owner's level
           _owner: f,             // reference to owner
           skills: (pick.skillPool || pick.skills || []).filter(s => !s.passiveSkill).slice(0, 3).map(s => ({ ...s, cdLeft:0 })),
         };
@@ -1571,8 +1581,9 @@ function dungeonStartStage() {
   const pool = ALL_PETS.filter(p => !ds.teamIds.includes(p.id));
   const shuffled = pool.sort(() => _origMathRandom() - 0.5);
   rightTeam = [];
+  const dungeonAvgLv = cfg.boss ? 10 : _avgLevel(leftTeam);
   for (let i = 0; i < cfg.enemies && i < shuffled.length; i++) {
-    const e = _createAiFighter(shuffled[i].id, 'right');
+    const e = _createAiFighter(shuffled[i].id, 'right', dungeonAvgLv);
     e.maxHp = Math.round(e.maxHp * cfg.hpMult); e.hp = e.maxHp;
     e.baseAtk = Math.round(e.baseAtk * cfg.atkMult); e.atk = e.baseAtk;
     e.baseDef = Math.round(e.baseDef * cfg.defMult); e.def = e.baseDef;
