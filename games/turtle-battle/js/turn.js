@@ -219,6 +219,9 @@ async function beginTurn() {
         spawnFloatingNum(fElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
         updateHpBar(f, fElId);
         updateFighterStats(f, fElId);
+        // Count as damage dealt/taken
+        if (f._dmgDealt !== undefined) f._dmgDealt += stealAmt;
+        if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大生命值！</span>`);
         await sleep(800);
       }
@@ -435,6 +438,10 @@ async function beginTurn() {
         s.maxHp += stealAmt; s.hp += stealAmt;
         spawnFloatingNum(sElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
         updateSummonHpBar(s);
+        // Count as damage dealt (summon's owner gets credit) / taken
+        const owner = s._owner;
+        if (owner && owner._dmgDealt !== undefined) owner._dmgDealt += stealAmt;
+        if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
         addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大HP！</span>`);
       }
     }

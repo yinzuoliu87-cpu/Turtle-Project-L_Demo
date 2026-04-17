@@ -51,6 +51,9 @@ async function executeCombo(combo, side) {
       e.hp = Math.max(1, e.hp - steal);
       updateHpBar(e, getFighterElId(e));
       spawnFloatingNum(getFighterElId(e), `-${steal}`, 'direct-dmg', 0, 0);
+      // Credit damage to all combo participants equally, mark target taken
+      if (e._dmgTaken !== undefined) e._dmgTaken += steal;
+      fighters.forEach(f => { if (f._dmgDealt !== undefined) f._dmgDealt += Math.round(steal / fighters.length); });
     }
     const totalSteal = Math.round(aliveEnemies.reduce((s,e) => s + e.maxHp * combo.stealHpPct / 100, 0));
     fighters.forEach(f => { f.hp = Math.min(f.maxHp, f.hp + Math.round(totalSteal / 2)); updateHpBar(f, getFighterElId(f)); });
