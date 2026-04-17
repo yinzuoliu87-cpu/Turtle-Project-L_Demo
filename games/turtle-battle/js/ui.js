@@ -150,28 +150,11 @@ function renderScene() {
   assignPos(leftTeam, 'left');
   assignPos(rightTeam, 'right');
 
-  // Pirate ships: render at an offset position (behind back row, same structure as normal turtles)
+  // Pirate ships: render at their assigned slot (set when summoned)
   allFighters.forEach(f => {
     if (!f._isPirateShip || !f.alive) return;
-    const side = f.side;
-    const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
-    // Place behind back-2, offset slightly
-    const basePos = posSet['back-2'] || posSet['back-0'];
-    const shipX = side === 'left' ? basePos.x - 6 : basePos.x - 6; // mapCoverPos handles mirror
-    const shipY = Math.min(95, basePos.y + 8);
-    // Use the same renderTurtle helper so CSS/click/animations all work
-    const fakeSlot = `back-2`;
-    f._slotKey = f._slotKey || fakeSlot;
-    renderTurtle(f, `pos-${side}-${fakeSlot} pirate-ship-turtle`, side, fakeSlot);
-    // Override position to ship location
-    const el = document.getElementById(getFighterElId(f));
-    if (el && cw && ch) {
-      const imgX = side === 'left' ? shipX : (100 - shipX);
-      const mapped = mapCoverPos(imgX, shipY, cw, ch);
-      el.style.left = (mapped.px / cw * 100) + '%';
-      el.style.bottom = ((1 - mapped.py / ch) * 100) + '%';
-      el.style.top = 'auto';
-    }
+    const slot = f._slotKey || 'back-2';
+    renderTurtle(f, `pos-${f.side}-${slot} pirate-ship-turtle`, f.side, slot);
   });
 
   // Summons

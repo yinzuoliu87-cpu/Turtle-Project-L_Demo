@@ -284,8 +284,11 @@ async function beginTurn() {
     if (f._pirateShipEnabled && !f._pirateShipSummoned && turnNum === 3) {
       f._pirateShipSummoned = true;
       const team = f.side === 'left' ? leftTeam : rightTeam;
-      const frontCount = team.filter(t => t.alive && t._position === 'front').length;
-      const shipPos = frontCount < 3 ? 'front' : 'back';
+      // Find first empty slot: F1 → F2 → F3 → B1 → B2 → B3
+      const usedSlots = team.filter(t => t.alive).map(t => t._slotKey);
+      const slotOrder = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+      const shipSlotKey = slotOrder.find(s => !usedSlots.includes(s)) || 'back-2';
+      const shipPos = shipSlotKey.startsWith('front') ? 'front' : 'back';
       // Create ship as a fighter-like entity
       const shipHp = Math.round(f.maxHp * 1.5);
       const shipAtk = f.atk;
@@ -313,6 +316,7 @@ async function beginTurn() {
         _chestTreasure:0, _chestEquips:[], _chestTier:0, _goldLightning:0,
         _crystallize:0, _collideStacks:0,
         _isPirateShip:true, _shipOwner:f, _shipFireScale:0.2,
+        _slotKey: shipSlotKey,
         skills:[{ name:'开炮', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:0.2 }],
         _passiveSkills:[]
       };
