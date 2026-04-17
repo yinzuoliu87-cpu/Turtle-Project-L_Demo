@@ -240,10 +240,11 @@ function checkDeaths(attacker) {
                     : (f.passive && f.passive.type === 'pirateBarrage') ? f.passive.deathHookPct : 0;
       if (hookPct > 0 && attacker && attacker.alive) {
         const dmg = Math.round(f.maxHp * hookPct / 100);
-        attacker.hp = Math.max(0, attacker.hp - dmg);
+        applyRawDmg(f, attacker, dmg, true, false, 'true');
         const aElId = getFighterElId(attacker);
         spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
         updateHpBar(attacker, aElId);
+        try { triggerOnHitEffects(f, attacker, dmg); } catch(e) {}
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">钩锁！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-pierce">${dmg}真实伤害</span>`);
         if (attacker.hp <= 0) { attacker.alive = false; }
       }
@@ -348,10 +349,11 @@ function processSummonDeath(summon, attacker, extraMsg) {
                   : (summon.passive.type === 'pirateBarrage') ? summon.passive.deathHookPct : 0;
     if (hookPct > 0 && attacker && attacker.alive) {
       const dmg = Math.round(summon.maxHp * hookPct / 100);
-      attacker.hp = Math.max(0, attacker.hp - dmg);
+      applyRawDmg(summon, attacker, dmg, true, false, 'true');
       const aElId = getFighterElId(attacker);
       spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
       updateHpBar(attacker, aElId);
+      try { triggerOnHitEffects(summon, attacker, dmg); } catch(e) {}
       addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">钩锁！${dmg}真实伤害</span>`);
       if (attacker.hp <= 0) attacker.alive = false;
     }
