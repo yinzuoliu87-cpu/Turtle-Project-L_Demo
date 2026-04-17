@@ -92,7 +92,7 @@ function getAliveEnemiesWithSummons(side) {
 
 // Shield multiplier for battle rules (铁壁之日 = x2)
 function getShieldMult() {
-  return (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'shield') ? 2 : 1;
+  return (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'shield') ? 1.3 : 1;
 }
 // Magic damage multiplier for battle rules (深海之日 = x0.8)
 function getMagicDmgMult() {
