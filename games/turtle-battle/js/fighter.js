@@ -64,7 +64,7 @@ function createFighter(petId, side, equippedIdxs, levelOverride) {
     armorPenPct: 0,  // 百分比护甲穿透
     magicPen: 0,
     magicPenPct: 0,  // 百分比魔抗穿透
-    passive: b.passive || null,
+    passive: b.passive ? { ...b.passive } : null,  // clone to avoid mutating shared pets.js const
     passiveUsedThisTurn: false,  // for once-per-turn passives like shieldOnHit
     _position: 'front', // front or back (set by player in formation screen)
     alive:true,
