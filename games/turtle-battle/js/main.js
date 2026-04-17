@@ -47,11 +47,11 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     dungeonState = { stage: 0, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [], battleIds: [], benchIds: [] };
-    // Show bench row + expand slot keys
-    FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE, ...FG_SLOT_KEYS_BENCH];
+    // 3v3 only — no bench
+    FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE];
     const benchRow = document.getElementById('fgBenchRow');
-    if (benchRow) benchRow.style.display = '';
-    showSelectScreen('🏰 深海闯关 — 选择6只龟（前排/后排 + 替补）');
+    if (benchRow) benchRow.style.display = 'none';
+    showSelectScreen('🏰 深海闯关 — 选择3只龟挑战5关');
   } else if (mode === 'pvp-online') {
     showScreen('screenLobby');
     document.getElementById('lobbyStatus').textContent = '';
@@ -408,12 +408,10 @@ function showSelectScreen(title) {
   _fgSlots = {};
   selectedIds = [];
   _fgSelectedSlot = null;
-  // Reset bench row visibility
-  if (gameMode !== 'dungeon') {
-    FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE];
-    const benchRow = document.getElementById('fgBenchRow');
-    if (benchRow) benchRow.style.display = 'none';
-  }
+  // Always hide bench row — all modes are 3v3 with no bench
+  FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE];
+  const benchRow = document.getElementById('fgBenchRow');
+  if (benchRow) benchRow.style.display = 'none';
   document.getElementById('selectTitle').innerHTML = title;
   // Render mode guide
   const guide = document.getElementById('modeGuide');
@@ -494,17 +492,11 @@ function togglePet(e, id) {
     }
   }
   // Check cap
-  const maxPets = gameMode === 'dungeon' ? 6 : 3;
+  const maxPets = 3;
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
   // If there's an active slot, place into it
   if (_fgActiveSlot && !_fgSlots[_fgActiveSlot]) {
     if (placed >= maxPets) { showToast(`已选${maxPets}只`); _fgActiveSlot = null; renderFgSlots(); return; }
-    // Dungeon: sub-limit 3 battle + 3 bench
-    if (gameMode === 'dungeon') {
-      const isBench = _fgActiveSlot.startsWith('bench');
-      const subCount = (isBench ? FG_SLOT_KEYS_BENCH : FG_SLOT_KEYS_BASE).filter(k => _fgSlots[k]).length;
-      if (subCount >= 3) { showToast(isBench ? '替补已满' : '上场已满（3只）'); _fgActiveSlot = null; renderFgSlots(); return; }
-    }
     _fgSlots[_fgActiveSlot] = id;
     _fgActiveSlot = null;
     renderFgSlots();
@@ -727,14 +719,7 @@ function renderFgSlots() {
 
 function updateConfirmBtn() {
   const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
-  if (gameMode === 'dungeon') {
-    const battleCount = FG_SLOT_KEYS_BASE.filter(k => _fgSlots[k]).length;
-    const benchCount = FG_SLOT_KEYS_BENCH.filter(k => _fgSlots[k]).length;
-    // Need exactly 3 battle + 3 bench = 6 total
-    document.getElementById('btnConfirmTeam').disabled = battleCount !== 3 || benchCount !== 3;
-  } else {
-    document.getElementById('btnConfirmTeam').disabled = placed !== 3;
-  }
+  document.getElementById('btnConfirmTeam').disabled = placed !== 3;
 }
 
 // ── SKILL PICK MODAL ──────────────────────────────────────
@@ -897,17 +882,15 @@ function _avgLevel(team) {
 }
 
 function confirmTeam() {
-  const requiredCount = gameMode === 'dungeon' ? 6 : 3;
+  const requiredCount = 3;
   if (selectedIds.length !== requiredCount) return;
   if (gameMode === 'dungeon') {
-    // Battle = front + back rows, bench = bench row
+    // 3v3 dungeon — no bench, all 3 pets go into battle formation
     const battleIds = ['front-0','front-1','front-2','back-0','back-1','back-2'].map(k => _fgSlots[k]).filter(Boolean);
-    const benchIds = ['bench-0','bench-1','bench-2'].map(k => _fgSlots[k]).filter(Boolean);
-    // Skill loadout now configured in pet grid (宠物中心), no forced pick before battle
     dungeonState.stage = 1;
     dungeonState.teamIds = [...selectedIds];
     dungeonState.battleIds = battleIds;
-    dungeonState.benchIds = benchIds;
+    dungeonState.benchIds = [];
     dungeonState.teamHp = {};
     dungeonState.deadIds = [];
     dungeonState.rewards = 0;
@@ -1897,24 +1880,8 @@ function renderDungeonTeamSwap() {
   // === Floating indicator ===
   if (floating) {
     const fp = ALL_PETS.find(x => x.id === floating);
-    html += `<div class="dts-floating-hint">🔄 正在移动：${fp?.name || floating}（点击上方空位放置，或点替补互换）</div>`;
+    html += `<div class="dts-floating-hint">🔄 正在移动：${fp?.name || floating}（点击空位放置）</div>`;
   }
-
-  // === Bench ===
-  html += '<div class="dts-section-label">🪑 替补（点击可与上场龟互换）</div><div class="dts-row">';
-  if (aliveBench.length === 0 && ds.benchIds.filter(id => ds.deadIds.includes(id)).length === 0) {
-    html += '<span style="color:var(--fg2)">无替补</span>';
-  }
-  for (const id of ds.benchIds) {
-    const dead = ds.deadIds.includes(id);
-    if (dead) {
-      const p = ALL_PETS.find(x => x.id === id);
-      html += `<div class="dts-pos-slot dead"><span class="dts-pos-name">${p.name}</span><span class="dts-pos-hp">💀</span></div>`;
-    } else {
-      html += turtleCard(id, `dungeonBenchSwap('${id}')`);
-    }
-  }
-  html += '</div>';
 
   // === Dead battle turtles ===
   const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
