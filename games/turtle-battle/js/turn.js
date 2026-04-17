@@ -348,6 +348,7 @@ async function beginTurn() {
         picks.push(pool[Math.floor(Math.random() * pool.length)]);
       }
       f._prismColor = picks[0]; // primary color for skill 1 bonus
+      f._prismColors = picks.slice(); // all colors picked this turn (for UI)
 
       function applyPrismColor(color) {
         if (color === 0) {

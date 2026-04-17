@@ -1299,13 +1299,15 @@ function renderStatusIcons(f) {
     const oldest = Math.max(...f._drones.map(d => d.age));
     box.innerHTML += `<span class="status-defup" title="浮游炮${f._drones.length}个，最老${oldest}回合" style="color:#4cc9f0;background:rgba(76,201,240,.15)"><img src="assets/passive/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle">${f._drones.length}</span>`;
   }
-  // Rainbow prism color indicator
+  // Rainbow prism color indicator (show all active colors, up to 2 if enhanced)
   if (f._prismColor !== undefined && f.passive && f.passive.type === 'rainbowPrism') {
     const pLabels = ['🔴','🔵','🟢','🟠','🟡','🩵','🟣'];
     const pNames = ['红光','蓝光','绿光','橙光','黄光','青光','紫光'];
     const pColors = ['#ff6b6b','#4dabf7','#06d6a0','#ff8c00','#ffd93d','#4cc9f0','#9b59b6'];
-    const c = f._prismColor;
-    box.innerHTML += `<span style="color:${pColors[c]};background:${pColors[c]}22;padding:1px 5px;border-radius:6px;font-weight:700" title="棱镜：${pNames[c]}">${pLabels[c]}${pNames[c]}</span>`;
+    const colors = (f._prismColors && f._prismColors.length) ? f._prismColors : [f._prismColor];
+    for (const c of colors) {
+      box.innerHTML += `<span style="color:${pColors[c]};background:${pColors[c]}22;padding:1px 5px;border-radius:6px;font-weight:700;margin-right:2px" title="棱镜：${pNames[c]}">${pLabels[c]}${pNames[c]}</span>`;
+    }
   }
   // Gold coins indicator
   if (f._goldCoins > 0) {
