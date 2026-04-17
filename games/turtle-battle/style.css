@@ -3,6 +3,17 @@
    dark theme · shield white bar · damage color coding
    ═══════════════════════════════════════════════════ */
 .st-level-badge{font-size:10px;font-weight:800;color:#ffd93d;background:linear-gradient(135deg,#4a3520,#2a1d12);border:1px solid #ffd93d80;border-radius:3px;padding:1px 4px;line-height:1;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* Bug report floating button */
+.bug-report-btn{position:fixed;bottom:16px;right:16px;z-index:997;width:42px;height:42px;border-radius:50%;background:#e74c3c;border:2px solid #ff6b5a;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(231,76,60,.5);transition:transform .15s}
+.bug-report-btn:hover{transform:scale(1.1)}
+.bug-report-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.bug-report-overlay.show{display:flex}
+.bug-report-box{background:#0f1420;border:2px solid #e74c3c;border-radius:12px;padding:20px;max-width:480px;width:92%;box-shadow:0 12px 48px rgba(231,76,60,.3)}
+.bug-report-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;padding-bottom:8px;border-bottom:1px solid rgba(255,255,255,.1)}
+.bug-report-header h3{color:#ff6b6b;margin:0;font-size:16px}
+@media (max-width: 768px){
+  .bug-report-btn{bottom:12px;right:12px;width:38px;height:38px;font-size:18px}
+}
 /* Debug panel */
 .debug-panel-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .debug-panel-overlay.show{display:flex}

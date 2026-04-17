@@ -1375,6 +1375,97 @@ function showCodex() {
   showScreen('screenCodex');
 }
 
+// ════════ BUG REPORT ════════
+function showBugReport() {
+  const panel = document.getElementById('bugReportPanel');
+  if (!panel) return;
+  panel.classList.add('show');
+  const ta = document.getElementById('bugReportText');
+  if (ta) { ta.value = ''; ta.focus(); }
+  const res = document.getElementById('bugReportResult');
+  if (res) { res.style.display = 'none'; res.textContent = ''; }
+}
+function hideBugReport() {
+  const panel = document.getElementById('bugReportPanel');
+  if (panel) panel.classList.remove('show');
+}
+function submitBugReport() {
+  const ta = document.getElementById('bugReportText');
+  const userText = (ta && ta.value.trim()) || '(未填写描述)';
+  // Collect context
+  const ctx = [];
+  ctx.push('## Bug 反馈');
+  ctx.push('');
+  ctx.push('### 描述');
+  ctx.push(userText);
+  ctx.push('');
+  ctx.push('### 上下文');
+  ctx.push(`- 模式: ${typeof gameMode !== 'undefined' ? gameMode : 'none'}`);
+  ctx.push(`- 难度: ${typeof difficulty !== 'undefined' ? difficulty : 'N/A'}`);
+  if (typeof turnNum !== 'undefined') ctx.push(`- 回合: ${turnNum}`);
+  if (typeof dungeonState !== 'undefined' && dungeonState && dungeonState.stage) ctx.push(`- 闯关进度: 第${dungeonState.stage}/${dungeonState.maxStage}关`);
+  // Teams
+  if (typeof leftTeam !== 'undefined' && leftTeam && leftTeam.length) {
+    ctx.push('');
+    ctx.push('### 我方');
+    for (const f of leftTeam) {
+      const eq = (f._equips && f._equips.length) ? ` 装备[${f._equips.map(e=>e.name).join(',')}]` : '';
+      ctx.push(`- ${f.name} Lv.${f._level||1} (${f._position||'?'}) HP${f.hp}/${f.maxHp} 盾${f.shield} ATK${f.atk} DEF${f.def} MR${f.mr}${f.alive?'':' [已阵亡]'}${eq}`);
+      if (f.skills) ctx.push(`  技能: ${f.skills.map(s=>`${s.name}${s.cdLeft>0?`(CD${s.cdLeft})`:''}`).join(' / ')}`);
+      if (f.buffs && f.buffs.length) ctx.push(`  buffs: ${f.buffs.map(b=>`${b.type}(${b.value||''}/${b.turns})`).join(', ')}`);
+    }
+  }
+  if (typeof rightTeam !== 'undefined' && rightTeam && rightTeam.length) {
+    ctx.push('');
+    ctx.push('### 敌方');
+    for (const f of rightTeam) {
+      ctx.push(`- ${f.name} Lv.${f._level||1} (${f._position||'?'}) HP${f.hp}/${f.maxHp} 盾${f.shield} ATK${f.atk} DEF${f.def} MR${f.mr}${f.alive?'':' [已阵亡]'}`);
+    }
+  }
+  // Last 20 log entries
+  const log = document.getElementById('battleLog');
+  if (log && log.children.length > 0) {
+    const entries = Array.from(log.children).slice(-20).map(e => e.textContent.trim()).filter(Boolean);
+    if (entries.length) {
+      ctx.push('');
+      ctx.push('### 最近日志 (最后20条)');
+      entries.forEach(e => ctx.push(`- ${e}`));
+    }
+  }
+  // Browser info
+  ctx.push('');
+  ctx.push('### 环境');
+  ctx.push(`- UA: ${navigator.userAgent}`);
+  ctx.push(`- 分辨率: ${window.innerWidth}x${window.innerHeight}`);
+  ctx.push(`- 时间: ${new Date().toISOString()}`);
+
+  const report = ctx.join('\n');
+  // Save to localStorage (list)
+  try {
+    const history = JSON.parse(localStorage.getItem('bugReports') || '[]');
+    history.push({ ts: Date.now(), text: userText, report });
+    // Keep last 30
+    if (history.length > 30) history.shift();
+    localStorage.setItem('bugReports', JSON.stringify(history));
+  } catch(e) {}
+  // Copy to clipboard
+  const showOK = () => {
+    const res = document.getElementById('bugReportResult');
+    if (res) { res.textContent = '✅ 已复制到剪贴板！粘贴到对话给我即可'; res.style.display = 'block'; }
+    setTimeout(hideBugReport, 2000);
+  };
+  const showFail = (text) => {
+    const res = document.getElementById('bugReportResult');
+    if (res) { res.textContent = '❌ 复制失败，请手动复制下方内容：'; res.style.display = 'block'; res.style.color = '#ff6b6b'; }
+    if (ta) ta.value = text;
+  };
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(report).then(showOK).catch(() => showFail(report));
+  } else {
+    showFail(report);
+  }
+}
+
 // ════════ DEBUG PANEL FUNCTIONS ════════
 function showDebugPanel() {
   const panel = document.getElementById('debugPanel');
