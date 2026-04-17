@@ -1375,15 +1375,134 @@ function showCodex() {
   showScreen('screenCodex');
 }
 
-function debugSetAllLevels() {
-  const input = prompt('把所有龟改到什么等级？(1-10)', '10');
-  if (input === null) return;
-  const lv = Math.max(1, Math.min(10, parseInt(input) || 1));
+// ════════ DEBUG PANEL FUNCTIONS ════════
+function showDebugPanel() {
+  const panel = document.getElementById('debugPanel');
+  if (!panel) return;
+  panel.classList.add('show');
+  debugRefreshInfo();
+}
+function hideDebugPanel() {
+  const panel = document.getElementById('debugPanel');
+  if (panel) panel.classList.remove('show');
+}
+function debugRefreshInfo() {
+  const el = document.getElementById('debugInfo');
+  if (!el) return;
+  let coins = 0;
+  try { coins = JSON.parse(localStorage.getItem('petState')||'{}').coins || 0; } catch(e) {}
+  const levels = ALL_PETS.map(p => `${p.name}:${getPetLevel(p.id)}`).join(' ');
+  const mode = typeof gameMode !== 'undefined' ? gameMode : 'none';
+  const inBattle = typeof leftTeam !== 'undefined' && leftTeam && leftTeam.length > 0;
+  el.textContent = `龟币: ${coins}\n当前模式: ${mode}\n战斗中: ${inBattle ? '是' : '否'}\n等级: ${levels}`;
+}
+
+function debugSetAllLevels(lv) {
+  if (lv == null) {
+    const input = prompt('把所有龟改到什么等级？(1-10)', '10');
+    if (input === null) return;
+    lv = Math.max(1, Math.min(10, parseInt(input) || 1));
+  }
   for (const p of ALL_PETS) setPetLevel(p.id, lv);
   renderCodexList();
   const currentId = window._codexCurrentPet;
   if (currentId) showCodexDetail(currentId);
+  debugRefreshInfo();
   showToast(`全体28只龟已设为 Lv.${lv}`);
+}
+
+function debugAddCoins(amount) {
+  addCoins(amount);
+  debugRefreshInfo();
+  showToast(`+${amount} 龟币`);
+}
+
+function debugResetProgress() {
+  if (!confirm('清空所有等级和龟币？')) return;
+  for (const p of ALL_PETS) setPetLevel(p.id, 1);
+  try {
+    const ps = JSON.parse(localStorage.getItem('petState')||'{}');
+    ps.coins = 0;
+    localStorage.setItem('petState', JSON.stringify(ps));
+  } catch(e) {}
+  loadCoins();
+  renderCodexList();
+  debugRefreshInfo();
+  showToast('进度已清空');
+}
+
+function debugQuickBattle(mode, diff) {
+  hideDebugPanel();
+  difficulty = diff || 'normal';
+  startMode(mode);
+}
+
+function debugJumpToDungeonBoss() {
+  hideDebugPanel();
+  // Start dungeon and immediately jump to stage 5
+  const selected = ALL_PETS.slice(0, 3).map(p => p.id);
+  selectedIds = [...selected];
+  _fgSlots = { 'front-0': selected[0], 'front-1': selected[1], 'front-2': selected[2] };
+  gameMode = 'dungeon';
+  dungeonState = {
+    stage: 5, maxStage: 5, teamHp: {}, deadIds: [], rewards: 0, buffs: [],
+    battleIds: [...selected], benchIds: [],
+    teamIds: [...selected], carryState: {}, positions: {}
+  };
+  for (const [key, id] of Object.entries(_fgSlots)) {
+    if (!id) continue;
+    dungeonState.positions[id] = { position: key.startsWith('front') ? 'front' : 'back', slotKey: key };
+  }
+  dungeonStartStage();
+}
+
+function debugFullHealAll() {
+  if (typeof allFighters === 'undefined' || !allFighters) { showToast('不在战斗中'); return; }
+  for (const f of allFighters) {
+    if (f.alive) { f.hp = f.maxHp; updateHpBar(f, getFighterElId(f)); }
+  }
+  showToast('全体满血');
+}
+
+function debugKillAllEnemies() {
+  if (typeof rightTeam === 'undefined' || !rightTeam) { showToast('不在战斗中'); return; }
+  for (const f of rightTeam) {
+    if (f.alive) { f.hp = 1; applyRawDmg(null, f, 99999, false, false, 'true'); }
+  }
+  showToast('敌方残血');
+  hideDebugPanel();
+}
+
+function debugKillAllAllies() {
+  if (typeof leftTeam === 'undefined' || !leftTeam) { showToast('不在战斗中'); return; }
+  for (const f of leftTeam) {
+    if (f.alive) { f.hp = 1; applyRawDmg(null, f, 99999, false, false, 'true'); }
+  }
+  showToast('己方残血');
+  hideDebugPanel();
+}
+
+function debugResetCds() {
+  if (typeof allFighters === 'undefined' || !allFighters) { showToast('不在战斗中'); return; }
+  for (const f of allFighters) {
+    if (f.skills) for (const s of f.skills) s.cdLeft = 0;
+  }
+  if (typeof renderActionButtons === 'function' && typeof currentActingFighter !== 'undefined' && currentActingFighter) {
+    renderActionButtons(currentActingFighter);
+  }
+  showToast('所有CD重置');
+}
+
+function debugExportLog() {
+  const log = document.getElementById('battleLog');
+  if (!log) { showToast('没有战斗日志'); return; }
+  const text = Array.from(log.children).map(e => e.textContent).join('\n');
+  if (navigator.clipboard) {
+    navigator.clipboard.writeText(text).then(() => showToast('战斗日志已复制到剪贴板')).catch(() => showToast('复制失败'));
+  } else {
+    // Fallback: show in prompt
+    prompt('战斗日志（手动复制）:', text);
+  }
 }
 
 function renderCodexList() {

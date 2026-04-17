@@ -3,6 +3,16 @@
    dark theme · shield white bar · damage color coding
    ═══════════════════════════════════════════════════ */
 .st-level-badge{font-size:10px;font-weight:800;color:#ffd93d;background:linear-gradient(135deg,#4a3520,#2a1d12);border:1px solid #ffd93d80;border-radius:3px;padding:1px 4px;line-height:1;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.5)}
+/* Debug panel */
+.debug-panel-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
+.debug-panel-overlay.show{display:flex}
+.debug-panel-box{background:#0f1420;border:2px solid #7c3aed;border-radius:12px;padding:20px;max-width:520px;width:92%;max-height:85vh;overflow-y:auto;box-shadow:0 12px 48px rgba(124,58,237,.4)}
+.debug-panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:14px;padding-bottom:10px;border-bottom:1px solid rgba(255,255,255,.1)}
+.debug-panel-header h3{color:#c4b5fd;margin:0;font-size:16px}
+.debug-section{margin-bottom:14px}
+.debug-section-title{color:#a78bfa;font-size:12px;font-weight:600;margin-bottom:6px;text-transform:uppercase;letter-spacing:1px}
+.debug-section .btn{margin:3px;font-size:11px;padding:5px 9px;background:#2a1d3d;border-color:#7c3aed40}
+.debug-section .btn:hover{background:#3a2850;border-color:#7c3aed}
 .audio-gate{position:fixed;inset:0;z-index:9999;background:rgba(5,10,20,.92);display:flex;align-items:center;justify-content:center;cursor:pointer;backdrop-filter:blur(8px);transition:opacity .3s ease}
 .audio-gate.hidden{opacity:0;pointer-events:none}
 .audio-gate-inner{text-align:center;color:#fff;animation:audioGatePulse 1.5s ease-in-out infinite}

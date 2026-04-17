@@ -155,7 +155,7 @@
       <div class="codex-header">
         <button class="btn btn-sm" onclick="showScreen('screenMenu')" style="margin-bottom:8px">← 返回</button>
         <h3>龟龟图鉴</h3>
-        <button class="btn btn-sm" onclick="debugSetAllLevels()" style="margin-top:6px;font-size:11px;background:#7c3aed">🛠 全体改等级</button>
+        <button class="btn btn-sm" onclick="showDebugPanel()" style="margin-top:6px;font-size:11px;background:#7c3aed">🛠 调试面板</button>
       </div>
       <div class="codex-list" id="codexList"></div>
     </div>
@@ -416,6 +416,46 @@
     </div>
   </div>
 </section>
+
+<!-- ══════ DEBUG PANEL ══════ -->
+<div id="debugPanel" class="debug-panel-overlay" onclick="if(event.target===this)hideDebugPanel()">
+  <div class="debug-panel-box">
+    <div class="debug-panel-header">
+      <h3>🛠 开发调试面板</h3>
+      <button class="btn btn-sm" onclick="hideDebugPanel()">✕</button>
+    </div>
+    <div class="debug-section">
+      <div class="debug-section-title">等级 &amp; 龟币</div>
+      <button class="btn btn-sm" onclick="debugSetAllLevels(1)">全体 Lv.1</button>
+      <button class="btn btn-sm" onclick="debugSetAllLevels(5)">全体 Lv.5</button>
+      <button class="btn btn-sm" onclick="debugSetAllLevels(10)">全体 Lv.10</button>
+      <button class="btn btn-sm" onclick="debugSetAllLevels()">自定义</button>
+      <button class="btn btn-sm" onclick="debugAddCoins(1000)">+1000 龟币</button>
+      <button class="btn btn-sm" onclick="debugResetProgress()">清空进度</button>
+    </div>
+    <div class="debug-section">
+      <div class="debug-section-title">快速进入战斗</div>
+      <button class="btn btn-sm" onclick="debugQuickBattle('pve','easy')">PVE 简单</button>
+      <button class="btn btn-sm" onclick="debugQuickBattle('pve','normal')">PVE 普通</button>
+      <button class="btn btn-sm" onclick="debugQuickBattle('pve','hard')">PVE 困难</button>
+      <button class="btn btn-sm" onclick="debugQuickBattle('boss','normal')">Boss挑战</button>
+      <button class="btn btn-sm" onclick="debugQuickBattle('dungeon','normal')">闯关</button>
+      <button class="btn btn-sm" onclick="debugJumpToDungeonBoss()">→ 直接进Boss关</button>
+    </div>
+    <div class="debug-section">
+      <div class="debug-section-title">战斗中（需先进入战斗）</div>
+      <button class="btn btn-sm" onclick="debugFullHealAll()">全体满血</button>
+      <button class="btn btn-sm" onclick="debugKillAllEnemies()">秒杀敌方</button>
+      <button class="btn btn-sm" onclick="debugKillAllAllies()">击杀己方</button>
+      <button class="btn btn-sm" onclick="debugResetCds()">重置所有CD</button>
+      <button class="btn btn-sm" onclick="debugExportLog()">📋 复制战斗日志</button>
+    </div>
+    <div class="debug-section">
+      <div class="debug-section-title">信息</div>
+      <div id="debugInfo" style="font-size:11px;color:var(--fg2);font-family:monospace;white-space:pre-wrap"></div>
+    </div>
+  </div>
+</div>
 
 <!-- ══════ TUTORIAL OVERLAY ══════ -->
 <div class="tut-overlay" id="tutorialOverlay">
