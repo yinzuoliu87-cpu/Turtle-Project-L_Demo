@@ -1497,11 +1497,11 @@ let _dungeonChoicePicked = null;
 
 // Stage config: enemies and multipliers
 const DUNGEON_STAGES = [
-  { enemies:3, hpMult:0.9, atkMult:0.9, defMult:0.9, label:'第1关' },
+  { enemies:3, hpMult:0.85, atkMult:0.85, defMult:0.85, label:'第1关' },
   { enemies:3, hpMult:1.0, atkMult:1.0, defMult:1.0, label:'第2关' },
   { enemies:3, hpMult:1.1, atkMult:1.1, defMult:1.1, label:'第3关' },
   { enemies:3, hpMult:1.2, atkMult:1.2, defMult:1.2, label:'第4关' },
-  { enemies:1, hpMult:3.5, atkMult:1.3, defMult:1.5, boss:true, label:'第5关 · Boss' },
+  { enemies:1, hpMult:3.0, atkMult:1.25, defMult:1.4, boss:true, label:'第5关 · Boss' },
 ];
 
 function dungeonStartStage() {
@@ -1509,28 +1509,36 @@ function dungeonStartStage() {
   const stageIdx = ds.stage - 1;
   const cfg = DUNGEON_STAGES[stageIdx];
 
-  // Create player team: use battleIds (alive only)
-  const aliveBattle = ds.battleIds.filter(id => !ds.deadIds.includes(id));
+  // Revive dead turtles at 70% HP (reset all self-accumulated state)
+  const wasDead = new Set(ds.deadIds);
+  ds.deadIds = [];
+
+  // Create player team: all battleIds participate (revived if needed)
+  const aliveBattle = ds.battleIds.slice();
   if (aliveBattle.length === 0) { dungeonOnStageFail(); return; }
   leftTeam = aliveBattle.map(id => {
     const f = createFighter(id, 'left', getSavedLoadout(id));
-    // Restore HP from previous stage
-    if (ds.teamHp[id] !== undefined) {
+    const revived = wasDead.has(id);
+    // Restore HP: revived → 70% max, else from last stage
+    if (revived) {
+      f.hp = Math.round(f.maxHp * 0.7);
+    } else if (ds.teamHp[id] !== undefined) {
       f.hp = Math.min(f.maxHp, ds.teamHp[id]);
     }
-    // Apply dungeon buffs (from reward choices)
+    // Apply dungeon buffs (from reward choices) — everyone including revived
     for (const buff of ds.buffs) {
       if (buff.type === 'atk') { f.baseAtk += buff.value; f.atk = f.baseAtk; }
       if (buff.type === 'def') { f.baseDef += buff.value; f.def = f.baseDef; }
       if (buff.type === 'crit') { f.crit += buff.value / 100; }
       if (buff.type === 'lifesteal') { f._lifestealPct = (f._lifestealPct || 0) + buff.value; }
     }
-    // Restore carried-over special state from previous stage
-    if (ds.carryState && ds.carryState[id]) {
+    // Restore carried-over special state (skip for revived — they reset)
+    if (!revived && ds.carryState && ds.carryState[id]) {
       const cs = ds.carryState[id];
       f._chestTreasure = cs._chestTreasure;
       f._chestEquips = cs._chestEquips ? [...cs._chestEquips] : [];
       f._chestTier = cs._chestTier;
+      f._equips = cs._equips ? [...cs._equips] : [];
       f.bubbleStore = cs.bubbleStore;
       f._storedEnergy = cs._storedEnergy;
       f._starEnergy = cs._starEnergy;
@@ -1552,6 +1560,18 @@ function dungeonStartStage() {
       for (const eq of f._chestEquips) {
         if (typeof applyChestEquip === 'function') applyChestEquip(f, eq);
       }
+      // Re-apply dungeon equipment
+      for (const eq of f._equips) {
+        if (eq && typeof eq.apply === 'function') eq.apply(f);
+      }
+    } else if (revived) {
+      // Revived turtle: naked (no equips, no treasure, no coins, no accumulated stats)
+      f._equips = []; f._chestEquips = []; f._chestTreasure = 0; f._chestTier = 0;
+      f._goldCoins = 0; f._stoneDefGained = 0; f._bambooGainedHp = 0;
+      f._hunterKills = 0; f._hunterStolenAtk = 0; f._hunterStolenDef = 0; f._hunterStolenHp = 0;
+      f._storedEnergy = 0; f._starEnergy = 0; f.bubbleStore = 0;
+      const fElId = getFighterElId(f);
+      // Visual cue logged in dungeonStartStage after render
     }
     // Restore position if saved
     if (ds.positions && ds.positions[id]) {
@@ -1598,13 +1618,14 @@ function dungeonOnStageClear() {
       // mech died, owner was already dead
     }
     if (f.alive) {
-      ds.teamHp[f.id] = f.hp;
+      ds.teamHp[f.id] = f.maxHp;  // full heal alive turtles on stage clear
       // Save special state for carry-over
       if (!ds.carryState) ds.carryState = {};
       ds.carryState[f.id] = {
         _chestTreasure: f._chestTreasure || 0,
         _chestEquips: f._chestEquips ? [...f._chestEquips] : [],
         _chestTier: f._chestTier || 0,
+        _equips: f._equips ? [...f._equips] : [],  // dungeon equipment (新增)
         bubbleStore: f.bubbleStore || 0,
         _storedEnergy: f._storedEnergy || 0,
         _starEnergy: f._starEnergy || 0,
@@ -1622,6 +1643,9 @@ function dungeonOnStageClear() {
       };
     } else {
       if (!ds.deadIds.includes(f.id)) ds.deadIds.push(f.id);
+      // Dead turtles: clear all self-accumulated state, will revive at 70% HP next stage
+      if (!ds.carryState) ds.carryState = {};
+      delete ds.carryState[f.id];
     }
   }
   // Mech/ship: if owner died but mech/ship survived, owner is still dead
@@ -1657,6 +1681,9 @@ function dungeonOnStageClear() {
   ds.rewards += stageCoins[ds.stage - 1] || 10;
 
   if (ds.stage >= ds.maxStage) {
+    // Boss clear bonus: +100 coins; no-death bonus: +50 coins extra
+    ds.rewards += 100;
+    if (ds.deadIds.length === 0) ds.rewards += 50;
     dungeonComplete(true);
     return;
   }
@@ -1766,22 +1793,14 @@ function dungeonSavePositions() {
 function renderDungeonChoices() {
   const ds = dungeonState;
   const aliveIds = ds.teamIds.filter(id => !ds.deadIds.includes(id));
-  const hasDead = ds.deadIds.length > 0;
 
   const choicePool = [
-    { icon:'💚', title:'生命恢复', desc:'全队回复 40% 最大生命值', apply() { for (const id of aliveIds) { const p = ALL_PETS.find(x=>x.id===id); const max = Math.round(p.hp*(RARITY_MULT[p.rarity]||1)); ds.teamHp[id] = Math.min(max, (ds.teamHp[id]||max) + Math.round(max*0.4)); } } },
     { icon:'⚔️', title:'攻击强化', desc:'全队攻击力永久 +6', apply() { ds.buffs.push({type:'atk',value:6}); } },
     { icon:'🛡️', title:'防御强化', desc:'全队护甲永久 +4', apply() { ds.buffs.push({type:'def',value:4}); } },
     { icon:'💥', title:'暴击提升', desc:'全队暴击率永久 +12%', apply() { ds.buffs.push({type:'crit',value:12}); } },
     { icon:'🩸', title:'生命偷取', desc:'全队获得 8% 生命偷取', apply() { ds.buffs.push({type:'lifesteal',value:8}); } },
-    { icon:'💰', title:'龟币宝箱', desc:'立即获得 30 龟币', apply() { ds.rewards += 30; } },
+    { icon:'🎁', title:'获得装备', desc:'从3件装备中选1件装给任意龟', apply() { ds._pendingEquipPick = true; } },
   ];
-  if (hasDead) {
-    choicePool.push({ icon:'✨', title:'复活队友', desc:'复活一只已阵亡的龟（30%HP）', apply() {
-      const revId = ds.deadIds.shift();
-      if (revId) { const p = ALL_PETS.find(x=>x.id===revId); const max = Math.round(p.hp*(RARITY_MULT[p.rarity]||1)); ds.teamHp[revId] = Math.round(max*0.3); }
-    }});
-  }
 
   // Pick 3 random choices
   const shuffled = choicePool.sort(() => _origMathRandom() - 0.5).slice(0, 3);
@@ -1810,9 +1829,77 @@ function dungeonNextStage() {
   const el = document.getElementById('dungeonChoices');
   const choice = el._choices[_dungeonChoicePicked];
   if (choice && choice.apply) choice.apply();
-  // Positions are already saved in ds.positions via dungeonReposition/dungeonPlaceInSlot
+  // If user picked equipment choice, show picker first
+  if (dungeonState._pendingEquipPick) {
+    dungeonState._pendingEquipPick = false;
+    showDungeonEquipPicker();
+    return;
+  }
   showDungeonTeamStatus();
   dungeonState.stage++;
+  setTimeout(() => dungeonStartStage(), 500);
+}
+
+function showDungeonEquipPicker() {
+  const ds = dungeonState;
+  const pool = EQUIP_POOL.slice().sort(() => _origMathRandom() - 0.5).slice(0, 3);
+  const overlay = document.createElement('div');
+  overlay.id = 'dungeonEquipOverlay';
+  overlay.className = 'equip-pick-overlay';
+  overlay.innerHTML = `
+    <div class="equip-pick-box">
+      <h3 style="color:#ffd93d;margin-bottom:12px">🎁 选择一件装备</h3>
+      <div class="equip-pick-items">${pool.map((e, i) => `
+        <div class="equip-pick-item" onclick="dungeonPickEquipItem(${i})">
+          <div style="font-size:32px">${e.icon.endsWith('.png') ? `<img src="assets/${e.icon}" style="width:32px;height:32px">` : e.icon}</div>
+          <div style="font-weight:700;font-size:14px">${e.name}</div>
+          <div style="font-size:11px;color:var(--fg2)">${e.desc}</div>
+        </div>
+      `).join('')}</div>
+      <div class="equip-pick-targets" id="dungeonEquipTargets" style="display:none">
+        <p style="color:var(--fg2);font-size:12px;margin-bottom:8px">装给谁？</p>
+        <div id="dungeonEquipTargetBtns"></div>
+      </div>
+    </div>
+  `;
+  overlay._pool = pool;
+  document.body.appendChild(overlay);
+  setTimeout(() => overlay.classList.add('show'), 50);
+}
+
+function dungeonPickEquipItem(idx) {
+  const overlay = document.getElementById('dungeonEquipOverlay');
+  if (!overlay) return;
+  overlay._selectedIdx = idx;
+  overlay.querySelectorAll('.equip-pick-item').forEach((el, i) => el.classList.toggle('selected', i === idx));
+  const ds = dungeonState;
+  const aliveIds = ds.battleIds.filter(id => !ds.deadIds.includes(id));
+  const targetsEl = document.getElementById('dungeonEquipTargetBtns');
+  targetsEl.innerHTML = aliveIds.map(id => {
+    const p = ALL_PETS.find(x => x.id === id);
+    const existing = (ds.carryState && ds.carryState[id] && ds.carryState[id]._equips) || [];
+    return `<button class="btn btn-target" onclick="dungeonApplyEquipTo('${id}')" style="margin:4px" ${existing.length >= 2 ? 'disabled' : ''}>
+      ${p.emoji} ${p.name} (${existing.length}/2)
+    </button>`;
+  }).join('');
+  document.getElementById('dungeonEquipTargets').style.display = 'block';
+}
+
+function dungeonApplyEquipTo(turtleId) {
+  const overlay = document.getElementById('dungeonEquipOverlay');
+  if (!overlay) return;
+  const equip = overlay._pool[overlay._selectedIdx];
+  if (!equip) return;
+  const ds = dungeonState;
+  if (!ds.carryState) ds.carryState = {};
+  if (!ds.carryState[turtleId]) ds.carryState[turtleId] = { _equips: [] };
+  if (!ds.carryState[turtleId]._equips) ds.carryState[turtleId]._equips = [];
+  ds.carryState[turtleId]._equips.push(equip);
+  overlay.classList.remove('show');
+  setTimeout(() => overlay.remove(), 300);
+  // Continue to next stage
+  showDungeonTeamStatus();
+  ds.stage++;
   setTimeout(() => dungeonStartStage(), 500);
 }
 
