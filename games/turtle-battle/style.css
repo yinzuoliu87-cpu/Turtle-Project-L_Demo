@@ -911,6 +911,45 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
     50%{transform:translateX(-14px) scale(.45);filter:brightness(1.4)}
     100%{transform:translateX(0) scale(.4);filter:brightness(1)}
   }
+  /* Override hit/shake animations — they hard-code transform, overriding mobile scale */
+  .scene-turtle.hit-shake{animation:mobileHitShake .3s ease}
+  .scene-turtle.hit-physical{animation:mobileHitPhysical .4s ease}
+  .scene-turtle.hit-magic{animation:mobileHitMagic .4s ease}
+  .scene-turtle.hit-true{animation:mobileHitTrue .4s ease}
+  .scene-turtle.hit-crit{animation:mobileHitCrit .5s ease}
+  @keyframes mobileHitShake{
+    0%,100%{transform:scale(.4) translateX(0)}
+    15%{transform:scale(.4) translateX(-4px)}
+    30%{transform:scale(.4) translateX(4px)}
+    45%{transform:scale(.4) translateX(-3px)}
+    60%{transform:scale(.4) translateX(3px)}
+    75%{transform:scale(.4) translateX(-1px)}
+  }
+  @keyframes mobileHitPhysical{
+    0%{transform:scale(.4) translateX(0);filter:brightness(1)}
+    20%{transform:scale(.4) translateX(-5px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(-10deg)}
+    50%{transform:scale(.4) translateX(3px);filter:brightness(1.2)}
+    100%{transform:scale(.4) translateX(0);filter:brightness(1)}
+  }
+  @keyframes mobileHitMagic{
+    0%{transform:scale(.4) translateX(0);filter:brightness(1)}
+    20%{transform:scale(.4) translateX(-4px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(180deg)}
+    50%{transform:scale(.4) translateX(2px);filter:brightness(1.2)}
+    100%{transform:scale(.4) translateX(0);filter:brightness(1)}
+  }
+  @keyframes mobileHitTrue{
+    0%{transform:scale(.4) translateY(0);filter:brightness(1)}
+    20%{transform:scale(.4) translateY(-3px);filter:brightness(2) contrast(1.5)}
+    50%{transform:scale(.4) translateY(2px);filter:brightness(1.3)}
+    100%{transform:scale(.4) translateY(0);filter:brightness(1)}
+  }
+  @keyframes mobileHitCrit{
+    0%{transform:scale(.4);filter:brightness(1)}
+    15%{transform:scale(.36) translateX(-6px);filter:brightness(2) saturate(2)}
+    40%{transform:scale(.42) translateX(4px);filter:brightness(1.5)}
+    70%{transform:scale(.4) translateX(-2px);filter:brightness(1.1)}
+    100%{transform:scale(.4) translateX(0);filter:brightness(1)}
+  }
 
   /* Scene summon */
   .scene-summon{transform:scale(.35)}
