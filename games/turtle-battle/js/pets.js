@@ -79,9 +79,9 @@ const ALL_PETS = [
   },
   { id:'stone',     name:'石头龟',   emoji:'🪨🐢',    rarity:'C',   hp:380,  atk:36,  def:18, mr:15,crit:0.25,
     img:'../../assets/pets/石头龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
-    passive:{ type:'stoneWall', name:'坚壁', defGain:3, maxDef:18, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
-              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span><span class="val-atk">+3</span>（上限<span class="val-atk">+18</span>）；受伤时反弹部分伤害给攻击者（<span class="val-atk">5%</span> + <span class="val-def">1%×护甲</span> + <span class="val-magic">0.5%×魔抗</span>）。',
-              desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+3</span>（上限 <span class="val-atk">+18</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
+    passive:{ type:'stoneWall', name:'坚壁', defGainAtkPct:25, maxDefInitPct:50, reflectBase:5, reflectPerDef:1, reflectPerMr:0.5,
+              brief:'石头龟越战越硬。每回合永久 <span class="val-def">护甲</span> +<span class="val-atk">25%攻击力</span>（上限为<span class="val-atk">50%开局护甲</span>）；受伤时反弹部分伤害给攻击者（<span class="val-atk">5%</span> + <span class="val-def">1%×护甲</span> + <span class="val-magic">0.5%×魔抗</span>）。',
+              desc:'石头龟越战越硬。\n\n每回合永久增加 <span class="val-def">护甲</span> <span class="val-atk">+{D:ATK*0.25}</span>（上限 <span class="val-atk">50%开局护甲</span>，已叠加 <span class="val-atk">+{stoneDefGained}</span>）\n\n受到伤害时反弹：\n5% + 1%×<span class="val-def">护甲</span>({DEF}) + 0.5%×<span class="val-magic">魔抗</span>({MR}) = <span class="val-atk">{N:5+DEF+MR*0.5}%</span> 伤害' },
     skillPool:[
       { name:'打击',     type:'physical', hits:2, power:0, pierce:0, cd:0, atkScale:0.35, defScale:0.75, mrScale:0.4,
         brief:'石头龟打击2段，共（{N:0.35*ATK*2+0.7*DEF*2+0.4*MR*2}）物理伤害',

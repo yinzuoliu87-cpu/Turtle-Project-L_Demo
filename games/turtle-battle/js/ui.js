@@ -624,7 +624,7 @@ function showFighterDetail(f) {
     if (f.passive.type === 'chestTreasure') st.push(`📦 财宝值：<span class="val-atk">${f._chestTreasure||0}</span>`);
     if (f.passive.type === 'cyberDrone') st.push(`<img src="assets/passive/cyber-drone-icon.png" style="width:14px;height:14px;vertical-align:middle"> 浮游炮：<span class="val-atk">${f._drones ? f._drones.length : 0}</span> / ${f.passive.maxDrones}`);
     if (f.passive.type === 'lavaRage') st.push(`🌋 怒气：<span class="val-atk">${f._lavaRage||0}</span> / ${f.passive.rageMax}${f._lavaTransformed ? ' (已变身)' : ''}`);
-    if (f.passive.type === 'stoneWall') st.push(`🪨 护甲已叠加：<span class="val-atk">+${f._stoneDefGained||0}</span> / +${f.passive.maxDef}`);
+    if (f.passive.type === 'stoneWall') { const cap = Math.round((f._initDef || f.baseDef) * (f.passive.maxDefInitPct || 50) / 100); st.push(`🪨 护甲已叠加：<span class="val-atk">+${f._stoneDefGained||0}</span> / +${cap}`); }
     if (f.passive.type === 'bambooCharge') st.push(`🎋 已增加HP：<span class="val-atk">+${f._bambooGainedHp||0}</span>`);
     if (f.passive.type === 'hunterKill') st.push(`🎯 击杀数：<span class="val-atk">${f._hunterKills||0}</span>　窃取攻+${f._hunterStolenAtk||0} 防+${f._hunterStolenDef||0} 抗+${f._hunterStolenMr||0} 血+${f._hunterStolenHp||0}`);
     if (f.passive.type === 'inkMark') st.push(`<img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle"> 墨迹层数：<span class="val-atk">${f._inkStacks||0}</span> / ${f.passive.maxStacks}`);
