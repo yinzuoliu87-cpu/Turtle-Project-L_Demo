@@ -2070,6 +2070,9 @@ function showDungeonEquipPicker() {
         <p style="color:var(--fg2);font-size:12px;margin-bottom:8px">装给谁？</p>
         <div id="dungeonEquipTargetBtns"></div>
       </div>
+      <div style="margin-top:12px;text-align:right">
+        <button class="btn btn-sm" onclick="dungeonSkipEquip()" style="opacity:.7">跳过</button>
+      </div>
     </div>
   `;
   overlay._pool = pool;
@@ -2085,14 +2088,31 @@ function dungeonPickEquipItem(idx) {
   const ds = dungeonState;
   const aliveIds = ds.battleIds.filter(id => !ds.deadIds.includes(id));
   const targetsEl = document.getElementById('dungeonEquipTargetBtns');
-  targetsEl.innerHTML = aliveIds.map(id => {
+  const buttons = aliveIds.map(id => {
     const p = ALL_PETS.find(x => x.id === id);
     const existing = (ds.carryState && ds.carryState[id] && ds.carryState[id]._equips) || [];
     return `<button class="btn btn-target" onclick="dungeonApplyEquipTo('${id}')" style="margin:4px" ${existing.length >= 2 ? 'disabled' : ''}>
       ${p.emoji} ${p.name} (${existing.length}/2)
     </button>`;
   }).join('');
+  const allMax = aliveIds.every(id => {
+    const existing = (ds.carryState && ds.carryState[id] && ds.carryState[id]._equips) || [];
+    return existing.length >= 2;
+  });
+  targetsEl.innerHTML = buttons + (allMax ? '<p style="color:#ff9f43;font-size:11px;margin-top:8px">所有存活龟装备已满，请跳过</p>' : '');
   document.getElementById('dungeonEquipTargets').style.display = 'block';
+}
+
+function dungeonSkipEquip() {
+  const overlay = document.getElementById('dungeonEquipOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  }
+  const ds = dungeonState;
+  showDungeonTeamStatus();
+  ds.stage++;
+  setTimeout(() => dungeonStartStage(), 500);
 }
 
 function dungeonApplyEquipTo(turtleId) {
