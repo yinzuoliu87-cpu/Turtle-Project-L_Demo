@@ -22,6 +22,10 @@ let onlineConn = null;   // DataConnection to the other player
 function showScreen(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById(id).classList.add('active');
+  // Auto-switch BGM when returning to menu/lobby/codex from battle
+  if (typeof playBgm === 'function' && (id === 'screenMenu' || id === 'screenLobby' || id === 'screenCodex')) {
+    playBgm('menu');
+  }
 }
 
 // ── MENU ──────────────────────────────────────────────────
