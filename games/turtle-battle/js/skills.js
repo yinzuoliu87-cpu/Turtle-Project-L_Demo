@@ -1443,7 +1443,7 @@ async function doSoulReap(attacker, skill) {
     const heal = Math.round(totalDmg * skill.lifestealPct / 100);
     const actual = applyHeal(attacker, heal);
     if (actual > 0) {
-      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'passive-num', 200, 0);
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
@@ -1585,7 +1585,7 @@ async function doVolcanoSmash(attacker, target, skill) {
     const heal = Math.round(dmg * skill.lifestealPct / 100);
     const actual = applyHeal(attacker, heal);
     if (actual > 0) {
-      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'heal-num', 200, 0);
+      spawnFloatingNum(getFighterElId(attacker), `+${actual}`, 'passive-num', 200, 0);
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
@@ -2645,7 +2645,10 @@ async function doBambooChargeAttack(attacker, target) {
   await sleep(350);
 
   // ── 绿球到达：立刻回血+血条变化 ──
-  const healAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
+  // healAmt (heal portion) is subject to healReduce; hpGain (max HP boost) is NOT
+  const rawHealAmt = Math.round(attacker.maxHp * p.healSelfHpPct / 100);
+  const healRed = (attacker.buffs.find(b => b.type === 'healReduce') || {}).value || 0;
+  const healAmt = Math.round(rawHealAmt * (1 - healRed / 100));
   const hpGain = Math.round(attacker.atk * p.hpGainAtkPct / 100);
   const before = attacker.hp;
   attacker.maxHp += hpGain;
