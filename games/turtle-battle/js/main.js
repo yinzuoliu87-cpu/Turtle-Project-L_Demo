@@ -2122,11 +2122,16 @@ function showDungeonTeamStatus() {
     const dead = ds.deadIds.includes(id);
     const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
     const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
-    const hpPct = Math.round(hp / maxHp * 100);
+    const hpPct = Math.max(0, Math.min(100, hp / maxHp * 100));
+    const barColor = hpPct < 30 ? '#e74c3c' : hpPct < 60 ? '#f39c12' : '#06d6a0';
+    const hpBar = dead
+      ? '<div class="dts-hp-bar"><div class="dts-hp-fill" style="width:0%"></div></div>'
+      : `<div class="dts-hp-bar"><div class="dts-hp-fill" style="width:${hpPct}%;background:${barColor}"></div></div>`;
     return `<div class="dungeon-turtle-status ${dead ? 'dead' : ''}">
       <div class="dts-emoji">${buildPetImgHTML(p, 36)}</div>
       <div class="dts-name">${p.name}</div>
-      <div class="dts-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀 阵亡' : 'HP ' + hpPct + '%'}</div>
+      ${hpBar}
+      ${dead ? '<div class="dts-dead-tag">💀 下关以70%复活</div>' : ''}
     </div>`;
   }).join('');
 }
@@ -2146,19 +2151,21 @@ function renderDungeonTeamSwap() {
     const dead = ds.deadIds.includes(id);
     const hp = dead ? 0 : (ds.teamHp[id] || p.hp);
     const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
-    const hpPct = Math.round(hp / maxHp * 100);
+    const hpPct = Math.max(0, Math.min(100, hp / maxHp * 100));
+    const barColor = hpPct < 30 ? '#e74c3c' : hpPct < 60 ? '#f39c12' : '#06d6a0';
     const isFloating = floating === id;
     return `<div class="dts-pos-slot filled ${dead ? 'dead' : ''} ${isFloating ? 'floating' : ''}" onclick="${clickAction}">
       ${buildPetImgHTML(p, 32)}
       <span class="dts-pos-name">${p.name}</span>
-      <span class="dts-pos-hp ${hpPct < 30 ? 'low' : ''}">${dead ? '💀' : hpPct + '%'}</span>
+      <div class="dts-pos-hp-bar"><div class="dts-pos-hp-fill" style="width:${hpPct}%;background:${barColor}"></div></div>
+      ${dead ? '<span class="dts-pos-hp" style="font-size:9px;color:#ff9">💀</span>' : ''}
     </div>`;
   };
 
   let html = '';
 
   // === Position grid ===
-  html += '<div class="dts-section-label">⚔ 上场阵型（点击龟拿起，点空位放下；点替补可互换）</div>';
+  html += '<div class="dts-section-label">⚔ 上场阵型（点击龟拿起，点空位放下）</div>';
   html += '<div class="dts-position-grid">';
   for (const row of ['front', 'back']) {
     html += `<div class="dts-pos-row"><span class="dts-pos-label">${row === 'front' ? '前排' : '后排'}</span>`;
@@ -2181,10 +2188,10 @@ function renderDungeonTeamSwap() {
     html += `<div class="dts-floating-hint">🔄 正在移动：${fp?.name || floating}（点击空位放置）</div>`;
   }
 
-  // === Dead battle turtles ===
+  // === Dead turtles (will auto-revive next stage at 70% HP, naked) ===
   const deadBattle = ds.battleIds.filter(id => ds.deadIds.includes(id));
   if (deadBattle.length > 0) {
-    html += '<div class="dts-section-label">💀 上场阵亡</div><div class="dts-row">';
+    html += '<div class="dts-section-label">💀 下关以70%复活（清空装备与累积）</div><div class="dts-row">';
     for (const id of deadBattle) {
       const p = ALL_PETS.find(x => x.id === id);
       html += `<div class="dts-pos-slot dead"><span class="dts-pos-name">${p.name}</span><span class="dts-pos-hp">💀</span></div>`;
