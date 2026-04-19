@@ -344,6 +344,7 @@ async function executeAction(action) {
 
   const atkEl = document.getElementById(getFighterElId(f));
   if (atkEl) atkEl.classList.add('attack-anim');
+  if (typeof playAttackAnimation === 'function') playAttackAnimation(f);
 
   if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor' && skill.type !== 'lineInkBomb' && skill.type !== 'candyBomb' && skill.type !== 'fortuneGoldRain' && skill.type !== 'lightningSurge' && skill.type !== 'stoneQuake' && skill.type !== 'volcanoStomp' && skill.type !== 'bambooSpikes' && skill.type !== 'headlessStorm' && skill.type !== 'shellAuraBurst' && skill.type !== 'starShieldBreak') {
     // AOE: hit all alive enemies (including summons)

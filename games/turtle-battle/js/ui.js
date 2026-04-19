@@ -1075,6 +1075,45 @@ function petIcon(f, size) {
   return buildPetImgHTML(f, size);
 }
 
+// Play attack animation sprite sheet for a fighter (replaces sprite once, auto-restore)
+const _attackAnimKF = {};
+function playAttackAnimation(f) {
+  const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
+  const anim = pet && pet.attackAnim;
+  if (!anim) return;
+  const elId = getFighterElId(f);
+  const card = document.getElementById(elId);
+  if (!card) return;
+  const spriteEl = card.querySelector('.st-sprite');
+  if (!spriteEl) return;
+  // Remember original content to restore after animation
+  const originalHtml = spriteEl._originalHtml || spriteEl.innerHTML;
+  spriteEl._originalHtml = originalHtml;
+  // Build one-shot animation playback
+  const size = 80; // match sprite display size used in renderTurtle
+  const sc = size / anim.frameH;
+  const fw = Math.round(anim.frameW * sc);
+  const tw = Math.round(anim.frameW * anim.frames * sc);
+  const kfName = 'atkKF_' + f.id;
+  if (!_attackAnimKF[kfName]) {
+    const st = document.createElement('style');
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    document.head.appendChild(st);
+    _attackAnimKF[kfName] = true;
+  }
+  spriteEl.innerHTML = '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
+    + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
+    + 'background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;'
+    + 'animation:' + kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards;"></div></div>';
+  // Restore after animation completes
+  setTimeout(() => {
+    if (spriteEl._originalHtml) {
+      spriteEl.innerHTML = spriteEl._originalHtml;
+      spriteEl._originalHtml = null;
+    }
+  }, anim.duration + 50);
+}
+
 function updateHpBar(f, elId) {
   // Summon: use dedicated mini-card HP bar
   if (f._isSummon) { updateSummonHpBar(f); return; }
