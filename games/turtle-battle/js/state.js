@@ -214,11 +214,20 @@ function checkDeaths(attacker) {
       const elId = getFighterElId(f);
       const deadEl = document.getElementById(elId);
       if (deadEl) {
+        // Strip residual attack/hit classes so their animationend doesn't fire
+        // our death-anim listener prematurely (would add 'dead' class instantly)
+        deadEl.classList.remove('attack-anim','attack-hop','hit-shake','hit-physical','hit-magic','hit-true','hit-crit');
+        // Force reflow so death-anim starts fresh from frame 0
+        void deadEl.offsetWidth;
         deadEl.classList.add('death-anim');
         deadEl._pendingDead = true;
-        deadEl.addEventListener('animationend', () => {
+        const onDeathEnd = (ev) => {
+          // Only respond to our own death animation (other child anims also bubble here)
+          if (!ev.animationName || !/^deathHop/.test(ev.animationName)) return;
+          deadEl.removeEventListener('animationend', onDeathEnd);
           if (deadEl._pendingDead) deadEl.classList.add('dead');
-        }, { once:true });
+        };
+        deadEl.addEventListener('animationend', onDeathEnd);
       }
       // Play death sprite overlay if config exists (plays concurrently with CSS hop-back)
       if (typeof playDeathAnimation === 'function') playDeathAnimation(f);
