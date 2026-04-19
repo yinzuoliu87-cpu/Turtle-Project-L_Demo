@@ -1077,6 +1077,7 @@ function petIcon(f, size) {
 
 // Play attack animation sprite sheet for a fighter (hop forward → play → hop back)
 const _attackAnimKF = {};
+const _attackImgPreload = {};  // preload cache
 function playAttackAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
   const anim = pet && pet.attackAnim;
@@ -1084,20 +1085,22 @@ function playAttackAnimation(f) {
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;
+  // Preload attack image once (avoids first-time load flash)
+  if (!_attackImgPreload[anim.src]) {
+    const preImg = new Image();
+    preImg.src = anim.src;
+    _attackImgPreload[anim.src] = preImg;
+  }
   // Replace the CSS lunge with hop-step: forward → hold (sprite plays) → back
-  // Total hop duration 1200ms; sprite plays during the "hold" phase (from ~240ms to ~960ms)
-  card.classList.remove('attack-anim');  // cancel the short lunge
+  card.classList.remove('attack-anim');
   card.classList.add('attack-hop');
   const hopDuration = 1200;
-  const spriteDelay = 240;  // wait for hop forward to finish
+  const spriteDelay = 240;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) {
     setTimeout(() => card.classList.remove('attack-hop'), hopDuration + 50);
     return;
   }
-  const originalHtml = spriteEl._originalHtml || spriteEl.innerHTML;
-  spriteEl._originalHtml = originalHtml;
-  // Precompute sprite sheet display
   const size = 80;
   const sc = size / anim.frameH;
   const fw = Math.round(anim.frameW * sc);
@@ -1109,20 +1112,32 @@ function playAttackAnimation(f) {
     document.head.appendChild(st);
     _attackAnimKF[kfName] = true;
   }
-  // Play sprite after hop-forward
+  // Build attack sprite overlay OUTSIDE idle (so we can toggle visibility without rebuilding DOM)
+  // Position it absolutely over the idle sprite
+  let overlay = spriteEl.querySelector('.attack-sprite-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'attack-sprite-overlay';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;display:none;pointer-events:none';
+    overlay.innerHTML = '<div class="sprite-inner" style="width:100%;height:100%;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat"></div>';
+    spriteEl.style.position = 'relative';
+    spriteEl.appendChild(overlay);
+  }
+  const overlayInner = overlay.querySelector('.sprite-inner');
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  // Phase 1: show attack overlay at start of hold (hide idle)
   setTimeout(() => {
-    if (!spriteEl._originalHtml) return;  // cancelled
-    spriteEl.innerHTML = '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
-      + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
-      + 'background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;'
-      + 'animation:' + kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards;"></div></div>';
+    if (idleWrap) idleWrap.style.visibility = 'hidden';
+    overlay.style.display = '';
+    // Restart attack animation from frame 0
+    overlayInner.style.animation = 'none';
+    void overlayInner.offsetWidth;  // force reflow
+    overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
   }, spriteDelay);
-  // Restore sprite + remove hop class after full hop cycle
+  // Phase 2: swap back to idle at end
   setTimeout(() => {
-    if (spriteEl._originalHtml) {
-      spriteEl.innerHTML = spriteEl._originalHtml;
-      spriteEl._originalHtml = null;
-    }
+    overlay.style.display = 'none';
+    if (idleWrap) idleWrap.style.visibility = '';
     card.classList.remove('attack-hop');
   }, hopDuration + 50);
 }
