@@ -693,7 +693,11 @@ function checkChestEquipDraw(f) {
   if (!f.passive || f.passive.type !== 'chestTreasure') return;
   const thresholds = f.passive.thresholds;
   const pools = f.passive.pools;
-  while (f._chestTier < thresholds.length && f._chestTreasure >= thresholds[f._chestTier]) {
+  // Scale thresholds with level so high-level chests don't trivialize the pacing
+  // (damage output scales +5% per level, so do the costs).
+  const lvMult = 1 + ((f._level || 1) - 1) * 0.05;
+  const scaledThresh = (i) => Math.round(thresholds[i] * lvMult);
+  while (f._chestTier < thresholds.length && f._chestTreasure >= scaledThresh(f._chestTier)) {
     const poolIdx = f._chestTier < 2 ? 0 : f._chestTier < 4 ? 1 : 2;
     const pool = pools[poolIdx];
     const owned = f._chestEquips.map(e => e.id);
