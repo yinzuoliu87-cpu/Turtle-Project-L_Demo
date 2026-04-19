@@ -6,12 +6,18 @@ const AudioCtx = window.AudioContext || window.webkitAudioContext;
 let audioCtx;
 let masterGain = null;
 let soundMuted = localStorage.getItem('battleSoundMuted') === '1';
+// Per-channel volumes (0..1). SFX feeds masterGain (Web Audio).
+// BGM volume is applied separately to the HTMLAudio element.
+let _sfxVolume = parseFloat(localStorage.getItem('battleSfxVolume'));
+if (!isFinite(_sfxVolume)) _sfxVolume = 0.5;
+
+function _effectiveSfxGain() { return soundMuted ? 0 : _sfxVolume; }
 
 function ensureAudio() {
   if (!audioCtx) {
     audioCtx = new AudioCtx();
     masterGain = audioCtx.createGain();
-    masterGain.gain.setValueAtTime(soundMuted ? 0 : 0.5, audioCtx.currentTime);
+    masterGain.gain.setValueAtTime(_effectiveSfxGain(), audioCtx.currentTime);
     masterGain.connect(audioCtx.destination);
     // Decode all preloaded SFX buffers now that AudioContext exists
     _decodeAllSfx();
@@ -20,15 +26,58 @@ function ensureAudio() {
   return audioCtx;
 }
 
+function setSfxVolume(v) {
+  _sfxVolume = Math.max(0, Math.min(1, v));
+  localStorage.setItem('battleSfxVolume', String(_sfxVolume));
+  if (masterGain && audioCtx) {
+    try { masterGain.gain.linearRampToValueAtTime(_effectiveSfxGain(), audioCtx.currentTime + 0.05); } catch(e) {}
+  }
+}
+
 function toggleSound() {
   soundMuted = !soundMuted;
   localStorage.setItem('battleSoundMuted', soundMuted ? '1' : '0');
   const btn = document.getElementById('soundBtn');
-  if (btn) btn.textContent = soundMuted ? '🔇' : '🔊';
+  const muteBtn = document.getElementById('soundMuteBtn');
+  const icon = soundMuted ? '🔇' : '🔊';
+  if (btn) btn.textContent = icon;
+  if (muteBtn) muteBtn.textContent = icon;
   // Ensure AudioContext is active (iOS Safari suspends on tab switch/lock)
   if (!soundMuted) ensureAudio();
   if (masterGain && audioCtx) {
-    try { masterGain.gain.linearRampToValueAtTime(soundMuted ? 0 : 0.5, audioCtx.currentTime + 0.1); } catch(e) {}
+    try { masterGain.gain.linearRampToValueAtTime(_effectiveSfxGain(), audioCtx.currentTime + 0.1); } catch(e) {}
+  }
+}
+
+// Open/close the volume panel. Click outside to dismiss.
+function toggleSoundPanel(ev) {
+  if (ev) ev.stopPropagation();
+  const panel = document.getElementById('soundPanel');
+  if (!panel) return;
+  const opening = !panel.classList.contains('show');
+  panel.classList.toggle('show', opening);
+  if (opening) {
+    // Sync sliders with current values
+    const bs = document.getElementById('bgmVolSlider');
+    const ss = document.getElementById('sfxVolSlider');
+    const bp = document.getElementById('bgmVolPct');
+    const sp = document.getElementById('sfxVolPct');
+    const mb = document.getElementById('soundMuteBtn');
+    if (bs) bs.value = Math.round(_bgmVolume * 100);
+    if (ss) ss.value = Math.round(_sfxVolume * 100);
+    if (bp) bp.textContent = Math.round(_bgmVolume * 100) + '%';
+    if (sp) sp.textContent = Math.round(_sfxVolume * 100) + '%';
+    if (mb) mb.textContent = soundMuted ? '🔇' : '🔊';
+    // Auto-dismiss on outside click
+    setTimeout(() => {
+      const onOutside = (e) => {
+        if (!panel.contains(e.target) && e.target.id !== 'soundBtn') {
+          panel.classList.remove('show');
+          document.removeEventListener('click', onOutside);
+        }
+      };
+      document.addEventListener('click', onOutside);
+    }, 0);
   }
 }
 
@@ -321,7 +370,8 @@ function sfxBambooHit() {
 
 // ── BGM SYSTEM ──────────────────────────────────────────
 let _currentBgm = null;
-let _bgmVolume = 0.25;
+let _bgmVolume = parseFloat(localStorage.getItem('battleBgmVolume'));
+if (!isFinite(_bgmVolume)) _bgmVolume = 0.25;
 
 const BGM_TRACKS = {
   menu: 'assets/bgm-menu.mp3',
@@ -392,8 +442,9 @@ function duckBgm(volPct, fadeMs) {
 }
 
 function setBgmVolume(vol) {
-  _bgmVolume = vol;
-  if (_currentBgm) _currentBgm.volume = vol;
+  _bgmVolume = Math.max(0, Math.min(1, vol));
+  localStorage.setItem('battleBgmVolume', String(_bgmVolume));
+  if (_currentBgm && !soundMuted) _currentBgm.volume = _bgmVolume;
 }
 
 // Mute/unmute BGM with sound toggle

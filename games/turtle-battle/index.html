@@ -70,7 +70,23 @@
 </nav>
 
 <!-- Global sound button (visible on all screens) -->
-<button class="btn-sound-global" id="soundBtn" onclick="toggleSound()">🔊</button>
+<button class="btn-sound-global" id="soundBtn" onclick="toggleSoundPanel(event)">🔊</button>
+<div class="sound-panel" id="soundPanel">
+  <div class="sound-panel-row">
+    <button class="sound-mute-btn" id="soundMuteBtn" onclick="toggleSound()">🔊</button>
+    <span class="sound-panel-title">音量</span>
+  </div>
+  <div class="sound-panel-row">
+    <span class="sound-panel-label">主音乐</span>
+    <input type="range" id="bgmVolSlider" min="0" max="100" value="25" oninput="setBgmVolume(this.value/100); document.getElementById('bgmVolPct').textContent=this.value+'%'">
+    <span class="sound-panel-pct" id="bgmVolPct">25%</span>
+  </div>
+  <div class="sound-panel-row">
+    <span class="sound-panel-label">音效</span>
+    <input type="range" id="sfxVolSlider" min="0" max="100" value="50" oninput="setSfxVolume(this.value/100); document.getElementById('sfxVolPct').textContent=this.value+'%'">
+    <span class="sound-panel-pct" id="sfxVolPct">50%</span>
+  </div>
+</div>
 
 <!-- ══════ SCREEN: MENU ══════ -->
 <div id="audioGate" class="audio-gate" onclick="this.classList.add('hidden')">

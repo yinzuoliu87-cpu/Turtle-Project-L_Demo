@@ -130,6 +130,7 @@ function renderScene() {
       </div>
       </div>
       <div class="st-sprite">${spriteHTML}</div>
+      ${f.passive && f.passive.type === 'chestTreasure' ? `<div class="st-chest-pile" data-chest-progress>0/${f.passive.thresholds[0]}</div>` : ''}
       <div class="st-buffs"></div>
     `;
 
@@ -1553,6 +1554,9 @@ function renderStatusIcons(f) {
     const nextThresh = tier < thresholds.length ? Math.round(thresholds[tier] * lvMult) : null;
     const progressText = nextThresh ? `${treasure}/${nextThresh}` : `${treasure}(满)`;
     box.innerHTML += `<span style="color:#ffd93d;background:rgba(255,217,61,.15);padding:1px 5px;border-radius:6px" title="财宝值${treasure}，已装备${tier}件">💰${progressText}</span>`;
+    // Also update the dedicated left-side pile indicator
+    const pile = el.querySelector('[data-chest-progress]');
+    if (pile) pile.textContent = progressText;
     if (f._chestEquips && f._chestEquips.length > 0) {
       const equipIcons = f._chestEquips.map(e => {
         const ih = e.icon.endsWith && e.icon.endsWith('.png') ? `<img src="assets/${e.icon}" style="width:14px;height:14px;vertical-align:middle">` : e.icon;
