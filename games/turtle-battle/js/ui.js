@@ -1075,27 +1075,31 @@ function petIcon(f, size) {
   return buildPetImgHTML(f, size);
 }
 
-// Play attack animation sprite sheet for a fighter (hop forward → play → hop back)
+// Play attack animation for a fighter (hop forward → play sprite if available → hop back)
+// Works for ALL turtles: those with attackAnim get sprite overlay, others just hop.
 const _attackAnimKF = {};
-const _attackImgPreload = {};  // preload cache
+const _attackImgPreload = {};
 function playAttackAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
   const anim = pet && pet.attackAnim;
-  if (!anim) return;
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;
-  // Preload attack image once (avoids first-time load flash)
+  // Always do the hop animation — swap CSS lunge for hop
+  card.classList.remove('attack-anim');
+  card.classList.add('attack-hop');
+  const hopDuration = 1200;
+  const spriteDelay = 240;
+  // Schedule class cleanup
+  setTimeout(() => card.classList.remove('attack-hop'), hopDuration + 50);
+  // If no attackAnim config, just hop (idle sprite plays the whole time)
+  if (!anim) return;
+  // Preload attack image once
   if (!_attackImgPreload[anim.src]) {
     const preImg = new Image();
     preImg.src = anim.src;
     _attackImgPreload[anim.src] = preImg;
   }
-  // Replace the CSS lunge with hop-step: forward → hold (sprite plays) → back
-  card.classList.remove('attack-anim');
-  card.classList.add('attack-hop');
-  const hopDuration = 1200;
-  const spriteDelay = 240;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) {
     setTimeout(() => card.classList.remove('attack-hop'), hopDuration + 50);
@@ -1140,10 +1144,7 @@ function playAttackAnimation(f) {
     overlay.style.opacity = '0';
     if (idleWrap) idleWrap.style.opacity = '';
   }, fadeBackAt);
-  // Phase 3: cleanup after hop fully completes
-  setTimeout(() => {
-    card.classList.remove('attack-hop');
-  }, hopDuration + 50);
+  // Hop class cleanup is scheduled at the top of the function
 }
 
 function updateHpBar(f, elId) {
