@@ -192,9 +192,9 @@ async function beginTurn() {
     }
     // Lava turtle: transform countdown + check rage
     processLavaCountdown(f);
-    // Chest turtle: rum HoT (3% maxHP per turn)
+    // Chest turtle: rum HoT (8% maxHP per turn)
     if (f.passive && f.passive.type === 'chestTreasure' && hasChestEquip(f, 'rum')) {
-      const heal = Math.round(f.maxHp * 0.06);
+      const heal = Math.round(f.maxHp * 0.08);
       const before = f.hp;
       f.hp = Math.min(f.maxHp, f.hp + heal);
       const actual = Math.round(f.hp - before);

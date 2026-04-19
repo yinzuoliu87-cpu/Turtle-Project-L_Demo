@@ -640,7 +640,7 @@ const ALL_PETS = [
                 [
                   { id:'blade',  icon:'equip/equip-blade-icon.png', name:'锋利短刃',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+25%</span>', stat:'atk', pct:25 },
                   { id:'shield', icon:'equip/equip-shield-icon.png', name:'坚固木盾',   desc:'<span class="val-def">护甲</span>/<span class="val-magic">魔抗</span> <span class="val-atk">+20%</span>', stat:'defMr', pct:20 },
-                  { id:'rum',    icon:'equip/equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">6%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:6 },
+                  { id:'rum',    icon:'equip/equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">8%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:8 },
                   { id:'dice',   icon:'passive/gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
                   { id:'chain',  icon:'equip/equip-chain-icon.png', name:'锁链',   desc:'「宝箱砸击」连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
                   { id:'rock',   icon:'equip/equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成100%<span class="val-def">护甲</span>+100%<span class="val-magic">魔抗</span>', stat:'rock', pct:100 },

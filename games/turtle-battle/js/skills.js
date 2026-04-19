@@ -2823,6 +2823,8 @@ async function doChestSmash(attacker, target, skill) {
   let totalDmg = 0;
 
   const hasThunder = hasChestEquip(attacker, 'thunder');
+  const hasChain = hasChestEquip(attacker, 'chain');
+  attacker._chestHitTargets = [target];
   for (let i = 0; i < hits; i++) {
     if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
@@ -2847,6 +2849,31 @@ async function doChestSmash(attacker, target, skill) {
       }
       renderStatusIcons(target);
     }
+    // Chain equip: per-hit splash 25% of THIS hit to a random other enemy (visible per segment)
+    if (hasChain) {
+      const others = getAliveEnemiesWithSummons(attacker.side).filter(e => e !== target && e.alive);
+      if (others.length) {
+        const secondary = others[Math.floor(Math.random() * others.length)];
+        const chainDmg = Math.max(1, Math.round(dmg * 0.25));
+        applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
+        const sElId = getFighterElId(secondary);
+        const chainCls = dmgType === 'true' ? 'true-dmg' : 'direct-dmg';
+        spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 60, (i % 3) * 28, { atkSide: attacker.side, amount: chainDmg });
+        updateHpBar(secondary, sElId);
+        if (hasThunder && secondary.alive) {
+          secondary._goldLightning = (secondary._goldLightning || 0) + 1;
+          renderStatusIcons(secondary);
+          if (secondary._goldLightning >= 8) {
+            secondary._goldLightning = 0;
+            const thunderDmg = Math.round(attacker.atk * 1.0);
+            applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
+            spawnFloatingNum(sElId, `-${thunderDmg}⚡`, 'true-dmg', 200, 0, { atkSide: attacker.side, amount: thunderDmg });
+            updateHpBar(secondary, sElId);
+          }
+        }
+        if (!attacker._chestHitTargets.includes(secondary)) attacker._chestHitTargets.push(secondary);
+      }
+    }
     // Update treasure display in real-time
     renderStatusIcons(attacker);
     const tEl = document.getElementById(tElId);
@@ -2854,38 +2881,6 @@ async function doChestSmash(attacker, target, skill) {
     updateHpBar(target, tElId);
     await sleep(400);
     if (tEl) tEl.classList.remove('hit-shake');
-  }
-  // Track hit targets for post-skill effects (fire/poison)
-  attacker._chestHitTargets = [target];
-  // Chain equip: splash 25% of total damage to secondary target
-  if (hasChestEquip(attacker, 'chain')) {
-    const enemies = getAliveEnemiesWithSummons(attacker.side).filter(e => e !== target && e.alive);
-    if (enemies.length) {
-      const secondary = enemies[Math.floor(Math.random() * enemies.length)];
-      const chainDmg = Math.max(1, Math.round(totalDmg * 0.25));
-      applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
-      const sElId = getFighterElId(secondary);
-      const chainCls = dmgType === 'true' ? 'true-dmg' : 'direct-dmg';
-      spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 100, 0, { atkSide: attacker.side, amount: chainDmg });
-      updateHpBar(secondary, sElId);
-      await triggerOnHitEffects(attacker, secondary, chainDmg);
-      // Chain hit also stacks thunder
-      if (hasThunder && secondary.alive) {
-        secondary._goldLightning = (secondary._goldLightning || 0) + 1;
-        renderStatusIcons(secondary);
-        if (secondary._goldLightning >= 8) {
-          secondary._goldLightning = 0;
-          const thunderDmg = Math.round(attacker.atk * 1.0);
-          applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
-          spawnFloatingNum(sElId, `-${thunderDmg}⚡`, 'true-dmg', 250, 0, { atkSide: attacker.side, amount: thunderDmg });
-          updateHpBar(secondary, sElId);
-        }
-        renderStatusIcons(secondary);
-      }
-      attacker._chestHitTargets.push(secondary);
-      renderStatusIcons(attacker);
-      await sleep(300);
-    }
   }
   // Post-skill: fire stone burn
   if (hasChestEquip(attacker, 'fire')) {
