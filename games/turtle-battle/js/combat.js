@@ -161,6 +161,7 @@ async function doDamage(attacker, target, skill) {
 
     // Hit animation based on damage type
     playHitAnim(tElId, dmgType, isCrit);
+    if (typeof playHurtAnimation === 'function') playHurtAnimation(target);
     updateHpBar(target, tElId);
     await sleep(500);
 

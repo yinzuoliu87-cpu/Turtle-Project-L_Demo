@@ -1147,6 +1147,61 @@ function playAttackAnimation(f) {
   // Hop class cleanup is scheduled at the top of the function
 }
 
+// Play hurt animation for a fighter (simple overlay, no hop)
+// If already playing hurt, this call is ignored (prevents flicker on multi-hit)
+const _hurtAnimKF = {};
+function playHurtAnimation(f) {
+  if (f._hurtAnimActive) return;
+  const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
+  const anim = pet && pet.hurtAnim;
+  if (!anim) return;
+  const card = document.getElementById(getFighterElId(f));
+  if (!card) return;
+  const spriteEl = card.querySelector('.st-sprite');
+  if (!spriteEl) return;
+  // Preload
+  if (!_attackImgPreload[anim.src]) {
+    const preImg = new Image(); preImg.src = anim.src;
+    _attackImgPreload[anim.src] = preImg;
+  }
+  const size = 80;
+  const sc = size / anim.frameH;
+  const fw = Math.round(anim.frameW * sc);
+  const tw = Math.round(anim.frameW * anim.frames * sc);
+  const kfName = 'hurtKF_' + f.id;
+  if (!_hurtAnimKF[kfName]) {
+    const st = document.createElement('style');
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    document.head.appendChild(st);
+    _hurtAnimKF[kfName] = true;
+  }
+  // Build hurt overlay (reuse pattern from attack)
+  let overlay = spriteEl.querySelector('.hurt-sprite-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'hurt-sprite-overlay';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;opacity:0;pointer-events:none;transition:opacity .08s linear';
+    overlay.innerHTML = '<div class="sprite-inner" style="width:100%;height:100%;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat"></div>';
+    spriteEl.style.position = 'relative';
+    spriteEl.appendChild(overlay);
+  }
+  const overlayInner = overlay.querySelector('.sprite-inner');
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  f._hurtAnimActive = true;
+  // Fade in hurt, fade out idle
+  if (idleWrap) { idleWrap.style.transition = 'opacity .08s linear'; idleWrap.style.opacity = '0'; }
+  overlay.style.opacity = '1';
+  overlayInner.style.animation = 'none';
+  void overlayInner.offsetWidth;
+  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
+  // Fade back to idle slightly before anim ends (smooth return)
+  setTimeout(() => {
+    overlay.style.opacity = '0';
+    if (idleWrap) idleWrap.style.opacity = '';
+  }, anim.duration - 50);
+  setTimeout(() => { f._hurtAnimActive = false; }, anim.duration + 50);
+}
+
 function updateHpBar(f, elId) {
   // Summon: use dedicated mini-card HP bar
   if (f._isSummon) { updateSummonHpBar(f); return; }
