@@ -3,6 +3,24 @@
 // Depends on: engine.js (globals, spawnFloatingNum, etc.)
 // ══════════════════════════════════════════════════════════
 
+/* ── Equipment: 雷鸣贝壳 — counts skill hits, triggers AoE on every 3rd ── */
+function triggerThunderShell(attacker) {
+  if (!attacker || !attacker._equipThunderShell || !attacker.alive) return;
+  attacker._thunderShellStacks = (attacker._thunderShellStacks || 0) + 1;
+  if (attacker._thunderShellStacks < 3) return;
+  attacker._thunderShellStacks = 0;
+  const dmg = Math.max(1, Math.round(attacker.atk * 0.8));
+  const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+  for (const e of enemies) {
+    const reducedDmg = Math.max(1, Math.round(dmg * calcDmgMult(calcEffDef(attacker, e, 'magic'))));
+    applyRawDmg(attacker, e, reducedDmg, false, false, 'magic', false, true);
+    const eElId = getFighterElId(e);
+    spawnFloatingNum(eElId, `-${reducedDmg}⚡`, 'magic-dmg', 0, 0, { atkSide: attacker.side, amount: reducedDmg });
+    updateHpBar(e, eElId);
+  }
+  addLog(`${attacker.emoji}${attacker.name} <b>雷鸣贝壳</b>：全体敌人 <span class="log-magic">${dmg}魔法伤害</span>`);
+}
+
 /* ── DAMAGE — multi-hit with crit, floating numbers, debuff application ── */
 async function doDamage(attacker, target, skill) {
   const hits = skill.hits;
@@ -163,6 +181,22 @@ async function doDamage(attacker, target, skill) {
     playHitAnim(tElId, dmgType, isCrit);
     updateHpBar(target, tElId);
     await sleep(500);
+
+    // Equipment: 潮汐涟漪 — splash 30% to one random OTHER alive enemy (single-target only)
+    if (attacker._equipSplash && !skill.aoe) {
+      const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
+      if (enemies.length) {
+        const splashTarget = enemies[Math.floor(Math.random() * enemies.length)];
+        const splashAmt = Math.max(1, Math.round(totalHit * attacker._equipSplash / 100));
+        applyRawDmg(attacker, splashTarget, splashAmt, false, false, dmgType, false, true);
+        const sElId = getFighterElId(splashTarget);
+        spawnFloatingNum(sElId, `-${splashAmt}💦`, isCrit ? 'crit-dmg' : 'direct-dmg', 100, 0, { atkSide: attacker.side, amount: splashAmt });
+        updateHpBar(splashTarget, sElId);
+      }
+    }
+
+    // Equipment: 雷鸣贝壳 — every 3rd skill hit triggers 80% ATK magic AoE
+    triggerThunderShell(attacker);
 
     // Passive: gamblerMultiHit
     await tryGamblerMultiHit(attacker, target, tElId);

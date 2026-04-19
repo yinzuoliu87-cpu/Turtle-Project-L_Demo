@@ -718,6 +718,7 @@ async function doBasicBarrage(attacker, skill) {
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, dmg);
+    triggerThunderShell(attacker);
 
     const tEl = document.getElementById(tElId);
     if (tEl) { tEl.classList.add('hit-shake'); }
@@ -1137,6 +1138,7 @@ async function doLightningBarrage(attacker, skill) {
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i % 5) * 24);
     await triggerOnHitEffects(attacker, target, dmg);
+    triggerThunderShell(attacker);
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
