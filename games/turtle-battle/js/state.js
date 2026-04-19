@@ -214,6 +214,8 @@ function checkDeaths(attacker) {
           if (deadEl._pendingDead) deadEl.classList.add('dead');
         }, { once:true });
       }
+      // Play death sprite overlay if config exists (plays concurrently with CSS hop-back)
+      if (typeof playDeathAnimation === 'function') playDeathAnimation(f);
       // Screen flash
       const flash = document.createElement('div');
       flash.className = 'death-screen-flash';

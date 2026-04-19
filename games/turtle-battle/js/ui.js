@@ -1147,6 +1147,51 @@ function playAttackAnimation(f) {
   // Hop class cleanup is scheduled at the top of the function
 }
 
+// Play death animation for a fighter (overlay sprite if available, CSS hop-back+fade always)
+const _deathAnimKF = {};
+function playDeathAnimation(f) {
+  const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
+  const anim = pet && pet.deathAnim;
+  const card = document.getElementById(getFighterElId(f));
+  if (!card) return;
+  // If no deathAnim config, just let CSS death-anim class handle it (hop back + fade)
+  if (!anim) return;
+  const spriteEl = card.querySelector('.st-sprite');
+  if (!spriteEl) return;
+  if (!_attackImgPreload[anim.src]) {
+    const preImg = new Image(); preImg.src = anim.src;
+    _attackImgPreload[anim.src] = preImg;
+  }
+  const size = 80;
+  const sc = size / anim.frameH;
+  const fw = Math.round(anim.frameW * sc);
+  const tw = Math.round(anim.frameW * anim.frames * sc);
+  const kfName = 'deathKF_' + f.id;
+  if (!_deathAnimKF[kfName]) {
+    const st = document.createElement('style');
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    document.head.appendChild(st);
+    _deathAnimKF[kfName] = true;
+  }
+  let overlay = spriteEl.querySelector('.death-sprite-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'death-sprite-overlay';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;opacity:0;pointer-events:none';
+    overlay.innerHTML = '<div class="sprite-inner" style="width:100%;height:100%;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat"></div>';
+    spriteEl.style.position = 'relative';
+    spriteEl.appendChild(overlay);
+  }
+  const overlayInner = overlay.querySelector('.sprite-inner');
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  if (idleWrap) { idleWrap.style.transition = 'opacity .1s linear'; idleWrap.style.opacity = '0'; }
+  overlay.style.opacity = '1';
+  overlayInner.style.animation = 'none';
+  void overlayInner.offsetWidth;
+  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
+  // Death anim stays on last frame (no restore) — fighter stays dead
+}
+
 // Play hurt animation for a fighter (simple overlay, no hop)
 // Every hit restarts from frame 0 (ensures visual feedback per hit)
 const _hurtAnimKF = {};

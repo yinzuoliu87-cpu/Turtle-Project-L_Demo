@@ -1882,6 +1882,38 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
 @keyframes targetPulse{0%,100%{filter:drop-shadow(0 0 10px rgba(255,60,60,.8)) drop-shadow(0 0 20px rgba(255,60,60,.4))}50%{filter:drop-shadow(0 0 18px rgba(255,60,60,1)) drop-shadow(0 0 36px rgba(255,60,60,.7))}}
 @keyframes targetPulseAlly{0%,100%{filter:drop-shadow(0 0 10px rgba(6,214,160,.8)) drop-shadow(0 0 20px rgba(6,214,160,.4))}50%{filter:drop-shadow(0 0 18px rgba(6,214,160,1)) drop-shadow(0 0 36px rgba(6,214,160,.7))}}
 .scene-turtle.dead{opacity:.3;filter:grayscale(.8);pointer-events:none}
+/* Death animation: hop back (away from battlefield) → tilt → fade to dead state */
+.scene-turtle.death-anim[class*="pos-left"]{animation:deathHopLeft 1s ease-out forwards}
+.scene-turtle.death-anim[class*="pos-right"]{animation:deathHopRight 1s ease-out forwards}
+@keyframes deathHopLeft{
+  0%{transform:translate(0,0);opacity:1;filter:brightness(1)}
+  15%{transform:translate(-10px,-8px) rotate(-8deg);filter:brightness(2.5) saturate(0)}
+  40%{transform:translate(-14px,0) rotate(-15deg);filter:brightness(1) saturate(.5)}
+  100%{transform:translate(-14px,0) rotate(-15deg);opacity:.3;filter:grayscale(.8)}
+}
+@keyframes deathHopRight{
+  0%{transform:translate(0,0);opacity:1;filter:brightness(1)}
+  15%{transform:translate(10px,-8px) rotate(8deg);filter:brightness(2.5) saturate(0)}
+  40%{transform:translate(14px,0) rotate(15deg);filter:brightness(1) saturate(.5)}
+  100%{transform:translate(14px,0) rotate(15deg);opacity:.3;filter:grayscale(.8)}
+}
+/* Mobile: smaller hop back + keep scale(.4) */
+@media (max-width: 768px){
+  .scene-turtle.death-anim[class*="pos-left"]{animation:deathHopLeftMobile 1s ease-out forwards}
+  .scene-turtle.death-anim[class*="pos-right"]{animation:deathHopRightMobile 1s ease-out forwards}
+  @keyframes deathHopLeftMobile{
+    0%{transform:translate(0,0) scale(.4);opacity:1}
+    15%{transform:translate(-6px,-5px) scale(.4) rotate(-8deg);filter:brightness(2.5) saturate(0)}
+    40%{transform:translate(-8px,0) scale(.4) rotate(-15deg);filter:brightness(1) saturate(.5)}
+    100%{transform:translate(-8px,0) scale(.4) rotate(-15deg);opacity:.3;filter:grayscale(.8)}
+  }
+  @keyframes deathHopRightMobile{
+    0%{transform:translate(0,0) scale(.4);opacity:1}
+    15%{transform:translate(6px,-5px) scale(.4) rotate(8deg);filter:brightness(2.5) saturate(0)}
+    40%{transform:translate(8px,0) scale(.4) rotate(15deg);filter:brightness(1) saturate(.5)}
+    100%{transform:translate(8px,0) scale(.4) rotate(15deg);opacity:.3;filter:grayscale(.8)}
+  }
+}
 
 /* Turtle sprite */
 .scene-turtle .st-sprite{image-rendering:pixelated}
