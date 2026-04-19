@@ -643,7 +643,7 @@ const ALL_PETS = [
                   { id:'rum',    icon:'equip/equip-rum-icon.png', name:'海盗龟的小瓶朗姆酒', desc:'每回合回复 <span class="val-heal">6%</span> <span class="val-heal">最大生命值</span>', stat:'hot', pct:6 },
                   { id:'dice',   icon:'passive/gambler-blood-icon.png', name:'骰子龟的血筛子', desc:'暴击率 <span class="val-atk">+35%</span>', stat:'crit', pct:35 },
                   { id:'chain',  icon:'equip/equip-chain-icon.png', name:'锁链',   desc:'「宝箱砸击」连锁：对次要目标造成25%伤害', stat:'chain', pct:25 },
-                  { id:'rock',   icon:'equip/equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成70%<span class="val-def">护甲</span>+70%<span class="val-magic">魔抗</span>', stat:'rock', pct:70 },
+                  { id:'rock',   icon:'equip/equip-rock-icon.png', name:'神奇石头',   desc:'「宝箱砸击」伤害额外加成100%<span class="val-def">护甲</span>+100%<span class="val-magic">魔抗</span>', stat:'rock', pct:100 },
                 ],
                 // 进阶池 (tier 2-3)
                 [
@@ -664,15 +664,15 @@ const ALL_PETS = [
               brief:'宝箱龟根据造成的伤害积累财宝值，达到阈值时从丰富的战利品池中随机获得装备。一场战斗最多获得 <span class="val-atk">5</span> 件。',
               desc:'宝箱龟会根据造成的伤害获得财宝进度，从战利品池中获得各种强力装备。\n\n造成伤害积累财宝值，达到阈值时随机抽取装备：\n第1-2件：基础池（短刃/木盾/朗姆酒/血筛子/铁链/石头）\n第3-4件：进阶池（长剑/吸血刀/火石/宝石甲/毒箭/凤凰雕像）\n第5件：传说池（王冠/雷刃/星辉）\n\n阈值：80 / 130 / 240 / 360 / 590' },
     skillPool:[
-      { name:'宝箱砸击', type:'chestSmash', hits:4, power:0, pierce:0, cd:0, atkScale:1.4,
+      { name:'宝箱砸击', type:'chestSmash', hits:3, power:0, pierce:0, cd:0, atkScale:1.5,
         brief:'_chestSmashBrief_',
         detail:'_chestSmashDetail_' },
       { name:'清点财宝', type:'chestCount', hits:1, power:0, pierce:0, cd:4, healPct:14, shieldAtkScale:0.6, healHpPct:5,
         brief:'宝箱龟回复 {H:HP*0.05} HP + {S:0.6*ATK} 护盾，每100点财宝值强度+14%',
         detail:'宝箱龟清点财宝，回复（5%×最大生命值({HP}) = {H:HP*0.05}）HP。\n获得（60%×攻击力({ATK}) = {S:0.6*ATK}）护盾。\n每拥有100点财宝值，技能强度增加 <span class="val-atk">14%</span>。\n冷却{cd}回合。' },
-      { name:'财宝风暴', type:'chestStorm', hits:10, power:0, pierce:0, cd:4, aoe:true, atkScale:0.09, pierceScale:0.04,
-        brief:'宝箱龟对每个敌人飞射10段，共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害',
-        detail:'宝箱龟对每个敌人飞射10段财宝。\n每段造成（9%×攻击力({ATK}) = {N:0.09*ATK}）物理 +（4%×攻击力({ATK}) = {T:0.04*ATK}）真实伤害。\n共（{N:0.09*ATK*10}）物理 +（{T:0.04*ATK*10}）真实伤害（每个敌人）。\n冷却{cd}回合。' },
+      { name:'财宝风暴', type:'chestStorm', hits:5, power:0, pierce:0, cd:4, aoe:true, atkScale:0.28, pierceScale:0,
+        brief:'宝箱龟对每个敌人飞射5段，共（{N:0.28*ATK*5}）物理伤害',
+        detail:'宝箱龟对每个敌人飞射5段财宝。\n每段造成（28%×攻击力({ATK}) = {N:0.28*ATK}）物理伤害。\n共（{N:0.28*ATK*5}）物理伤害（每个敌人）。\n冷却{cd}回合。' },
       { name:'寻宝直觉', type:'chestIntuition', passiveSkill:true, hits:0, power:0, pierce:0, cd:0,
         brief:'[被动] 携带后装备抽取阈值降低为 60/120/220/350/500',
         detail:'被动技能：寻宝直觉。\n\n携带后财宝值阈值降低：\n80/130/240/360/590 → 60/120/220/350/500\n更快获得装备。' },

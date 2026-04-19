@@ -2817,7 +2817,7 @@ async function doChestSmash(attacker, target, skill) {
   const dmgType = hasChestEquip(attacker, 'star') ? 'true' : 'physical';
   let totalBasePower = Math.round(attacker.atk * skill.atkScale);
   if (hasChestEquip(attacker, 'rock')) {
-    totalBasePower += Math.round(attacker.def * 0.7) + Math.round((attacker.mr || attacker.def) * 0.7);
+    totalBasePower += attacker.def + (attacker.mr || attacker.def);
   }
   const perHitBase = Math.round(totalBasePower / hits);
   let totalDmg = 0;

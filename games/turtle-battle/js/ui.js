@@ -1727,7 +1727,7 @@ function buildSkillBrief(f, s) {
   let result;
   if (s.brief === '_chestSmashBrief_') {
     let total = Math.round(f.atk * s.atkScale);
-    if (hasChestEquip(f, 'rock')) total += Math.round(f.def * 0.7) + Math.round((f.mr||f.def) * 0.7);
+    if (hasChestEquip(f, 'rock')) total += f.def + (f.mr || f.def);
     const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
     const hits = s.hits || 4;
     result = `宝箱龟砸击敌方${hits}段，共（<span class="val-normal">${total}</span>）${dmgType}`;
@@ -1753,9 +1753,9 @@ function buildChestSmashDetail(f, s) {
   let totalAll = totalBase;
   let lines = `宝箱龟对单体砸击${hits}段。\n总基础伤害：（${Math.round(s.atkScale*100)}%×<span class="val-normal">攻击力</span>(${f.atk}) = <span class="val-normal">${totalBase}</span>）`;
   if (hasChestEquip(f, 'rock')) {
-    const defDmg = Math.round(f.def * 0.7);
-    const mrDmg = Math.round((f.mr||f.def) * 0.7);
-    lines += `+（70%×<span class="val-def">护甲</span>(${f.def}) = <span class="val-def">${defDmg}</span>）+（70%×<span class="val-magic">魔抗</span>(${f.mr||f.def}) = <span class="val-magic">${mrDmg}</span>）`;
+    const defDmg = f.def;
+    const mrDmg = f.mr || f.def;
+    lines += `+（100%×<span class="val-def">护甲</span>(${f.def}) = <span class="val-def">${defDmg}</span>）+（100%×<span class="val-magic">魔抗</span>(${f.mr||f.def}) = <span class="val-magic">${mrDmg}</span>）`;
     totalAll += defDmg + mrDmg;
   }
   const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
@@ -1769,7 +1769,7 @@ function getChestEquipBonusText(f, s) {
   const lines = [];
   if (s.type === 'chestSmash') {
     if (hasChestEquip(f, 'chain')) lines.push('🔗锁链：对次要目标造成25%连锁伤害');
-    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：伤害额外加成70%护甲+70%魔抗');
+    if (hasChestEquip(f, 'rock')) lines.push('🪨神奇石头：伤害额外加成100%护甲+100%魔抗');
   }
   if (s.type === 'chestSmash' || s.type === 'chestStorm') {
     if (hasChestEquip(f, 'fire')) lines.push('🔥火石：命中目标施加灼烧');
