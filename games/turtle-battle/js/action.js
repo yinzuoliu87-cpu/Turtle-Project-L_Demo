@@ -1023,7 +1023,7 @@ async function executeAction(action) {
       try { const flash = document.createElement('div'); flash.className = 'mech-transform-flash'; flash.style.background = 'rgba(255,159,67,.4)'; document.body.appendChild(flash); setTimeout(() => flash.remove(), 500); } catch(e) {}
       try { sfxRebirth(); } catch(e) {} await sleep(300);
       const revivePct = (ff._chestEquips.find(e => e.id === 'phoenix') || {}).pct || 25;
-      ff.hp = Math.round(ff.maxHp * revivePct / 100); ff.alive = true; ff._deathProcessed = false;
+      ff.hp = Math.round(ff.maxHp * revivePct / 100); ff.alive = true; ff._deathProcessed = false; ff._pendingDeath = false;
       if (el) { el._pendingDead = false; el.classList.remove('dead','death-anim'); }
       updateHpBar(ff, elId); renderStatusIcons(ff);
       spawnFloatingNum(elId, '🐦凤凰重生!', 'crit-label', 0, -25); spawnFloatingNum(elId, `+${ff.hp}HP`, 'heal-num', 200, 0);

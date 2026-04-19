@@ -113,6 +113,7 @@ function checkDeaths(attacker) {
         }
         f.alive = true;
         f._deathProcessed = false;
+        f._pendingDeath = false;
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
         if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); card.style.opacity = ''; card.style.filter = ''; }
@@ -144,6 +145,7 @@ function checkDeaths(attacker) {
         f.hp = Math.round(f.maxHp * 0.25);
         f.alive = true;
         f._deathProcessed = false;
+        f._pendingDeath = false;
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
         if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
@@ -160,6 +162,7 @@ function checkDeaths(attacker) {
         f._pendingChestRevive = true;
         f.alive = true; // keep alive so checkBattleEnd doesn't trigger
         f.hp = 1;
+        f._pendingDeath = false;
         return;
       }
 
@@ -169,6 +172,7 @@ function checkDeaths(attacker) {
         f.hp = Math.round(f.maxHp * 0.2);
         f.alive = true;
         f._deathProcessed = false;
+        f._pendingDeath = false;
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
         if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
@@ -184,6 +188,7 @@ function checkDeaths(attacker) {
         f.hp = Math.round(f.maxHp * 0.15);
         f.alive = true;
         f._deathProcessed = false;
+        f._pendingDeath = false;
         const elId = getFighterElId(f);
         const card = document.getElementById(elId);
         if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
@@ -201,10 +206,11 @@ function checkDeaths(attacker) {
         f._isMech = true;
         f.alive = true; // keep alive so checkBattleEnd doesn't trigger
         f.hp = 1; // temporary 1HP to stay alive
+        f._pendingDeath = false;
         return; // skip normal death
       }
 
-      f.alive = false; f.hp = 0; f._deathProcessed = true;
+      f.alive = false; f.hp = 0; f._deathProcessed = true; f._pendingDeath = false;
       const elId = getFighterElId(f);
       const deadEl = document.getElementById(elId);
       if (deadEl) {

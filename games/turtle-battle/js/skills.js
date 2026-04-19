@@ -725,7 +725,8 @@ async function doBasicBarrage(attacker, skill) {
     if (tEl) { tEl.classList.remove('hit-shake'); }
     await sleep(100);
 
-    checkDeaths(attacker);
+    // No in-loop checkDeaths — pending-death targets stay in pool (alive=true)
+    // so later random hits can still land on them. Deaths resolve after action.
     if (battleOver) break;
   }
 

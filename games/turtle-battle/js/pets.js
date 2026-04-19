@@ -59,6 +59,7 @@ const ALL_PETS = [
     img:'assets/pets/animations/basic/idle.png', sprite:{frames:8,frameW:64,frameH:64,duration:800},
     attackAnim:{ src:'assets/pets/animations/basic/attack.png', frames:8, frameW:120, frameH:120, duration:800 },
     hurtAnim:{ src:'assets/pets/animations/basic/hurt.png', frames:6, frameW:120, frameH:120, duration:500 },
+    deathAnim:{ src:'assets/pets/animations/basic/death.png', frames:7, frameW:120, frameH:120, duration:700 },
     passive:{ type:'basicTurtle', name:'不屈', bonusMap:{C:20,B:23,A:26,S:29,SS:32,SSS:34},
               brief:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度造成额外伤害：C <span class="val-atk">+20%</span>　B <span class="val-atk">+23%</span>　A <span class="val-atk">+26%</span>　S <span class="val-atk">+29%</span>　SS <span class="val-atk">+32%</span>　SSS <span class="val-atk">+34%</span>',
               desc:'小龟面对强敌愈战愈勇。攻击时根据目标稀有度获得增伤：\n<span style="color:#06d6a0">C</span> <span class="val-atk">+20%</span>　<span style="color:#4cc9f0">B</span> <span class="val-atk">+23%</span>　<span style="color:#3a9abf">A</span> <span class="val-atk">+26%</span>\n<span style="color:#c77dff">S</span> <span class="val-atk">+29%</span>　<span style="color:#ffd93d">SS</span> <span class="val-atk">+32%</span>　<span style="color:#ff6b6b">SSS</span> <span class="val-atk">+34%</span>' },

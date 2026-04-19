@@ -725,7 +725,10 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     addLog(`${target.emoji}${target.name} <span class="log-passive"><img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力！锁血1HP 2回合！</span>`);
     renderStatusIcons(target);
   } else {
-    if (target.hp <= 0) target.alive = false;
+    // Pending death: HP=0 but alive stays true so subsequent hits in same action still land
+    // (hurt anim plays, floating numbers pop). checkDeaths() at end of action flips alive=false
+    // and plays death animation. Mirrors Monster Sanctuary's overkill-damage behavior.
+    if (target.hp <= 0) target._pendingDeath = true;
   }
   // Hunter mark execution: if target alive and HP below mark threshold, instant kill
   if (target.alive && target.hp > 0 && target.buffs) {
@@ -733,7 +736,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     if (mark && (target.hp / target.maxHp * 100) <= mark.value) {
       const execAmt = target.hp;
       target.hp = 0;
-      target.alive = false;
+      target._pendingDeath = true;
       // Credit execute damage to hunter (mark source) and track target taken
       const hunter = typeof allFighters !== 'undefined' && mark.sourceIdx != null ? allFighters[mark.sourceIdx] : null;
       if (hunter && hunter._dmgDealt !== undefined) { hunter._dmgDealt += execAmt; hunter._trueDmgDealt = (hunter._trueDmgDealt||0) + execAmt; }
