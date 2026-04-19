@@ -97,70 +97,92 @@ function applyStateSync(state) {
 
 // ── DEATH & WIN ───────────────────────────────────────────
 
+// Revive helper: shared by every revive path (phoenix/angel/shell/rule/...)
+// Resets death flags, clears death CSS classes & inline styles, shows label,
+// spawns HP number, refreshes HP bar & status icons, logs, plays SFX, and
+// runs an optional onRevive callback for path-specific bonuses (ATK boost,
+// enemy debuffs, etc.). All revive branches in checkDeaths delegate here.
+function reviveFighter(f, opts) {
+  const hpPct = opts.hpPct != null ? opts.hpPct : 20;
+  f.hp = Math.round(f.maxHp * hpPct / 100);
+  f.alive = true;
+  f._deathProcessed = false;
+  f._pendingDeath = false;
+  const elId = getFighterElId(f);
+  const card = document.getElementById(elId);
+  if (card) {
+    card._pendingDead = false;
+    card.classList.remove('dead','death-anim');
+    card.style.opacity = '';
+    card.style.filter = '';
+  }
+  if (opts.label) {
+    spawnFloatingNum(elId, opts.label, opts.labelCls || 'crit-label', 0, -25);
+  }
+  spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
+  updateHpBar(f, elId);
+  renderStatusIcons(f);
+  if (card) {
+    // Double-check visual state after one frame (some revive flows race with re-renders)
+    requestAnimationFrame(() => {
+      const c = document.getElementById(elId);
+      if (c) { c.classList.remove('dead','death-anim'); c.style.opacity = ''; }
+    });
+  }
+  if (opts.log) addLog(opts.log);
+  if (opts.sfx !== false) { try { sfxRebirth(); } catch(e) {} }
+  if (typeof opts.onRevive === 'function') opts.onRevive(f);
+}
+
 function checkDeaths(attacker) {
   allFighters.forEach(f => {
     if (f.hp <= 0 && !f._deathProcessed) {
       // Phoenix rebirth: revive once
       if (f.passive && f.passive.type === 'phoenixRebirth' && !f._rebirthUsed) {
         f._rebirthUsed = true;
-        const revivePct = f._phoenixEnhancedRebirth ? 100 : f.passive.revivePct;
-        f.hp = Math.round(f.maxHp * revivePct / 100);
-        // Enhanced rebirth: +20% ATK
-        if (f._phoenixEnhancedRebirth) {
-          const atkBoost = Math.round(f.baseAtk * 0.2);
-          f.baseAtk += atkBoost; f.atk += atkBoost;
-          spawnFloatingNum(getFighterElId(f), `+${atkBoost}ATK`, 'passive-num', 400, 0);
-        }
-        f.alive = true;
-        f._deathProcessed = false;
-        f._pendingDeath = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); card.style.opacity = ''; card.style.filter = ''; }
-        spawnFloatingNum(elId, '涅槃重生!', 'crit-label', 0, -25);
-        spawnFloatingNum(elId, `+${f.hp}HP`, 'heal-num', 200, 0);
-        updateHpBar(f, elId);
-        // Ensure visual state is correct after revive
-        requestAnimationFrame(() => { const c = document.getElementById(elId); if (c) { c.classList.remove('dead','death-anim'); c.style.opacity = ''; } });
-        addLog(`${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`);
-        // Apply burn + healReduce to all enemies on rebirth
-        const rebirthEnemies = allFighters.filter(e => e.alive && e.side !== f.side);
-        for (const e of rebirthEnemies) {
-          applySkillDebuffs({ burn: true }, e, f);
-          const existing = e.buffs.find(b => b.type === 'healReduce');
-          if (existing) { existing.turns = 3; }
-          else { e.buffs.push({ type: 'healReduce', value: 50, turns: 3 }); }
-          const eElId = getFighterElId(e);
-          spawnFloatingNum(eElId, '🔥灼烧+☠️削减', 'debuff-label', 300, -10);
-          renderStatusIcons(e);
-        }
-        addLog(`${f.emoji}${f.name} 涅槃之火灼烧全体敌人！`);
-        try { sfxRebirth(); } catch(e) {}
-        return; // skip death processing
+        reviveFighter(f, {
+          hpPct: f._phoenixEnhancedRebirth ? 100 : f.passive.revivePct,
+          label: '涅槃重生!',
+          log: `${f.emoji}${f.name} <span class="log-passive">涅槃重生！以${f.passive.revivePct}%HP复活！</span>`,
+          onRevive: (ff) => {
+            // Enhanced rebirth: +20% ATK
+            if (ff._phoenixEnhancedRebirth) {
+              const atkBoost = Math.round(ff.baseAtk * 0.2);
+              ff.baseAtk += atkBoost; ff.atk += atkBoost;
+              spawnFloatingNum(getFighterElId(ff), `+${atkBoost}ATK`, 'passive-num', 400, 0);
+            }
+            // Burn + healReduce to all enemies
+            const rebirthEnemies = allFighters.filter(e => e.alive && e.side !== ff.side);
+            for (const e of rebirthEnemies) {
+              applySkillDebuffs({ burn: true }, e, ff);
+              const existing = e.buffs.find(b => b.type === 'healReduce');
+              if (existing) existing.turns = 3;
+              else e.buffs.push({ type: 'healReduce', value: 50, turns: 3 });
+              spawnFloatingNum(getFighterElId(e), '🔥灼烧+☠️削减', 'debuff-label', 300, -10);
+              renderStatusIcons(e);
+            }
+            addLog(`${ff.emoji}${ff.name} 涅槃之火灼烧全体敌人！`);
+          }
+        });
+        return;
       }
 
       // Angel passive skill revive (圣光)
       if (f._angelRevive && !f._angelReviveUsed) {
         f._angelReviveUsed = true;
-        f.hp = Math.round(f.maxHp * 0.25);
-        f.alive = true;
-        f._deathProcessed = false;
-        f._pendingDeath = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '😇圣光重生!', 'crit-label', 0, -25);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">😇圣光之力！以25%HP重生！</span>`);
-        try { sfxRebirth(); } catch(e) {}
+        reviveFighter(f, {
+          hpPct: 25, label: '😇圣光重生!',
+          log: `${f.emoji}${f.name} <span class="log-passive">😇圣光之力！以25%HP重生！</span>`
+        });
         return;
       }
 
       // Chest phoenix equip: mark for pending revive (animated in executeAction)
+      // Not delegating to reviveFighter — the full animation is played later.
       if (hasChestEquip(f, 'phoenix') && !f._chestReviveUsed) {
         f._chestReviveUsed = true;
         f._pendingChestRevive = true;
-        f.alive = true; // keep alive so checkBattleEnd doesn't trigger
+        f.alive = true;
         f.hp = 1;
         f._pendingDeath = false;
         return;
@@ -169,32 +191,21 @@ function checkDeaths(attacker) {
       // Equipment: 复活海螺 — revive with 20% HP once
       if (f._equipRevive) {
         f._equipRevive = false;
-        f.hp = Math.round(f.maxHp * 0.2);
-        f.alive = true;
-        f._deathProcessed = false;
-        f._pendingDeath = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '🐌复活!', 'crit-label', 0, -25);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive">🐌复活海螺！以20%HP复活！</span>`);
+        reviveFighter(f, {
+          hpPct: 20, label: '🐌复活!',
+          log: `${f.emoji}${f.name} <span class="log-passive">🐌复活海螺！以20%HP复活！</span>`
+        });
         return;
       }
 
       // Battle rule: 亡灵之日 — revive with 15% HP once
       if (f._ruleRevive) {
         f._ruleRevive = false;
-        f.hp = Math.round(f.maxHp * 0.15);
-        f.alive = true;
-        f._deathProcessed = false;
-        f._pendingDeath = false;
-        const elId = getFighterElId(f);
-        const card = document.getElementById(elId);
-        if (card) { card._pendingDead = false; card.classList.remove('dead','death-anim'); }
-        spawnFloatingNum(elId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵复活!', 'crit-label', 0, -25);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-passive"><img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之日！以15%HP复活！</span>`);
+        const icon = '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">';
+        reviveFighter(f, {
+          hpPct: 15, label: `${icon}亡灵复活!`,
+          log: `${f.emoji}${f.name} <span class="log-passive">${icon}亡灵之日！以15%HP复活！</span>`
+        });
         return;
       }
 

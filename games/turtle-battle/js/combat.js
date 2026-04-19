@@ -107,7 +107,7 @@ async function doDamage(attacker, target, skill) {
     const totalHit = mainPart + truePart;
 
     // Damage absorption
-    const { hpLoss, shieldAbs, bubbleAbs } = applyRawDmg(null, target, totalHit);
+    const { hpLoss, shieldAbs, bubbleAbs } = applyRawDmg(null, target, totalHit, false, false, undefined, false, true);
     // Track by type
     if (dmgType === 'magic') attacker._magicDmgDealt = (attacker._magicDmgDealt||0) + mainPart;
     else if (dmgType === 'true') attacker._trueDmgDealt = (attacker._trueDmgDealt||0) + mainPart;
@@ -150,7 +150,7 @@ async function doDamage(attacker, target, skill) {
       // Apply as magic damage (reduced by MR)
       const effMr = calcEffDef(attacker, target, 'magic');
       const judgeReduced = Math.max(1, Math.round(judgeRaw * calcDmgMult(effMr) * critMult));
-      applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
+      applyRawDmg(attacker, target, judgeReduced, false, false, 'magic', false, true);
       totalDirect += judgeReduced;
       if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
       // Blue number above the main hit
@@ -666,7 +666,17 @@ async function doGamblerCards(attacker, target, skill) {
 
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
-function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHurtAnim) {
+// Apply raw damage to target HP after buffs/shields/armor modifiers.
+//
+// Death handling:
+//   - Default (deferDeath=false): if HP hits 0, immediately set alive=false.
+//     Use this for DoT ticks, counters, reflect, self-damage, one-shot skills.
+//   - deferDeath=true: flag _pendingDeath but keep alive=true, so the current
+//     action can keep landing overkill hits on this target (Monster Sanctuary
+//     style). The caller is responsible for running checkDeaths() at the end
+//     of the action to finalize alive=false and play the death animation.
+//     Use this ONLY inside multi-hit loops (doDamage, AoE barrages).
+function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHurtAnim, deferDeath) {
   // physImmune: block all physical damage (ghost phantom state)
   if (dmgType === 'physical' && target.buffs && target.buffs.some(b => b.type === 'physImmune')) {
     spawnFloatingNum(getFighterElId(target), '免疫!', 'dodge-num', 0, 0);
@@ -724,11 +734,15 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     spawnFloatingNum(elId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力!', 'crit-label', 0, -30);
     addLog(`${target.emoji}${target.name} <span class="log-passive"><img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">亡灵之力！锁血1HP 2回合！</span>`);
     renderStatusIcons(target);
-  } else {
-    // Pending death: HP=0 but alive stays true so subsequent hits in same action still land
-    // (hurt anim plays, floating numbers pop). checkDeaths() at end of action flips alive=false
-    // and plays death animation. Mirrors Monster Sanctuary's overkill-damage behavior.
-    if (target.hp <= 0) target._pendingDeath = true;
+  } else if (target.hp <= 0) {
+    if (deferDeath) {
+      // Inside a multi-hit loop: keep alive=true so later hits still land
+      // (hurt anim, floating numbers). Caller must checkDeaths() after loop.
+      target._pendingDeath = true;
+    } else {
+      // DoT / counter / reflect / one-shot: die immediately.
+      target.alive = false;
+    }
   }
   // Hunter mark execution: if target alive and HP below mark threshold, instant kill
   if (target.alive && target.hp > 0 && target.buffs) {
@@ -736,7 +750,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     if (mark && (target.hp / target.maxHp * 100) <= mark.value) {
       const execAmt = target.hp;
       target.hp = 0;
-      target._pendingDeath = true;
+      if (deferDeath) target._pendingDeath = true; else target.alive = false;
       // Credit execute damage to hunter (mark source) and track target taken
       const hunter = typeof allFighters !== 'undefined' && mark.sourceIdx != null ? allFighters[mark.sourceIdx] : null;
       if (hunter && hunter._dmgDealt !== undefined) { hunter._dmgDealt += execAmt; hunter._trueDmgDealt = (hunter._trueDmgDealt||0) + execAmt; }

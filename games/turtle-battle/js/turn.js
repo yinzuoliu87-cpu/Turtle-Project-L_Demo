@@ -562,9 +562,8 @@ async function processBuffs() {
       updateHpBar(f, elId);
       addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
       hadTick = true;
-      // applyRawDmg uses pending-death (alive stays true). Force immediate death
-      // for DoT ticks so the fighter can't take its turn after HP hits 0.
-      if (f.hp <= 0) { f.alive = false; f._pendingDeath = false; break; }
+      // applyRawDmg defaults to immediate death (alive is already false).
+      if (f.hp <= 0) break;
     }
     // Poison DoT (magic damage — reduced by MR)
     const poisons = f.buffs.filter(b => b.type === 'poison');

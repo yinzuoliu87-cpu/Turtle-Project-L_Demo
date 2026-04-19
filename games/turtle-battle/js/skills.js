@@ -710,7 +710,7 @@ async function doBasicBarrage(attacker, skill) {
       if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
     }
 
-    applyRawDmg(attacker, target, dmg, false, false, 'physical');
+    applyRawDmg(attacker, target, dmg, false, false, 'physical', false, true);
     totalDmg += dmg;
 
     const yOff = (i % 4) * 32;
@@ -1133,7 +1133,7 @@ async function doLightningBarrage(attacker, skill) {
     // Normal damage through DEF
     const effectiveDef = calcEffDef(attacker, target, 'magic');
         const dmg = Math.max(1, Math.round(perHitDmg * critMult * calcDmgMult(effectiveDef)));
-    applyRawDmg(attacker, target, dmg, false, false, 'magic');
+    applyRawDmg(attacker, target, dmg, false, false, 'magic', false, true);
     const tElId = getFighterElId(target);
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i % 5) * 24);
     await triggerOnHitEffects(attacker, target, dmg);
