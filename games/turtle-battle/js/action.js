@@ -343,11 +343,17 @@ async function executeAction(action) {
   await sleep(600);
 
   const atkEl = document.getElementById(getFighterElId(f));
+  const _atkPet = typeof ALL_PETS !== 'undefined' ? ALL_PETS.find(p => p.id === f.id) : null;
+  const _hasAttackAnim = !!(_atkPet && _atkPet.attackAnim);
   if (typeof playAttackAnimation === 'function') {
     playAttackAnimation(f);  // handles hop + sprite (if any)
   } else if (atkEl) {
     atkEl.classList.add('attack-anim');  // fallback short lunge
   }
+  // Sync damage with attack sprite "strike frame" for turtles with attackAnim
+  // Hop: 0-240 forward, 240-1040 sprite plays, 1040-1200 hop back
+  // Strike happens around mid-sprite (t ≈ 500ms from start)
+  if (_hasAttackAnim) await sleep(400);
 
   if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor' && skill.type !== 'lineInkBomb' && skill.type !== 'candyBomb' && skill.type !== 'fortuneGoldRain' && skill.type !== 'lightningSurge' && skill.type !== 'stoneQuake' && skill.type !== 'volcanoStomp' && skill.type !== 'bambooSpikes' && skill.type !== 'headlessStorm' && skill.type !== 'shellAuraBurst' && skill.type !== 'starShieldBreak') {
     // AOE: hit all alive enemies (including summons)
@@ -998,6 +1004,8 @@ async function executeAction(action) {
   }
 
   if (atkEl) atkEl.classList.remove('attack-anim');
+  // Wait for hop-back to finish before yielding turn (only if attackAnim played)
+  if (_hasAttackAnim) await sleep(400);
 
   updateDmgStats();
 

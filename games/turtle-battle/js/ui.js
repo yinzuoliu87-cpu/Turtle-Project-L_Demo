@@ -1148,10 +1148,9 @@ function playAttackAnimation(f) {
 }
 
 // Play hurt animation for a fighter (simple overlay, no hop)
-// If already playing hurt, this call is ignored (prevents flicker on multi-hit)
+// Every hit restarts from frame 0 (ensures visual feedback per hit)
 const _hurtAnimKF = {};
 function playHurtAnimation(f) {
-  if (f._hurtAnimActive) return;
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
   const anim = pet && pet.hurtAnim;
   if (!anim) return;
@@ -1187,19 +1186,20 @@ function playHurtAnimation(f) {
   }
   const overlayInner = overlay.querySelector('.sprite-inner');
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
-  f._hurtAnimActive = true;
-  // Fade in hurt, fade out idle
+  // Cancel any pending restore from previous hurt
+  if (f._hurtRestoreTimer) { clearTimeout(f._hurtRestoreTimer); f._hurtRestoreTimer = null; }
+  // Fade in hurt, fade out idle (always restart fresh on each hit)
   if (idleWrap) { idleWrap.style.transition = 'opacity .08s linear'; idleWrap.style.opacity = '0'; }
   overlay.style.opacity = '1';
   overlayInner.style.animation = 'none';
   void overlayInner.offsetWidth;
   overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
-  // Fade back to idle slightly before anim ends (smooth return)
-  setTimeout(() => {
+  // Fade back to idle slightly before anim ends
+  f._hurtRestoreTimer = setTimeout(() => {
     overlay.style.opacity = '0';
     if (idleWrap) idleWrap.style.opacity = '';
+    f._hurtRestoreTimer = null;
   }, anim.duration - 50);
-  setTimeout(() => { f._hurtAnimActive = false; }, anim.duration + 50);
 }
 
 function updateHpBar(f, elId) {
