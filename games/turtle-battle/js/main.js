@@ -1026,6 +1026,26 @@ function rollBattleRule() {
   return BATTLE_RULES[idx];
 }
 
+// Banner shown at start of every turn (and "战斗开始" before turn 1).
+// Returns a Promise that resolves when the banner finishes so callers can await it.
+function showTurnStartBanner(text, sub, durationMs) {
+  return new Promise((resolve) => {
+    const dur = durationMs || 1200;
+    const banner = document.createElement('div');
+    banner.className = 'turn-start-banner';
+    banner.innerHTML = `<div class="turn-start-banner-inner">
+      <div class="turn-start-banner-text">${text}</div>
+      ${sub ? `<div class="turn-start-banner-sub">${sub}</div>` : ''}
+    </div>`;
+    document.body.appendChild(banner);
+    requestAnimationFrame(() => banner.classList.add('show'));
+    setTimeout(() => {
+      banner.classList.remove('show');
+      setTimeout(() => { banner.remove(); resolve(); }, 260);
+    }, dur);
+  });
+}
+
 function showRuleBanner(rule, callback) {
   const banner = document.createElement('div');
   banner.className = 'rule-banner';
@@ -1259,10 +1279,16 @@ function startBattle(seed) {
         await sleep(800);
         if (tEl) tEl.classList.remove('hit-shake');
       }
-      setTimeout(() => beginTurn(), 1500);
+      setTimeout(async () => {
+        await showTurnStartBanner('⚔️ 战斗开始', 'Battle Start', 1500);
+        beginTurn();
+      }, 1500);
     }, 4000);
   } else {
-    beginTurn();
+    (async () => {
+      await showTurnStartBanner('⚔️ 战斗开始', 'Battle Start', 1500);
+      beginTurn();
+    })();
   }
 }
 

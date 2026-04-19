@@ -6,6 +6,13 @@
 // ── TURN SYSTEM ───────────────────────────────────────────
 async function beginTurn() {
   document.getElementById('turnBanner').textContent = `第 ${turnNum} 回合`;
+  // Show big mid-screen "第 N 回合" banner BEFORE any per-turn passives fire,
+  // so players see the turn announcement before damage/buffs start landing.
+  if (typeof showTurnStartBanner === 'function') {
+    await showTurnStartBanner(`第 ${turnNum} 回合`, `Round ${turnNum}`, 1100);
+  }
+  addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
+  try { sfxTurnStart && sfxTurnStart(); } catch(e) {}
   // Debug: verify seed sync at turn boundaries (can remove in production)
   if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] T${turnNum} seed=${_rngSeed}`);
   // Reduce cooldowns
@@ -489,8 +496,7 @@ async function beginTurn() {
       recalcStats();
     }
   }
-  addLog(`── 第 ${turnNum} 回合 ──`, 'round-sep');
-  try { sfxTurnStart(); } catch(e) {}
+  // (turn-start log + sfx already fired at top of beginTurn before passives)
   // Process buffs/debuffs at turn start
   await processBuffs();
   // Recalculate stats after buff changes

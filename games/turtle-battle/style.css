@@ -1831,6 +1831,18 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 .rule-banner-name{font-size:32px;font-weight:900;color:#ffd93d;margin-bottom:10px;text-shadow:0 0 20px rgba(255,215,0,.5);animation:rulePop .5s ease .1s both}
 .rule-banner-desc{font-size:16px;color:var(--fg2);max-width:400px;text-align:center;animation:rulePop .5s ease .2s both}
 @keyframes rulePop{0%{transform:scale(0.3);opacity:0}60%{transform:scale(1.1)}100%{transform:scale(1);opacity:1}}
+/* Turn-start banner: lighter than rule-banner, slides across mid-screen */
+.turn-start-banner{position:fixed;inset:0;z-index:9998;display:flex;align-items:center;justify-content:center;opacity:0;transition:opacity .25s ease;pointer-events:none}
+.turn-start-banner.show{opacity:1}
+.turn-start-banner-inner{background:linear-gradient(90deg,rgba(0,0,0,0) 0%,rgba(20,30,60,.92) 25%,rgba(20,30,60,.92) 75%,rgba(0,0,0,0) 100%);padding:18px 64px;text-align:center;border-top:2px solid rgba(255,215,61,.5);border-bottom:2px solid rgba(255,215,61,.5);transform:translateX(-30%);animation:turnBannerSlide .9s ease forwards;min-width:60%}
+.turn-start-banner-text{font-size:36px;font-weight:900;color:#ffd93d;text-shadow:0 0 14px rgba(255,215,0,.45),0 2px 4px rgba(0,0,0,.6);letter-spacing:6px}
+.turn-start-banner-sub{font-size:14px;color:#cdd;margin-top:4px;letter-spacing:3px;opacity:.8}
+@keyframes turnBannerSlide{0%{transform:translateX(-30%);opacity:0}30%{transform:translateX(0);opacity:1}70%{transform:translateX(0);opacity:1}100%{transform:translateX(30%);opacity:0}}
+@media (max-width: 768px){
+  .turn-start-banner-inner{padding:12px 24px}
+  .turn-start-banner-text{font-size:24px;letter-spacing:3px}
+  .turn-start-banner-sub{font-size:11px;letter-spacing:2px}
+}
 
 /* ── SKILL PICK OVERLAY ── */
 .skill-pick-overlay{position:fixed;inset:0;z-index:9999;background:rgba(0,0,0,.7);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
