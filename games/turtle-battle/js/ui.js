@@ -1075,7 +1075,7 @@ function petIcon(f, size) {
   return buildPetImgHTML(f, size);
 }
 
-// Play attack animation sprite sheet for a fighter (replaces sprite once, auto-restore)
+// Play attack animation sprite sheet for a fighter (hop forward → play → hop back)
 const _attackAnimKF = {};
 function playAttackAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
@@ -1084,13 +1084,21 @@ function playAttackAnimation(f) {
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;
+  // Replace the CSS lunge with hop-step: forward → hold (sprite plays) → back
+  // Total hop duration 1200ms; sprite plays during the "hold" phase (from ~240ms to ~960ms)
+  card.classList.remove('attack-anim');  // cancel the short lunge
+  card.classList.add('attack-hop');
+  const hopDuration = 1200;
+  const spriteDelay = 240;  // wait for hop forward to finish
   const spriteEl = card.querySelector('.st-sprite');
-  if (!spriteEl) return;
-  // Remember original content to restore after animation
+  if (!spriteEl) {
+    setTimeout(() => card.classList.remove('attack-hop'), hopDuration + 50);
+    return;
+  }
   const originalHtml = spriteEl._originalHtml || spriteEl.innerHTML;
   spriteEl._originalHtml = originalHtml;
-  // Build one-shot animation playback
-  const size = 80; // match sprite display size used in renderTurtle
+  // Precompute sprite sheet display
+  const size = 80;
   const sc = size / anim.frameH;
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
@@ -1101,17 +1109,22 @@ function playAttackAnimation(f) {
     document.head.appendChild(st);
     _attackAnimKF[kfName] = true;
   }
-  spriteEl.innerHTML = '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
-    + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
-    + 'background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;'
-    + 'animation:' + kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards;"></div></div>';
-  // Restore after animation completes
+  // Play sprite after hop-forward
+  setTimeout(() => {
+    if (!spriteEl._originalHtml) return;  // cancelled
+    spriteEl.innerHTML = '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
+      + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
+      + 'background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;'
+      + 'animation:' + kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards;"></div></div>';
+  }, spriteDelay);
+  // Restore sprite + remove hop class after full hop cycle
   setTimeout(() => {
     if (spriteEl._originalHtml) {
       spriteEl.innerHTML = spriteEl._originalHtml;
       spriteEl._originalHtml = null;
     }
-  }, anim.duration + 50);
+    card.classList.remove('attack-hop');
+  }, hopDuration + 50);
 }
 
 function updateHpBar(f, elId) {

@@ -1932,6 +1932,47 @@ body:has(#screenBattle.active) .btn-sound-global{top:46px}
 .scene-turtle.attack-anim[class*="pos-left"]{animation:attackLungeRight .5s ease}
 .scene-turtle.attack-anim[class*="pos-right"]{animation:attackLungeLeft .5s ease}
 
+/* Hop-step attack: forward → hold (sprite plays) → back */
+.scene-turtle.attack-hop[class*="pos-left"]{animation:attackHopRight 1.2s ease-in-out}
+.scene-turtle.attack-hop[class*="pos-right"]{animation:attackHopLeft 1.2s ease-in-out}
+@keyframes attackHopRight{
+  0%{transform:translateX(0)}
+  15%{transform:translate(18px,-6px)}
+  20%{transform:translate(25px,0)}
+  80%{transform:translate(25px,0)}
+  95%{transform:translate(5px,-3px)}
+  100%{transform:translateX(0)}
+}
+@keyframes attackHopLeft{
+  0%{transform:translateX(0)}
+  15%{transform:translate(-18px,-6px)}
+  20%{transform:translate(-25px,0)}
+  80%{transform:translate(-25px,0)}
+  95%{transform:translate(-5px,-3px)}
+  100%{transform:translateX(0)}
+}
+/* Mobile: smaller hop distance, preserve scale */
+@media (max-width: 768px){
+  .scene-turtle.attack-hop[class*="pos-left"]{animation:attackHopRightMobile 1.2s ease-in-out}
+  .scene-turtle.attack-hop[class*="pos-right"]{animation:attackHopLeftMobile 1.2s ease-in-out}
+  @keyframes attackHopRightMobile{
+    0%{transform:translateX(0) scale(.4)}
+    15%{transform:translate(10px,-4px) scale(.42)}
+    20%{transform:translate(15px,0) scale(.42)}
+    80%{transform:translate(15px,0) scale(.42)}
+    95%{transform:translate(3px,-2px) scale(.41)}
+    100%{transform:translateX(0) scale(.4)}
+  }
+  @keyframes attackHopLeftMobile{
+    0%{transform:translateX(0) scale(.4)}
+    15%{transform:translate(-10px,-4px) scale(.42)}
+    20%{transform:translate(-15px,0) scale(.42)}
+    80%{transform:translate(-15px,0) scale(.42)}
+    95%{transform:translate(-3px,-2px) scale(.41)}
+    100%{transform:translateX(0) scale(.4)}
+  }
+}
+
 /* Fighter detail panel (click to show) */
 .fighter-detail-panel{position:absolute;z-index:250;background:rgba(12,16,24,.94);backdrop-filter:blur(10px);border-radius:10px;box-shadow:0 4px 24px rgba(0,0,0,.7);padding:14px 16px;width:280px;max-height:420px;overflow-y:auto;display:none;animation:fadeIn .15s ease;font-size:13px;border:1px solid rgba(255,255,255,.06)}
 .fighter-detail-panel.show{display:block}
