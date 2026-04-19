@@ -1549,7 +1549,7 @@ function renderStatusIcons(f) {
     const treasure = f._chestTreasure || 0;
     const tier = f._chestTier || 0;
     const thresholds = f.passive.thresholds;
-    const lvMult = 1 + ((f._level || 1) - 1) * 0.05;
+    const lvMult = 1 + ((f._level || 1) - 1) * 0.03;
     const nextThresh = tier < thresholds.length ? Math.round(thresholds[tier] * lvMult) : null;
     const progressText = nextThresh ? `${treasure}/${nextThresh}` : `${treasure}(满)`;
     box.innerHTML += `<span style="color:#ffd93d;background:rgba(255,217,61,.15);padding:1px 5px;border-radius:6px" title="财宝值${treasure}，已装备${tier}件">💰${progressText}</span>`;

@@ -693,10 +693,11 @@ function checkChestEquipDraw(f) {
   if (!f.passive || f.passive.type !== 'chestTreasure') return;
   const thresholds = f.passive.thresholds;
   const pools = f.passive.pools;
-  // Scale thresholds with level so high-level chests don't trivialize the pacing
-  // (damage output scales +5% per level, so do the costs).
-  const lvMult = 1 + ((f._level || 1) - 1) * 0.05;
+  // Scale thresholds +3% per level so equip pacing doesn't trivialize at high levels.
+  const lvMult = 1 + ((f._level || 1) - 1) * 0.03;
   const scaledThresh = (i) => Math.round(thresholds[i] * lvMult);
+  // Heal % per tier (base/进阶/传说) so opening a chest also restores the turtle.
+  const healPctByPool = [8, 11, 15];
   while (f._chestTier < thresholds.length && f._chestTreasure >= scaledThresh(f._chestTier)) {
     const poolIdx = f._chestTier < 2 ? 0 : f._chestTier < 4 ? 1 : 2;
     const pool = pools[poolIdx];
@@ -708,11 +709,18 @@ function checkChestEquipDraw(f) {
     f._chestTier++;
     // Apply immediate stat effects
     applyChestEquip(f, drawn);
-    // Visual feedback
     const elId = getFighterElId(f);
+    // Chest-open heal: scales with tier
+    const healPct = healPctByPool[poolIdx];
+    const healRaw = Math.round(f.maxHp * healPct / 100);
+    const healed = typeof applyHeal === 'function' ? applyHeal(f, healRaw) : (() => {
+      const before = f.hp; f.hp = Math.min(f.maxHp, f.hp + healRaw); return Math.round(f.hp - before);
+    })();
+    if (healed > 0) spawnFloatingNum(elId, `+${healed}`, 'heal-num', 200, 0);
+    // Visual feedback
     const iconH = drawn.icon.endsWith && drawn.icon.endsWith('.png') ? `<img src="assets/${drawn.icon}" style="width:16px;height:16px;vertical-align:middle">` : drawn.icon;
     spawnFloatingNum(elId, `${iconH}${drawn.name}!`, 'crit-label', 0, -30);
-    addLog(`${f.emoji}${f.name} 开启宝箱！获得 <span class="log-passive">${iconH}${drawn.name}</span>：${drawn.desc}`);
+    addLog(`${f.emoji}${f.name} 开启宝箱！获得 <span class="log-passive">${iconH}${drawn.name}</span>：${drawn.desc}${healed > 0 ? ` <span class="log-heal">(+${healed}HP)</span>` : ''}`);
     renderStatusIcons(f);
     updateFighterStats(f, elId);
     updateHpBar(f, elId);
