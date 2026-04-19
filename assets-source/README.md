@@ -1,0 +1,75 @@
+# 资源源文件目录
+
+此目录存放可编辑的资源源文件（Aseprite项目、PixelLab导出的中间帧、JSON元数据等），**不直接用于游戏运行**。
+
+## 目录结构
+
+```
+assets-source/
+└── pets/
+    └── <龟英文id>/
+        ├── attack/
+        │   ├── frame_0.png ~ frame_N.png   # 动画单帧
+        │   ├── attack_sheet.png             # 合并的 sprite sheet
+        │   ├── attack.json                  # Aseprite 元数据
+        │   └── attack.aseprite              # (可选) 手工编辑后的Aseprite项目
+        ├── idle/
+        ├── hurt/
+        └── death/
+```
+
+## 工作流
+
+**生成新动画**：
+1. 用 PixelLab 生成 sprite sheet + 单帧
+2. 下载保存到 `assets-source/pets/<id>/<action>/`
+3. 把 sprite sheet 拷贝到 `games/turtle-battle/assets/pets/animations/<id>/<action>.png`
+
+**后续微调**：
+1. 打开 Aseprite → Import Sprite Sheet
+2. 选 `assets-source/pets/<id>/<action>/attack_sheet.png` + `attack.json`
+3. 调整后导出新的 sprite sheet
+4. 覆盖 `games/turtle-battle/assets/pets/animations/<id>/<action>.png`
+5. 保存 `.aseprite` 项目文件到源文件目录
+
+## 命名规范
+
+- 龟目录：英文id（`basic`, `stone`, `bamboo`, `angel`, `ice`...）
+- 动作目录：英文小写（`idle`, `attack`, `cast`, `hurt`, `death`）
+- 单帧文件：`frame_0.png`, `frame_1.png`...（从0开始）
+- Sprite sheet：`<action>_sheet.png` 或直接 `<action>.png`
+
+## 尺寸标准
+
+| 内容 | 尺寸 |
+|------|------|
+| 单帧 | 120×120 (PixelLab 默认) |
+| Sprite sheet | 帧数 × 120 宽 × 120 高 |
+| Idle | 4帧, 480×120, 1500ms循环 |
+| Attack/Cast | 6-8帧, 720-960×120, 600-800ms播放 |
+| Hurt | 3-4帧, 360-480×120, 300-400ms播放 |
+| Death | 5-6帧, 600-720×120, 700-900ms播放 |
+
+## 当前进度
+
+- [x] basic (小龟) — attack 已完成
+- [ ] basic — idle / hurt / death
+- [ ] ice (寒冰龟) — 全套
+- [ ] 其他26只
+
+## 游戏端路径
+
+代码引用的生产文件在：`games/turtle-battle/assets/pets/animations/<id>/<action>.png`
+
+pets.js 中配置示例：
+```js
+{ id:'basic', ...,
+  img:'assets/pets/animations/basic/idle.png',
+  sprite:{frames:8,frameW:64,frameH:64,duration:800},
+  attackAnim:{src:'assets/pets/animations/basic/attack.png', frames:8, frameW:120, frameH:120, duration:800}
+}
+```
+
+## .gitignore 注意
+
+`assets-source/` 目录会被git追踪，源文件可共享。如果体积过大后续可考虑 Git LFS。
