@@ -1113,31 +1113,35 @@ function playAttackAnimation(f) {
     _attackAnimKF[kfName] = true;
   }
   // Build attack sprite overlay OUTSIDE idle (so we can toggle visibility without rebuilding DOM)
-  // Position it absolutely over the idle sprite
   let overlay = spriteEl.querySelector('.attack-sprite-overlay');
   if (!overlay) {
     overlay = document.createElement('div');
     overlay.className = 'attack-sprite-overlay';
-    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;display:none;pointer-events:none';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;opacity:0;pointer-events:none;transition:opacity .1s linear';
     overlay.innerHTML = '<div class="sprite-inner" style="width:100%;height:100%;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat"></div>';
     spriteEl.style.position = 'relative';
     spriteEl.appendChild(overlay);
   }
   const overlayInner = overlay.querySelector('.sprite-inner');
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
-  // Phase 1: show attack overlay at start of hold (hide idle)
+  // Phase 1: fade in attack overlay at start of hold (fade out idle)
   setTimeout(() => {
-    if (idleWrap) idleWrap.style.visibility = 'hidden';
-    overlay.style.display = '';
+    if (idleWrap) { idleWrap.style.transition = 'opacity .1s linear'; idleWrap.style.opacity = '0'; }
+    overlay.style.opacity = '1';
     // Restart attack animation from frame 0
     overlayInner.style.animation = 'none';
-    void overlayInner.offsetWidth;  // force reflow
+    void overlayInner.offsetWidth;
     overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
   }, spriteDelay);
-  // Phase 2: swap back to idle at end
+  // Phase 2: fade back to idle right when attack animation finishes (not after hop-back)
+  // This way idle plays during hop-back, no last-frame freeze
+  const fadeBackAt = spriteDelay + anim.duration - 50;  // start fade 50ms before anim ends for smoother overlap
   setTimeout(() => {
-    overlay.style.display = 'none';
-    if (idleWrap) idleWrap.style.visibility = '';
+    overlay.style.opacity = '0';
+    if (idleWrap) idleWrap.style.opacity = '';
+  }, fadeBackAt);
+  // Phase 3: cleanup after hop fully completes
+  setTimeout(() => {
     card.classList.remove('attack-hop');
   }, hopDuration + 50);
 }
