@@ -22,7 +22,7 @@ async function doDamage(attacker, target, skill) {
       const dodgeCounterBuff = target.buffs.find(b => b.type === 'dodgeCounter');
       if (dodgeCounterBuff && attacker.alive) {
         const cDmg = dodgeCounterBuff.value;
-        applyRawDmg(target, attacker, cDmg, false, false, dodgeCounterBuff.dmgType || 'magic');
+        applyRawDmg(target, attacker, cDmg, false, false, dodgeCounterBuff.dmgType || 'magic', true);
         spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 100, yOff);
         updateHpBar(attacker, getFighterElId(attacker));
         if (attacker.hp <= 0) attacker.alive = false;
@@ -161,7 +161,6 @@ async function doDamage(attacker, target, skill) {
 
     // Hit animation based on damage type
     playHitAnim(tElId, dmgType, isCrit);
-    if (typeof playHurtAnimation === 'function') playHurtAnimation(target);
     updateHpBar(target, tElId);
     await sleep(500);
 
@@ -483,7 +482,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflectPct = target.passive.reflectBase + target.passive.reflectPerDef * target.def + (target.passive.reflectPerMr || 0) * (target.mr || target.def);
     const reflectDmg = Math.round(dmg * reflectPct / 100);
     if (reflectDmg > 0) {
-      applyRawDmg(target, attacker, reflectDmg);
+      applyRawDmg(target, attacker, reflectDmg, false, false, undefined, true);
       spawnFloatingNum(getFighterElId(attacker), `-${reflectDmg}`, 'counter-dmg', 250, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -494,7 +493,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (reflectBuff && attacker && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * reflectBuff.value / 100);
     if (reflDmg > 0) {
-      applyRawDmg(target, attacker, reflDmg);
+      applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
       spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -504,7 +503,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Lava shield counter
   if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && target.shield > 0 && attacker.alive) {
     const cDmg = Math.round(target.atk * target._lavaShieldCounter);
-    applyRawDmg(target, attacker, cDmg);
+    applyRawDmg(target, attacker, cDmg, false, false, undefined, true);
     spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 300, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
@@ -512,7 +511,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   // Counter buff (e.g. lightningShield): reflect damage only while shield > 0
   const counterBuff = target.buffs ? target.buffs.find(b => b.type === 'counter') : null;
   if (counterBuff && target.shield > 0 && attacker && attacker.alive && dmg > 0) {
-    applyRawDmg(target, attacker, counterBuff.value);
+    applyRawDmg(target, attacker, counterBuff.value, false, false, undefined, true);
     spawnFloatingNum(getFighterElId(attacker), `-${counterBuff.value}`, 'counter-dmg', 350, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
@@ -561,7 +560,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._auraReflect > 0 && target.alive && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * target._auraReflect);
     if (reflDmg > 0) {
-      applyRawDmg(target, attacker, reflDmg);
+      applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
       spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 400, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -594,7 +593,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._equipReflect && target.alive && attacker.alive && dmg > 0) {
     const reflDmg = Math.round(dmg * target._equipReflect / 100);
     if (reflDmg > 0) {
-      applyRawDmg(target, attacker, reflDmg);
+      applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
       spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
@@ -667,7 +666,7 @@ async function doGamblerCards(attacker, target, skill) {
 
 // Helper: apply raw damage to target (through shields), track stats
 // Returns { hpLoss, shieldAbs, bubbleAbs }
-function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
+function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHurtAnim) {
   // physImmune: block all physical damage (ghost phantom state)
   if (dmgType === 'physical' && target.buffs && target.buffs.some(b => b.type === 'physImmune')) {
     spawnFloatingNum(getFighterElId(target), '免疫!', 'dodge-num', 0, 0);
@@ -785,6 +784,10 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType) {
       spawnFloatingNum(pElId, `-${transferAmt}🔗`, 'pierce-dmg', 0, 0);
       updateHpBar(partner, pElId);
     }
+  }
+  // Play hurt animation on actual HP loss from a direct hit (skip DoT/ink-link internal/counter)
+  if (!_skipLink && !_noHurtAnim && rem > 0 && typeof playHurtAnimation === 'function') {
+    playHurtAnimation(target);
   }
   return { hpLoss: rem, shieldAbs, bubbleAbs };
 }

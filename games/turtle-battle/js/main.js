@@ -2334,6 +2334,16 @@ function dungeonSwap(deadId, benchId) {
 // ── INIT ──────────────────────────────────────────────────
 loadCoins();
 updateRecordDisplay();
+// Preload all turtle animation sprites (avoids first-play flash)
+(function preloadAnimSprites() {
+  if (typeof ALL_PETS === 'undefined') return;
+  for (const p of ALL_PETS) {
+    for (const key of ['attackAnim', 'hurtAnim', 'deathAnim', 'castAnim', 'idleAnim']) {
+      const a = p[key];
+      if (a && a.src) { const img = new Image(); img.src = a.src; }
+    }
+  }
+})();
 // Start menu BGM on first user interaction (browsers block autoplay)
 document.addEventListener('click', function _startMenuBgm() {
   playBgm('menu');
