@@ -369,9 +369,10 @@ function updateSceneHp(f) {
   }
 
   // ── Death state ──
-  el.classList.toggle('dead', !f.alive);
-  el._pendingDead = false;
-  el.classList.remove('death-anim');
+  // Do NOT toggle 'dead' / remove 'death-anim' here. checkDeaths() manages the
+  // death animation lifecycle via state.js (adds death-anim, animationend adds
+  // 'dead'). Overriding here stomps on the 1.2s animation mid-play.
+  // Initial render & revive paths handle class state explicitly.
 
   // ── Refresh detail panel if showing this fighter ──
   refreshDetailPanel(f);
