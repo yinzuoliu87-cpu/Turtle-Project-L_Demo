@@ -672,17 +672,20 @@ async function tickHotsOn(f) {
 async function processSideEnd(endedSide) {
   const ownTeam = endedSide === 'left' ? leftTeam : rightTeam;
   const oppTeam = endedSide === 'left' ? rightTeam : leftTeam;
-  let anyTick = false;
-  for (const f of oppTeam) {
-    const hadDots = f.alive && f.buffs.some(b => b.type === 'dot' || b.type === 'phoenixBurnDot' || b.type === 'poison' || b.type === 'bleed' || (b.type === 'chilled' && f.buffs.some(b2 => b2.type === 'phoenixBurnDot')));
-    if (hadDots) { anyTick = true; await tickDotsOn(f); }
+  const dotCandidates = oppTeam.filter(f => f.alive && f.buffs.some(b => b.type === 'dot' || b.type === 'phoenixBurnDot' || b.type === 'poison' || b.type === 'bleed' || (b.type === 'chilled' && f.buffs.some(b2 => b2.type === 'phoenixBurnDot'))));
+  const hotCandidates = ownTeam.filter(f => f.alive && (f.buffs.some(b => b.type === 'hot') || (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0)));
+  if (dotCandidates.length === 0 && hotCandidates.length === 0) return;
+  // Pause 1.5s between the last action and the first DoT/HOT float so the
+  // cause-effect beat ("我打完 → 对面受烧") reads cleanly, KOF98OL-style.
+  await sleep(1500);
+  for (const f of dotCandidates) {
+    await tickDotsOn(f);
     if (checkBattleEnd()) return;
   }
-  for (const f of ownTeam) {
-    const hasHot = f.alive && (f.buffs.some(b => b.type === 'hot') || (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0));
-    if (hasHot) { anyTick = true; await tickHotsOn(f); }
+  for (const f of hotCandidates) {
+    await tickHotsOn(f);
   }
-  if (anyTick) await sleep(600);
+  await sleep(600);
 }
 
 // Legacy round-end bookkeeping: lava shield / bubble shield / ink link
