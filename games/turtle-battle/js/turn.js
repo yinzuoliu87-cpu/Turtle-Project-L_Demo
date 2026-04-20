@@ -498,9 +498,11 @@ async function beginTurn() {
     }
   }
   // (turn-start log + sfx already fired at top of beginTurn before passives)
-  // Process buffs/debuffs at turn start
-  await processBuffs();
-  // Recalculate stats after buff changes
+  // DoTs and HOTs no longer tick here — they resolve at end of each side's
+  // turn (see processSideEnd in finishSide) KOF98OL-style so the cause-effect
+  // beat is clean. Round-end bookkeeping (lava shield / bubble shield / ink
+  // link tick-downs, buff turns--, critUp removal, phantomStrike trigger)
+  // happens in processRoundEndBuffs, also called from finishSide.
   recalcStats();
   // Equipment rule: trigger equip pick for player every 3 turns
   // Also apply equipment passive effects (HOT, rage, flat reduce)
@@ -536,96 +538,162 @@ async function beginTurn() {
 }
 
 // ── BUFF PROCESSING ──────────────────────────────────────
-async function processBuffs() {
+//
+// Timing model (KOF98OL-style side-end ticking):
+//   - At end of a side's turn: DoTs on OPPOSING side tick (debuffs our side
+//     applied now resolve on them) + HOTs on OWN side tick (buffs our side
+//     applied now resolve on our allies). Each DoT/HOT fires once per round.
+//   - At end of full round (both sides done): round-end bookkeeping runs
+//     (lava shield / bubble shield / ink link tick-downs, buff turns--,
+//     critUp removal, phantomStrike trigger). Called from finishSide.
+//
+// Focused, single-side tick keeps floating damage numbers from overlapping
+// and gives the player a clean cause-effect beat after their actions.
+
+// Per-fighter DoT tick: dot / phoenixBurnDot / poison / bleed / chill+burn combo.
+// Called from processSideEnd for each target on the OPPOSING team.
+async function tickDotsOn(f) {
+  if (!f.alive) return;
+  const elId = getFighterElId(f);
+  // dot (generic)
+  const dots = f.buffs.filter(b => b.type === 'dot');
+  for (const d of dots) {
+    f.hp = Math.max(0, f.hp - d.value);
+    spawnFloatingNum(elId, `-${d.value}`, 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
+    if (f.hp <= 0) { f.alive = false; break; }
+  }
+  if (!f.alive) { checkDeaths(null); return; }
+  // Phoenix burn DoT (magic, reduced by MR, pierces shield)
+  const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
+  for (const pb of pBurns) {
+    const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
+    const burnDmg = Math.max(1, Math.round(rawBurn * calcDmgMult(f.mr)));
+    const burnSource = (pb.sourceIdx !== undefined && pb.sourceIdx >= 0) ? allFighters[pb.sourceIdx] : null;
+    const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
+    if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
+    if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
+    if (f.hp <= 0) break;
+  }
+  if (!f.alive) { checkDeaths(null); return; }
+  // Poison DoT
+  const poisons = f.buffs.filter(b => b.type === 'poison');
+  for (const p of poisons) {
+    const poisonRaw = p.value || 10;
+    const poisonDmg = Math.max(1, Math.round(poisonRaw * calcDmgMult(f.mr)));
+    f.hp = Math.max(0, f.hp - poisonDmg);
+    spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
+    if (f.hp <= 0) break;
+  }
+  if (!f.alive) { checkDeaths(null); return; }
+  // Bleed DoT (physical, reduced by DEF)
+  const bleeds = f.buffs.filter(b => b.type === 'bleed');
+  for (const bl of bleeds) {
+    const bleedRaw = bl.value || 10;
+    const bleedDmg = Math.max(1, Math.round(bleedRaw * calcDmgMult(f.def)));
+    f.hp = Math.max(0, f.hp - bleedDmg);
+    spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} 受到 <span style="color:#cc3333">${bleedDmg}流血伤害</span>（剩余${bl.turns-1}回合）`);
+    if (f.hp <= 0) break;
+  }
+  if (!f.alive) { checkDeaths(null); return; }
+  // Ice-Fire combo detonation (consumes both)
+  const hasChill = f.buffs.some(b => b.type === 'chilled');
+  const hasBurn = f.buffs.some(b => b.type === 'phoenixBurnDot');
+  if (hasChill && hasBurn) {
+    f.buffs = f.buffs.filter(b => b.type !== 'chilled' && b.type !== 'phoenixBurnDot');
+    const comboDmg = Math.round(f.maxHp * 0.3);
+    const finalDmg = Math.max(1, Math.round(comboDmg * calcDmgMult(f.mr)));
+    f.hp = Math.max(0, f.hp - finalDmg);
+    spawnFloatingNum(elId, `-${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} <span style="color:#4dabf7">❄️🔥冰火联动！</span>消耗冰寒+灼烧，造成 ${finalDmg} 魔法伤害`);
+    if (f.hp <= 0) f.alive = false;
+    if (!f.alive) checkDeaths(null);
+  }
+}
+
+// Per-fighter HOT/regeneration tick: hot buff + bubbleStore passive.
+// Called from processSideEnd for each member on the OWN (ending) team.
+async function tickHotsOn(f) {
+  if (!f.alive) return;
+  const elId = getFighterElId(f);
+  // HOT (stackable — each ticks independently)
+  const hots = f.buffs.filter(b => b.type === 'hot');
+  for (const h of hots) {
+    const actual = applyHeal(f, h.value);
+    if (actual > 0) {
+      spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
+      updateHpBar(f, elId);
+      addLog(`${f.emoji}${f.name} <span class="log-heal">持续回复${actual}HP</span>（剩余${h.turns-1}回合）`);
+    }
+  }
+  // BubbleStore passive: heal from store + damage random enemy
+  if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
+    const healAmt = Math.round(f.bubbleStore * (f.passive.healPct || 25) / 100);
+    const actual = applyHeal(f, healAmt);
+    f.bubbleStore -= healAmt;
+    if (actual > 0) {
+      spawnFloatingNum(elId, `+${actual}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'bubble-num', 100, 0);
+      updateHpBar(f, elId);
+    }
+    if (f.passive.dmgPct) {
+      const dmgAmt = Math.round(f.bubbleStore * f.passive.dmgPct / 100);
+      f.bubbleStore -= dmgAmt;
+      if (dmgAmt > 0) {
+        const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+        if (enemies.length) {
+          const target = enemies[Math.floor(Math.random() * enemies.length)];
+          const effMr = calcEffDef(f, target, 'magic');
+          const finalDmg = Math.max(1, Math.round(dmgAmt * calcDmgMult(effMr)));
+          applyRawDmg(f, target, finalDmg, false, false, 'magic');
+          const tElId = getFighterElId(target);
+          spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
+          updateHpBar(target, tElId);
+        }
+      }
+    }
+    if (f.bubbleStore < 1) f.bubbleStore = 0;
+    updateHpBar(f, elId);
+    addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">泡泡回复${actual}HP` + (f.passive.dmgPct ? ` + 泡泡伤害` : '') + `</span>（剩余储存${Math.round(f.bubbleStore)}）`);
+  }
+}
+
+// Called from finishSide after a side completes all its actions.
+// Ticks DoTs on the OPPOSING team and HOTs on the OWN team so every buff
+// resolves once per round, with a clear cause-effect beat before the other
+// side starts acting.
+async function processSideEnd(endedSide) {
+  const ownTeam = endedSide === 'left' ? leftTeam : rightTeam;
+  const oppTeam = endedSide === 'left' ? rightTeam : leftTeam;
+  let anyTick = false;
+  for (const f of oppTeam) {
+    const hadDots = f.alive && f.buffs.some(b => b.type === 'dot' || b.type === 'phoenixBurnDot' || b.type === 'poison' || b.type === 'bleed' || (b.type === 'chilled' && f.buffs.some(b2 => b2.type === 'phoenixBurnDot')));
+    if (hadDots) { anyTick = true; await tickDotsOn(f); }
+    if (checkBattleEnd()) return;
+  }
+  for (const f of ownTeam) {
+    const hasHot = f.alive && (f.buffs.some(b => b.type === 'hot') || (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0));
+    if (hasHot) { anyTick = true; await tickHotsOn(f); }
+  }
+  if (anyTick) await sleep(600);
+}
+
+// Legacy round-end bookkeeping: lava shield / bubble shield / ink link
+// tick-downs, buff turns--, critUp removal, phantomStrike trigger.
+// Called from finishSide when both sides have ended their turn.
+async function processRoundEndBuffs() {
   let hadTick = false;
   for (const f of allFighters) {
     if (!f.alive) continue;
     const elId = getFighterElId(f);
-    // DoT damage
-    const dots = f.buffs.filter(b => b.type === 'dot');
-    for (const d of dots) {
-      f.hp = Math.max(0, f.hp - d.value);
-      spawnFloatingNum(elId, `-${d.value}`, 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
-      updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
-      hadTick = true;
-      if (f.hp <= 0) { f.alive = false; break; }
-    }
-    if (!f.alive) {
-      checkDeaths(null);
-      if (checkBattleEnd()) return;
-      continue;
-    }
-    // Burn DoT (magic damage — reduced by MR, blocked by shields)
-    const pBurns = f.buffs.filter(b => b.type === 'phoenixBurnDot');
-    for (const pb of pBurns) {
-      const rawBurn = pb.value + Math.round(f.maxHp * pb.hpPct / 100);
-      // Reduce by MR since burn is magic damage (negative MR = amplified)
-      const burnDmg = Math.max(1, Math.round(rawBurn * calcDmgMult(f.mr)));
-      const burnSource = (pb.sourceIdx !== undefined && pb.sourceIdx >= 0) ? allFighters[pb.sourceIdx] : null;
-      const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
-      if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
-      if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
-      updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
-      hadTick = true;
-      // applyRawDmg defaults to immediate death (alive is already false).
-      if (f.hp <= 0) break;
-    }
-    // Poison DoT (magic damage — reduced by MR)
-    const poisons = f.buffs.filter(b => b.type === 'poison');
-    for (const p of poisons) {
-      const poisonRaw = p.value || 10;
-      const poisonDmg = Math.max(1, Math.round(poisonRaw * calcDmgMult(f.mr)));
-      f.hp = Math.max(0, f.hp - poisonDmg);
-      spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
-      updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
-      hadTick = true;
-      if (f.hp <= 0) break;
-    }
-    if (!f.alive) {
-      checkDeaths(null);
-      if (checkBattleEnd()) return;
-      continue;
-    }
-    // Bleed DoT (物理伤害, reduced by DEF)
-    const bleeds = f.buffs.filter(b => b.type === 'bleed');
-    for (const bl of bleeds) {
-      const bleedRaw = bl.value || 10;
-      const bleedDmg = Math.max(1, Math.round(bleedRaw * calcDmgMult(f.def)));
-      f.hp = Math.max(0, f.hp - bleedDmg);
-      spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
-      updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} 受到 <span style="color:#cc3333">${bleedDmg}流血伤害</span>（剩余${bl.turns-1}回合）`);
-      hadTick = true;
-      if (f.hp <= 0) break;
-    }
-    if (!f.alive) {
-      checkDeaths(null);
-      if (checkBattleEnd()) return;
-      continue;
-    }
-    // Ice-Fire combo: if target has both 冰寒(chilled) and 灼烧(burn), consume both → 30% maxHP magic damage
-    const hasChill = f.buffs.some(b => b.type === 'chilled');
-    const hasBurn = f.buffs.some(b => b.type === 'phoenixBurnDot');
-    if (hasChill && hasBurn) {
-      f.buffs = f.buffs.filter(b => b.type !== 'chilled' && b.type !== 'phoenixBurnDot');
-      const comboDmg = Math.round(f.maxHp * 0.3);
-      const finalDmg = Math.max(1, Math.round(comboDmg * calcDmgMult(f.mr)));
-      f.hp = Math.max(0, f.hp - finalDmg);
-      spawnFloatingNum(elId, `-${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
-      updateHpBar(f, elId);
-      addLog(`${f.emoji}${f.name} <span style="color:#4dabf7">❄️🔥冰火联动！</span>消耗冰寒+灼烧，造成 ${finalDmg} 魔法伤害`);
-      hadTick = true;
-      if (f.hp <= 0) { f.alive = false; }
-    }
-    if (!f.alive) {
-      checkDeaths(null);
-      if (checkBattleEnd()) return;
-      continue;
-    }
-    // Lava shield tick
+    // Lava shield tick down
     if (f._lavaShieldTurns > 0) {
       f._lavaShieldTurns--;
       if (f._lavaShieldTurns <= 0) {
@@ -633,50 +701,6 @@ async function processBuffs() {
         f._lavaShieldCounter = 0;
         addLog(`${f.emoji}${f.name} 的熔岩盾消散了`);
       }
-    }
-    // HOT heal (stackable — each hot ticks independently)
-    const hots = f.buffs.filter(b => b.type === 'hot');
-    for (const h of hots) {
-      const actual = applyHeal(f, h.value);
-      if (actual > 0) {
-        spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0);
-        updateHpBar(f, elId);
-        addLog(`${f.emoji}${f.name} <span class="log-heal">持续回复${actual}HP</span>（剩余${h.turns-1}回合）`);
-        hadTick = true;
-      }
-    }
-    // BubbleStore passive: heal 25% + damage 25% of stored value
-    if (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0) {
-      // Heal portion
-      const healAmt = Math.round(f.bubbleStore * (f.passive.healPct || 25) / 100);
-      const actual = applyHeal(f, healAmt);
-      f.bubbleStore -= healAmt;
-      if (actual > 0) {
-        spawnFloatingNum(elId, `+${actual}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'bubble-num', 100, 0);
-        updateHpBar(f, elId);
-        hadTick = true;
-      }
-      // Damage portion: magic damage to random enemy
-      if (f.passive.dmgPct) {
-        const dmgAmt = Math.round(f.bubbleStore * f.passive.dmgPct / 100);
-        f.bubbleStore -= dmgAmt;
-        if (dmgAmt > 0) {
-          const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-          if (enemies.length) {
-            const target = enemies[Math.floor(Math.random() * enemies.length)];
-            const effMr = calcEffDef(f, target, 'magic');
-            const finalDmg = Math.max(1, Math.round(dmgAmt * calcDmgMult(effMr)));
-            applyRawDmg(f, target, finalDmg, false, false, 'magic');
-            const tElId = getFighterElId(target);
-            spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
-            updateHpBar(target, tElId);
-            hadTick = true;
-          }
-        }
-      }
-      if (f.bubbleStore < 1) f.bubbleStore = 0;
-      updateHpBar(f, elId); // refresh bubble store bar
-      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">泡泡回复${actual}HP` + (f.passive.dmgPct ? ` + 泡泡伤害` : '') + `</span>（剩余储存${Math.round(f.bubbleStore)}）`);
     }
     // BubbleShield tick down
     if (f.bubbleShieldTurns > 0) {
@@ -973,12 +997,22 @@ async function nextSideAction() {
 
 async function finishSide() {
   if (battleOver) return;
+  // KOF98OL-style side-end DoT/HOT tick: debuffs we put on them resolve now
+  // (targeting opposing team), and buffs we put on ourselves tick now (own
+  // team). Single, focused tick pass per side — no overlapping floats.
+  await processSideEnd(activeSide);
+  if (checkBattleEnd()) return;
+
   sidesActedThisRound++;
   if (sidesActedThisRound >= 2) {
     // Prevent re-entry (summon executeAction could trigger finishSide again)
     if (_processingEndOfRound) return;
     _processingEndOfRound = true;
     // Both sides acted → end of round (guest processes identically via seeded random)
+    // Round-end bookkeeping: lava/bubble/hiding shield, ink link, buff turns--,
+    // critUp removal, phantomStrike trigger.
+    await processRoundEndBuffs();
+    if (checkBattleEnd()) { _processingEndOfRound = false; return; }
     {
       // Summon auto-action at end of turn (once per summon)
       for (const f of allFighters) {
