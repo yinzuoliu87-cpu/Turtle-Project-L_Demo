@@ -247,6 +247,56 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
   }, delayMs || 0);
 }
 
+// ── CANONICAL MULTI-TYPE DAMAGE STACK ─────────────────────
+// Single entry point for spawning multi-type damage floats on a single hit.
+// Enforces the TOP → BOTTOM vertical order so callers never have to track
+// yOffset or remember which class goes where. Use this instead of multiple
+// raw spawnFloatingNum calls whenever a hit deals 2+ damage types.
+//
+// Order (top = largest yOffset, since y0 = -(yOffset + ...) in engine):
+//   PIERCE / TRUE  (white)  ← TOP
+//   MAGIC          (blue)
+//   PHYSICAL       (red)    ← BOTTOM
+//   SHIELD / BUBBLE (absorb) ← below all damage (informational)
+//
+// Usage — shorthand with numbers:
+//   spawnHitStack(tElId, { physical:phys, pierce:trueDmg },
+//                 { atkSide:attacker.side, isCrit });
+//
+// Usage — per-part object with suffix/icon:
+//   spawnHitStack(tElId, {
+//     physical: { amt: phys, suffix: '<img...>' },
+//     magic:    { amt: magic },
+//   }, { atkSide, isCrit, delayMs: 80 });
+//
+// Supported keys in parts: bubbleAbs, shieldAbs, physical, magic, pierce
+// (pierce covers both "pierce-dmg" and "true-dmg" flavors — same white color).
+// opts: { atkSide, isCrit, delayMs }
+function spawnHitStack(elId, parts, opts) {
+  opts = opts || {};
+  const atkSide = opts.atkSide;
+  const isCrit = !!opts.isCrit;
+  const delayMs = opts.delayMs || 0;
+  const GAP = 22;
+  const norm = (p) => typeof p === 'number' ? { amt: p } : (p || {});
+  const phys  = norm(parts.physical);
+  const mag   = norm(parts.magic);
+  const pier  = norm(parts.pierce);
+  const sh    = norm(parts.shieldAbs);
+  const bub   = norm(parts.bubbleAbs);
+  // Build bottom-up (yOffset ascending puts each item higher on screen).
+  const items = [];
+  if (bub.amt > 0) items.push({ cls:'shield-dmg', amt:bub.amt, suffix:bub.suffix || '' });
+  if (sh.amt  > 0) items.push({ cls:'shield-dmg', amt:sh.amt,  suffix:sh.suffix  || '' });
+  if (phys.amt > 0) items.push({ cls:isCrit?'crit-dmg':'direct-dmg', amt:phys.amt, suffix:phys.suffix || '' });
+  if (mag.amt  > 0) items.push({ cls:isCrit?'crit-magic':'magic-dmg', amt:mag.amt,  suffix:mag.suffix  || '' });
+  if (pier.amt > 0) items.push({ cls:isCrit?'crit-pierce':'pierce-dmg', amt:pier.amt, suffix:pier.suffix || '' });
+  items.forEach((it, idx) => {
+    spawnFloatingNum(elId, `-${it.amt}${it.suffix}`, it.cls, delayMs, idx * GAP,
+      { atkSide, amount: it.amt });
+  });
+}
+
 // ── BATTLE START ──────────────────────────────────────────
 function resetBattleState() {
   turnNum=1; currentIdx=0; leftTeam=[]; rightTeam=[];

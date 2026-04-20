@@ -186,7 +186,19 @@
       "Bash(sed -n '1205,1210p' \"c:\\\\Users\\\\Louis\\\\Documents\\\\GitHub\\\\Turtle-Project-L_Demo\\\\games\\\\turtle-battle\\\\style.css\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code} %{time_total}s\" \"https://0.peerjs.com/\")",
       "Bash(curl -s -o /dev/null -w \"%{http_code} %{time_total}s\" \"https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917\")",
-      "Bash(curl -s \"https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917\")"
+      "Bash(curl -s \"https://turtle-battle.metered.live/api/v1/turn/credentials?apiKey=c5ae72e0edb4a6269abe9bfb7257d3ae5917\")",
+      "Bash(ls -d /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/games/turtle-battle*/)",
+      "Bash(ls -d /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/*v1*/ /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/*V1*/ /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo/*1.0*/)",
+      "Bash(git fetch:*)",
+      "Bash(git stash:*)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo status --short)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo log --oneline -3)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo add games/turtle-battle/index.html games/turtle-battle/js/engine.js games/turtle-battle/js/main.js games/turtle-battle/js/ui.js games/turtle-battle/style.css)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo commit -m ':*)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo push origin main)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo add games/turtle-battle/js/main.js games/turtle-battle/js/ui.js games/turtle-battle/js/engine.js games/turtle-battle/style.css)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo add games/turtle-battle/index.html games/turtle-battle/js/main.js games/turtle-battle/js/ui.js games/turtle-battle/style.css)",
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo log --oneline -10)"
     ]
   }
 }

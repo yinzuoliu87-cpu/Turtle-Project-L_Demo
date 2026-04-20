@@ -948,7 +948,7 @@ async function doAngelEquality(attacker, target, skill) {
     totalDmgDealt += pierceDmg;
 
 
-    spawnFloatingNum(tElId, `-${pierceDmg}`, 'pierce-dmg', 80, 24);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, 24, {atkSide: attacker.side, amount: pierceDmg});
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, pierceDmg);
 
@@ -2108,7 +2108,7 @@ async function doShellStrike(attacker, target, skill) {
       totalPierce += dmg;
       totalShieldDmg += shieldAbs;
   
-      spawnFloatingNum(tElId, `-${dmg}`, 'pierce-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff, {atkSide: attacker.side, amount: dmg});
     }
     totalDmgDealt += dmg;
 
@@ -2120,7 +2120,7 @@ async function doShellStrike(attacker, target, skill) {
         for (const e of others) {
           applyRawDmg(attacker, e, splashDmg, false, false, 'physical');
           const eElId = getFighterElId(e);
-          spawnFloatingNum(eElId, `-${splashDmg}溅射`, 'direct-dmg', 0, yOff);
+          spawnFloatingNum(eElId, `-${splashDmg}溅射`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: splashDmg});
           updateHpBar(e, eElId);
           await triggerOnHitEffects(attacker, e, splashDmg);
         }

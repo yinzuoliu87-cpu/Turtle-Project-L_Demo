@@ -1615,6 +1615,36 @@ function debugResetCds() {
   showToast('所有CD重置');
 }
 
+const DMG_FONT_LABELS = { impact:'Impact', bangers:'Bangers', bungee:'Bungee', russo:'Russo One', blackops:'Black Ops One', luckiest:'Luckiest Guy', pixel:'Press Start 2P' };
+const DMG_FONT_CYCLE = ['impact','bangers','bungee','russo','blackops','luckiest','pixel'];
+function debugSetDmgFont(key) {
+  document.body.setAttribute('data-dmg-font', key);
+  try { localStorage.setItem('dmgFont', key); } catch(e) {}
+  const lbl = document.getElementById('debugDmgFontLabel');
+  if (lbl) lbl.textContent = DMG_FONT_LABELS[key] || key;
+  const clbl = document.getElementById('dmgFontCycleLabel');
+  if (clbl) clbl.textContent = DMG_FONT_LABELS[key] || key;
+  showToast(`伤害字体：${DMG_FONT_LABELS[key] || key}`);
+}
+function debugCycleDmgFont() {
+  const cur = document.body.getAttribute('data-dmg-font') || 'impact';
+  const i = DMG_FONT_CYCLE.indexOf(cur);
+  const next = DMG_FONT_CYCLE[(i + 1) % DMG_FONT_CYCLE.length];
+  debugSetDmgFont(next);
+}
+(function initDmgFont(){
+  let saved = 'impact';
+  try { saved = localStorage.getItem('dmgFont') || 'impact'; } catch(e) {}
+  document.body.setAttribute('data-dmg-font', saved);
+  const apply = () => {
+    const lbl = document.getElementById('debugDmgFontLabel');
+    if (lbl) lbl.textContent = DMG_FONT_LABELS[saved] || saved;
+    const clbl = document.getElementById('dmgFontCycleLabel');
+    if (clbl) clbl.textContent = DMG_FONT_LABELS[saved] || saved;
+  };
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', apply); else apply();
+})();
+
 function debugExportLog() {
   const log = document.getElementById('battleLog');
   if (!log) { showToast('没有战斗日志'); return; }

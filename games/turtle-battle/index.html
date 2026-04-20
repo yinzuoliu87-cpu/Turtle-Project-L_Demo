@@ -35,6 +35,11 @@
 <link rel="icon" type="image/png" href="assets/passive/unyielding-icon.png">
 <link rel="apple-touch-icon" href="assets/passive/unyielding-icon.png">
 
+<!-- Candidate damage-number fonts (debug switcher) -->
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bangers&family=Bungee&family=Russo+One&family=Black+Ops+One&family=Press+Start+2P&family=Luckiest+Guy&display=swap" rel="stylesheet">
+
 <!-- Structured Data -->
 <script type="application/ld+json">
 {
@@ -435,6 +440,7 @@
 
 <!-- ══════ BUG REPORT ══════ -->
 <button id="bugReportBtn" class="bug-report-btn" onclick="showBugReport()" title="反馈问题">🐛</button>
+<button id="dmgFontCycleBtn" class="dmg-font-cycle-btn" onclick="debugCycleDmgFont()" title="切换伤害字体">Aa <span id="dmgFontCycleLabel">Impact</span></button>
 <div id="bugReportPanel" class="bug-report-overlay" onclick="if(event.target===this)hideBugReport()">
   <div class="bug-report-box">
     <div class="bug-report-header">
@@ -483,6 +489,17 @@
       <button class="btn btn-sm" onclick="debugKillAllAllies()">击杀己方</button>
       <button class="btn btn-sm" onclick="debugResetCds()">重置所有CD</button>
       <button class="btn btn-sm" onclick="debugExportLog()">📋 复制战斗日志</button>
+    </div>
+    <div class="debug-section">
+      <div class="debug-section-title">伤害字体（实时切换）</div>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('impact')">Impact（默认）</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('bangers')">Bangers</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('bungee')">Bungee</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('russo')">Russo One</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('blackops')">Black Ops</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('luckiest')">Luckiest Guy</button>
+      <button class="btn btn-sm" onclick="debugSetDmgFont('pixel')">Pixel 8-bit</button>
+      <div style="margin-top:6px;font-size:10px;color:var(--fg2)">当前：<span id="debugDmgFontLabel">Impact</span></div>
     </div>
     <div class="debug-section">
       <div class="debug-section-title">信息</div>
