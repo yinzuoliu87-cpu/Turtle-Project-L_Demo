@@ -923,7 +923,12 @@ function confirmTeam() {
     leftTeam = _buildTeamFromSlots('left');
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
     const bossPet = bossPool[Math.floor(Math.random() * bossPool.length)];
-    const boss = _createAiFighter(bossPet.id, 'right', 10);
+    // Boss scales to player team's average level (not hardcoded Lv.10) so a
+    // Lv.1 team doesn't face a Lv.10 boss with all the level-scaled stats on
+    // top of the boss multipliers. 3v1 + 3.5× HP / 1.2× ATK / 1.4× DEF/MR is
+    // already the "boss bonus" — level equality keeps the fight fair.
+    const bossLv = _avgLevel(leftTeam);
+    const boss = _createAiFighter(bossPet.id, 'right', bossLv);
     boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
     boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
     boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
