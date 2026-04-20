@@ -2840,7 +2840,7 @@ async function doChestSmash(attacker, target, skill) {
     if (hasThunder && target.alive) {
       target._goldLightning = (target._goldLightning || 0) + 1;
       renderStatusIcons(target);
-      if (target._goldLightning >= 8) {
+      if (target._goldLightning >= 5) {
         target._goldLightning = 0;
         const thunderDmg = Math.round(attacker.atk * 1.0);
         applyRawDmg(attacker, target, thunderDmg, false, false, 'true');
@@ -2863,7 +2863,7 @@ async function doChestSmash(attacker, target, skill) {
         if (hasThunder && secondary.alive) {
           secondary._goldLightning = (secondary._goldLightning || 0) + 1;
           renderStatusIcons(secondary);
-          if (secondary._goldLightning >= 8) {
+          if (secondary._goldLightning >= 5) {
             secondary._goldLightning = 0;
             const thunderDmg = Math.round(attacker.atk * 1.0);
             applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
@@ -2962,7 +2962,7 @@ async function doChestStorm(attacker, skill) {
       if (hasThunder && enemy.alive) {
         enemy._goldLightning = (enemy._goldLightning || 0) + 1;
         renderStatusIcons(enemy);
-        if (enemy._goldLightning >= 8) {
+        if (enemy._goldLightning >= 5) {
           enemy._goldLightning = 0;
           const thunderDmg = Math.round(attacker.atk * 1.0);
           applyRawDmg(attacker, enemy, thunderDmg, false, false, 'true');

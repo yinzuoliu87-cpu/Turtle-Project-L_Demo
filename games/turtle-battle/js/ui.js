@@ -207,7 +207,7 @@ function renderSceneBuffs(f) {
   // Special state icons (not in buffs array)
   if (f._inkStacks > 0) icons.push(`<span style="color:#b8b8ff" title="墨迹${f._inkStacks}层">${ic('passive/ink-mark-icon.png')}${f._inkStacks}</span>`);
   if (f._shockStacks > 0) icons.push(`<span style="color:#ffd700" title="电击${f._shockStacks}层">${ic('passive/lightning-storm-icon.png')}${f._shockStacks}</span>`);
-  if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/8">${ic('passive/lightning-storm-icon.png')}${f._goldLightning}</span>`);
+  if (f._goldLightning > 0) icons.push(`<span style="color:#ffd700" title="金闪电${f._goldLightning}/5">${ic('passive/lightning-storm-icon.png')}${f._goldLightning}</span>`);
   if (f._collideStacks > 0) icons.push(`<span title="碰撞${f._collideStacks}/2">${ic('passive/diamond-structure-icon.png')}${f._collideStacks}</span>`);
   if (f._crystallize > 0) icons.push(`<span title="结晶${f._crystallize}/4">${ic('passive/crystal-resonance-icon.png')}${f._crystallize}</span>`);
   // Equipment icons
@@ -535,14 +535,14 @@ function showFighterDetail(f) {
     // Non-buff state tags
     if (f._inkStacks > 0) html += tag('#222', `<img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层 (受伤+${f._inkStacks * 5}%)`);
     if (f._shockStacks > 0) html += tag('#ffd700', `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击 ${f._shockStacks}层`);
-    if (f._goldLightning > 0) html += tag('#ffd700', `⚡金闪电 ${f._goldLightning}/8`);
+    if (f._goldLightning > 0) html += tag('#ffd700', `⚡金闪电 ${f._goldLightning}/5`);
     html += '</div>';
   } else {
     // No buffs but might have special states
     const specials = [];
     if (f._inkStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#b8b8ff;color:#b8b8ff;background:rgba(100,100,200,.2)"><img src="assets/passive/ink-mark-icon.png" style="width:14px;height:14px;vertical-align:middle">墨迹 ${f._inkStacks}层</span>`);
     if (f._shockStacks > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡电击 ${f._shockStacks}层</span>`);
-    if (f._goldLightning > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡金闪电 ${f._goldLightning}/8</span>`);
+    if (f._goldLightning > 0) specials.push(`<span class="fdp-buff-tag" style="border-color:#ffd700;color:#ffd700">⚡金闪电 ${f._goldLightning}/5</span>`);
     if (specials.length) html += '<div class="fdp-section-label">状态</div><div class="fdp-buffs">' + specials.join('') + '</div>';
   }
 
@@ -944,13 +944,13 @@ function renderSummonStatusIcons(summon) {
   if (summon._inkLink && summon._inkLink.partner && summon._inkLink.partner.alive && summon._inkLink.turns > 0) {
     box.innerHTML += `<span style="color:#6c5ce7">🔗${summon._inkLink.turns}</span>`;
   }
-  // Shock stacks (lightning)
+  // Shock stacks (lightning turtle's own passive — stackMax 8)
   if (summon._shockStacks > 0) {
     box.innerHTML += `<span style="color:#ffd700">⚡${summon._shockStacks}/8</span>`;
   }
   // Gold lightning
   if (summon._goldLightning > 0) {
-    box.innerHTML += `<span style="color:#ffd700">⚡${summon._goldLightning}/8</span>`;
+    box.innerHTML += `<span style="color:#ffd700">⚡${summon._goldLightning}/5</span>`;
   }
   // Crystallize stacks
   if (summon._crystallize > 0) {
@@ -1496,7 +1496,7 @@ function renderStatusIcons(f) {
     const stored = Math.round(f._storedEnergy || 0);
     box.innerHTML += `<span style="color:#e17055;background:rgba(225,112,85,.18);padding:1px 5px;border-radius:6px;font-weight:700" title="储能: ${stored} · ${turnsUntil}回合后释放冲击波">⚡${turnsUntil}回合</span>`;
   }
-  // Shock stacks indicator
+  // Shock stacks indicator (lightning turtle stackMax 8)
   if (f._shockStacks > 0) {
     box.innerHTML += `<span class="status-dot" title="电击层${f._shockStacks}/8" style="color:#ffd700;background:rgba(255,215,0,.15)">⚡${f._shockStacks}</span>`;
   }
@@ -1567,7 +1567,7 @@ function renderStatusIcons(f) {
   }
   // Gold lightning stacks (from chest thunder equip)
   if (f._goldLightning > 0) {
-    box.innerHTML += `<span style="color:#ffd700;background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="金闪电${f._goldLightning}/8">⚡${f._goldLightning}/8</span>`;
+    box.innerHTML += `<span style="color:#ffd700;background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px" title="金闪电${f._goldLightning}/5">⚡${f._goldLightning}/5</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
@@ -1779,7 +1779,7 @@ function getChestEquipBonusText(f, s) {
   if (s.type === 'chestSmash' || s.type === 'chestStorm') {
     if (hasChestEquip(f, 'fire')) lines.push('🔥火石：命中目标施加灼烧');
     if (hasChestEquip(f, 'poison')) lines.push('☠️毒箭：命中目标施加治疗削减3回合');
-    if (hasChestEquip(f, 'thunder')) lines.push('⚡闪电龟的雷刃：命中叠金闪电层，满8层引爆100%ATK真实伤害');
+    if (hasChestEquip(f, 'thunder')) lines.push('⚡闪电龟的雷刃：命中叠金闪电层，满5层引爆100%ATK真实伤害');
     if (hasChestEquip(f, 'star')) lines.push('🌟星辉：所有伤害转为真实伤害');
   }
   if (!lines.length) return '';

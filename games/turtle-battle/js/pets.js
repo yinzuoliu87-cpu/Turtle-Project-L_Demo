@@ -657,7 +657,7 @@ const ALL_PETS = [
                 // 传说池 (tier 4)
                 [
                   { id:'crown',  icon:'equip/equip-crown-icon.png', name:'王者之冠',   desc:'<span class="val-normal">攻击力</span> <span class="val-atk">+40%</span>，暴击 <span class="val-atk">+40%</span>，<span class="val-atk">爆伤</span> <span class="val-atk">+25%</span>，<span class="val-heal">生命偷取</span> <span class="val-heal">+15%</span>', stat:'crown' },
-                  { id:'thunder',icon:'passive/lightning-storm-icon.png', name:'闪电龟的雷刃',   desc:'「宝箱砸击」和「财宝风暴」命中叠金闪电层，满8层引爆100%ATK <span class="val-true">真实伤害</span>', stat:'thunder' },
+                  { id:'thunder',icon:'passive/lightning-storm-icon.png', name:'闪电龟的雷刃',   desc:'「宝箱砸击」和「财宝风暴」命中叠金闪电层，满5层引爆100%ATK <span class="val-true">真实伤害</span>', stat:'thunder' },
                   { id:'star',   icon:'equip/equip-star-icon.png', name:'星际龟的星辉',   desc:'所有伤害转为 <span class="val-true">真实伤害</span>', stat:'trueDmg' },
                 ],
               ],
