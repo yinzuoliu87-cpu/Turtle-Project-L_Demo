@@ -1997,8 +1997,8 @@ function renderActionButtons(f) {
     </div>`;
   }).join('');
 
-  // Combo skill buttons
-  if (typeof COMBO_SKILLS !== 'undefined') {
+  // Combo skill buttons (temporarily disabled — see action.js _COMBO_SKILLS_DISABLED)
+  if (typeof COMBO_SKILLS !== 'undefined' && typeof _COMBO_SKILLS_DISABLED !== 'undefined' && !_COMBO_SKILLS_DISABLED) {
     const team = f.side === 'left' ? leftTeam : rightTeam;
     const aliveIds = team.filter(t => t.alive).map(t => t.id);
     COMBO_SKILLS.forEach((c, ci) => {

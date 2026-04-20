@@ -5,7 +5,12 @@
 // ══════════════════════════════════════════════════════════
 
 // ── COMBO SKILLS ─────────────────────────────────────────
+// Combo skills temporarily disabled — return [] so AI / UI / auto-triggers
+// all treat them as unavailable. Re-enable by removing this early return.
+const _COMBO_SKILLS_DISABLED = true;
+
 function getAvailableCombos(side) {
+  if (_COMBO_SKILLS_DISABLED) return [];
   if (typeof COMBO_SKILLS === 'undefined') return [];
   const team = side === 'left' ? leftTeam : rightTeam;
   const aliveIds = team.filter(f => f.alive).map(f => f.id);
