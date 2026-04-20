@@ -929,7 +929,8 @@ async function doAngelEquality(attacker, target, skill) {
     applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
     totalDmgDealt += judgeReduced;
     skill._judgeTotal += judgeReduced;
-    spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, -20, {atkSide: attacker.side, amount: judgeReduced});
+    // Canonical stack: magic (blue) above physical (red) — yOffset=+22
+    spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 22, {atkSide: attacker.side, amount: judgeReduced});
     updateHpBar(target, tElId);
   }
 
@@ -2391,10 +2392,10 @@ async function doLineFinish(attacker, target, skill) {
   if (pierceDmg > 0) applyRawDmg(attacker, target, pierceDmg, false, false, 'true');
   const totalDmg = normalDmg + pierceDmg;
 
-  // Floating numbers: physical on bottom, true on top
+  // Floating numbers: canonical stack — physical (red) bottom, pierce (white) top
   if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
-  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 22);
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 22, {atkSide: attacker.side, amount: pierceDmg});
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -2425,8 +2426,10 @@ async function doGhostTouch(attacker, target, skill) {
   const totalDmg = normalDmg + pierceDmg;
 
   applyRawDmg(attacker, target, totalDmg, false, false, 'true');
-  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 0);
+  // Canonical stack: pierce (white) above physical (red). yOffset=+22 pushes
+  // pierce higher on screen per the "true > magic > physical" rule.
+  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 22, {atkSide: attacker.side, amount: pierceDmg});
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
