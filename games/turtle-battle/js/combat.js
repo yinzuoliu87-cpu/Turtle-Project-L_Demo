@@ -195,8 +195,7 @@ async function doDamage(attacker, target, skill) {
       }
     }
 
-    // Equipment: 雷鸣贝壳 — every 3rd skill hit triggers 80% ATK magic AoE
-    triggerThunderShell(attacker);
+    // (雷鸣贝壳 thunder hit count handled inside triggerOnHitEffects above)
 
     // Passive: gamblerMultiHit
     await tryGamblerMultiHit(attacker, target, tElId);
@@ -433,6 +432,10 @@ async function doShield(caster, target, skill) {
 // ── ON-HIT EFFECTS (shared helper for all damage sources) ──
 async function triggerOnHitEffects(attacker, target, dmg) {
   if (!target.alive || !attacker.alive || dmg <= 0) return;
+  // Equipment: 雷鸣贝壳 — every 3rd skill hit (any skill, any source) triggers an AoE.
+  // Hooked here so all skill paths (doDamage, AoE barrages, crystalBurst, etc.)
+  // count uniformly without each handler having to call triggerThunderShell.
+  triggerThunderShell(attacker);
   const tElId = getFighterElId(target);
   // TwoHead vitality — shield at 50%
   if (target.passive && target.passive.type === 'twoHeadVitality' && !target._twoHeadHalfTriggered && target.hp / target.maxHp < 0.5) {
