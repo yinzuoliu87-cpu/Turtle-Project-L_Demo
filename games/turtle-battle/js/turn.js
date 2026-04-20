@@ -426,18 +426,10 @@ async function beginTurn() {
         }
       }
     }
-    if (p.type === 'lightningStorm') {
-      const enemies = allFighters.filter(e => e.alive && e.side !== s.side);
-      if (enemies.length) {
-        const t = enemies[Math.floor(Math.random() * enemies.length)];
-        const sDmg = Math.round(s.atk * p.shockScale);
-        applyRawDmg(s, t, sDmg, true);
-        const tElId = getFighterElId(t);
-        spawnFloatingNum(tElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${sDmg}`, 'pierce-dmg', 0, 0);
-        updateHpBar(t, tElId);
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive"><img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${t.emoji}${t.name} ${sDmg}真实</span>`);
-      }
-    }
+    // lightningStorm now fires in processLightningStorm(side) at side-end
+    // (called from processSideEnd), not here — so both turtle and summon
+    // owners take a single unified code path and fire after the acting
+    // side's actions conclude, matching the DoT/HOT beat.
     // Bamboo charge
     if (p.type === 'bambooCharge') {
       s._bambooFired = false;
@@ -674,9 +666,10 @@ async function processSideEnd(endedSide) {
   const oppTeam = endedSide === 'left' ? rightTeam : leftTeam;
   const dotCandidates = oppTeam.filter(f => f.alive && f.buffs.some(b => b.type === 'dot' || b.type === 'phoenixBurnDot' || b.type === 'poison' || b.type === 'bleed' || (b.type === 'chilled' && f.buffs.some(b2 => b2.type === 'phoenixBurnDot'))));
   const hotCandidates = ownTeam.filter(f => f.alive && (f.buffs.some(b => b.type === 'hot') || (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0)));
-  if (dotCandidates.length === 0 && hotCandidates.length === 0) return;
-  // Pause 1.5s between the last action and the first DoT/HOT float so the
-  // cause-effect beat ("我打完 → 对面受烧") reads cleanly, KOF98OL-style.
+  const lightningOwners = ownTeam.filter(f => f.alive && f.passive && f.passive.type === 'lightningStorm');
+  if (dotCandidates.length === 0 && hotCandidates.length === 0 && lightningOwners.length === 0) return;
+  // Pause 1.5s between the last action and the first side-end effect so the
+  // cause-effect beat ("我打完 → 敌方受烧/挨电") reads cleanly, KOF98OL-style.
   await sleep(1500);
   for (const f of dotCandidates) {
     await tickDotsOn(f);
@@ -684,6 +677,11 @@ async function processSideEnd(endedSide) {
   }
   for (const f of hotCandidates) {
     await tickHotsOn(f);
+  }
+  // Lightning storm: our side's 闪电龟 zaps a random enemy at end of our turn
+  if (lightningOwners.length > 0) {
+    await processLightningStorm(endedSide);
+    if (checkBattleEnd()) return;
   }
   await sleep(600);
 }
@@ -1030,8 +1028,7 @@ async function finishSide() {
       }
       await processFortuneGold();
       if (battleOver) { _processingEndOfRound = false; return; }
-      await processLightningStorm();
-      if (battleOver) { _processingEndOfRound = false; return; }
+      // processLightningStorm now fires per-side-end in processSideEnd — no round-end call.
       if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) { _processingEndOfRound = false; return; } }
     }
     _processingEndOfRound = false;

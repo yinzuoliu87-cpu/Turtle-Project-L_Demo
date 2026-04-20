@@ -666,10 +666,14 @@ async function processFortuneGold() {
   }
 }
 
-// ── LIGHTNING STORM PASSIVE (per batch end) ───────────────
-async function processLightningStorm() {
+// ── LIGHTNING STORM PASSIVE (side-end) ────────────────────
+// Fires once per round, at the end of the owner's side's turn (right after
+// DoT/HOT tick). Covers both full turtles and summons with the lightningStorm
+// passive — so one call path is the single source of truth.
+async function processLightningStorm(side) {
   for (const f of allFighters) {
     if (!f.alive || !f.passive || f.passive.type !== 'lightningStorm') continue;
+    if (side && f.side !== side) continue; // only owners on the ending side
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     if (!enemies.length) continue;
     const target = enemies[Math.floor(Math.random() * enemies.length)];
@@ -677,10 +681,10 @@ async function processLightningStorm() {
     // Pierce damage through applyRawDmg
     applyRawDmg(f, target, shockDmg, true, false, 'true');
     const eElId = getFighterElId(target);
+    const ownerTag = f._isSummon ? '(随从)' : '';
     spawnFloatingNum(eElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);
-    addLog(`${f.emoji}${f.name} 被动：<span class="log-pierce"><img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${target.emoji}${target.name} ${shockDmg}真实</span>`);
-    // Trigger on-hit effects (shock stack, trap, reflect, etc.)
+    addLog(`${f.emoji}${f.name}${ownerTag} 被动：<span class="log-pierce"><img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">电击${target.emoji}${target.name} ${shockDmg}真实</span>`);
     await triggerOnHitEffects(f, target, shockDmg);
     checkDeaths(f);
     if (checkBattleEnd()) return;
