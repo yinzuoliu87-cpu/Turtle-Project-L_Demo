@@ -287,7 +287,14 @@ function getSkillPool(petId) {
 function getSavedLoadout(petId) {
   try {
     const data = JSON.parse(localStorage.getItem('skillLoadouts') || '{}');
-    return data[petId] || null;
+    const saved = data[petId];
+    if (!Array.isArray(saved) || saved.length === 0) return null;
+    // Validate against current level: if any saved skill is now locked (e.g. user
+    // picked skill index 3 at lv4 then reset pet to lv1), discard the loadout and
+    // fall back to defaultSkills [0,1,2]. We don't delete the saved entry so it
+    // comes back automatically when the pet is re-leveled up.
+    const unlocked = new Set(getAvailableSkillIndices(petId));
+    return saved.every(idx => unlocked.has(idx)) ? saved : null;
   } catch(e) { return null; }
 }
 
