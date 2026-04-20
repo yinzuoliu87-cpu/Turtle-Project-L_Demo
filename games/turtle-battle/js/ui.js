@@ -112,7 +112,6 @@ function renderScene() {
     }
 
     el.innerHTML = `
-      <div class="st-name" style="color:${RARITY_COLORS[f.rarity]}">${f.name}</div>
       <div class="st-hp-row" style="display:flex;align-items:center;gap:3px">
         ${f._level ? `<span class="st-level-badge">Lv.${f._level}</span>` : ''}
       <div class="st-hp-wrap">
