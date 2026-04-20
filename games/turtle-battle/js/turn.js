@@ -503,11 +503,12 @@ async function beginTurn() {
 async function tickDotsOn(f) {
   if (!f.alive) return;
   const elId = getFighterElId(f);
-  // dot (generic)
+  // dot (generic). Individual dots can override the float class via
+  // d.floatCls (ghost curse uses 'true-dmg' for white pierce feel).
   const dots = f.buffs.filter(b => b.type === 'dot');
   for (const d of dots) {
     f.hp = Math.max(0, f.hp - d.value);
-    spawnFloatingNum(elId, `-${d.value}`, 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
+    spawnFloatingNum(elId, `-${d.value}`, d.floatCls || 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
     if (f.hp <= 0) { f.alive = false; break; }

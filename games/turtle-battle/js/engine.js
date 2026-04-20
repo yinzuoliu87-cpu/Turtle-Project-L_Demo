@@ -123,8 +123,12 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
 
   setTimeout(() => {
     if (_sfxFn) try { _sfxFn(); } catch(e) {}
-    const parent = document.getElementById(elId);
-    if (!parent) return;
+    const rawParent = document.getElementById(elId);
+    if (!rawParent) return;
+    // Prefer .st-body as parent so floats follow knockback / hop animations
+    // (body moves, float moves with it — KOF98OL "numbers stay pinned to the
+    // reeling character"). Summon mini-cards have no .st-body; fall back to root.
+    const parent = rawParent.querySelector(':scope > .st-body') || rawParent;
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
     if (typeof text === 'string' && text.includes('<')) num.innerHTML = text;

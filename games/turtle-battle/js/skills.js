@@ -794,7 +794,8 @@ async function doIceSpike(attacker, target, skill) {
             const judgeReduced = Math.max(1, Math.round(judgeRaw * calcDmgMult(jMr) * critMult));
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalNormal += judgeReduced;
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff - 20, {atkSide: attacker.side, amount: judgeReduced});
+      // Canonical stack: judgement magic sits ABOVE the main physical hit (rule: blue > red).
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: judgeReduced});
       updateHpBar(target, tElId);
     }
 

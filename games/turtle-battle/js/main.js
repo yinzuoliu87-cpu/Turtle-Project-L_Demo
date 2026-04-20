@@ -1164,7 +1164,7 @@ function startBattle(seed) {
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       const curseDmgPct = f.passive ? f.passive.hpPct : 9;
       for (const e of enemies) {
-        e.buffs.push({ type:'dot', value: Math.round(e.maxHp * curseDmgPct / 100 * (f._ghostCurseDmgMult||1)), turns:3 });
+        e.buffs.push({ type:'dot', value: Math.round(e.maxHp * curseDmgPct / 100 * (f._ghostCurseDmgMult||1)), turns:3, floatCls:'true-dmg' });
       }
       addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">👻强化怨灵！开场诅咒全体敌人3回合！</span>`);
     }

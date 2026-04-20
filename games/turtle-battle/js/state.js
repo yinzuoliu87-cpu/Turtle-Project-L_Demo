@@ -282,7 +282,9 @@ function checkDeaths(attacker) {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
         for (const e of enemies) {
           const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
-          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side });
+          // floatCls: 'true-dmg' marks the tick as true (white) — curse bypasses
+          // armor mechanically and should read white in the float stack.
+          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side, floatCls:'true-dmg' });
           const eElId = getFighterElId(e);
           spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
           renderStatusIcons(e);
