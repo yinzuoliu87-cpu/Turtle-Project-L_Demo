@@ -2114,19 +2114,43 @@ function dungeonPickEquipItem(idx) {
   const ds = dungeonState;
   const aliveIds = ds.battleIds.filter(id => !ds.deadIds.includes(id));
   const targetsEl = document.getElementById('dungeonEquipTargetBtns');
+  const EQUIP_CAP = 4;
   const buttons = aliveIds.map(id => {
     const p = ALL_PETS.find(x => x.id === id);
     const existing = (ds.carryState && ds.carryState[id] && ds.carryState[id]._equips) || [];
-    return `<button class="btn btn-target" onclick="dungeonApplyEquipTo('${id}')" style="margin:4px" ${existing.length >= 2 ? 'disabled' : ''}>
-      ${p.emoji} ${p.name} (${existing.length}/2)
+    if (existing.length >= EQUIP_CAP) {
+      // Overflow path: equip slots full → click heals 20% maxHp instead
+      return `<button class="btn btn-target" onclick="dungeonHealOverflow('${id}')" style="margin:4px;background:linear-gradient(180deg,#06d6a0,#089e6b);color:#fff" title="装备已满，改为回复20%最大HP">
+        ${p.emoji} ${p.name} 💚 回复20%HP (${existing.length}/${EQUIP_CAP})
+      </button>`;
+    }
+    return `<button class="btn btn-target" onclick="dungeonApplyEquipTo('${id}')" style="margin:4px">
+      ${p.emoji} ${p.name} (${existing.length}/${EQUIP_CAP})
     </button>`;
   }).join('');
-  const allMax = aliveIds.every(id => {
-    const existing = (ds.carryState && ds.carryState[id] && ds.carryState[id]._equips) || [];
-    return existing.length >= 2;
-  });
-  targetsEl.innerHTML = buttons + (allMax ? '<p style="color:#ff9f43;font-size:11px;margin-top:8px">所有存活龟装备已满，请跳过</p>' : '');
+  targetsEl.innerHTML = buttons;
   document.getElementById('dungeonEquipTargets').style.display = 'block';
+}
+
+// Overflow handler: when a turtle's equip slots are full, the equip pick becomes a heal.
+function dungeonHealOverflow(turtleId) {
+  const overlay = document.getElementById('dungeonEquipOverlay');
+  if (overlay) {
+    overlay.classList.remove('show');
+    setTimeout(() => overlay.remove(), 300);
+  }
+  const ds = dungeonState;
+  const p = ALL_PETS.find(x => x.id === turtleId);
+  const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
+  const healAmt = Math.round(maxHp * 0.20);
+  if (!ds.teamHp) ds.teamHp = {};
+  const before = ds.teamHp[turtleId] != null ? ds.teamHp[turtleId] : maxHp;
+  ds.teamHp[turtleId] = Math.min(maxHp, before + healAmt);
+  const actual = ds.teamHp[turtleId] - before;
+  showToast(`💚 ${p.emoji}${p.name} 装备已满 → 回复 ${actual} HP`);
+  showDungeonTeamStatus();
+  ds.stage++;
+  setTimeout(() => dungeonStartStage(), 500);
 }
 
 function dungeonSkipEquip() {
