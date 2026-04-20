@@ -1409,8 +1409,9 @@ async function doCrystalBurst(attacker, skill) {
       enemy._pendingCrystalBoom = 0;
       totalAll += boom;
       const shownMagic = magicDmg + boom;
-      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:shownMagic});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
+      // Stack order: true on top, magic below (larger yOffset = higher on screen)
+      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:shownMagic});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');
@@ -1653,8 +1654,9 @@ async function doVolcanoErupt(attacker, skill) {
       applyRawDmg(attacker, enemy, magicDmg, false, false, 'magic');
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
+      // Stack order: true on top, magic below
+      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
@@ -1706,11 +1708,11 @@ async function doRainbowStorm(attacker, skill) {
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAllDmg += magicDmg + trueDmg;
 
-      // Stagger numbers vertically to avoid overlap
+      // Stack order: true on top, magic below (larger yOffset = higher on screen)
       const magicCls = isCrit ? 'crit-magic' : 'magic-dmg';
       const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, (i % 3) * 28 + 20, { atkSide: attacker.side, amount: magicDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: magicDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
 
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       const eEl = document.getElementById(eElId);
@@ -2963,9 +2965,10 @@ async function doChestStorm(attacker, skill) {
       applyRawDmg(attacker, enemy, physDmg, false, false, dmgType);
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, trueType);
       totalAll += physDmg + trueDmg;
+      // Stack order: true on top, physical below
       const physCls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28 + 20, { atkSide: attacker.side, amount: physDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: physDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
       // Thunder equip: stack per hit
       if (hasThunder && enemy.alive) {

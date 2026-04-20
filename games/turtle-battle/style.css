@@ -1943,14 +1943,14 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 /* Crystal turtle: brittle-style burst when 结晶 detonates (purple flash + pulse + expanding ring) */
 .scene-turtle.crystal-burst-fx{animation:crystalBurstPulse .5s ease-out}
 .scene-turtle.crystal-burst-fx .st-sprite{animation:crystalBurstFilter .5s ease-out}
-/* Expanding shock ring from target center */
+/* Expanding shock ring from target center — 2D-plane elliptical (ground ripple style), faster */
 .scene-turtle.crystal-burst-fx::after{
-  content:'';position:absolute;left:50%;top:50%;width:20px;height:20px;
+  content:'';position:absolute;left:50%;top:58%;width:40px;height:16px;
   border:3px solid rgba(199,125,255,.9);border-radius:50%;
   transform:translate(-50%,-50%) scale(0);opacity:1;
   box-shadow:0 0 12px rgba(199,125,255,.8),inset 0 0 8px rgba(199,125,255,.5);
   pointer-events:none;z-index:5;
-  animation:crystalBurstRing .6s ease-out forwards;
+  animation:crystalBurstRing .35s ease-out forwards;
 }
 @keyframes crystalBurstPulse{
   0%{transform:scale(1)}
@@ -1966,8 +1966,8 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 }
 @keyframes crystalBurstRing{
   0%{transform:translate(-50%,-50%) scale(0);opacity:1;border-width:3px}
-  60%{opacity:.8;border-width:3px}
-  100%{transform:translate(-50%,-50%) scale(6);opacity:0;border-width:1px}
+  50%{opacity:.9;border-width:3px}
+  100%{transform:translate(-50%,-50%) scale(4);opacity:0;border-width:1px}
 }
 
 /* Turtle sprite */

@@ -141,16 +141,20 @@ async function doDamage(attacker, target, skill) {
     // Floating number classes by damage type
     const mainCls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
     const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-    // Floating numbers: stacked vertically from center, no per-hit yOffset
-    // Order top→bottom: shield absorb → true(white) → main(red/blue)
+    // Floating numbers: stacked vertically. Larger yOffset = higher on screen.
+    // Canonical order top→bottom for a single hit:
+    //   TRUE (white) > MAGIC > PHYSICAL > shield abs > bubble abs
+    // Shields below the actual damage so info hierarchy matches: big hits up top.
+    const NUM_GAP = 22;
     let ySlot = 0;
-    if (bubbleAbs > 0) { spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: bubbleAbs }); ySlot += 18; }
-    if (shieldAbs > 0) { spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: shieldAbs }); ySlot += 18; }
+    if (bubbleAbs > 0) { spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: bubbleAbs }); ySlot += NUM_GAP; }
+    if (shieldAbs > 0) { spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: shieldAbs }); ySlot += NUM_GAP; }
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
       const trueHp = hpLoss - mainHp;
-      if (trueHp > 0) { spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: trueHp }); ySlot += 18; }
-      if (mainHp > 0) { spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: mainHp }); }
+      // main first (lower), then true on top
+      if (mainHp > 0) { spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: mainHp }); ySlot += NUM_GAP; }
+      if (trueHp > 0) { spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: trueHp }); }
     } else if (hpLoss > 0) {
       spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: hpLoss });
     }
