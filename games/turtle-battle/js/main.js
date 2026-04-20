@@ -1992,8 +1992,38 @@ function dungeonComplete(cleared) {
   showScreen('screenDungeonResult');
 }
 
+// Bring dead dungeon turtles back to life immediately when the clear screen
+// opens, so they can be repositioned and targeted by equip picks. Records a
+// "naked" carryState (empty equips + zero'd accumulators) so the next
+// dungeonStartStage restores them correctly without needing a revive branch.
+function dungeonPreReviveDead() {
+  const ds = dungeonState;
+  if (!ds.deadIds || ds.deadIds.length === 0) return;
+  if (!ds.carryState) ds.carryState = {};
+  const reviveList = ds.deadIds.slice();
+  for (const id of reviveList) {
+    const p = ALL_PETS.find(x => x.id === id);
+    if (!p) continue;
+    const maxHp = Math.round(p.hp * (RARITY_MULT[p.rarity] || 1));
+    ds.teamHp[id] = Math.round(maxHp * 0.7);
+    ds.carryState[id] = {
+      _chestTreasure:0, _chestEquips:[], _chestTier:0, _equips:[],
+      bubbleStore:0, _storedEnergy:0, _starEnergy:0, _drones:0,
+      _goldCoins:0, _stoneDefGained:0,
+      _hunterKills:0, _hunterStolenAtk:0, _hunterStolenDef:0, _hunterStolenHp:0,
+      _lifestealPct:0, _bambooGainedHp:0, _inkStacks:0, _lavaRage:0,
+    };
+  }
+  ds.deadIds = [];
+}
+
 function showDungeonClearScreen() {
   const ds = dungeonState;
+  // Pre-revive: eagerly bring dead turtles back at 70% HP for the clear screen so
+  // they participate normally in repositioning + equip pick. Records a "naked"
+  // carryState (no equips, zero'd accumulators) so the next dungeonStartStage
+  // restores them clean without needing its `revived` branch.
+  dungeonPreReviveDead();
   // Render progress dots
   const progressEl = document.getElementById('dungeonProgress');
   progressEl.innerHTML = '';
