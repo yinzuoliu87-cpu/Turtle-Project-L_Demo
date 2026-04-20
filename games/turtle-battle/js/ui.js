@@ -1596,6 +1596,11 @@ const _colorMap = { N:'val-normal', P:'val-pierce', S:'val-shield', H:'val-heal'
 
 function renderSkillTemplate(template, f, s) {
   if (!template) return '';
+  // Dynamic placeholders — resolve here so every caller (fighter panel, skill
+  // picker, codex, etc.) shows the rendered brief/detail instead of the literal
+  // '_chestSmashBrief_' / '_chestSmashDetail_' placeholder.
+  if (template === '_chestSmashBrief_') return buildChestSmashBrief(f, s);
+  if (template === '_chestSmashDetail_') return buildChestSmashDetail(f, s);
   // Build variable context
   const vars = {
     ATK: f.atk, DEF: f.def, MR: f.mr || f.def, HP: f.maxHp, hits: s.hits || 1,
@@ -1730,14 +1735,20 @@ function colorDmgKeywords(text) {
     .replace(/(?<!"val-[^"]*">)护盾(?!<)/g, '<span class="val-shield">护盾</span>')
     .replace(/(?<!"val-[^"]*">)反伤(?!<)/g, '<span class="val-reflect">反伤</span>');
 }
+// Extracted helper — used by both renderSkillTemplate (for '_chestSmashBrief_'
+// placeholder substitution everywhere) and buildSkillBrief directly.
+function buildChestSmashBrief(f, s) {
+  let total = Math.round(f.atk * s.atkScale);
+  if (hasChestEquip(f, 'rock')) total += f.def + (f.mr || f.def);
+  const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
+  const hits = s.hits || 3;
+  return `宝箱龟砸击敌方${hits}段，共（<span class="val-normal">${total}</span>）${dmgType}`;
+}
+
 function buildSkillBrief(f, s) {
   let result;
   if (s.brief === '_chestSmashBrief_') {
-    let total = Math.round(f.atk * s.atkScale);
-    if (hasChestEquip(f, 'rock')) total += f.def + (f.mr || f.def);
-    const dmgType = hasChestEquip(f, 'star') ? '真实伤害' : '物理伤害';
-    const hits = s.hits || 4;
-    result = `宝箱龟砸击敌方${hits}段，共（<span class="val-normal">${total}</span>）${dmgType}`;
+    result = buildChestSmashBrief(f, s);
   } else {
     result = s.brief ? renderSkillTemplate(s.brief, f, s) : colorDmgKeywords(autoGenerateBrief(f, s));
   }
@@ -1755,7 +1766,7 @@ function buildSkillDetailDesc(f, s) {
   return result;
 }
 function buildChestSmashDetail(f, s) {
-  const hits = s.hits || 4;
+  const hits = s.hits || 3;
   const totalBase = Math.round(f.atk * s.atkScale);
   let totalAll = totalBase;
   let lines = `宝箱龟对单体砸击${hits}段。\n总基础伤害：（${Math.round(s.atkScale*100)}%×<span class="val-normal">攻击力</span>(${f.atk}) = <span class="val-normal">${totalBase}</span>）`;
