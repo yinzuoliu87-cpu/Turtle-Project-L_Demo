@@ -90,7 +90,7 @@ async function doGamblerBet(attacker, target, skill) {
         const dmg = Math.max(1, Math.round(dmgPer * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 4) * 28, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -123,12 +123,12 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
     if (isPierceHit) {
       dmg = Math.round(baseDmg * critMult); // pierce: no DEF reduction
       applyRawDmg(attacker, target, dmg, true, false, 'true');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, (i%4)*18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
     } else {
       const eDef = calcEffDef(attacker, target);
             dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
       applyRawDmg(attacker, target, dmg, false, false, 'magic');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%4)*18);
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     }
     totalDmg += dmg;
     await triggerOnHitEffects(attacker, target, dmg);
@@ -713,7 +713,7 @@ async function doBasicBarrage(attacker, skill) {
     applyRawDmg(attacker, target, dmg, false, false, 'physical', false, true);
     totalDmg += dmg;
 
-    const yOff = (i % 4) * 32;
+    const yOff = 0;
 
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     updateHpBar(target, tElId);
@@ -748,7 +748,7 @@ async function doIceSpike(attacker, target, skill) {
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
     if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
-      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 32);
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, 0);
       await sleep(280);
       continue;
     }
@@ -764,7 +764,7 @@ async function doIceSpike(attacker, target, skill) {
     const isPhysical = (i % 2 === 0); // index 0,2,4 = physical; index 1,3,5 = magic
     const raw = Math.round(perHit);
     let dmg;
-    const yOff = (i % 4) * 32;
+    const yOff = 0;
 
     if (isPhysical) {
       dmg = Math.max(1, Math.round(raw * critMult * calcDmgMult(effectiveDef)));
@@ -1047,10 +1047,10 @@ async function doFortuneAllIn(attacker, target, skill) {
     const totalHit = normalDmg + piercePer;
     totalPierce += piercePer;
     totalNormal += normalDmg;
-    const yOff = (i % 4) * 28;
-    // True on top, physical below (rule: white→red top→bottom)
-    spawnFloatingNum(tElId, `-${piercePer}`, 'true-dmg', 0, yOff, {atkSide: attacker.side, amount: piercePer});
-    spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, yOff + 20, {atkSide: attacker.side, amount: normalDmg});
+    const yOff = 0;
+    // Canonical stack: TRUE (white) on top — larger yOffset pushes higher on screen.
+    spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: normalDmg});
+    spawnFloatingNum(tElId, `-${piercePer}`, 'true-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: piercePer});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -1135,7 +1135,7 @@ async function doLightningBarrage(attacker, skill) {
         const dmg = Math.max(1, Math.round(perHitDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'magic', false, true);
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i % 5) * 24);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
@@ -1219,7 +1219,7 @@ async function doStarBeam(attacker, target, skill) {
 
     applyRawDmg(attacker, target, dmg, false, false, 'magic');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
 
     // Accumulate star energy
@@ -1346,7 +1346,7 @@ async function doCrystalSpike(attacker, target, skill) {
     target._pendingCrystalBoom = 0;
     const shown = dmg + boom;
     totalDmg += boom;
-    spawnFloatingNum(tElId, `-${shown}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:shown});
+    spawnFloatingNum(tElId, `-${shown}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shown});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -1410,8 +1410,8 @@ async function doCrystalBurst(attacker, skill) {
       totalAll += boom;
       const shownMagic = magicDmg + boom;
       // Stack order: true on top, magic below (larger yOffset = higher on screen)
-      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:shownMagic});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shownMagic});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');
@@ -1496,7 +1496,7 @@ async function doCandyBarrage(attacker, skill) {
       applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
       totalAll += dmg;
       const eElId = getFighterElId(enemy);
-      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:dmg});
+      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
       await triggerOnHitEffects(attacker, enemy, dmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
@@ -1655,8 +1655,8 @@ async function doVolcanoErupt(attacker, skill) {
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
       // Stack order: true on top, magic below
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28+22, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
@@ -1711,8 +1711,8 @@ async function doRainbowStorm(attacker, skill) {
       // Stack order: true on top, magic below (larger yOffset = higher on screen)
       const magicCls = isCrit ? 'crit-magic' : 'magic-dmg';
       const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: magicDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, 0, { atkSide: attacker.side, amount: magicDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, 22, { atkSide: attacker.side, amount: trueDmg });
 
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       const eEl = document.getElementById(eElId);
@@ -1770,7 +1770,7 @@ async function doPirateCannonBarrage(attacker, skill) {
       const eElId = getFighterElId(enemy);
       applyRawDmg(attacker, enemy, dmg, false, false, dmgType);
       const cls = isCrit ? 'crit-dmg' : 'direct-dmg';
-      spawnFloatingNum(eElId, `-${dmg}`, cls, 0, (i % 3) * 24, { atkSide: attacker.side, amount: dmg });
+      spawnFloatingNum(eElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
       updateHpBar(enemy, eElId);
       totalDmgAll += dmg;
     }
@@ -2001,7 +2001,7 @@ async function doHunterBarrage(attacker, skill) {
     applyRawDmg(attacker, target, arrowDmg, true, false, 'true');
     totalDmg += arrowDmg;
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${arrowDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 4) * 30, {atkSide: attacker.side, amount: arrowDmg});
+    spawnFloatingNum(tElId, `-${arrowDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0, {atkSide: attacker.side, amount: arrowDmg});
     await triggerOnHitEffects(attacker, target, arrowDmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -2075,7 +2075,7 @@ async function doShellStrike(attacker, target, skill) {
     // Dodge check
     const dodgeBuff = target.buffs.find(b => b.type === 'dodge');
     if (dodgeBuff && Math.random() < dodgeBuff.value / 100) {
-      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, (i % 4) * 32);
+      spawnFloatingNum(tElId, '闪避!', 'dodge-num', 0, 0);
       await sleep(280);
       continue;
     }
@@ -2091,7 +2091,7 @@ async function doShellStrike(attacker, target, skill) {
     const isNormal = (i % 2 === 0); // index 0,2,4 = normal; 1,3,5 = pierce
     const raw = Math.round(perHit);
     let dmg;
-    const yOff = (i % 4) * 32;
+    const yOff = 0;
 
     if (isNormal) {
       dmg = Math.max(1, Math.round(raw * critMult * calcDmgMult(effectiveDef)));
@@ -2314,7 +2314,7 @@ async function doLineSketch(attacker, target, skill) {
     totalDmg += dmg;
     addInkStack(target, 1, attacker);
 
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
 
     const tEl = document.getElementById(tElId);
@@ -2466,7 +2466,7 @@ async function doGhostStorm(attacker, target, skill) {
 
     applyRawDmg(attacker, target, finalDmg, true, false, 'true');
     totalPierce += finalDmg;
-    spawnFloatingNum(tElId, `-${finalDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${finalDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, finalDmg);
 
     const tEl = document.getElementById(tElId);
@@ -2521,7 +2521,7 @@ async function doBambooLeaf(attacker, target, skill) {
         const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i % 3) * 28);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -2757,7 +2757,7 @@ async function doDiceAttack(attacker, target, skill) {
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
 
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, (i%3)*18);
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -2845,7 +2845,7 @@ async function doChestSmash(attacker, target, skill) {
     applyRawDmg(attacker, target, dmg, false, false, dmgType);
     totalDmg += dmg;
     const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-    spawnFloatingNum(tElId, `-${dmg}`, cls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(tElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
     await triggerOnHitEffects(attacker, target, dmg);
     // Thunder equip: stack per hit
     if (hasThunder && target.alive) {
@@ -2869,7 +2869,7 @@ async function doChestSmash(attacker, target, skill) {
         applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
         const sElId = getFighterElId(secondary);
         const chainCls = dmgType === 'true' ? 'true-dmg' : 'direct-dmg';
-        spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 60, (i % 3) * 28, { atkSide: attacker.side, amount: chainDmg });
+        spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 60, 0, { atkSide: attacker.side, amount: chainDmg });
         updateHpBar(secondary, sElId);
         if (hasThunder && secondary.alive) {
           secondary._goldLightning = (secondary._goldLightning || 0) + 1;
@@ -2967,8 +2967,8 @@ async function doChestStorm(attacker, skill) {
       totalAll += physDmg + trueDmg;
       // Stack order: true on top, physical below
       const physCls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, (i % 3) * 28, { atkSide: attacker.side, amount: physDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i % 3) * 28 + 22, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, 0, { atkSide: attacker.side, amount: physDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, { atkSide: attacker.side, amount: trueDmg });
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
       // Thunder equip: stack per hit
       if (hasThunder && enemy.alive) {

@@ -365,11 +365,14 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 .floating-num{
   position:absolute;
   left:50%;top:50%;
+  font-family:Impact,'Arial Black','Helvetica Neue',system-ui,sans-serif;
   font-weight:900;font-size:24px;
+  letter-spacing:.5px;
   pointer-events:none;z-index:50;
   white-space:nowrap;
-  text-shadow:0 2px 8px rgba(0,0,0,.7);
+  text-shadow:0 2px 8px rgba(0,0,0,.9),0 0 4px rgba(0,0,0,.7);
   will-change:transform,opacity;
+  -webkit-font-smoothing:antialiased;
 }
 /* Physical damage — RED */
 .floating-num.direct-dmg{color:#ff4444;font-size:22px}

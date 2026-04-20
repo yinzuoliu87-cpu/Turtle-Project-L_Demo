@@ -606,7 +606,7 @@ async function processCyberDrones(side) {
       applyRawDmg(f, target, finalDmg, false, false, 'physical');
       totalDroneDmg += finalDmg;
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
+      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
       const tEl = document.getElementById(tElId);
       if (tEl) tEl.classList.add('hit-shake');
       updateHpBar(target, tElId);

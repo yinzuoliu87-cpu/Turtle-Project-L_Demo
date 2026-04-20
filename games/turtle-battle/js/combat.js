@@ -703,7 +703,7 @@ async function doGamblerCards(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, (i % 3) * 20);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');

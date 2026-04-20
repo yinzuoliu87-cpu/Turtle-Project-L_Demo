@@ -148,12 +148,15 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const isDmg = (cls.includes('dmg') || cls.includes('pierce') || cls.includes('crit-magic') || cls.includes('crit-true')) && cls !== 'shield-dmg';
     // Use original random for visual offsets (don't consume seeded RNG)
     const _vr = _origMathRandom;
-    const ox = (_vr() - 0.5) * 8;
+    // Damage numbers pop from the EXACT center — no jitter on start position.
+    // Only the jump direction stays random, so floats spread out after launch.
+    const ox = 0;
 
     if (isDmg) {
-      // Damage numbers start from center, use yOffset for within-hit stacking (e.g. true+phys)
-      // but ignore autoOffset to prevent flying off-screen on multi-hit
-      const y0 = -((yOffset || 0) + (_vr() - 0.5) * 6);
+      // Damage numbers start from center. yOffset is used by callers to stack
+      // multiple numbers from the SAME hit (e.g. magic + true in one attack).
+      // No random jitter on start position — cleaner "pop from chest" feel.
+      const y0 = -(yOffset || 0);
       // ── DAMAGE: pop from center, jump away from attacker ──
       let dir = 1;
       if (opts && opts.atkSide) {
