@@ -86,52 +86,8 @@ async function beginTurn() {
         }
       }
     }
-    // Passive: cyberDrone — generate drones per turn
-    if (f.passive && f.passive.type === 'cyberDrone' && !f._isMech) {
-      if (!f._drones) f._drones = [];
-      const spawnCount = f.passive.dronesPerTurn || 1;
-      let spawned = 0;
-      for (let di = 0; di < spawnCount && f._drones.length < f.passive.maxDrones; di++) {
-        f._drones.push({ age: 0 });
-        spawned++;
-      }
-      if (spawned > 0) {
-        const elId = getFighterElId(f);
-        spawnFloatingNum(elId, `+${spawned}<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成${spawned}个浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
-      }
-      // Drones fire from turn 2 onwards (turn 1 = spawn only)
-      if (turnNum <= 1) { renderStatusIcons(f); await sleep(300); }
-      if (turnNum > 1) {
-      const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
-      const droneCount = f._drones.length;
-      const perDroneDelay = 550;
-      let totalDroneDmg = 0;
-      for (let di = 0; di < droneCount; di++) {
-        if (!enemies.filter(e => e.alive).length) break;
-        const alive = enemies.filter(e => e.alive);
-        const target = alive[Math.floor(Math.random() * alive.length)];
-        const dmg = Math.round(f.atk * f.passive.droneScale);
-        const eDef = target.def - (f.armorPen || 0);
-        const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
-        applyRawDmg(f, target, finalDmg, false, false, 'physical');
-        totalDroneDmg += finalDmg;
-        const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
-        const tEl = document.getElementById(tElId);
-        if (tEl) tEl.classList.add('hit-shake');
-        updateHpBar(target, tElId);
-        await triggerOnHitEffects(f, target, finalDmg);
-        checkDeaths(f);
-        if (checkBattleEnd()) { await sleep(600); return; }
-        await sleep(perDroneDelay);
-        if (tEl) tEl.classList.remove('hit-shake');
-      }
-      if (droneCount > 0) {
-        addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
-      }
-      } // end turnNum > 1
-    }
+    // cyberDrone moved to processCyberDrones(side) — fires at side-end
+    // (same beat as DoT/HOT/lightning) for a unified "我方行动结束后才出手" feel.
     // (Pirate ship cannon moved to before passive loop)
     // Passive: auraAwaken — awaken at turn N with full stat boost
     if (f.passive.type === 'auraAwaken' && !f._auraAwakened && turnNum >= f.passive.awakenTurn) {
@@ -611,6 +567,61 @@ async function tickDotsOn(f) {
   }
 }
 
+// Per-side cyberDrone processing: spawn new drone(s) then fire all drones
+// at random enemies. Runs inside processSideEnd so the player sees the strike
+// as the conclusion of their turn, not at the opening of the next one.
+async function processCyberDrones(side) {
+  for (const f of allFighters) {
+    if (!f.alive || !f.passive || f.passive.type !== 'cyberDrone') continue;
+    if (f._isMech) continue;
+    if (side && f.side !== side) continue;
+    if (!f._drones) f._drones = [];
+    const elId = getFighterElId(f);
+    // Spawn new drone(s) first
+    const spawnCount = f.passive.dronesPerTurn || 1;
+    let spawned = 0;
+    for (let di = 0; di < spawnCount && f._drones.length < f.passive.maxDrones; di++) {
+      f._drones.push({ age: 0 });
+      spawned++;
+    }
+    if (spawned > 0) {
+      spawnFloatingNum(elId, `+${spawned}<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
+      addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">生成${spawned}个浮游炮（${f._drones.length}/${f.passive.maxDrones}）</span>`);
+    }
+    renderStatusIcons(f);
+    // Drones fire from turn 2 onwards (turn 1 = spawn only)
+    if (turnNum <= 1) { await sleep(200); continue; }
+    const enemies = allFighters.filter(e => e.alive && e.side !== f.side);
+    if (!enemies.length) continue;
+    const droneCount = f._drones.length;
+    const perDroneDelay = 400;
+    let totalDroneDmg = 0;
+    for (let di = 0; di < droneCount; di++) {
+      const alive = enemies.filter(e => e.alive);
+      if (!alive.length) break;
+      const target = alive[Math.floor(Math.random() * alive.length)];
+      const dmg = Math.round(f.atk * f.passive.droneScale);
+      const eDef = target.def - (f.armorPen || 0);
+      const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
+      applyRawDmg(f, target, finalDmg, false, false, 'physical');
+      totalDroneDmg += finalDmg;
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, (di % 3) * 14, {atkSide:f.side, amount:finalDmg});
+      const tEl = document.getElementById(tElId);
+      if (tEl) tEl.classList.add('hit-shake');
+      updateHpBar(target, tElId);
+      await triggerOnHitEffects(f, target, finalDmg);
+      checkDeaths(f);
+      if (checkBattleEnd()) { await sleep(600); return; }
+      await sleep(perDroneDelay);
+      if (tEl) tEl.classList.remove('hit-shake');
+    }
+    if (droneCount > 0) {
+      addLog(`${f.emoji}${f.name} ${droneCount}个浮游炮打击！共 <span class="log-direct">${totalDroneDmg}物理</span>`);
+    }
+  }
+}
+
 // Per-fighter HOT/regeneration tick: hot buff + bubbleStore passive.
 // Called from processSideEnd for each member on the OWN (ending) team.
 async function tickHotsOn(f) {
@@ -667,9 +678,10 @@ async function processSideEnd(endedSide) {
   const dotCandidates = oppTeam.filter(f => f.alive && f.buffs.some(b => b.type === 'dot' || b.type === 'phoenixBurnDot' || b.type === 'poison' || b.type === 'bleed' || (b.type === 'chilled' && f.buffs.some(b2 => b2.type === 'phoenixBurnDot'))));
   const hotCandidates = ownTeam.filter(f => f.alive && (f.buffs.some(b => b.type === 'hot') || (f.passive && f.passive.type === 'bubbleStore' && f.bubbleStore > 0)));
   const lightningOwners = ownTeam.filter(f => f.alive && f.passive && f.passive.type === 'lightningStorm');
-  if (dotCandidates.length === 0 && hotCandidates.length === 0 && lightningOwners.length === 0) return;
+  const droneOwners = ownTeam.filter(f => f.alive && f.passive && f.passive.type === 'cyberDrone' && !f._isMech);
+  if (dotCandidates.length === 0 && hotCandidates.length === 0 && lightningOwners.length === 0 && droneOwners.length === 0) return;
   // Pause 1.5s between the last action and the first side-end effect so the
-  // cause-effect beat ("我打完 → 敌方受烧/挨电") reads cleanly, KOF98OL-style.
+  // cause-effect beat ("我打完 → 敌方受烧/挨电/被炮轰") reads cleanly.
   await sleep(1500);
   for (const f of dotCandidates) {
     await tickDotsOn(f);
@@ -681,6 +693,11 @@ async function processSideEnd(endedSide) {
   // Lightning storm: our side's 闪电龟 zaps a random enemy at end of our turn
   if (lightningOwners.length > 0) {
     await processLightningStorm(endedSide);
+    if (checkBattleEnd()) return;
+  }
+  // Cyber drones: our side's 赛博龟 spawns + fires drones at end of our turn
+  if (droneOwners.length > 0) {
+    await processCyberDrones(endedSide);
     if (checkBattleEnd()) return;
   }
   await sleep(600);
