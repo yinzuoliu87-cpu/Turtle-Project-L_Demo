@@ -944,12 +944,13 @@ function renderSummonStatusIcons(summon) {
   if (summon._inkLink && summon._inkLink.partner && summon._inkLink.partner.alive && summon._inkLink.turns > 0) {
     box.innerHTML += `<span style="color:#6c5ce7">🔗${summon._inkLink.turns}</span>`;
   }
-  // Combined lightning indicator (shock + chest gold lightning share one ⚡)
-  if (summon._shockStacks > 0 || summon._goldLightning > 0) {
-    const parts = [];
-    if (summon._shockStacks > 0) parts.push(`${summon._shockStacks}/8`);
-    if (summon._goldLightning > 0) parts.push(`<span style="color:#ffea7a">${summon._goldLightning}/5</span>`);
-    box.innerHTML += `<span style="color:#ffd700">⚡${parts.join('·')}</span>`;
+  // Shock stacks (lightning turtle stackMax 8)
+  if (summon._shockStacks > 0) {
+    box.innerHTML += `<span style="color:#ffd700">⚡${summon._shockStacks}/8</span>`;
+  }
+  // Gold lightning (chest 雷刃 stackMax 5) — separate pill, same icon
+  if (summon._goldLightning > 0) {
+    box.innerHTML += `<span style="color:#ffea7a">⚡${summon._goldLightning}/5</span>`;
   }
   // Crystallize stacks
   if (summon._crystallize > 0) {
@@ -1495,7 +1496,10 @@ function renderStatusIcons(f) {
     const stored = Math.round(f._storedEnergy || 0);
     box.innerHTML += `<span style="color:#e17055;background:rgba(225,112,85,.18);padding:1px 5px;border-radius:6px;font-weight:700" title="储能: ${stored} · ${turnsUntil}回合后释放冲击波">⚡${turnsUntil}回合</span>`;
   }
-  // (Shock + gold-lightning rendered together below to share one ⚡ icon)
+  // Shock stacks indicator (lightning turtle's own passive — stackMax 8)
+  if (f._shockStacks > 0) {
+    box.innerHTML += `<span class="status-dot" title="电击层 ${f._shockStacks}/8（闪电龟）" style="color:#ffd700;background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px">⚡${f._shockStacks}/8</span>`;
+  }
   // Lava shield indicator
   if (f._lavaShieldTurns > 0) {
     box.innerHTML += `<span class="status-dot" title="熔岩盾 剩${f._lavaShieldTurns}回合 被攻击每段反击">🌋${f._lavaShieldTurns}</span>`;
@@ -1561,13 +1565,11 @@ function renderStatusIcons(f) {
       box.innerHTML += `<span style="padding:1px 3px">${equipIcons}</span>`;
     }
   }
-  // Combined lightning indicator: lightning turtle's 电击 (X/8) and chest 雷刃 金闪电 (Y/5)
-  // share one ⚡ icon to keep the status row tidy. Each readout still shown distinctly.
-  if (f._shockStacks > 0 || f._goldLightning > 0) {
-    const parts = [];
-    if (f._shockStacks > 0) parts.push(`<span title="电击层 ${f._shockStacks}/8（闪电龟）">${f._shockStacks}/8</span>`);
-    if (f._goldLightning > 0) parts.push(`<span title="金闪电 ${f._goldLightning}/5（雷刃）" style="color:#ffea7a">${f._goldLightning}/5</span>`);
-    box.innerHTML += `<span style="color:#ffd700;background:rgba(255,215,0,.15);padding:1px 5px;border-radius:6px;display:inline-flex;gap:4px;align-items:center">⚡${parts.join('·')}</span>`;
+  // Gold lightning stacks (chest 雷刃 equip — stackMax 5). Shown as a separate pill
+  // even though it uses the same ⚡ icon as 闪电龟's _shockStacks; the two systems
+  // accumulate independently and players need to read each count separately.
+  if (f._goldLightning > 0) {
+    box.innerHTML += `<span style="color:#ffea7a;background:rgba(255,234,122,.18);padding:1px 5px;border-radius:6px" title="金闪电 ${f._goldLightning}/5（宝箱龟雷刃）">⚡${f._goldLightning}/5</span>`;
   }
   // Also refresh stats row to show debuff color changes
   updateFighterStats(f, elId);
