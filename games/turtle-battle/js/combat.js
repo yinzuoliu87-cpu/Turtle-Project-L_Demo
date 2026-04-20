@@ -483,19 +483,29 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const maxStacks = attacker.passive.crystallizeMax || 4;
     const tElCryst = getFighterElId(target);
     if (target._crystallize >= maxStacks) {
-      // Detonate!
+      // Detonate! (Ornn-brittle style: no separate float or label — caller merges
+      // the damage into the triggering hit's magic number, and a CSS burst effect
+      // plays on the target for visual feedback.)
       target._crystallize = 0;
       const detonateDmg = Math.round(target.maxHp * attacker.passive.crystallizeHpPct / 100);
       const effMr = calcEffDef(attacker, target, 'magic');
       const finalDmg = Math.max(1, Math.round(detonateDmg * calcDmgMult(effMr)));
       applyRawDmg(attacker, target, finalDmg, false, true, 'magic');
-      spawnFloatingNum(tElCryst, `-${finalDmg}💎`, 'crit-magic', 350, -15, {atkSide:attacker.side, amount:finalDmg});
       updateHpBar(target, tElCryst);
       // Apply MR shred
       const mrDownExist = target.buffs.find(b => b.type === 'mrDown');
       if (mrDownExist) { mrDownExist.value = Math.max(mrDownExist.value, attacker.passive.crystallizeMrDown); mrDownExist.turns = Math.max(mrDownExist.turns, attacker.passive.crystallizeMrTurns); }
       else target.buffs.push({type:'mrDown', value:attacker.passive.crystallizeMrDown, turns:attacker.passive.crystallizeMrTurns});
-      spawnFloatingNum(tElCryst, '<img src="assets/passive/crystal-resonance-icon.png" style="width:16px;height:16px;vertical-align:middle">引爆!', 'crit-label', 400, -30);
+      // Stash dmg so the skill handler can merge into its own magic float
+      target._pendingCrystalBoom = (target._pendingCrystalBoom || 0) + finalDmg;
+      // Visual: purple burst pulse on the target (CSS class, auto-removes)
+      const tEl = document.getElementById(tElCryst);
+      if (tEl) {
+        tEl.classList.remove('crystal-burst-fx');
+        void tEl.offsetWidth;
+        tEl.classList.add('crystal-burst-fx');
+        setTimeout(() => tEl.classList.remove('crystal-burst-fx'), 600);
+      }
       recalcStats();
       addLog(`${target.emoji}${target.name} 结晶引爆！<span class="log-magic">${finalDmg}魔法伤害</span> + ⬇️魔抗`);
     }

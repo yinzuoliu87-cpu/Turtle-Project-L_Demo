@@ -1339,8 +1339,14 @@ async function doCrystalSpike(attacker, target, skill) {
         const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'magic');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:dmg});
+    // Trigger crystallize stacking FIRST so any detonation damage is available
     await triggerOnHitEffects(attacker, target, dmg);
+    // Merge pending crystal detonation into the hit's magic float (Ornn-brittle style)
+    const boom = target._pendingCrystalBoom || 0;
+    target._pendingCrystalBoom = 0;
+    const shown = dmg + boom;
+    totalDmg += boom;
+    spawnFloatingNum(tElId, `-${shown}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:shown});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -1382,7 +1388,7 @@ async function doCrystalBarrier(caster, skill) {
 async function doCrystalBurst(attacker, skill) {
   const enemies = getAliveEnemiesWithSummons(attacker.side);
   if (!enemies.length) return;
-  const hits = skill.hits || 5;
+  const hits = skill.hits || 3;
   let totalAll = 0;
   for (let i = 0; i < hits; i++) {
     if (battleOver) break;
@@ -1397,9 +1403,14 @@ async function doCrystalBurst(attacker, skill) {
       applyRawDmg(attacker, enemy, magicDmg, false, false, 'magic');
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
+      // Trigger crystallize stacking first (may detonate, stash damage)
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
+      const boom = enemy._pendingCrystalBoom || 0;
+      enemy._pendingCrystalBoom = 0;
+      totalAll += boom;
+      const shownMagic = magicDmg + boom;
+      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (i%3)*28+20, {atkSide:attacker.side, amount:shownMagic});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, (i%3)*28, {atkSide:attacker.side, amount:trueDmg});
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');

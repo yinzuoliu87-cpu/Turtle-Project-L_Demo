@@ -1940,6 +1940,22 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
   }
 }
 
+/* Crystal turtle: brittle-style burst when 结晶 detonates (purple flash + pulse) */
+.scene-turtle.crystal-burst-fx{animation:crystalBurstPulse .5s ease-out}
+.scene-turtle.crystal-burst-fx .st-sprite{animation:crystalBurstFilter .5s ease-out}
+@keyframes crystalBurstPulse{
+  0%{transform:scale(1)}
+  25%{transform:scale(1.15)}
+  55%{transform:scale(.95)}
+  100%{transform:scale(1)}
+}
+@keyframes crystalBurstFilter{
+  0%{filter:none}
+  20%{filter:drop-shadow(0 0 18px rgba(199,125,255,1)) drop-shadow(0 0 32px rgba(199,125,255,.8)) brightness(1.6) saturate(1.5)}
+  60%{filter:drop-shadow(0 0 10px rgba(199,125,255,.6)) brightness(1.2)}
+  100%{filter:none}
+}
+
 /* Turtle sprite */
 .scene-turtle .st-sprite{image-rendering:pixelated}
 /* Chest turtle: dedicated left-side treasure progress (plain text, no frame/icon) */
