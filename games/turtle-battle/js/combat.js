@@ -811,6 +811,15 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
   if (source && source.passive && source.passive.type === 'chestTreasure' && amount > 0) {
     source._chestTreasure = (source._chestTreasure || 0) + amount;
     checkChestEquipDraw(source);
+    // Live-update the left-side pile indicator on every damage tick (not only at draws)
+    const _pile = document.querySelector(`#${getFighterElId(source)} [data-chest-progress]`);
+    if (_pile) {
+      const _tier = source._chestTier || 0;
+      const _ths = source.passive.thresholds;
+      const _lvMult = 1 + ((source._level || 1) - 1) * 0.03;
+      const _next = _tier < _ths.length ? Math.round(_ths[_tier] * _lvMult) : null;
+      _pile.textContent = _next ? `${source._chestTreasure}/${_next}` : `${source._chestTreasure}(满)`;
+    }
   }
   // Lava turtle: accumulate rage from damage dealt
   if (source && source.passive && source.passive.type === 'lavaRage' && !source._lavaSpent && !source._lavaTransformed && amount > 0) {
