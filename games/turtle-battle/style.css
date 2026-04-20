@@ -1942,11 +1942,10 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 
 /* Turtle sprite */
 .scene-turtle .st-sprite{image-rendering:pixelated}
-/* Chest turtle: dedicated left-side treasure pile indicator (always visible while alive) */
-.scene-turtle .st-chest-pile{position:absolute;left:-6px;top:48%;transform:translate(-100%,-50%);background:linear-gradient(180deg,#ffd93d 0%,#d4a017 100%);color:#2a1810;font-weight:800;font-size:11px;padding:3px 7px;border-radius:8px;border:1px solid #8a6c00;box-shadow:0 2px 6px rgba(0,0,0,.35);font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;text-shadow:0 1px 0 rgba(255,255,255,.4)}
-.scene-turtle .st-chest-pile::before{content:'💰 '}
+/* Chest turtle: dedicated left-side treasure progress (plain text, no frame/icon) */
+.scene-turtle .st-chest-pile{position:absolute;left:-6px;top:48%;transform:translate(-100%,-50%);color:#ffd93d;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.6)}
 @media (max-width: 768px){
-  .scene-turtle .st-chest-pile{font-size:9px;padding:2px 5px;left:-4px}
+  .scene-turtle .st-chest-pile{font-size:10px;left:-4px}
 }
 
 /* Name label — above HP bar */
