@@ -610,9 +610,9 @@ const ALL_PETS = [
   },
   { id:'crystal',   name:'水晶龟',   emoji:'🔮🐢',    rarity:'S',   hp:382,  atk:44,  def:21, mr:23,crit:0.25,
     img:'../../assets/pets/水晶龟v1.png', sprite:{frames:11,frameW:500,frameH:500,duration:1100},
-    passive:{ type:'crystalResonance', name:'水晶共鸣', magicAbsorb:20, crystallizeMax:4, crystallizeHpPct:10, crystallizeMrDown:20, crystallizeMrTurns:3,
-              brief:'水晶龟受到魔法伤害额外减免 <span class="val-magic">20%</span>。攻击叠加结晶印记，在 <span class="val-atk">4</span> 层时引爆，造成目标最大生命值 <span class="val-magic">10%</span> 的魔法伤害并削弱魔抗。',
-              desc:'水晶龟的水晶共鸣。\n\n受到魔法伤害时额外减免 <span class="val-magic">20%</span>（在魔抗基础上叠加）。\n\n每段攻击给目标叠加1层结晶印记，满4层引爆：\n造成 <span class="val-magic">10%</span> 目标最大生命值魔法伤害\n削减目标魔抗 <span class="val-atk">-20%</span> 持续3回合\n引爆后清零重新叠加。' },
+    passive:{ type:'crystalResonance', name:'水晶共鸣', magicAbsorb:20, crystallizeMax:4, crystallizeHpPct:19, crystallizeMrDown:20, crystallizeMrTurns:3,
+              brief:'水晶龟受到魔法伤害额外减免 <span class="val-magic">20%</span>。攻击叠加结晶印记，在 <span class="val-atk">4</span> 层时引爆，造成目标最大生命值 <span class="val-magic">19%</span> 的魔法伤害并削弱魔抗。',
+              desc:'水晶龟的水晶共鸣。\n\n受到魔法伤害时额外减免 <span class="val-magic">20%</span>（在魔抗基础上叠加）。\n\n每段攻击给目标叠加1层结晶印记，满4层引爆：\n造成 <span class="val-magic">19%</span> 目标最大生命值魔法伤害\n削减目标魔抗 <span class="val-atk">-20%</span> 持续3回合\n引爆后清零重新叠加。' },
     skillPool:[
       { name:'水晶刺', type:'crystalSpike', dmgType:'magic', hits:2, power:0, pierce:0, cd:0, atkScale:0.5, targetHpPct:3,
         brief:'水晶龟刺出2段，每段（{M:0.5*ATK}）+ 3%目标最大生命值 魔法伤害，每段叠1层结晶',

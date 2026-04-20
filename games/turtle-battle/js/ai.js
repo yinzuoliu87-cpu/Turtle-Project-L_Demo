@@ -144,5 +144,5 @@ function aiAction(f) {
     }
   }
 
-  executeAction({ attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId:allFighters.indexOf(target) });
+  executeAction({ attackerId:allFighters.indexOf(f), skillIdx:f.skills.indexOf(skill), targetId:allFighters.indexOf(target), aoe: !!skill.aoe });
 }
