@@ -135,7 +135,9 @@ function renderScene() {
     `;
 
     if (!f.alive) el.classList.add('dead');
-    if (f._isBoss) el.style.transform = 'scale(1.3)';
+    // Boss sizing handled via .is-boss class + CSS --base-scale variable
+    // so animations compose scale(var(--base-scale)) without snapping mid-anim.
+    if (f._isBoss) el.classList.add('is-boss');
     scene.appendChild(el);
     renderSceneBuffs(f);
   };
