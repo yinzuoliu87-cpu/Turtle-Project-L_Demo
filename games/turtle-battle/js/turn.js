@@ -211,31 +211,34 @@ async function beginTurn() {
         updateHpBar(f, elId);
       }
     }
-    // Passive: candySteal — steal 18% maxHP from random enemy at turn 5
+    // Passive: candySteal — D&D Life Drain: deal stealAmt damage + reduce maxHp
+    // by stealAmt; caster gains the same amt in both hp and maxHp (symmetric).
     if (f.passive.type === 'candySteal' && turnNum === f.passive.stealTurn) {
       const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       if (enemies.length) {
         const target = enemies[Math.floor(Math.random() * enemies.length)];
         const stealAmt = Math.round(target.maxHp * f.passive.stealPct / 100);
-        // Reduce target maxHP and current HP
+        // Target: actual HP damage + maxHp reduction (both by stealAmt)
         target.maxHp -= stealAmt;
-        target.hp = Math.min(target.hp, target.maxHp);
-        if (target.hp <= 0) { target.hp = 1; } // don't kill from steal
+        target.hp = Math.max(1, target.hp - stealAmt); // can't kill
+        target.hp = Math.min(target.hp, target.maxHp); // keep hp within new cap
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
+        spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
         updateHpBar(target, tElId);
         updateFighterStats(target, tElId);
-        // Add to candy turtle maxHP and current HP
+        // Caster: gains stealAmt in both (symmetric transfer)
         f.maxHp += stealAmt;
         f.hp += stealAmt;
         const fElId = getFighterElId(f);
         spawnFloatingNum(fElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
+        spawnFloatingNum(fElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
         updateHpBar(f, fElId);
         updateFighterStats(f, fElId);
         // Count as damage dealt/taken
         if (f._dmgDealt !== undefined) f._dmgDealt += stealAmt;
         if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
-        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大生命值！</span>`);
+        addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🍬甜蜜掠夺！${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值</span>`);
         await sleep(800);
       }
     }
@@ -448,25 +451,27 @@ async function beginTurn() {
         }
       }
     }
-    // Candy steal
+    // Candy steal (summon variant — D&D Life Drain style, same as main passive)
     if (p.type === 'candySteal' && turnNum === p.stealTurn) {
       const enemies = (s.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       if (enemies.length) {
         const target = enemies[Math.floor(Math.random() * enemies.length)];
         const stealAmt = Math.round(target.maxHp * p.stealPct / 100);
-        target.maxHp -= stealAmt; target.hp = Math.min(target.hp, target.maxHp);
-        if (target.hp <= 0) target.hp = 1;
+        target.maxHp -= stealAmt;
+        target.hp = Math.max(1, target.hp - stealAmt);
+        target.hp = Math.min(target.hp, target.maxHp);
         const tElId = getFighterElId(target);
         spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
+        spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
         updateHpBar(target, tElId);
         s.maxHp += stealAmt; s.hp += stealAmt;
         spawnFloatingNum(sElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
+        spawnFloatingNum(sElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
         updateSummonHpBar(s);
-        // Count as damage dealt (summon's owner gets credit) / taken
         const owner = s._owner;
         if (owner && owner._dmgDealt !== undefined) owner._dmgDealt += stealAmt;
         if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
-        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🍬偷取${target.emoji}${target.name} ${stealAmt}最大HP！</span>`);
+        addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🍬甜蜜掠夺！${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值</span>`);
       }
     }
     // Candy pen countdown

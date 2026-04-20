@@ -429,8 +429,8 @@ const ALL_PETS = [
   { id:'candy',     name:'糖果龟',   emoji:'🍬🐢',    rarity:'A',   hp:360,  atk:40,  def:15, mr:16,crit:0.25,
     img:'../../assets/pets/糖果龟v1.png', sprite:{frames:10,frameW:500,frameH:500,duration:1000},
     passive:{ type:'candySteal', name:'甜蜜掠夺', stealTurn:3, stealPct:35,
-              brief:'糖果龟在第3回合偷取随机敌人 <span class="val-atk">35%</span> 最大生命值加给自己，敌方生命值上限和当前生命值同步减少。',
-              desc:'糖果龟的甜蜜掠夺。\n\n登场第3回合时，偷取随机敌人 <span class="val-atk">35%</span> 最大生命值加给自己。\n敌人最大生命值和当前生命值同步减少。' },
+              brief:'糖果龟在第3回合对随机敌人施放生命吸取：偷取 <span class="val-atk">35%</span> 最大HP，目标等额损失 <span class="val-pierce">当前HP</span> 和 <span class="val-pierce">最大HP</span>，糖果龟等额获得 <span class="val-heal">HP</span> 和 <span class="val-heal">最大HP</span>。',
+              desc:'糖果龟的甜蜜掠夺（类 D&D 生命吸取）。\n\n登场第3回合时，选择随机敌人，偷取量 = 目标最大HP的 <span class="val-atk">35%</span>。\n\n目标：<span class="val-pierce">当前HP −偷取量</span>，<span class="val-pierce">最大HP −偷取量</span>（不会杀死，最低留1HP）。\n糖果龟：<span class="val-heal">当前HP +偷取量</span>，<span class="val-heal">最大HP +偷取量</span>。\n\n双方等量转移，物理守恒。' },
     skillPool:[
       { name:'糖果锤', type:'physical', hits:1, power:0, pierce:0, cd:0, atkScale:1.1, selfHpPct:5, atkDown:{pct:15,turns:2},
         brief:'糖果龟造成（{N:1.1*ATK}）+ 5%自身最大生命值 物理伤害，施加 <span class="val-atk">-15%</span> 攻击力2回合',
