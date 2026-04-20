@@ -991,7 +991,29 @@ async function executeAction(action) {
     sfxBuff(); await sleep(800);
   } else if (skill.type === 'shellAbsorb') {
     const target = allFighters[action.targetId];
-    if (target && target.alive) { const stealAmt = Math.round(target.maxHp * (skill.stealHpPct||10) / 100); target.maxHp -= stealAmt; target.hp = Math.min(target.hp, target.maxHp); if (target.hp <= 0) target.hp = 1; const tElId = getFighterElId(target); spawnFloatingNum(tElId, `-${stealAmt}HP`, 'pierce-dmg', 0, 0); updateHpBar(target, tElId); updateFighterStats(target, tElId); f.maxHp += stealAmt; f.hp += stealAmt; f._initHp = f.maxHp; const fElId = getFighterElId(f); spawnFloatingNum(fElId, `+${stealAmt}HP`, 'heal-num', 0, 0); updateHpBar(f, fElId); updateFighterStats(f, fElId); f._dmgDealt += stealAmt; target._dmgTaken += stealAmt; addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：偷取 ${target.emoji}${target.name} ${stealAmt}最大HP`); } await sleep(800);
+    if (target && target.alive) {
+      const stealAmt = Math.round(target.maxHp * (skill.stealHpPct||10) / 100);
+      // D&D Life Drain: target loses BOTH current hp and maxHp by stealAmt (min 1)
+      target.maxHp -= stealAmt;
+      target.hp = Math.max(1, target.hp - stealAmt);
+      target.hp = Math.min(target.hp, target.maxHp);
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${stealAmt}HP`, 'pierce-dmg', 0, 0);
+      spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
+      updateHpBar(target, tElId);
+      updateFighterStats(target, tElId);
+      // Caster gains symmetric amount in both
+      f.maxHp += stealAmt; f.hp += stealAmt; f._initHp = f.maxHp;
+      const fElId = getFighterElId(f);
+      spawnFloatingNum(fElId, `+${stealAmt}HP`, 'heal-num', 0, 0);
+      spawnFloatingNum(fElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
+      updateHpBar(f, fElId);
+      updateFighterStats(f, fElId);
+      f._dmgDealt += stealAmt;
+      target._dmgTaken += stealAmt;
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值`);
+    }
+    await sleep(800);
   } else if (skill.type === 'shellErode') {
     const target = allFighters[action.targetId];
     if (target && target.alive) { await doDamage(f, target, skill); const mrShred = Math.round(f.atk * (skill.mrShredAtkPct||0.1)); if (mrShred > 0) { target.baseMr = Math.max(0, target.baseMr - mrShred); recalcStats(); spawnFloatingNum(getFighterElId(target), `-${mrShred}魔抗`, 'debuff-num', 200, 0); updateFighterStats(target, getFighterElId(target)); addLog(`${target.emoji}${target.name} 永久魔抗-${mrShred}`); } if (skill.cdReducePerUse && skill.cd > 0) { skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse); } }
