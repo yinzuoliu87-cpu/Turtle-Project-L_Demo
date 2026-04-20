@@ -166,28 +166,38 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
       const jumpX = dir * (12 + _vr() * 14);
       const jumpY = -(10 + _vr() * 8);
       const gravity = 200;
-      const totalDur = 800;
+      const isCrit = cls.startsWith('crit');
+      // LoL-style: crits POP then HOLD for 300ms before flying away. Normal
+      // damage skips the hold and flies away immediately. The hold ends at
+      // holdEnd; movement time = elapsed - holdEnd.
+      const holdEnd = isCrit ? 400 : 150;  // normal transitions to flight at 150ms (end of pop)
+      const flightDur = 650;
+      const totalDur = holdEnd + flightDur;
       const start = performance.now();
 
       const popSize = amount < 20 ? 1.6 : amount < 60 ? 1.8 : amount < 150 ? 2.2 : 2.5;
+      // Crits hold at full impact size (1.0); normals shrink to 0.7 to feel light
+      const holdScale = isCrit ? 1.0 : 0.7;
 
       function tickDmg(now) {
         const elapsed = now - start;
         if (elapsed >= totalDur) { num.remove(); return; }
-        const t = elapsed / 1000;
 
-        // Impact pop: big -> shrink -> hold
+        // Impact pop: 0-50ms scale up → 50-150ms shrink to holdScale
         let scale;
         if (elapsed < 50) scale = (elapsed / 50) * popSize;
-        else if (elapsed < 150) scale = popSize - (popSize - 0.7) * ((elapsed - 50) / 100);
-        else scale = 0.7;
+        else if (elapsed < 150) scale = popSize - (popSize - holdScale) * ((elapsed - 50) / 100);
+        else scale = holdScale;
 
-        // Parabolic arc
+        // Movement: held in place while elapsed < holdEnd, then parabolic arc
+        const flightElapsed = Math.max(0, elapsed - holdEnd);
+        const t = flightElapsed / 1000;
         const x = ox + jumpX * t * 2;
         const y = y0 + jumpY * t * 2 + 0.5 * gravity * t * t;
 
-        // Fade out faster
-        const opacity = elapsed < 350 ? 1 : 1 - (elapsed - 350) / (totalDur - 350);
+        // Fade: during hold stay at 1, then fade out over last 350ms of flight
+        const fadeStart = holdEnd + 300;
+        const opacity = elapsed < fadeStart ? 1 : 1 - (elapsed - fadeStart) / (totalDur - fadeStart);
 
         num.style.transform = `translate(calc(-50% + ${x}px), ${y}px) scale(${scale})`;
         num.style.opacity = String(Math.max(0, opacity));

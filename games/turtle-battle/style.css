@@ -558,29 +558,29 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
   75%{transform:translateX(-3px)}
 }
 @keyframes hitPhysical{
-  0%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
-  20%{transform:translateX(-10px) scale(var(--base-scale));filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(-10deg)}
-  50%{transform:translateX(6px) scale(var(--base-scale));filter:brightness(1.2)}
-  100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:translateX(0);filter:brightness(1)}
+  20%{transform:translateX(-10px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(-10deg)}
+  50%{transform:translateX(6px);filter:brightness(1.2)}
+  100%{transform:translateX(0);filter:brightness(1)}
 }
 @keyframes hitMagic{
-  0%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
-  20%{transform:translateX(-8px) scale(var(--base-scale));filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(180deg)}
-  50%{transform:translateX(5px) scale(var(--base-scale));filter:brightness(1.2)}
-  100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:translateX(0);filter:brightness(1)}
+  20%{transform:translateX(-8px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(180deg)}
+  50%{transform:translateX(5px);filter:brightness(1.2)}
+  100%{transform:translateX(0);filter:brightness(1)}
 }
 @keyframes hitTrue{
-  0%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
-  20%{transform:translateY(-6px) scale(var(--base-scale));filter:brightness(2) contrast(1.5)}
-  50%{transform:translateY(3px) scale(var(--base-scale));filter:brightness(1.3)}
-  100%{transform:translateY(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:translateX(0);filter:brightness(1)}
+  20%{transform:translateY(-6px);filter:brightness(2) contrast(1.5)}
+  50%{transform:translateY(3px);filter:brightness(1.3)}
+  100%{transform:translateY(0);filter:brightness(1)}
 }
 @keyframes hitCrit{
-  0%{transform:scale(var(--base-scale));filter:brightness(1)}
-  15%{transform:translateX(-12px) scale(calc(var(--base-scale) * 0.9));filter:brightness(2) saturate(2)}
-  40%{transform:translateX(8px) scale(calc(var(--base-scale) * 1.05));filter:brightness(1.5)}
-  70%{transform:translateX(-3px) scale(var(--base-scale));filter:brightness(1.1)}
-  100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:scale(1);filter:brightness(1)}
+  15%{transform:translateX(-12px) scale(0.9);filter:brightness(2) saturate(2)}
+  40%{transform:translateX(8px) scale(1.05);filter:brightness(1.5)}
+  70%{transform:translateX(-3px) scale(1);filter:brightness(1.1)}
+  100%{transform:translateX(0) scale(1);filter:brightness(1)}
 }
 
 /* ── ATTACK LUNGE (side-aware via .side-left / .side-right) ── */
@@ -588,16 +588,16 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 .side-left .fighter-card.attack-anim{animation:attackLungeRight .5s ease}
 .side-right .fighter-card.attack-anim{animation:attackLungeLeft .5s ease}
 @keyframes attackLungeRight{
-  0%{transform:translateX(0) scale(var(--base-scale))}
-  25%{transform:translateX(30px) scale(calc(var(--base-scale) * 1.05));filter:brightness(1.3)}
-  50%{transform:translateX(35px) scale(calc(var(--base-scale) * 1.08));filter:brightness(1.4)}
-  100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:translateX(0) scale(1)}
+  25%{transform:translateX(30px) scale(1.05);filter:brightness(1.3)}
+  50%{transform:translateX(35px) scale(1.08);filter:brightness(1.4)}
+  100%{transform:translateX(0) scale(1);filter:brightness(1)}
 }
 @keyframes attackLungeLeft{
-  0%{transform:translateX(0) scale(var(--base-scale))}
-  25%{transform:translateX(-30px) scale(calc(var(--base-scale) * 1.05));filter:brightness(1.3)}
-  50%{transform:translateX(-35px) scale(calc(var(--base-scale) * 1.08));filter:brightness(1.4)}
-  100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+  0%{transform:translateX(0) scale(1)}
+  25%{transform:translateX(-30px) scale(1.05);filter:brightness(1.3)}
+  50%{transform:translateX(-35px) scale(1.08);filter:brightness(1.4)}
+  100%{transform:translateX(0) scale(1);filter:brightness(1)}
 }
 
 /* ── SCREEN FLASH (for big hits) ── */
@@ -926,59 +926,51 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
   /* Mobile position adjustments — spread out slightly */
   /* Positions handled by JS BATTLE_POSITIONS */
 
-  /* Attack anim: preserve mobile scale */
-  .scene-turtle.attack-anim[class*="pos-left"]{animation:mobileAttackRight .5s ease}
-  .scene-turtle.attack-anim[class*="pos-right"]{animation:mobileAttackLeft .5s ease}
+  /* Mobile attack/hit animations — target .st-body, base-scale stays on parent */
+  .scene-turtle.attack-anim[class*="pos-left"] .st-body{animation:mobileAttackRight .5s ease}
+  .scene-turtle.attack-anim[class*="pos-right"] .st-body{animation:mobileAttackLeft .5s ease}
   @keyframes mobileAttackRight{
-    0%{transform:translateX(0) scale(var(--base-scale))}
-    25%{transform:translateX(10px) scale(calc(var(--base-scale) * 1.075));filter:brightness(1.3)}
-    50%{transform:translateX(14px) scale(calc(var(--base-scale) * 1.125));filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+    0%{transform:translateX(0) scale(1)}
+    25%{transform:translateX(10px) scale(1.075);filter:brightness(1.3)}
+    50%{transform:translateX(14px) scale(1.125);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(1);filter:brightness(1)}
   }
   @keyframes mobileAttackLeft{
-    0%{transform:translateX(0) scale(var(--base-scale))}
-    25%{transform:translateX(-10px) scale(calc(var(--base-scale) * 1.075));filter:brightness(1.3)}
-    50%{transform:translateX(-14px) scale(calc(var(--base-scale) * 1.125));filter:brightness(1.4)}
-    100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+    0%{transform:translateX(0) scale(1)}
+    25%{transform:translateX(-10px) scale(1.075);filter:brightness(1.3)}
+    50%{transform:translateX(-14px) scale(1.125);filter:brightness(1.4)}
+    100%{transform:translateX(0) scale(1);filter:brightness(1)}
   }
-  /* Override hit/shake animations — they hard-code transform, overriding mobile scale */
-  .scene-turtle.hit-shake{animation:mobileHitShake .3s ease}
-  .scene-turtle.hit-physical{animation:mobileHitPhysical .4s ease}
-  .scene-turtle.hit-magic{animation:mobileHitMagic .4s ease}
-  .scene-turtle.hit-true{animation:mobileHitTrue .4s ease}
-  .scene-turtle.hit-crit{animation:mobileHitCrit .5s ease}
-  @keyframes mobileHitShake{
-    0%,100%{transform:scale(var(--base-scale)) translateX(0)}
-    15%{transform:scale(var(--base-scale)) translateX(-4px)}
-    30%{transform:scale(var(--base-scale)) translateX(4px)}
-    45%{transform:scale(var(--base-scale)) translateX(-3px)}
-    60%{transform:scale(var(--base-scale)) translateX(3px)}
-    75%{transform:scale(var(--base-scale)) translateX(-1px)}
-  }
+  /* Mobile hit-shake = same knockback as desktop (targeted via pos selectors above);
+     the hit-* color flashes use their own mobile variants. */
+  .scene-turtle.hit-physical .st-body{animation:mobileHitPhysical .4s ease}
+  .scene-turtle.hit-magic .st-body{animation:mobileHitMagic .4s ease}
+  .scene-turtle.hit-true .st-body{animation:mobileHitTrue .4s ease}
+  .scene-turtle.hit-crit .st-body{animation:mobileHitCrit .5s ease}
   @keyframes mobileHitPhysical{
-    0%{transform:scale(var(--base-scale)) translateX(0);filter:brightness(1)}
-    20%{transform:scale(var(--base-scale)) translateX(-5px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(-10deg)}
-    50%{transform:scale(var(--base-scale)) translateX(3px);filter:brightness(1.2)}
-    100%{transform:scale(var(--base-scale)) translateX(0);filter:brightness(1)}
+    0%{transform:translateX(0);filter:brightness(1)}
+    20%{transform:translateX(-5px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(-10deg)}
+    50%{transform:translateX(3px);filter:brightness(1.2)}
+    100%{transform:translateX(0);filter:brightness(1)}
   }
   @keyframes mobileHitMagic{
-    0%{transform:scale(var(--base-scale)) translateX(0);filter:brightness(1)}
-    20%{transform:scale(var(--base-scale)) translateX(-4px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(180deg)}
-    50%{transform:scale(var(--base-scale)) translateX(2px);filter:brightness(1.2)}
-    100%{transform:scale(var(--base-scale)) translateX(0);filter:brightness(1)}
+    0%{transform:translateX(0);filter:brightness(1)}
+    20%{transform:translateX(-4px);filter:brightness(1.5) sepia(1) saturate(3) hue-rotate(180deg)}
+    50%{transform:translateX(2px);filter:brightness(1.2)}
+    100%{transform:translateX(0);filter:brightness(1)}
   }
   @keyframes mobileHitTrue{
-    0%{transform:scale(var(--base-scale)) translateY(0);filter:brightness(1)}
-    20%{transform:scale(var(--base-scale)) translateY(-3px);filter:brightness(2) contrast(1.5)}
-    50%{transform:scale(var(--base-scale)) translateY(2px);filter:brightness(1.3)}
-    100%{transform:scale(var(--base-scale)) translateY(0);filter:brightness(1)}
+    0%{transform:translateY(0);filter:brightness(1)}
+    20%{transform:translateY(-3px);filter:brightness(2) contrast(1.5)}
+    50%{transform:translateY(2px);filter:brightness(1.3)}
+    100%{transform:translateY(0);filter:brightness(1)}
   }
   @keyframes mobileHitCrit{
-    0%{transform:scale(var(--base-scale));filter:brightness(1)}
-    15%{transform:translateX(-6px) scale(calc(var(--base-scale) * 0.9));filter:brightness(2) saturate(2)}
-    40%{transform:translateX(4px) scale(calc(var(--base-scale) * 1.05));filter:brightness(1.5)}
-    70%{transform:translateX(-2px) scale(var(--base-scale));filter:brightness(1.1)}
-    100%{transform:translateX(0) scale(var(--base-scale));filter:brightness(1)}
+    0%{transform:scale(1);filter:brightness(1)}
+    15%{transform:translateX(-6px) scale(0.9);filter:brightness(2) saturate(2)}
+    40%{transform:translateX(4px) scale(1.05);filter:brightness(1.5)}
+    70%{transform:translateX(-2px) scale(1);filter:brightness(1.1)}
+    100%{transform:translateX(0) scale(1);filter:brightness(1)}
   }
 
   /* Scene summon */
@@ -1894,9 +1886,10 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 
 /* Scene turtle (positioned on the battlefield) */
 /* --base-scale controls overall scene-turtle size. Desktop default 1, mobile .4,
-   boss 1.3 (desktop) / .6 (mobile). Every keyframe that sets transform on
-   .scene-turtle MUST include `scale(var(--base-scale))` so animations don't
-   strip the boss/mobile scaling mid-anim (caused visible size "snap"). */
+   boss 1.3 (desktop) / .6 (mobile). Scale is applied ONCE on .scene-turtle
+   itself (static transform below). All hit/attack/death animations run on
+   the .st-body child using pure translate/rotate — the parent's scale
+   composes through cleanly, so keyframes stay scale-free. */
 .scene-turtle{--base-scale:1;position:absolute;display:flex;flex-direction:column;align-items:center;cursor:pointer;transition:transform .15s;z-index:2;transform:scale(var(--base-scale))}
 .scene-turtle.is-boss{--base-scale:1.3}
 .scene-turtle:hover{transform:scale(calc(var(--base-scale) * 1.08))}
@@ -1908,45 +1901,61 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 @keyframes targetPulse{0%,100%{filter:drop-shadow(0 0 10px rgba(255,60,60,.8)) drop-shadow(0 0 20px rgba(255,60,60,.4))}50%{filter:drop-shadow(0 0 18px rgba(255,60,60,1)) drop-shadow(0 0 36px rgba(255,60,60,.7))}}
 @keyframes targetPulseAlly{0%,100%{filter:drop-shadow(0 0 10px rgba(6,214,160,.8)) drop-shadow(0 0 20px rgba(6,214,160,.4))}50%{filter:drop-shadow(0 0 18px rgba(6,214,160,1)) drop-shadow(0 0 36px rgba(6,214,160,.7))}}
 .scene-turtle.dead{opacity:0;filter:grayscale(.8);pointer-events:none}
+
+/* ── .st-body: animated wrapper for sprite ──
+   All hit/knockback/hop/death keyframes animate this child, so the ground
+   shadow (.st-shadow) and HUD elements (HP bar / buffs / chest pile) stay
+   put while only the body reacts. .scene-turtle itself owns the permanent
+   scale(var(--base-scale)) transform; .st-body composes translate/rotate on
+   top — no need to include scale in keyframes. */
+.scene-turtle .st-body{position:relative;display:flex;flex-direction:column;align-items:center}
+
+/* ── .st-shadow: stable ground shadow, unaffected by body animations ── */
+.scene-turtle .st-shadow{position:absolute;left:50%;bottom:-6px;width:54px;height:8px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(0,0,0,.55) 0%,rgba(0,0,0,.3) 40%,transparent 75%);pointer-events:none;z-index:0}
+.scene-turtle.dead .st-shadow{opacity:0}
+@media (max-width: 768px){
+  .scene-turtle .st-shadow{width:46px;height:7px;bottom:-4px}
+}
+
 /* Death animation: 1.2s — full hop+tilt+sprite visible, then fade out in final 300ms */
-.scene-turtle.death-anim[class*="pos-left"]{animation:deathHopLeft 1.2s ease-out forwards}
-.scene-turtle.death-anim[class*="pos-right"]{animation:deathHopRight 1.2s ease-out forwards}
+.scene-turtle.death-anim[class*="pos-left"] .st-body{animation:deathHopLeft 1.2s ease-out forwards}
+.scene-turtle.death-anim[class*="pos-right"] .st-body{animation:deathHopRight 1.2s ease-out forwards}
 @keyframes deathHopLeft{
-  0%{transform:translate(0,0) scale(var(--base-scale));opacity:1;filter:brightness(1)}
-  12%{transform:translate(-10px,-8px) rotate(-8deg) scale(var(--base-scale));opacity:1;filter:brightness(2.5) saturate(0)}
-  33%{transform:translate(-14px,0) rotate(-15deg) scale(var(--base-scale));opacity:1;filter:brightness(1) saturate(.5)}
-  75%{transform:translate(-14px,0) rotate(-15deg) scale(var(--base-scale));opacity:1;filter:grayscale(.8)}
-  100%{transform:translate(-14px,0) rotate(-15deg) scale(var(--base-scale));opacity:0;filter:grayscale(.8)}
+  0%{transform:translate(0,0);opacity:1;filter:brightness(1)}
+  12%{transform:translate(-10px,-8px) rotate(-8deg);opacity:1;filter:brightness(2.5) saturate(0)}
+  33%{transform:translate(-14px,0) rotate(-15deg);opacity:1;filter:brightness(1) saturate(.5)}
+  75%{transform:translate(-14px,0) rotate(-15deg);opacity:1;filter:grayscale(.8)}
+  100%{transform:translate(-14px,0) rotate(-15deg);opacity:0;filter:grayscale(.8)}
 }
 @keyframes deathHopRight{
-  0%{transform:translate(0,0) scale(var(--base-scale));opacity:1;filter:brightness(1)}
-  12%{transform:translate(10px,-8px) rotate(8deg) scale(var(--base-scale));opacity:1;filter:brightness(2.5) saturate(0)}
-  33%{transform:translate(14px,0) rotate(15deg) scale(var(--base-scale));opacity:1;filter:brightness(1) saturate(.5)}
-  75%{transform:translate(14px,0) rotate(15deg) scale(var(--base-scale));opacity:1;filter:grayscale(.8)}
-  100%{transform:translate(14px,0) rotate(15deg) scale(var(--base-scale));opacity:0;filter:grayscale(.8)}
+  0%{transform:translate(0,0);opacity:1;filter:brightness(1)}
+  12%{transform:translate(10px,-8px) rotate(8deg);opacity:1;filter:brightness(2.5) saturate(0)}
+  33%{transform:translate(14px,0) rotate(15deg);opacity:1;filter:brightness(1) saturate(.5)}
+  75%{transform:translate(14px,0) rotate(15deg);opacity:1;filter:grayscale(.8)}
+  100%{transform:translate(14px,0) rotate(15deg);opacity:0;filter:grayscale(.8)}
 }
-/* Mobile: smaller hop back + keep scale(var(--base-scale)) */
+/* Mobile: shorter hop distance (base-scale still applies from parent) */
 @media (max-width: 768px){
-  .scene-turtle.death-anim[class*="pos-left"]{animation:deathHopLeftMobile 1.2s ease-out forwards}
-  .scene-turtle.death-anim[class*="pos-right"]{animation:deathHopRightMobile 1.2s ease-out forwards}
+  .scene-turtle.death-anim[class*="pos-left"] .st-body{animation:deathHopLeftMobile 1.2s ease-out forwards}
+  .scene-turtle.death-anim[class*="pos-right"] .st-body{animation:deathHopRightMobile 1.2s ease-out forwards}
   @keyframes deathHopLeftMobile{
-    0%{transform:translate(0,0) scale(var(--base-scale));opacity:1}
-    12%{transform:translate(-6px,-5px) scale(var(--base-scale)) rotate(-8deg);opacity:1;filter:brightness(2.5) saturate(0)}
-    33%{transform:translate(-8px,0) scale(var(--base-scale)) rotate(-15deg);opacity:1;filter:brightness(1) saturate(.5)}
-    75%{transform:translate(-8px,0) scale(var(--base-scale)) rotate(-15deg);opacity:1;filter:grayscale(.8)}
-    100%{transform:translate(-8px,0) scale(var(--base-scale)) rotate(-15deg);opacity:0;filter:grayscale(.8)}
+    0%{transform:translate(0,0);opacity:1}
+    12%{transform:translate(-6px,-5px) rotate(-8deg);opacity:1;filter:brightness(2.5) saturate(0)}
+    33%{transform:translate(-8px,0) rotate(-15deg);opacity:1;filter:brightness(1) saturate(.5)}
+    75%{transform:translate(-8px,0) rotate(-15deg);opacity:1;filter:grayscale(.8)}
+    100%{transform:translate(-8px,0) rotate(-15deg);opacity:0;filter:grayscale(.8)}
   }
   @keyframes deathHopRightMobile{
-    0%{transform:translate(0,0) scale(var(--base-scale));opacity:1}
-    12%{transform:translate(6px,-5px) scale(var(--base-scale)) rotate(8deg);opacity:1;filter:brightness(2.5) saturate(0)}
-    33%{transform:translate(8px,0) scale(var(--base-scale)) rotate(15deg);opacity:1;filter:brightness(1) saturate(.5)}
-    75%{transform:translate(8px,0) scale(var(--base-scale)) rotate(15deg);opacity:1;filter:grayscale(.8)}
-    100%{transform:translate(8px,0) scale(var(--base-scale)) rotate(15deg);opacity:0;filter:grayscale(.8)}
+    0%{transform:translate(0,0);opacity:1}
+    12%{transform:translate(6px,-5px) rotate(8deg);opacity:1;filter:brightness(2.5) saturate(0)}
+    33%{transform:translate(8px,0) rotate(15deg);opacity:1;filter:brightness(1) saturate(.5)}
+    75%{transform:translate(8px,0) rotate(15deg);opacity:1;filter:grayscale(.8)}
+    100%{transform:translate(8px,0) rotate(15deg);opacity:0;filter:grayscale(.8)}
   }
 }
 
 /* Crystal turtle: brittle-style burst when 结晶 detonates (purple flash + pulse + expanding ring) */
-.scene-turtle.crystal-burst-fx{animation:crystalBurstPulse .5s ease-out}
+.scene-turtle.crystal-burst-fx .st-body{animation:crystalBurstPulse .5s ease-out}
 .scene-turtle.crystal-burst-fx .st-sprite{animation:crystalBurstFilter .5s ease-out}
 /* Expanding shock ring from target center — 2D-plane elliptical (ground ripple style), faster */
 .scene-turtle.crystal-burst-fx::after{
@@ -1958,10 +1967,10 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
   animation:crystalBurstRing .35s ease-out forwards;
 }
 @keyframes crystalBurstPulse{
-  0%{transform:scale(var(--base-scale))}
-  25%{transform:scale(calc(var(--base-scale) * 1.15))}
-  55%{transform:scale(calc(var(--base-scale) * 0.95))}
-  100%{transform:scale(var(--base-scale))}
+  0%{transform:scale(1)}
+  25%{transform:scale(1.15)}
+  55%{transform:scale(.95)}
+  100%{transform:scale(1)}
 }
 @keyframes crystalBurstFilter{
   0%{filter:none}
@@ -2020,61 +2029,64 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 .scene-turtle[class*="pos-left"][data-pid="mech"] .st-sprite{transform:scale(var(--body-scale))}
 .scene-turtle[class*="pos-right"][data-pid="mech"] .st-sprite{transform:scaleX(-1) scale(var(--body-scale))}
 
-/* Hit animations on scene turtles */
-.scene-turtle.hit-shake{animation:sceneShake .3s ease}
-.scene-turtle.hit-physical{animation:hitPhysical .4s ease}
-.scene-turtle.hit-magic{animation:hitMagic .4s ease}
-.scene-turtle.hit-true{animation:hitTrue .4s ease}
-.scene-turtle.hit-crit{animation:hitCrit .5s ease}
-.scene-turtle.attack-anim[class*="pos-left"]{animation:attackLungeRight .5s ease}
-.scene-turtle.attack-anim[class*="pos-right"]{animation:attackLungeLeft .5s ease}
-@keyframes sceneShake{
-  0%,100%{transform:translateX(0) scale(var(--base-scale))}
-  15%{transform:translateX(-8px) scale(var(--base-scale))}
-  30%{transform:translateX(8px) scale(var(--base-scale))}
-  45%{transform:translateX(-6px) scale(var(--base-scale))}
-  60%{transform:translateX(6px) scale(var(--base-scale))}
-  75%{transform:translateX(-3px) scale(var(--base-scale))}
+/* Hit animations on scene turtles — animate .st-body so the ground shadow
+   and HUD (HP bar / buffs / chest pile) stay stable while the body reacts. */
+.scene-turtle.hit-shake[class*="pos-left"] .st-body  { --knock-x:-18px; animation:sceneKnockback .35s ease-out; }
+.scene-turtle.hit-shake[class*="pos-right"] .st-body { --knock-x: 18px; animation:sceneKnockback .35s ease-out; }
+.scene-turtle.hit-physical .st-body{animation:hitPhysical .4s ease}
+.scene-turtle.hit-magic .st-body{animation:hitMagic .4s ease}
+.scene-turtle.hit-true .st-body{animation:hitTrue .4s ease}
+.scene-turtle.hit-crit .st-body{animation:hitCrit .5s ease}
+.scene-turtle.attack-anim[class*="pos-left"] .st-body{animation:attackLungeRight .5s ease}
+.scene-turtle.attack-anim[class*="pos-right"] .st-body{animation:attackLungeLeft .5s ease}
+/* Knockback + return: quick push to --knock-x, hold briefly, then ease back.
+   Direction is set by the pos-left/pos-right selectors above so targets get
+   pushed AWAY from the battlefield center (toward their own side). */
+@keyframes sceneKnockback{
+  0%   {transform:translateX(0)}
+  15%  {transform:translate(var(--knock-x,0),-3px)}
+  45%  {transform:translate(var(--knock-x,0),0)}
+  100% {transform:translateX(0)}
 }
 
 /* Hop-step attack: forward → hold (sprite plays) → back */
-.scene-turtle.attack-hop[class*="pos-left"]{animation:attackHopRight 1.2s ease-in-out}
-.scene-turtle.attack-hop[class*="pos-right"]{animation:attackHopLeft 1.2s ease-in-out}
+.scene-turtle.attack-hop[class*="pos-left"] .st-body{animation:attackHopRight 1.2s ease-in-out}
+.scene-turtle.attack-hop[class*="pos-right"] .st-body{animation:attackHopLeft 1.2s ease-in-out}
 @keyframes attackHopRight{
-  0%{transform:translateX(0) scale(var(--base-scale))}
-  15%{transform:translate(18px,-6px) scale(var(--base-scale))}
-  20%{transform:translate(25px,0) scale(var(--base-scale))}
-  80%{transform:translate(25px,0) scale(var(--base-scale))}
-  95%{transform:translate(5px,-3px) scale(var(--base-scale))}
-  100%{transform:translateX(0) scale(var(--base-scale))}
+  0%{transform:translateX(0)}
+  15%{transform:translate(18px,-6px)}
+  20%{transform:translate(25px,0)}
+  80%{transform:translate(25px,0)}
+  95%{transform:translate(5px,-3px)}
+  100%{transform:translateX(0)}
 }
 @keyframes attackHopLeft{
-  0%{transform:translateX(0) scale(var(--base-scale))}
-  15%{transform:translate(-18px,-6px) scale(var(--base-scale))}
-  20%{transform:translate(-25px,0) scale(var(--base-scale))}
-  80%{transform:translate(-25px,0) scale(var(--base-scale))}
-  95%{transform:translate(-5px,-3px) scale(var(--base-scale))}
-  100%{transform:translateX(0) scale(var(--base-scale))}
+  0%{transform:translateX(0)}
+  15%{transform:translate(-18px,-6px)}
+  20%{transform:translate(-25px,0)}
+  80%{transform:translate(-25px,0)}
+  95%{transform:translate(-5px,-3px)}
+  100%{transform:translateX(0)}
 }
 /* Mobile: smaller hop distance, preserve scale */
 @media (max-width: 768px){
-  .scene-turtle.attack-hop[class*="pos-left"]{animation:attackHopRightMobile 1.2s ease-in-out}
-  .scene-turtle.attack-hop[class*="pos-right"]{animation:attackHopLeftMobile 1.2s ease-in-out}
+  .scene-turtle.attack-hop[class*="pos-left"] .st-body{animation:attackHopRightMobile 1.2s ease-in-out}
+  .scene-turtle.attack-hop[class*="pos-right"] .st-body{animation:attackHopLeftMobile 1.2s ease-in-out}
   @keyframes attackHopRightMobile{
-    0%{transform:translateX(0) scale(var(--base-scale))}
-    15%{transform:translate(10px,-4px) scale(calc(var(--base-scale) * 1.05))}
-    20%{transform:translate(15px,0) scale(calc(var(--base-scale) * 1.05))}
-    80%{transform:translate(15px,0) scale(calc(var(--base-scale) * 1.05))}
-    95%{transform:translate(3px,-2px) scale(calc(var(--base-scale) * 1.025))}
-    100%{transform:translateX(0) scale(var(--base-scale))}
+    0%{transform:translateX(0)}
+    15%{transform:translate(10px,-4px) scale(1.05)}
+    20%{transform:translate(15px,0) scale(1.05)}
+    80%{transform:translate(15px,0) scale(1.05)}
+    95%{transform:translate(3px,-2px) scale(1.025)}
+    100%{transform:translateX(0)}
   }
   @keyframes attackHopLeftMobile{
-    0%{transform:translateX(0) scale(var(--base-scale))}
-    15%{transform:translate(-10px,-4px) scale(calc(var(--base-scale) * 1.05))}
-    20%{transform:translate(-15px,0) scale(calc(var(--base-scale) * 1.05))}
-    80%{transform:translate(-15px,0) scale(calc(var(--base-scale) * 1.05))}
-    95%{transform:translate(-3px,-2px) scale(calc(var(--base-scale) * 1.025))}
-    100%{transform:translateX(0) scale(var(--base-scale))}
+    0%{transform:translateX(0)}
+    15%{transform:translate(-10px,-4px) scale(1.05)}
+    20%{transform:translate(-15px,0) scale(1.05)}
+    80%{transform:translate(-15px,0) scale(1.05)}
+    95%{transform:translate(-3px,-2px) scale(1.025)}
+    100%{transform:translateX(0)}
   }
 }
 

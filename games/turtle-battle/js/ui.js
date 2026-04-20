@@ -111,7 +111,13 @@ function renderScene() {
       ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
     }
 
+    // Layout note: .scene-turtle is the stable positioning anchor. Ground-level
+    // shadow (.st-shadow) and UI elements (.st-hp-row, .st-buffs, chest pile)
+    // stay put across attack/hurt/death animations. The sprite (and only the
+    // sprite) is wrapped in .st-body so all knockback/hop/death keyframes
+    // animate the body without dragging the shadow or HP bar around.
     el.innerHTML = `
+      <div class="st-shadow"></div>
       <div class="st-hp-row" style="display:flex;align-items:center;gap:3px">
         ${f._level ? `<span class="st-level-badge">Lv.${f._level}</span>` : ''}
       <div class="st-hp-wrap">
@@ -128,7 +134,7 @@ function renderScene() {
         ${f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore ? `<div class="st-energy-bar"><div class="st-energy-fill" style="width:0%"></div></div>` : ''}
       </div>
       </div>
-      <div class="st-sprite">${spriteHTML}</div>
+      <div class="st-body"><div class="st-sprite">${spriteHTML}</div></div>
       ${f.passive && f.passive.type === 'chestTreasure' ? `<div class="st-chest-pile" data-chest-progress>0/${f.passive.thresholds[0]}</div>` : ''}
       <div class="st-buffs"></div>
     `;
