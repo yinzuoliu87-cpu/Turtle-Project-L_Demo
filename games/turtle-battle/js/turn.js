@@ -223,16 +223,15 @@ async function beginTurn() {
         target.hp = Math.max(1, target.hp - stealAmt); // can't kill
         target.hp = Math.min(target.hp, target.maxHp); // keep hp within new cap
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
-        spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
+        // Single floating number on the target only — true-damage style with candy icon.
+        // HP bar + maxHp scale visually convey the dual loss; no extra clutter on caster.
+        spawnFloatingNum(tElId, `-${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: f.side, amount: stealAmt });
         updateHpBar(target, tElId);
         updateFighterStats(target, tElId);
-        // Caster: gains stealAmt in both (symmetric transfer)
+        // Caster: gains stealAmt in both (symmetric transfer) — no floating numbers on caster.
         f.maxHp += stealAmt;
         f.hp += stealAmt;
         const fElId = getFighterElId(f);
-        spawnFloatingNum(fElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
-        spawnFloatingNum(fElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
         updateHpBar(f, fElId);
         updateFighterStats(f, fElId);
         // Count as damage dealt/taken
@@ -461,12 +460,9 @@ async function beginTurn() {
         target.hp = Math.max(1, target.hp - stealAmt);
         target.hp = Math.min(target.hp, target.maxHp);
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${stealAmt}HP🍬`, 'pierce-dmg', 0, 0);
-        spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
+        spawnFloatingNum(tElId, `-${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: s.side, amount: stealAmt });
         updateHpBar(target, tElId);
         s.maxHp += stealAmt; s.hp += stealAmt;
-        spawnFloatingNum(sElId, `+${stealAmt}HP🍬`, 'heal-num', 0, 0);
-        spawnFloatingNum(sElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
         updateSummonHpBar(s);
         const owner = s._owner;
         if (owner && owner._dmgDealt !== undefined) owner._dmgDealt += stealAmt;

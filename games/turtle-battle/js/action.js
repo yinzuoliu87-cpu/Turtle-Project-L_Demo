@@ -998,15 +998,13 @@ async function executeAction(action) {
       target.hp = Math.max(1, target.hp - stealAmt);
       target.hp = Math.min(target.hp, target.maxHp);
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${stealAmt}HP`, 'pierce-dmg', 0, 0);
-      spawnFloatingNum(tElId, `-${stealAmt}最大HP`, 'debuff-label', 200, 20);
+      // Single floating number on target only (true-dmg style with shell icon).
+      spawnFloatingNum(tElId, `-${stealAmt}🐚`, 'true-dmg', 0, 0, { atkSide: f.side, amount: stealAmt });
       updateHpBar(target, tElId);
       updateFighterStats(target, tElId);
-      // Caster gains symmetric amount in both
+      // Caster gains symmetric amount silently — HP bar growth is feedback enough.
       f.maxHp += stealAmt; f.hp += stealAmt; f._initHp = f.maxHp;
       const fElId = getFighterElId(f);
-      spawnFloatingNum(fElId, `+${stealAmt}HP`, 'heal-num', 0, 0);
-      spawnFloatingNum(fElId, `+${stealAmt}最大HP`, 'passive-num', 200, 20);
       updateHpBar(f, fElId);
       updateFighterStats(f, fElId);
       f._dmgDealt += stealAmt;
