@@ -628,6 +628,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (attacker._equipStun && target.alive && Math.random() < attacker._equipStun / 100) {
     if (!target.buffs.find(b => b.type === 'stun')) {
       target.buffs.push({ type:'stun', turns:1 });
+      target._stunUsed = false; // fresh stun: must reset so turn.js consumes it
       spawnFloatingNum(tElId, '❄️眩晕!', 'debuff-label', 400, -10);
     }
   }

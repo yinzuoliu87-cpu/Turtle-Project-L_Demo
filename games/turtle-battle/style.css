@@ -2197,10 +2197,12 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
   .fg-slot .fg-emoji{font-size:18px}
   .fg-slot .fg-name{font-size:8px}
   /* battle-scene flex:1 inherited from 768px */
-  .scene-turtle{transform:scale(.5)}
-  .scene-turtle:hover{transform:scale(.55)}
-  .scene-turtle.targetable{transform:scale(.55)}
-  .scene-turtle.active-turn{transform:scale(.55)}
+  /* Tiny screens: bump --base-scale so regular keyframes compose at the right
+     size (static transform uses scale(var(--base-scale)) from the global rule). */
+  .scene-turtle{--base-scale:.5}
+  .scene-turtle.is-boss{--base-scale:.7}
+  .scene-turtle:hover{transform:scale(calc(var(--base-scale) * 1.1))}
+  .scene-turtle.targetable:hover{transform:scale(calc(var(--base-scale) * 1.1))}
   .skill-announce{font-size:11px;padding:4px 10px}
   .fighter-detail-panel{max-height:70vh;font-size:11px}
   .fdp-name{font-size:14px}
