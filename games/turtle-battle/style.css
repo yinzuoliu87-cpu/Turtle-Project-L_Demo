@@ -1989,6 +1989,28 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
 
 /* Turtle sprite */
 .scene-turtle .st-sprite{image-rendering:pixelated}
+
+/* ── Burn overlay (phoenixBurnDot) ─────────────────────────
+   8-frame 128×128 horizontal sprite sheet (1024×128 total).
+   Attached to .st-body so it follows knockback/hop animations. */
+.scene-turtle.burning .st-body::before{
+  content:'';
+  position:absolute;
+  left:50%;top:50%;
+  width:128px;height:128px;
+  transform:translate(-50%,-50%);
+  background:url('assets/vfx/burn-loop.png') 0 0/1024px 128px no-repeat;
+  animation:burnLoop .8s steps(8) infinite;
+  pointer-events:none;
+  z-index:3;
+  image-rendering:pixelated;
+  mix-blend-mode:screen;
+}
+.scene-turtle.dead.burning .st-body::before{display:none}
+@keyframes burnLoop{
+  from{background-position:0 0}
+  to{background-position:-1024px 0}
+}
 /* Chest turtle: dedicated left-side treasure progress (plain text, no frame/icon) */
 .scene-turtle .st-chest-pile{position:absolute;left:-6px;top:48%;transform:translate(-100%,-50%);color:#ffd93d;font-weight:700;font-size:12px;font-variant-numeric:tabular-nums;white-space:nowrap;pointer-events:none;text-shadow:0 1px 2px rgba(0,0,0,.85),0 0 4px rgba(0,0,0,.6)}
 @media (max-width: 768px){

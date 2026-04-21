@@ -1436,6 +1436,9 @@ function renderStatusIcons(f) {
   const elId = getFighterElId(f);
   const card = document.getElementById(elId);
   if (!card) return;
+  // Toggle burn overlay (CSS ::before on .st-body) based on phoenixBurnDot presence
+  const isBurning = f.alive && f.buffs && f.buffs.some(b => b.type === 'phoenixBurnDot');
+  card.classList.toggle('burning', isBurning);
   const box = card.querySelector('.status-icons');
   if (!box) return;
   // Only debuff icons — passive is now shown in stats row
