@@ -498,6 +498,14 @@ async function beginTurn() {
 // Focused, single-side tick keeps floating damage numbers from overlapping
 // and gives the player a clean cause-effect beat after their actions.
 
+// Brief hurt-animation flash for DoT ticks so the player feels each dot land.
+function tickHurt(elId, hurtCls) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  el.classList.add(hurtCls);
+  setTimeout(() => el.classList.remove(hurtCls), 400);
+}
+
 // Per-fighter DoT tick: dot / phoenixBurnDot / poison / bleed / chill+burn combo.
 // Called from processSideEnd for each target on the OPPOSING team.
 async function tickDotsOn(f) {
@@ -509,6 +517,7 @@ async function tickDotsOn(f) {
   for (const d of dots) {
     f.hp = Math.max(0, f.hp - d.value);
     spawnFloatingNum(elId, `-${d.value}`, d.floatCls || 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
+    tickHurt(elId, d.floatCls === 'true-dmg' ? 'hit-true' : 'hit-magic');
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
     if (f.hp <= 0) { f.alive = false; break; }
@@ -523,6 +532,7 @@ async function tickDotsOn(f) {
     const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
     if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
     if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
+    tickHurt(elId, 'hit-magic');
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
     if (f.hp <= 0) break;
@@ -535,6 +545,7 @@ async function tickDotsOn(f) {
     const poisonDmg = Math.max(1, Math.round(poisonRaw * calcDmgMult(f.mr)));
     f.hp = Math.max(0, f.hp - poisonDmg);
     spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
+    tickHurt(elId, 'hit-magic');
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
     if (f.hp <= 0) break;
@@ -547,6 +558,7 @@ async function tickDotsOn(f) {
     const bleedDmg = Math.max(1, Math.round(bleedRaw * calcDmgMult(f.def)));
     f.hp = Math.max(0, f.hp - bleedDmg);
     spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
+    tickHurt(elId, 'hit-physical');
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span style="color:#cc3333">${bleedDmg}流血伤害</span>（剩余${bl.turns-1}回合）`);
     if (f.hp <= 0) break;

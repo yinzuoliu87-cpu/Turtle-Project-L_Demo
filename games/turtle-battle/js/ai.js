@@ -22,11 +22,27 @@ function aiAction(f) {
       if (shieldS && allies.some(a => a.shield < 30)) skill = shieldS;
       else {
         const dmg = ready.filter(s => s.type!=='heal' && s.type!=='shield');
-        if (difficulty === 'hard' && dmg.length) {
-          const lo = enemies.sort((a,b)=>a.hp-b.hp)[0];
-          const best = dmg.sort((a,b)=>(b.power*b.hits+(b.pierce||0))-(a.power*a.hits+(a.pierce||0)))[0];
-          skill = lo.hp < best.power*best.hits*0.6 ? best : (dmg[Math.floor(Math.random()*dmg.length)]);
-        } else skill = dmg.length ? dmg[Math.floor(Math.random()*dmg.length)] : ready[0];
+        if (dmg.length) {
+          // Prefer higher-CD skills (ults). Most skills have power=0 and use
+          // atkScale/pierceScale/etc, so power*hits scoring misses every ult —
+          // CD is a reliable proxy: cd:6 is clearly bigger than cd:0.
+          const byCd = dmg.slice().sort((a,b) => (b.cd||0) - (a.cd||0));
+          const topCd = byCd[0].cd || 0;
+          const ultGroup = byCd.filter(s => (s.cd||0) === topCd);
+          const pickBest = () => ultGroup[Math.floor(Math.random()*ultGroup.length)];
+          const pickRandom = () => dmg[Math.floor(Math.random()*dmg.length)];
+          if (difficulty === 'hard') {
+            // On hard: if a low-HP enemy can be finished, force ult; else 75% ult
+            const lo = enemies.slice().sort((a,b) => a.hp - b.hp)[0];
+            const bigHits = ultGroup[0].hits || 1;
+            const bigScale = (ultGroup[0].atkScale || ultGroup[0].pierceScale || ultGroup[0].normalScale || 0);
+            const est = bigScale * bigHits * f.atk;
+            skill = lo && est > 0 && lo.hp < est * 0.6 ? ultGroup[0] : (Math.random() < 0.75 ? pickBest() : pickRandom());
+          } else {
+            // normal: 65% prefer ult group, 35% random for variety
+            skill = Math.random() < 0.65 ? pickBest() : pickRandom();
+          }
+        } else skill = ready[0];
       }
     }
   }
