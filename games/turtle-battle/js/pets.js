@@ -762,9 +762,9 @@ const ALL_PETS = [
               brief:'龟壳涌动强大的能量，在第4回合全面觉醒，使攻击力/护甲/生命值/生命偷取/反伤/穿甲各提升 <span class="val-atk">12%</span>。受伤时储存能量，并在每4回合消耗全部能量来释放冲击波，造成基于储能×<span class="val-atk">0.8%×攻击力</span>的物理伤害，并获得储能×<span class="val-atk">1%×攻击力</span>的护盾。',
               desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n· 攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n· 护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n· 最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n· 生命偷取 <span class="val-heal">+12%</span>\n· 反伤 <span class="val-atk">+12%</span>\n· 护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值。\n每4回合消耗全部储能，对全体敌方造成伤害并为自身获得护盾。' },
     skillPool:[
-      { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0, cd:0, totalScale:1.2, splashAdjacent:25,
-        brief:'龟壳打击6段，物理/真实交替，共（{N:1.2*ATK}）混合伤害，每段对<span class="val-atk">相邻</span>目标（上下/前后）溅射 <span class="val-atk">25%</span>',
-        detail:'龟壳对单体打击6段，奇数段物理伤害，偶数段真实伤害。\n共（120%×攻击力({ATK}) = {N:1.2*ATK}）混合伤害。\n每段对与主目标相邻（上下/前后）的单位溅射 <span class="val-atk">25%</span> 伤害。\n溅射伤害类型跟随主段（物理/真实），独立结算暴击。' },
+      { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0, cd:0, totalScale:1.2, splashAdjacent:25, isolatedBonus:1.5,
+        brief:'龟壳打击6段，物理/真实交替，共（{N:1.2*ATK}）混合伤害，每段对<span class="val-atk">相邻</span>目标（上下/前后）溅射 <span class="val-atk">25%</span>；无相邻目标时主伤害 <span class="val-atk">×1.5</span>',
+        detail:'龟壳对单体打击6段，奇数段物理伤害，偶数段真实伤害。\n共（120%×攻击力({ATK}) = {N:1.2*ATK}）混合伤害。\n每段对与主目标相邻（上下/前后）的单位溅射 <span class="val-atk">25%</span> 伤害。\n溅射伤害类型跟随主段（物理/真实），独立结算暴击。\n若主目标无可溅射的相邻单位，当前段主伤害提升至 <span class="val-atk">1.5×</span>。' },
       { name:'复制', type:'shellCopy', hits:0, power:0, pierce:0, cd:4,
         brief:'龟壳随机复制敌方2个技能，以 <span class="val-atk">60%</span> 效果立即释放',
         detail:'龟壳随机复制敌方的2个可用技能，并以 <span class="val-atk">60%</span> 效果立即释放。\n冷却{cd}回合。' },

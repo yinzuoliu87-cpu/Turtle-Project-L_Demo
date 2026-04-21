@@ -2091,7 +2091,11 @@ async function doShellStrike(attacker, target, skill) {
     if (isCrit) totalCrits++;
 
     const isNormal = (i % 2 === 0); // index 0,2,4 = normal; 1,3,5 = pierce
-    const raw = Math.round(perHit);
+    // Adjacency check once per hit: if no adjacent targets, main damage gets
+    // a 1.5× compensation multiplier instead of fizzling the splash.
+    const splashTargets = (skill.splashAdjacent > 0) ? adjacentFighters(target) : [];
+    const isolatedBonus = (skill.splashAdjacent > 0 && splashTargets.length === 0) ? 1.5 : 1;
+    const raw = Math.round(perHit * isolatedBonus);
     let dmg;
     const yOff = 0;
 
@@ -2107,17 +2111,16 @@ async function doShellStrike(attacker, target, skill) {
       const { shieldAbs } = applyRawDmg(attacker, target, dmg, true, false, 'true');
       totalPierce += dmg;
       totalShieldDmg += shieldAbs;
-  
+
       spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff, {atkSide: attacker.side, amount: dmg});
     }
     totalDmgDealt += dmg;
 
     // Per-hit splash to adjacent enemies (up/down = same row col±1, front/back = other row same col).
     // Splash damage follows the main hit's type (isNormal→physical, else→true) and rolls its own crit.
-    if (dmg > 0 && skill.splashAdjacent > 0) {
-      const basePerSplash = Math.round(raw * skill.splashAdjacent / 100);
+    if (dmg > 0 && splashTargets.length > 0) {
+      const basePerSplash = Math.round(perHit * skill.splashAdjacent / 100);
       if (basePerSplash > 0) {
-        const splashTargets = adjacentFighters(target);
         for (const e of splashTargets) {
           // Independent crit roll for each splash target
           let sEffCrit = attacker.crit;
