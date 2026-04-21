@@ -362,15 +362,10 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
    FLOATING DAMAGE / HEAL / SHIELD NUMBERS
    persistent 2.5s, color-coded
    ═══════════════════════════════════════ */
-/* Pixel glyphs are square-ish. Inner wrapper applies scale(narrow-tall) so the
-   number silhouette matches Impact-style condensed-tall display faces.
-   Outer .floating-num owns the JS animation transform; inner .fn-inner owns
-   the aspect stretch — two transforms compose cleanly without fighting. */
-.floating-num .fn-inner{display:inline-block;transform:scale(.82,1.55);transform-origin:center;letter-spacing:-1px;line-height:.9}
 .floating-num{
   position:absolute;
   left:50%;top:50%;
-  font-family:'Press Start 2P','Impact','Arial Black',system-ui,sans-serif;
+  font-family:Impact,'Arial Black','Helvetica Neue',system-ui,sans-serif;
   font-weight:900;font-size:24px;
   letter-spacing:.5px;
   pointer-events:none;z-index:50;
