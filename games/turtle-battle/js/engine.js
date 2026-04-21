@@ -90,6 +90,50 @@ function getAliveEnemiesWithSummons(side) {
   return targets;
 }
 
+// ── SLOT / ROW HELPERS ────────────────────────────────────
+// Slot grid (per side): columns 0/1/2 × rows front/back, key = `${row}-${col}`.
+// Column index runs vertically on screen (col 0 top, col 2 bottom).
+// "Adjacent" in gameplay = cardinal neighbors on the 3×2 grid:
+//   · same row, col ± 1  (上 / 下)
+//   · other row, same col  (前 / 后)
+function adjacentSlots(slotKey) {
+  if (!slotKey) return [];
+  const [row, colStr] = slotKey.split('-');
+  const col = parseInt(colStr);
+  const other = row === 'front' ? 'back' : 'front';
+  const out = [];
+  if (col > 0) out.push(`${row}-${col-1}`);
+  if (col < 2) out.push(`${row}-${col+1}`);
+  out.push(`${other}-${col}`);
+  return out;
+}
+function adjacentFighters(target) {
+  if (!target || !target._slotKey) return [];
+  const team = target.side === 'left' ? leftTeam : rightTeam;
+  const keys = adjacentSlots(target._slotKey);
+  return team.filter(t => t.alive && t !== target && keys.includes(t._slotKey));
+}
+function fighterBehind(f) {
+  if (!f || !f._slotKey) return null;
+  const [row, col] = f._slotKey.split('-');
+  if (row !== 'front') return null;
+  const team = f.side === 'left' ? leftTeam : rightTeam;
+  return team.find(t => t.alive && t._slotKey === `back-${col}`) || null;
+}
+function fighterInFront(f) {
+  if (!f || !f._slotKey) return null;
+  const [row, col] = f._slotKey.split('-');
+  if (row !== 'back') return null;
+  const team = f.side === 'left' ? leftTeam : rightTeam;
+  return team.find(t => t.alive && t._slotKey === `front-${col}`) || null;
+}
+function frontSlotEmpty(f) {
+  if (!f || !f._slotKey) return false;
+  const [row, col] = f._slotKey.split('-');
+  if (row !== 'back') return false;
+  return !fighterInFront(f);
+}
+
 // Shield multiplier for battle rules (铁壁之日 = x2)
 function getShieldMult() {
   return (typeof _battleRule !== 'undefined' && _battleRule && _battleRule.id === 'shield') ? 1.3 : 1;

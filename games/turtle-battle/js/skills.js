@@ -2112,15 +2112,34 @@ async function doShellStrike(attacker, target, skill) {
     }
     totalDmgDealt += dmg;
 
-    // Per-hit splash to other enemies
-    if (dmg > 0 && skill.splashPct > 0) {
-      const splashDmg = Math.round(dmg * skill.splashPct / 100);
-      if (splashDmg > 0) {
-        const others = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
-        for (const e of others) {
-          applyRawDmg(attacker, e, splashDmg, false, false, 'physical');
+    // Per-hit splash to adjacent enemies (up/down = same row col±1, front/back = other row same col).
+    // Splash damage follows the main hit's type (isNormal→physical, else→true) and rolls its own crit.
+    if (dmg > 0 && skill.splashAdjacent > 0) {
+      const basePerSplash = Math.round(raw * skill.splashAdjacent / 100);
+      if (basePerSplash > 0) {
+        const splashTargets = adjacentFighters(target);
+        for (const e of splashTargets) {
+          // Independent crit roll for each splash target
+          let sEffCrit = attacker.crit;
+          if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+            sEffCrit += attacker.passive.pct / 100;
+          }
+          const sIsCrit = Math.random() < sEffCrit;
+          const sCritMult = sIsCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+          let splashDmg;
+          if (isNormal) {
+            const sDef = calcEffDef(attacker, e);
+            splashDmg = Math.max(1, Math.round(basePerSplash * sCritMult * calcDmgMult(sDef)));
+            applyRawDmg(attacker, e, splashDmg, false, false, 'physical');
+          } else {
+            splashDmg = Math.max(1, Math.round(basePerSplash * sCritMult));
+            applyRawDmg(attacker, e, splashDmg, true, false, 'true');
+          }
           const eElId = getFighterElId(e);
-          spawnFloatingNum(eElId, `-${splashDmg}溅射`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: splashDmg});
+          const cls = isNormal
+            ? (sIsCrit ? 'crit-dmg' : 'direct-dmg')
+            : (sIsCrit ? 'crit-pierce' : 'pierce-dmg');
+          spawnFloatingNum(eElId, `-${splashDmg}`, cls, 0, yOff, {atkSide: attacker.side, amount: splashDmg});
           updateHpBar(e, eElId);
           await triggerOnHitEffects(attacker, e, splashDmg);
         }
@@ -2142,7 +2161,7 @@ async function doShellStrike(attacker, target, skill) {
   if (totalNormal > 0) parts.push(`<span class="log-direct">${totalNormal}物理</span>`);
   if (totalPierce > 0) parts.push(`<span class="log-pierce">${totalPierce}真实</span>`);
   if (totalCrits > 0) parts.push(`<span class="log-crit">${totalCrits}暴击</span>`);
-  const splashNote = skill.splashPct > 0 ? ` (每段溅射${skill.splashPct}%)` : '';
+  const splashNote = skill.splashAdjacent > 0 ? ` (每段对相邻敌人溅射${skill.splashAdjacent}%)` : '';
   addLog(`${attacker.emoji}${attacker.name} <b>${skill.name}</b> 6段 → ${target.emoji}${target.name}：${parts.join(' + ')}${splashNote}`);
 }
 
