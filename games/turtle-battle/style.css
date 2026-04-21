@@ -5,10 +5,6 @@
 .st-level-badge{font-size:10px;font-weight:800;color:#ffd93d;background:linear-gradient(135deg,#4a3520,#2a1d12);border:1px solid #ffd93d80;border-radius:3px;padding:1px 4px;line-height:1;white-space:nowrap;box-shadow:0 1px 2px rgba(0,0,0,.5)}
 /* Bug report floating button */
 .bug-report-btn{position:fixed;bottom:16px;right:16px;z-index:997;width:42px;height:42px;border-radius:50%;background:#e74c3c;border:2px solid #ff6b5a;color:#fff;font-size:20px;cursor:pointer;box-shadow:0 4px 12px rgba(231,76,60,.5);transition:transform .15s}
-.dmg-font-cycle-btn{position:fixed;top:12px;right:12px;z-index:9999;height:40px;padding:0 14px;border-radius:20px;background:linear-gradient(135deg,#7c3aed,#c4b5fd);border:2px solid #fff;color:#fff;font-size:13px;font-weight:800;cursor:pointer;box-shadow:0 4px 16px rgba(124,58,237,.7),0 0 0 2px rgba(124,58,237,.3);transition:transform .15s;display:flex;align-items:center;gap:6px;text-shadow:0 1px 2px rgba(0,0,0,.5)}
-.dmg-font-cycle-btn:hover{transform:scale(1.08)}
-.dmg-font-cycle-btn #dmgFontCycleLabel{color:#fff}
-@media (max-width:768px){.dmg-font-cycle-btn{top:8px;right:8px;height:34px;font-size:11px;padding:0 10px}}
 .bug-report-btn:hover{transform:scale(1.1)}
 .bug-report-overlay{position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,.75);display:none;align-items:center;justify-content:center;backdrop-filter:blur(4px)}
 .bug-report-overlay.show{display:flex}
@@ -366,18 +362,15 @@ body:has(#screenBattle.active) .sound-panel{top:84px}
    FLOATING DAMAGE / HEAL / SHIELD NUMBERS
    persistent 2.5s, color-coded
    ═══════════════════════════════════════ */
-/* Debug font switcher: sets --dmg-font on <body> via data-dmg-font */
-body[data-dmg-font="impact"]   {--dmg-font:Impact}
-body[data-dmg-font="bangers"]  {--dmg-font:'Bangers'}
-body[data-dmg-font="bungee"]   {--dmg-font:'Bungee'}
-body[data-dmg-font="russo"]    {--dmg-font:'Russo One'}
-body[data-dmg-font="blackops"] {--dmg-font:'Black Ops One'}
-body[data-dmg-font="luckiest"] {--dmg-font:'Luckiest Guy'}
-body[data-dmg-font="pixel"]    {--dmg-font:'Press Start 2P'}
+/* Pixel glyphs are square-ish. Inner wrapper applies scale(narrow-tall) so the
+   number silhouette matches Impact-style condensed-tall display faces.
+   Outer .floating-num owns the JS animation transform; inner .fn-inner owns
+   the aspect stretch — two transforms compose cleanly without fighting. */
+.floating-num .fn-inner{display:inline-block;transform:scale(.82,1.55);transform-origin:center;letter-spacing:-1px;line-height:.9}
 .floating-num{
   position:absolute;
   left:50%;top:50%;
-  font-family:var(--dmg-font,Impact),'Arial Black','Helvetica Neue',system-ui,sans-serif;
+  font-family:'Press Start 2P','Impact','Arial Black',system-ui,sans-serif;
   font-weight:900;font-size:24px;
   letter-spacing:.5px;
   pointer-events:none;z-index:50;

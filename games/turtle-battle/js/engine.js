@@ -131,8 +131,13 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     const parent = rawParent.querySelector(':scope > .st-body') || rawParent;
     const num = document.createElement('div');
     num.className = 'floating-num ' + cls;
-    if (typeof text === 'string' && text.includes('<')) num.innerHTML = text;
-    else num.textContent = text;
+    // Inner span carries the aspect-stretch transform so it composes with the
+    // outer element's JS animation transform (scale/translate) without fighting.
+    const inner = document.createElement('span');
+    inner.className = 'fn-inner';
+    if (typeof text === 'string' && text.includes('<')) inner.innerHTML = text;
+    else inner.textContent = text;
+    num.appendChild(inner);
 
     // Size scales with damage amount (14-32px, crit +20%)
     let amount = opts && opts.amount || 0;

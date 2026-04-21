@@ -392,7 +392,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
       const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
       for (const e of enemies) {
         const dotDmg = Math.round(e.maxHp * summon.passive.hpPct / 100);
-        e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side });
+        e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side, floatCls:'true-dmg' });
         const eElId = getFighterElId(e);
         spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
         renderStatusIcons(e);

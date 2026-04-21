@@ -2483,7 +2483,7 @@ async function doGhostStorm(attacker, target, skill) {
   // Apply curse: 10% target maxHP per turn
   if (target.alive) {
     const dotDmg = Math.round(target.maxHp * 0.09);
-    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side });
+    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side, floatCls:'true-dmg' });
     spawnFloatingNum(tElId, '<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒', 'debuff-label', 200, -10);
     renderStatusIcons(target);
   }
@@ -2682,6 +2682,7 @@ async function doBambooChargeAttack(attacker, target) {
   renderStatusIcons(attacker);
 
   addLog(`${attacker.emoji}${attacker.name} <b>竹编充能</b> → ${target.emoji}${target.name}：<span class="log-magic">${magicDmg}魔法</span>${isCrit?' <span class="log-crit">暴击</span>':''} <span class="log-heal">+${actualHeal}HP</span> <span class="log-passive">永久+${hpGain}最大HP</span>`);
+  checkDeaths(attacker);
   await sleep(400);
 }
 

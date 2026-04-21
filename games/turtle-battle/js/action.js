@@ -1113,6 +1113,11 @@ async function executeAction(action) {
     }
   }
 
+  // Final belt-and-suspenders sweep: any follow-up that killed without its own
+  // checkDeaths call gets resolved here before yielding the turn.
+  checkDeaths(f);
+  if (checkBattleEnd()) { animating=false; return; }
+
   animating = false;
 
   // Host: send action to guest (guest re-executes with same seeded random)
