@@ -102,13 +102,14 @@ function renderScene() {
       ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
       : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
 
-    // Tick marks
+    // Tick marks: 1 line per 100 HP (200 HP for boss-scale pools) — avoids
+    // the old 20-HP minor clutter that crowded high-HP bars.
+    const tickStep = barMax > 1000 ? 200 : 100;
     let ticksHtml = '';
-    for (let v = 20; v < barMax; v += 20) {
+    for (let v = tickStep; v < barMax; v += tickStep) {
       const pct = v / barMax * 100;
       if (pct >= 99.5) break;
-      const isMajor = v % 100 === 0;
-      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
+      ticksHtml += `<div class="st-hp-tick" style="left:${pct}%"></div>`;
     }
 
     // Layout note: .scene-turtle is the stable positioning anchor. Ground-level
@@ -327,12 +328,12 @@ function updateSceneHp(f) {
   // ── Tick marks (rebuild if barMax changed) ──
   const tickContainer = el.querySelector('.st-hp-ticks');
   if (tickContainer && tickContainer._barMax !== barMax) {
+    const tickStep = barMax > 1000 ? 200 : 100;
     let ticksHtml = '';
-    for (let v = 20; v < barMax; v += 20) {
+    for (let v = tickStep; v < barMax; v += tickStep) {
       const pct = v / barMax * 100;
       if (pct >= 99.5) break;
-      const isMajor = v % 100 === 0;
-      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
+      ticksHtml += `<div class="st-hp-tick" style="left:${pct}%"></div>`;
     }
     tickContainer.innerHTML = ticksHtml;
     tickContainer._barMax = barMax;
