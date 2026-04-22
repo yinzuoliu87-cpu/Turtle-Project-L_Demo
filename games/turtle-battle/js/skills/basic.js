@@ -158,10 +158,16 @@ async function doBasicChiWave(attacker, target, skill) {
   const dir = attacker.side === 'left' ? 1 : -1;
   const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
 
+  // Use .st-body (the actual sprite wrapper) for Y alignment, NOT the outer
+  // .scene-turtle — the outer includes a ~19px HP bar above the sprite, so
+  // its geometric center is ~9px above the visual turtle center. Aligning on
+  // st-body puts the wave exactly through the sprite's middle.
   let casterYShift = 0;
   if (fEl && tEl) {
-    const fRect0 = fEl.getBoundingClientRect();
-    const tRect0 = tEl.getBoundingClientRect();
+    const fBody = fEl.querySelector('.st-body') || fEl;
+    const tBody = tEl.querySelector('.st-body') || tEl;
+    const fRect0 = fBody.getBoundingClientRect();
+    const tRect0 = tBody.getBoundingClientRect();
     casterYShift = (tRect0.top + tRect0.height / 2) - (fRect0.top + fRect0.height / 2);
   }
   // Camera zoom anchored on the target's row
@@ -208,7 +214,10 @@ async function doBasicChiWave(attacker, target, skill) {
   const targetHitSchedule = []; // [{target, delay, tNode}]
   let maxTravelDist = 0;
   if (battleField) {
-    const fRect = fEl.getBoundingClientRect();
+    // Use .st-body for spawn Y too (matches the sprite center, not the
+    // HP-bar-inclusive container center).
+    const fBody = fEl.querySelector('.st-body') || fEl;
+    const fRect = fBody.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
     const startY = fRect.top - bRect.top + fRect.height / 2;
