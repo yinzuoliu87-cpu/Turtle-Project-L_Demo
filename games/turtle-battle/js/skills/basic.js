@@ -157,44 +157,42 @@ async function doBasicChiWave(attacker, skill) {
   const tEl = document.getElementById(getFighterElId(primaryTarget));
   const dir = attacker.side === 'left' ? 1 : -1;
 
-  // Compute dash offset: land ~90px on caster's side of target
-  let dashPx = 0;
-  if (fEl && tEl) {
-    const fRect = fEl.getBoundingClientRect();
-    const tRect = tEl.getBoundingClientRect();
-    const casterCX = fRect.left + fRect.width / 2;
-    const targetCX = tRect.left + tRect.width / 2;
-    dashPx = (targetCX - casterCX) - (dir * 90);
-  }
+  // NOTE: sprites are ~196px wide packed into ~200px column gaps — there's
+  // literally no room to "dash forward" without overlapping the enemy. We
+  // skip the dash and rely on the wave + camera zoom to sell the impact.
 
-  // Camera zoom in on the battle field, centered near the caster
-  if (battleField && fEl) {
+  // Camera zoom centered between caster and target (mid-battle focus)
+  const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
+  if (battleField && fEl && tEl) {
     const bRect = battleField.getBoundingClientRect();
     const fRect = fEl.getBoundingClientRect();
-    const ox = ((fRect.left + fRect.width / 2) - bRect.left) / bRect.width * 100;
-    const oy = ((fRect.top + fRect.height / 2) - bRect.top) / bRect.height * 100;
+    const tRect = tEl.getBoundingClientRect();
+    const midX = (fRect.left + fRect.width / 2 + tRect.left + tRect.width / 2) / 2;
+    const midY = fRect.top + fRect.height / 2;
+    const ox = (midX - bRect.left) / bRect.width * 100;
+    const oy = (midY - bRect.top) / bRect.height * 100;
     battleField.style.transformOrigin = `${ox}% ${oy}%`;
-    battleField.style.transition = 'transform 400ms ease-out';
-    battleField.style.transform = 'scale(1.08)';
+    battleField.style.transition = 'transform 350ms ease-out';
+    battleField.style.transform = 'scale(1.1)';
   }
 
-  // Scene-turtle dashes via transform override. Preserve base-scale.
-  const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
-  fEl.style.transition = 'transform 400ms cubic-bezier(.35,.9,.35,1)';
-  fEl.style.transform = `translateX(${dashPx}px) scale(${scale})`;
-  await sleep(420);
-
-  // ── Wind-up pause (~0.3s) ──
+  // ── Windup: caster pulses briefly to show "charging" ──
   fEl.classList.add('chi-charging');
-  await sleep(300);
+  await sleep(550);
   fEl.classList.remove('chi-charging');
 
-  // ── Fire the chi wave ──
+  // ── Fire the chi wave (slower travel so the projectile reads clearly) ──
   const wave = document.createElement('div');
   wave.className = 'chi-wave';
   const waveHost = battleField || document.body;
   if (waveHost) waveHost.appendChild(wave);
 
+  // Wave travel timing: aim for ~900ms from spawn to target-contact. Because
+  // travelDist includes a past-target overshoot, the contact time is shorter
+  // than the full animation — we compute it explicitly so hits fire exactly
+  // when the wave visually reaches the target.
+  const WAVE_DURATION_MS = 900;
+  let waveContactDelay = 550;
   if (battleField) {
     const fRect = fEl.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
@@ -205,18 +203,22 @@ async function doBasicChiWave(attacker, skill) {
     wave.style.height = '130px';
     if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
     const tRect = tEl.getBoundingClientRect();
-    const tEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
-    const travelDist = Math.abs(tEdge - startX) + 40;
+    const tNearEdge = tRect.left - bRect.left + (dir === 1 ? 0 : tRect.width);
+    const tFarEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
+    const contactDist = Math.abs(tNearEdge - startX);
+    const travelDist = Math.abs(tFarEdge - startX) + 40;
+    // Sync hit moment to wave contact
+    waveContactDelay = Math.max(300, Math.round(WAVE_DURATION_MS * contactDist / travelDist));
     requestAnimationFrame(() => {
       const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
-      wave.style.transition = 'transform 550ms cubic-bezier(.25,.55,.4,1), opacity 250ms ease-out 420ms';
+      wave.style.transition = `transform ${WAVE_DURATION_MS}ms cubic-bezier(.3,.55,.5,1), opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
       wave.style.transform = `${base} translateX(${dir * travelDist}px)`;
       wave.style.opacity = '0';
     });
   }
 
-  // ── Wave arrival + 3-hit airborne combo ──
-  await sleep(300); // wave travel time before impact
+  // ── Wait for wave to visually touch target, THEN begin hits ──
+  await sleep(waveContactDelay);
   const tElId = getFighterElId(primaryTarget);
   const tElNode = document.getElementById(tElId);
   if (tElNode) tElNode.classList.add('chi-launched');
@@ -232,21 +234,18 @@ async function doBasicChiWave(attacker, skill) {
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
     updateHpBar(primaryTarget, tElId);
     await triggerOnHitEffects(attacker, primaryTarget, dmg);
-    await sleep(240);
+    await sleep(260);
   }
 
   // ── Enemy lands + brief recovery ──
   if (tElNode) tElNode.classList.remove('chi-launched');
-  await sleep(350);
+  await sleep(320);
 
-  // ── Caster dashes back, camera zooms out ──
-  fEl.style.transform = `translateX(0) scale(${scale})`;
+  // ── Camera zooms back out ──
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(420);
+  await sleep(320);
 
   // Cleanup
-  fEl.style.transition = '';
-  fEl.style.transform = '';
   if (battleField) {
     battleField.style.transition = '';
     battleField.style.transform = '';
