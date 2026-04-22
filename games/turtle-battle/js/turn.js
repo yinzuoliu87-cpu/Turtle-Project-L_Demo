@@ -973,6 +973,7 @@ async function nextSideAction() {
     (gameMode === 'pve' && activeSide === 'left') ||
     (gameMode === 'boss' && activeSide === 'left') ||
     (gameMode === 'dungeon' && activeSide === 'left') ||
+    (gameMode === 'test' && activeSide === 'left') ||
     (gameMode === 'pvp-online' && activeSide === onlineSide);
 
   // Skip pirate ships — they fire passively, not as regular actions
@@ -1022,8 +1023,8 @@ async function nextSideAction() {
     if (panel) panel.classList.remove('show');
     const picker = document.getElementById('turtlePicker');
     if (picker) picker.style.display = 'none';
-    // Test mode: AI side is all stationary dummies — auto-skip the entire side
-    if (gameMode === 'test' || canAct.every(x => x._isDummy)) {
+    // Auto-skip any side composed entirely of stationary dummies (test mode etc.)
+    if (canAct.length > 0 && canAct.every(x => x._isDummy)) {
       for (const x of canAct) actedThisSide.add(allFighters.indexOf(x));
       await sleep(200);
       await finishSide();

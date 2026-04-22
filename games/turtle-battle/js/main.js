@@ -1151,6 +1151,7 @@ function startBattle(seed) {
   const ll = document.getElementById('teamLabelLeft');
   const lr = document.getElementById('teamLabelRight');
   if (gameMode === 'pve') { ll.textContent = '我方'; lr.textContent = '野生'; }
+  else if (gameMode === 'test') { ll.textContent = '我方'; lr.textContent = '🎯 假人'; }
   else if (gameMode === 'boss') { ll.textContent = '我方'; lr.innerHTML = '<img src="assets/equip/equip-crown-icon.png" style="width:20px;height:20px;vertical-align:middle"> BOSS'; }
   else if (gameMode === 'dungeon') { ll.textContent = '我方'; lr.textContent = dungeonState.stage >= 5 ? '👑 BOSS' : '第' + dungeonState.stage + '关'; }
   else { ll.textContent = onlineSide==='left'?'我方':'对手'; lr.textContent = onlineSide==='right'?'我方':'对手'; }
