@@ -1,1 +1,19 @@
 node_modules/
+
+# Playwright MCP runtime cache
+.playwright-mcp/
+
+# Debug / test screenshots (MCP browser captures)
+/cw-*.png
+/frame-*.png
+/slam-*.png
+/test-*.png
+/skill-panel*.png
+/after-pick.png
+/now-state.png
+
+# OS / editor cruft
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
