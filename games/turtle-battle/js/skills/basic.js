@@ -239,7 +239,7 @@ async function doBasicChiWave(attacker, target, skill) {
       if (!el) continue;
       const r = el.getBoundingClientRect();
       const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      const hitCenterDist = Math.abs(tFar - startX) - WAVE_HALF_W + 10;
+      const hitCenterDist = Math.abs(tFar - startX) - WAVE_HALF_W;
       const delay = Math.max(300, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
