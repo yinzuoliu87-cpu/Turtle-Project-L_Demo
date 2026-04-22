@@ -1,5 +1,5 @@
 // Automated battle test using Playwright
-// Usage: node test-battle.mjs
+// Usage: node tests/test-battle.mjs
 import { chromium } from 'playwright';
 import http from 'http';
 import fs from 'fs';
@@ -7,7 +7,7 @@ import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
-const ROOT = path.resolve(__dirname, '../../');
+const ROOT = path.resolve(__dirname, '../../../');
 
 // Simple static file server
 const server = http.createServer((req, res) => {

@@ -40,7 +40,7 @@ global.setInterval = (fn, ms) => 0;
 // Load game code
 const files = ['pets.js','engine.js','skills.js','ui.js','main.js'];
 let combined = '';
-for(const f of files) combined += fs.readFileSync(path.join(__dirname,'js',f),'utf8') + '\n';
+for(const f of files) combined += fs.readFileSync(path.join(__dirname,'..','js',f),'utf8') + '\n';
 const evalCode = combined.replace(/export\s+/g,'').replace(/import\s+.*?from\s+.*?;/g,'');
 const vm = require('vm');
 vm.runInThisContext(evalCode);
