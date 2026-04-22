@@ -516,9 +516,36 @@ async function doBasicSlam(attacker, target, skill) {
   setTimeout(() => fEl.classList.remove('chi-hit-flash'), 180);
   await sleep(120);
 
-  // ── Throw arc: target goes up-and-back-over to land BEHIND caster ──
-  // Landing offset from target's home position (backward along caster's direction)
-  const throwDx = (isMobile ? 110 : 150) * dir;   // same as dir = deeper into enemy side
+  // ── Throw arc: target lands at the FIXED center of enemy's 6 slots ──
+  // Compute enemy formation center in battleField local coords — same drop
+  // point regardless of which target was picked. Independent of aliveness.
+  let throwDx = 0, throwDy = 0;
+  let slamAnchorX_local = 0, slamAnchorY_local = 0;
+  if (tEl && battleField && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
+    const posSet = isMobile ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+    const enemySide = attacker.side === 'left' ? 'right' : 'left';
+    const slots = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+    let sumX = 0, sumY = 0;
+    for (const k of slots) {
+      const p = posSet[k];
+      sumX += enemySide === 'left' ? p.x : (100 - p.x);
+      sumY += p.y;
+    }
+    const avgImgX = sumX / slots.length;
+    const avgImgY = sumY / slots.length;
+    const mapped = mapCoverPos(avgImgX, avgImgY, battleField.offsetWidth, battleField.offsetHeight);
+    slamAnchorX_local = mapped.px;
+    slamAnchorY_local = mapped.py;
+
+    // Target's current body center in local coords
+    const tBodyEl = tEl.querySelector('.st-body') || tEl;
+    const tRect = tBodyEl.getBoundingClientRect();
+    const bRect = battleField.getBoundingClientRect();
+    const tCenterX_local = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
+    const tCenterY_local = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
+    throwDx = slamAnchorX_local - tCenterX_local;
+    throwDy = slamAnchorY_local - tCenterY_local;
+  }
   const peakY   = isMobile ? -90 : -115;
   const throwMs = 520;
   const tBody = tEl ? tEl.querySelector('.st-body') : null;
@@ -528,16 +555,19 @@ async function doBasicSlam(attacker, target, skill) {
     const kf = [];
     for (let i = 0; i <= steps; i++) {
       const p = i / steps;
-      // Smooth X (ease-in-out)
+      // Smooth X/Y (ease-in-out)
       const ex = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
-      // Parabolic Y peaking slightly before midpoint (slam-ward bias)
+      // Parabolic airborne Y peaking slightly before midpoint
       const peakP = 0.42;
       const norm = p <= peakP ? (p / peakP) : (1 - (p - peakP) / (1 - peakP));
-      const y = peakY * Math.max(0, norm);
-      // Rotation: one full 360 over the shoulder. At end: visually upright (=360°).
+      const airY = peakY * Math.max(0, norm);
+      // Base Y interpolates target's home → slam anchor; airborne arc added.
+      const y = (throwDy * ex) + airY;
+      const x = throwDx * ex;
+      // Rotation: one full 360 over the shoulder.
       const rot = dir * 360 * ex;
       kf.push({
-        transform: `translate(${(throwDx * ex).toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`,
+        transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`,
         offset: p
       });
     }
@@ -549,10 +579,9 @@ async function doBasicSlam(attacker, target, skill) {
 
   // ── SLAM IMPACT ──
   if (tEl && battleField) {
-    const tRect = tEl.getBoundingClientRect();
-    const bRect = battleField.getBoundingClientRect();
-    const slamX = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
-    const slamY = ((tRect.top  + tRect.height)    - bRect.top)  / zoom;
+    // Fixed slam anchor (center of enemy's 6 slots) — matches throw endpoint.
+    const slamX = slamAnchorX_local;
+    const slamY = slamAnchorY_local;
 
     const shock = document.createElement('div');
     shock.className = 'slam-shockwave';
@@ -615,9 +644,9 @@ async function doBasicSlam(attacker, target, skill) {
   // ── Target hops back to original slot, caster dashes back, camera zooms out ──
   if (tBody) {
     const returnKf = [
-      { transform: `translate(${throwDx}px, 0px) rotate(${dir * 360}deg)`,        offset: 0 },
-      { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, -26px) rotate(${dir * 360}deg)`, offset: 0.55 },
-      { transform: `translate(0px, 0px) rotate(${dir * 360}deg)`,                 offset: 1 }
+      { transform: `translate(${throwDx.toFixed(1)}px, ${throwDy.toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0 },
+      { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, ${(throwDy * 0.5 - 26).toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0.55 },
+      { transform: `translate(0px, 0px) rotate(${dir * 360}deg)`, offset: 1 }
     ];
     tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
     setTimeout(() => {
