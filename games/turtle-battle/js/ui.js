@@ -1926,7 +1926,7 @@ function showActionPanel(f) {
   }
 
   const isPlayer =
-    ((gameMode === 'pve' || gameMode === 'boss' || gameMode === 'dungeon') && f.side === 'left') ||
+    ((gameMode === 'pve' || gameMode === 'boss' || gameMode === 'dungeon' || gameMode === 'test') && f.side === 'left') ||
     (gameMode === 'pvp-online' && f.side === onlineSide);
 
   const battle = document.getElementById('screenBattle');
