@@ -235,7 +235,9 @@ async function doBasicChiWave(attacker, target, skill) {
       const r = el.getBoundingClientRect();
       const tNear = r.left - bRect.left + (dir === 1 ? 0 : r.width);
       const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      const hitDist = Math.abs(tNear - startX) + Math.abs(tFar - tNear) * 0.9;
+      // Trigger hit right as wave passes through target's far edge
+      // ("身后一点才击飞" per KOF OL reference).
+      const hitDist = Math.abs(tNear - startX) + Math.abs(tFar - tNear) * 1.0;
       const delay = Math.max(400, Math.round(WAVE_DURATION_MS * hitDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
@@ -250,7 +252,10 @@ async function doBasicChiWave(attacker, target, skill) {
       if (dir === -1) w.style.transform = 'translate(-50%, -50%) scaleX(-1)';
       setTimeout(() => {
         const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
-        w.style.transition = `transform ${WAVE_DURATION_MS}ms cubic-bezier(.3,.55,.5,1), opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
+        // LINEAR motion — physical wave travels at constant speed. Non-linear
+        // easing was making hits fire after the wave visually passed, because
+        // the per-target delay is computed against linear distance.
+        w.style.transition = `transform ${WAVE_DURATION_MS}ms linear, opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
         w.style.transform = `${base} translateX(${dir * travelDist}px)`;
         w.style.opacity = '0';
       }, i * TRAIL_DELAY_MS);
