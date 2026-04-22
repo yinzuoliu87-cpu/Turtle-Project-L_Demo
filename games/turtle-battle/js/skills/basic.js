@@ -228,17 +228,19 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     const travelDist = maxTravelDist + 60;
 
-    // Per-target contact delay (fire hits when wave passes the target's far edge).
+    // Per-target contact delay. The wave element has physical width (68px,
+    // .chi-wave in CSS) — its CENTER is what's transform-ed by JS, so the
+    // LEADING edge is 34px ahead of the computed center position. We subtract
+    // half the wave width so hit fires the instant the leading edge reaches
+    // the target's far edge (+ 10px for "slightly past" feel).
+    const WAVE_HALF_W = 34; // matches .chi-wave width:68 / 2
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      const tNear = r.left - bRect.left + (dir === 1 ? 0 : r.width);
       const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      // Trigger hit right as wave passes through target's far edge
-      // ("身后一点才击飞" per KOF OL reference).
-      const hitDist = Math.abs(tNear - startX) + Math.abs(tFar - tNear) * 1.0;
-      const delay = Math.max(400, Math.round(WAVE_DURATION_MS * hitDist / travelDist));
+      const hitCenterDist = Math.abs(tFar - startX) - WAVE_HALF_W + 10;
+      const delay = Math.max(300, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
     // Sort by arrival time so we process front → back in order
