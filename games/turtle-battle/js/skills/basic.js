@@ -110,9 +110,10 @@ async function doBasicBarrage(attacker, skill) {
 //  5. Target launches into air for 3-hit combo
 //  6. Target lands, brief recovery pause
 //  7. Caster dashes back, camera zooms out
-async function doBasicChiWave(attacker, skill) {
+async function doBasicChiWave(attacker, target, skill) {
   const fElId = getFighterElId(attacker);
   const fEl = document.getElementById(fElId);
+  if (!target || !target.alive) { await sleep(200); return; }
 
   // ── Self buffs (1 turn) ──
   const armorPenDelta = Math.round(attacker.atk * (skill.armorPenGain || 0.1));
@@ -141,27 +142,19 @@ async function doBasicChiWave(attacker, skill) {
   await sleep(500);
   cutin.remove();
 
-  // ── Target selection (same col; front-row protects back) ──
-  const casterCol = attacker._slotKey ? attacker._slotKey.split('-')[1] : null;
+  // ── Target set: all alive enemies in the picked target's COLUMN ──
+  // Wave penetrates both front and back of the chosen column. Target
+  // selection at pick-time already enforces front-first per game rules.
   const enemyTeam = attacker.side === 'left' ? rightTeam : leftTeam;
-  let colCandidates = casterCol != null
-    ? enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === casterCol)
-    : [];
-  // Protect-back rule: if any front-row enemy in this col is alive, only hit front.
-  const frontInCol = colCandidates.find(e => e._slotKey.startsWith('front'));
-  let targets = frontInCol ? [frontInCol] : colCandidates;
-  // Fallback: same-col empty → nearest alive enemy (still respects front-first)
-  if (targets.length === 0) {
-    const liveFront = enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.startsWith('front'));
-    const liveAny = enemyTeam.filter(e => e.alive);
-    targets = liveFront.length > 0 ? [liveFront[0]] : (liveAny.length > 0 ? [liveAny[0]] : []);
-  }
-  if (targets.length === 0) { await sleep(300); return; }
+  const targetCol = target._slotKey ? target._slotKey.split('-')[1] : null;
+  let columnTargets = targetCol != null
+    ? enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === targetCol)
+    : [target];
+  if (columnTargets.length === 0) columnTargets = [target];
 
-  // ── Camera zoom (slight) + dash forward ──
+  // ── Camera zoom + visuals anchor on the player-picked target ──
   const battleField = document.getElementById('battleScene');
-  const primaryTarget = targets[0];
-  const tEl = document.getElementById(getFighterElId(primaryTarget));
+  const tEl = document.getElementById(getFighterElId(target));
   const dir = attacker.side === 'left' ? 1 : -1;
 
   // NOTE: sprites are ~196px wide packed into ~200px column gaps — there's
@@ -203,29 +196,48 @@ async function doBasicChiWave(attacker, skill) {
     if (waveHost) waveHost.appendChild(w);
   }
 
-  let waveContactDelay = 550;
+  // Per-target hit-trigger delay: each column target launches when the wave
+  // passes through 90% of its own width (KOF-style "overshoot then launch").
+  // Wave travel endpoint is set to pass the FURTHEST target + 60px buffer.
+  const targetHitSchedule = []; // [{target, delay, tNode}]
+  let maxTravelDist = 0;
   if (battleField) {
     const fRect = fEl.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
     const startY = fRect.top - bRect.top + fRect.height / 2;
-    const tRect = tEl.getBoundingClientRect();
-    const tNearEdge = tRect.left - bRect.left + (dir === 1 ? 0 : tRect.width);
-    const tFarEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
-    const contactDist = Math.abs(tNearEdge - startX);
-    const travelDist = Math.abs(tFarEdge - startX) + 60;
-    // KOF behavior: target launches only AFTER the wave passes through them,
-    // not on first contact. Fire hits at the FAR edge of the target (= 100%
-    // of target width past the near edge).
-    const hitTriggerDist = contactDist + Math.abs(tFarEdge - tNearEdge) * 0.9;
-    waveContactDelay = Math.max(400, Math.round(WAVE_DURATION_MS * hitTriggerDist / travelDist));
+    // Compute max travelDist (to the farthest target's far edge) so the wave
+    // visually exits past the back row.
+    for (const t of columnTargets) {
+      const el = document.getElementById(getFighterElId(t));
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      const tFar = r.left - bRect.left + (dir === 1 ? r.width : 0);
+      const d = Math.abs(tFar - startX);
+      if (d > maxTravelDist) maxTravelDist = d;
+    }
+    const travelDist = maxTravelDist + 60;
 
+    // Per-target contact delay (fire hits when wave passes the target's far edge).
+    for (const t of columnTargets) {
+      const el = document.getElementById(getFighterElId(t));
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      const tNear = r.left - bRect.left + (dir === 1 ? 0 : r.width);
+      const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
+      const hitDist = Math.abs(tNear - startX) + Math.abs(tFar - tNear) * 0.9;
+      const delay = Math.max(400, Math.round(WAVE_DURATION_MS * hitDist / travelDist));
+      targetHitSchedule.push({ target: t, delay, tNode: el });
+    }
+    // Sort by arrival time so we process front → back in order
+    targetHitSchedule.sort((a, b) => a.delay - b.delay);
+
+    // Spawn waves with staggered travel
     waves.forEach((w, i) => {
       w.style.left = startX + 'px';
       w.style.top = startY + 'px';
       w.style.height = '130px';
       if (dir === -1) w.style.transform = 'translate(-50%, -50%) scaleX(-1)';
-      // Stagger each trail's start so it "follows" the leader
       setTimeout(() => {
         const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
         w.style.transition = `transform ${WAVE_DURATION_MS}ms cubic-bezier(.3,.55,.5,1), opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
@@ -233,47 +245,47 @@ async function doBasicChiWave(attacker, skill) {
         w.style.opacity = '0';
       }, i * TRAIL_DELAY_MS);
     });
+  } else {
+    targetHitSchedule.push({ target, delay: 600, tNode: tEl });
   }
 
-  // ── Wait for wave to visually touch target ──
-  await sleep(waveContactDelay);
-
-  // ── Impact: camera shake + launch target ──
-  if (battleField) {
-    battleField.style.setProperty('--cam-scale', '1.1');
-    battleField.classList.remove('battle-scene-shake');
-    void battleField.offsetWidth; // reflow to restart animation
-    battleField.classList.add('battle-scene-shake');
-    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
-  }
-  const tElId = getFighterElId(primaryTarget);
-  const tElNode = document.getElementById(tElId);
-  if (tElNode) tElNode.classList.add('chi-launched');
-
+  // ── Run hit sequences for each target in parallel with per-target delays ──
   const perHitScale = (skill.atkScale || 1.5) / 3;
   const hits = 3;
-  for (let i = 0; i < hits; i++) {
-    if (!primaryTarget.alive) break;
-    const eDef = calcEffDef(attacker, primaryTarget);
-    const { isCrit, critMult } = calcCrit(attacker);
-    const dmg = Math.max(1, Math.round(attacker.atk * perHitScale * critMult * calcDmgMult(eDef)));
-    applyRawDmg(attacker, primaryTarget, dmg, false, false, 'physical');
-    // Flash target on each hit
-    if (tElNode) {
-      tElNode.classList.remove('chi-hit-flash');
-      void tElNode.offsetWidth;
-      tElNode.classList.add('chi-hit-flash');
-      setTimeout(() => tElNode.classList.remove('chi-hit-flash'), 140);
+  const hitTasks = targetHitSchedule.map(async ({ target: tgt, delay, tNode }) => {
+    await sleep(delay);
+    if (!tgt.alive) return;
+    // Camera shake on FIRST target's hit (to sell the impact once)
+    if (battleField && tgt === targetHitSchedule[0].target) {
+      battleField.style.setProperty('--cam-scale', '1.1');
+      battleField.classList.remove('battle-scene-shake');
+      void battleField.offsetWidth;
+      battleField.classList.add('battle-scene-shake');
+      setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
     }
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
-    updateHpBar(primaryTarget, tElId);
-    await triggerOnHitEffects(attacker, primaryTarget, dmg);
-    await sleep(260);
-  }
-
-  // ── Enemy lands + brief recovery ──
-  if (tElNode) tElNode.classList.remove('chi-launched');
-  await sleep(320);
+    const tId = getFighterElId(tgt);
+    if (tNode) tNode.classList.add('chi-launched');
+    for (let i = 0; i < hits; i++) {
+      if (!tgt.alive) break;
+      const eDef = calcEffDef(attacker, tgt);
+      const { isCrit, critMult } = calcCrit(attacker);
+      const dmg = Math.max(1, Math.round(attacker.atk * perHitScale * critMult * calcDmgMult(eDef)));
+      applyRawDmg(attacker, tgt, dmg, false, false, 'physical');
+      if (tNode) {
+        tNode.classList.remove('chi-hit-flash');
+        void tNode.offsetWidth;
+        tNode.classList.add('chi-hit-flash');
+        setTimeout(() => tNode.classList.remove('chi-hit-flash'), 140);
+      }
+      spawnFloatingNum(tId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
+      updateHpBar(tgt, tId);
+      await triggerOnHitEffects(attacker, tgt, dmg);
+      await sleep(260);
+    }
+    if (tNode) tNode.classList.remove('chi-launched');
+  });
+  await Promise.all(hitTasks);
+  await sleep(200);
 
   // ── Camera zooms back out ──
   if (battleField) battleField.style.transform = 'scale(1)';

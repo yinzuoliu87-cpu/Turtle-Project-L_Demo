@@ -835,7 +835,8 @@ async function executeAction(action) {
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">全体攻击+${skill.atkUpPct||15}% ${skill.atkUpTurns||3}回合</span>`);
     sfxBuff(); await sleep(800);
   } else if (skill.type === 'basicChiWave') {
-    await doBasicChiWave(f, skill);
+    const target = allFighters[action.targetId];
+    await doBasicChiWave(f, target, skill);
   } else if (skill.type === 'pirateFlag') {
     const pct = typeof skill.atkUpPct === 'object' ? skill.atkUpPct.pct : (skill.atkUpPct||25);
     const turns = typeof skill.atkUpPct === 'object' ? skill.atkUpPct.turns : 3;
