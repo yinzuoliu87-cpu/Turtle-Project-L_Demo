@@ -543,8 +543,12 @@ async function doBasicSlam(attacker, target, skill) {
     const bRect = battleField.getBoundingClientRect();
     const tCenterX_local = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
     const tCenterY_local = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
-    throwDx = slamAnchorX_local - tCenterX_local;
-    throwDy = slamAnchorY_local - tCenterY_local;
+    // .st-body sits inside .scene-turtle (scale 1.375) — a translate value of N
+    // becomes N × 1.375 on screen. Divide by that scale so the target visually
+    // lands at the same battleField-local coord as the slam anchor.
+    const tScale = parseFloat(getComputedStyle(tEl).getPropertyValue('--base-scale')) || 1;
+    throwDx = (slamAnchorX_local - tCenterX_local) / tScale;
+    throwDy = (slamAnchorY_local - tCenterY_local) / tScale;
   }
   const peakY   = isMobile ? -90 : -115;
   const throwMs = 520;

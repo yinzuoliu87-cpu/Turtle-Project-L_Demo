@@ -491,9 +491,9 @@
    (for punch), plays once at ~80ms/frame = 720ms total. */
 .slam-impact{
   position:absolute;
-  width:200px;height:200px;
+  width:320px;height:320px;
   background:url('../assets/vfx/slam-impact.png') 0 0 no-repeat;
-  background-size:1800px 200px;
+  background-size:2880px 320px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
@@ -502,7 +502,7 @@
 }
 @keyframes slamImpactLife{
   from{background-position:0 0}
-  to  {background-position:-1800px 0}
+  to  {background-position:-2880px 0}
 }
 /* Sprite-pause during airborne/slammed target */
 .scene-turtle.slam-thrown .sprite-inner{
@@ -511,9 +511,9 @@
 
 @media (max-width:768px){
   .chi-wave{width:44px;height:130px}
-  .slam-impact{width:140px;height:140px;background-size:1260px 140px}
+  .slam-impact{width:220px;height:220px;background-size:1980px 220px}
   @keyframes slamImpactLife{
     from{background-position:0 0}
-    to  {background-position:-1260px 0}
+    to  {background-position:-1980px 0}
   }
 }
