@@ -435,6 +435,47 @@
   100%{filter:brightness(1) saturate(1)}
 }
 
+/* KOF-style cut-in: 500ms fullscreen dark + golden orb burst the moment the
+   skill is activated. JS spawns the div, removes it after the animation. */
+.chi-cutin{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  pointer-events:none;
+  z-index:998;
+  background:radial-gradient(circle at center,
+    rgba(255,240,160,.95) 0%,
+    rgba(255,180,50,.85) 15%,
+    rgba(255,80,20,.55) 35%,
+    rgba(0,0,0,.85) 70%,
+    rgba(0,0,0,.95) 100%);
+  animation:chiCutin .5s ease-out;
+}
+.chi-cutin::before{
+  content:'';
+  position:absolute;
+  left:50%;top:50%;
+  width:340px;height:340px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,
+    #fff 0%, #ffec80 20%, #ff9f43 55%, rgba(255,80,0,.3) 85%, transparent 100%);
+  box-shadow:0 0 80px 20px rgba(255,180,50,.8), 0 0 160px 40px rgba(255,100,20,.5);
+  animation:chiCutinOrb .5s ease-out;
+  mix-blend-mode:screen;
+}
+@keyframes chiCutin{
+  0%  {opacity:0}
+  15% {opacity:1}
+  75% {opacity:1}
+  100%{opacity:0}
+}
+@keyframes chiCutinOrb{
+  0%  {transform:translate(-50%,-50%) scale(.2);filter:brightness(1.5)}
+  25% {transform:translate(-50%,-50%) scale(1.1);filter:brightness(1.8)}
+  60% {transform:translate(-50%,-50%) scale(1);filter:brightness(1.3)}
+  100%{transform:translate(-50%,-50%) scale(1.4);filter:brightness(.6);opacity:0}
+}
+
 /* Enemy caught by wave: pop up, wobble 3 times in the air, settle */
 .scene-turtle.chi-launched .st-body{
   animation:chiLaunch .95s ease-out;

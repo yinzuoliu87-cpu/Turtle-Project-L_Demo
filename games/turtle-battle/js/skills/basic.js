@@ -134,6 +134,13 @@ async function doBasicChiWave(attacker, skill) {
   spawnFloatingNum(fElId, `+${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲`, 'passive-num', 200, 16);
   addLog(`${attacker.emoji}${attacker.name} <b>龟派气波</b>：<span class="log-passive">+${skill.critGain}%暴击 +${skill.critDmgGain}%爆伤 +${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲</span>`);
 
+  // ── KOF-style cut-in: 500ms fullscreen dark + golden orb ──
+  const cutin = document.createElement('div');
+  cutin.className = 'chi-cutin';
+  document.body.appendChild(cutin);
+  await sleep(500);
+  cutin.remove();
+
   // ── Target selection (same col; front-row protects back) ──
   const casterCol = attacker._slotKey ? attacker._slotKey.split('-')[1] : null;
   const enemyTeam = attacker.side === 'left' ? rightTeam : leftTeam;
@@ -182,9 +189,11 @@ async function doBasicChiWave(attacker, skill) {
   fEl.classList.remove('chi-charging');
 
   // ── Fire chi wave with 2 trailing copies for motion streak ──
-  const WAVE_DURATION_MS = 900;
+  // KOF OL's 霸王翔吼拳 wave lifetime ≈ 2s; we use 1500ms travel to the
+  // target's FAR edge + 300ms fadeout after to match that feel.
+  const WAVE_DURATION_MS = 1500;
   const TRAIL_COUNT = 2; // 1 lead + 2 trails = total 3 waves
-  const TRAIL_DELAY_MS = 70;
+  const TRAIL_DELAY_MS = 90;
   const waveHost = battleField || document.body;
   const waves = [];
   for (let i = 0; i <= TRAIL_COUNT; i++) {
@@ -204,8 +213,12 @@ async function doBasicChiWave(attacker, skill) {
     const tNearEdge = tRect.left - bRect.left + (dir === 1 ? 0 : tRect.width);
     const tFarEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
     const contactDist = Math.abs(tNearEdge - startX);
-    const travelDist = Math.abs(tFarEdge - startX) + 40;
-    waveContactDelay = Math.max(300, Math.round(WAVE_DURATION_MS * contactDist / travelDist));
+    const travelDist = Math.abs(tFarEdge - startX) + 60;
+    // KOF behavior: target launches only AFTER the wave passes through them,
+    // not on first contact. Fire hits at the FAR edge of the target (= 100%
+    // of target width past the near edge).
+    const hitTriggerDist = contactDist + Math.abs(tFarEdge - tNearEdge) * 0.9;
+    waveContactDelay = Math.max(400, Math.round(WAVE_DURATION_MS * hitTriggerDist / travelDist));
 
     waves.forEach((w, i) => {
       w.style.left = startX + 'px';
