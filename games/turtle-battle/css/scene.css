@@ -361,24 +361,31 @@
 
 /* ── 龟派气波 (Chi Wave) ─────────────────────────────────
    Sprite-sheet driven projectile: 15 frames × 128×128 horizontal sheet,
-   played once over 1500ms (= wave's full lifecycle). JS applies position
-   + translateX transition to sweep the element across the row; the sprite
-   animation inside plays its own birth → peak → dissipate sequence. */
+   played once over 1500ms (= wave's full lifecycle). Element is rendered
+   at 2× the sprite's native size (256×256) so the fireball matches the
+   turtle sprite scale (~196px). background-size scales up proportionally. */
 .chi-wave{
   position:absolute;
-  width:128px;
-  height:128px;
+  width:256px;
+  height:256px;
   pointer-events:none;
   z-index:30;
   background:url('../assets/vfx/chi-wave.png') 0 0 no-repeat;
-  background-size:1920px 128px;
+  background-size:3840px 256px;  /* = 15 × 256 native-2x */
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   animation:chiWaveLife 1500ms steps(15) forwards;
 }
 @keyframes chiWaveLife{
   from{background-position:0 0}
-  to  {background-position:-1920px 0}
+  to  {background-position:-3840px 0}
+}
+@media (max-width:768px){
+  .chi-wave{width:180px;height:180px;background-size:2700px 180px}
+  @keyframes chiWaveLife{
+    from{background-position:0 0}
+    to  {background-position:-2700px 0}
+  }
 }
 /* Legacy trail classes — kept for any code still spawning them, but they're
    no longer used: the sprite sheet itself contains motion streak visuals. */

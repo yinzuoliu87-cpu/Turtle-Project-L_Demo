@@ -233,11 +233,10 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     const travelDist = maxTravelDist + 60;
 
-    // Per-target contact delay. Sprite is 128px wide centered on the element's
-    // transform origin — leading edge = centerX + 64. Actual flame tip inside
-    // the sprite is usually inset from the image edge by ~10px, so visual lead
-    // ≈ 55px. Adjust if hit timing feels off after seeing the sprite in action.
-    const WAVE_VISUAL_LEAD = 55;
+    // Per-target contact delay. Element is 256×256 (sprite scaled 2×). Leading
+    // edge = centerX + 128. Flame tip inside sprite is inset ~15-20px from
+    // image edge at 2× scale, so visual lead ≈ 110px.
+    const WAVE_VISUAL_LEAD = 110;
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
