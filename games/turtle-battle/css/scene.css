@@ -487,46 +487,33 @@
 }
 
 /* ── 过肩摔 (shoulder-throw slam) VFX ──
-   Shockwave: expanding ring from slam point.
-   Dust: flat ellipse fade at ground. */
-.slam-shockwave{
+   Sprite-sheet ground-shockwave: 9 frames × 128×128, displayed at 200×200
+   (for punch), plays once at ~80ms/frame = 720ms total. */
+.slam-impact{
   position:absolute;
-  width:90px;height:90px;
-  border-radius:50%;
-  border:4px solid rgba(255,220,100,.9);
-  box-shadow:0 0 24px rgba(255,200,80,.7), inset 0 0 12px rgba(255,240,180,.5);
-  transform:translate(-50%,-50%) scale(.1);
+  width:200px;height:200px;
+  background:url('../assets/vfx/slam-impact.png') 0 0 no-repeat;
+  background-size:1800px 200px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
   pointer-events:none;
   z-index:28;
-  animation:slamShockwave .5s cubic-bezier(.2,.7,.4,1) forwards;
+  animation:slamImpactLife 720ms steps(9) forwards;
 }
-@keyframes slamShockwave{
-  0%  {transform:translate(-50%,-50%) scale(.1); opacity:1;  border-width:4px}
-  60% {opacity:.75;                              border-width:2px}
-  100%{transform:translate(-50%,-50%) scale(3.6);opacity:0;  border-width:1px}
+@keyframes slamImpactLife{
+  from{background-position:0 0}
+  to  {background-position:-1800px 0}
 }
-.slam-dust{
-  position:absolute;
-  width:130px;height:36px;
-  border-radius:50%;
-  background:radial-gradient(ellipse at center,
-    rgba(210,190,150,.82) 0%, rgba(210,190,150,.45) 40%, transparent 85%);
-  transform:translate(-50%,-50%) scaleX(.3);
-  pointer-events:none;
-  z-index:27;
-  animation:slamDust .6s ease-out forwards;
-}
-@keyframes slamDust{
-  0%  {transform:translate(-50%,-50%) scaleX(.3)  scaleY(1);  opacity:.88}
-  100%{transform:translate(-50%,-50%) scaleX(3.2) scaleY(1.4);opacity:0}
-}
-/* Use same sprite-pause during slam airborne / slammed */
+/* Sprite-pause during airborne/slammed target */
 .scene-turtle.slam-thrown .sprite-inner{
   animation-play-state:paused !important;
 }
 
 @media (max-width:768px){
   .chi-wave{width:44px;height:130px}
-  .slam-shockwave{width:66px;height:66px}
-  .slam-dust{width:96px;height:26px}
+  .slam-impact{width:140px;height:140px;background-size:1260px 140px}
+  @keyframes slamImpactLife{
+    from{background-position:0 0}
+    to  {background-position:-1260px 0}
+  }
 }

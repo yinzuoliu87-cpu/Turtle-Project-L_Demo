@@ -583,19 +583,12 @@ async function doBasicSlam(attacker, target, skill) {
     const slamX = slamAnchorX_local;
     const slamY = slamAnchorY_local;
 
-    const shock = document.createElement('div');
-    shock.className = 'slam-shockwave';
-    shock.style.left = slamX + 'px';
-    shock.style.top  = slamY + 'px';
-    battleField.appendChild(shock);
-    setTimeout(() => shock.remove(), 520);
-
-    const dust = document.createElement('div');
-    dust.className = 'slam-dust';
-    dust.style.left = slamX + 'px';
-    dust.style.top  = slamY + 'px';
-    battleField.appendChild(dust);
-    setTimeout(() => dust.remove(), 650);
+    const impact = document.createElement('div');
+    impact.className = 'slam-impact';
+    impact.style.left = slamX + 'px';
+    impact.style.top  = slamY + 'px';
+    battleField.appendChild(impact);
+    setTimeout(() => impact.remove(), 760);
 
     battleField.style.setProperty('--cam-scale', '1.22');
     battleField.classList.remove('battle-scene-shake');
