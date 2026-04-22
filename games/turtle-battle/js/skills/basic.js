@@ -102,20 +102,24 @@ async function doBasicBarrage(attacker, skill) {
 }
 
 // ── 龟派气波 (basicChiWave) ────────────────────────────────
-// Caster buffs self for 1 turn, then fires a horizontal chi wave that
-// launches all same-row enemies into the air for a 3-hit combo.
-// Inspired by KOF's Robert: dash → projectile → enemies launch on contact.
+// KOF-inspired sequence:
+//  1. Self buff (crit/critDmg/lifesteal/armorPen for 1 turn)
+//  2. Dash forward ~0.4s toward target row while camera slightly zooms
+//  3. Wind-up pause ~0.3s
+//  4. Fire a slow horizontal chi wave that reaches the target
+//  5. Target launches into air for 3-hit combo
+//  6. Target lands, brief recovery pause
+//  7. Caster dashes back, camera zooms out
 async function doBasicChiWave(attacker, skill) {
   const fElId = getFighterElId(attacker);
   const fEl = document.getElementById(fElId);
 
-  // ── Step 1: Self buffs (1 turn) ──
+  // ── Self buffs (1 turn) ──
   const armorPenDelta = Math.round(attacker.atk * (skill.armorPenGain || 0.1));
   attacker.crit += (skill.critGain || 25) / 100;
   attacker._extraCritDmgPerm = (attacker._extraCritDmgPerm || 0) + (skill.critDmgGain || 20) / 100;
   attacker._lifestealPct = (attacker._lifestealPct || 0) + (skill.lifestealGain || 10) / 100;
   attacker.armorPen += armorPenDelta;
-  // Marker buff — processRoundEndBuffs reverts the deltas when this expires (turns:2 → decays to 1 at this turn end, to 0 at next turn end).
   attacker.buffs.push({ type: 'chiWaveActive', turns: 2, revert: {
     crit: (skill.critGain || 25) / 100,
     critDmg: (skill.critDmgGain || 20) / 100,
@@ -126,109 +130,130 @@ async function doBasicChiWave(attacker, skill) {
   renderStatusIcons(attacker);
   updateFighterStats(attacker, fElId);
 
-  spawnFloatingNum(fElId, '🐢💥蓄力!', 'crit-label', 0, -25);
-  spawnFloatingNum(fElId, `+${skill.critGain}%暴 +${skill.critDmgGain}%爆`, 'passive-num', 180, 0);
-  spawnFloatingNum(fElId, `+${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲`, 'passive-num', 360, 16);
-  addLog(`${attacker.emoji}${attacker.name} <b>龟派气波</b>：蓄力 → <span class="log-passive">+${skill.critGain}%暴击 +${skill.critDmgGain}%爆伤 +${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲</span>`);
+  spawnFloatingNum(fElId, `+${skill.critGain}%暴 +${skill.critDmgGain}%爆`, 'passive-num', 0, 0);
+  spawnFloatingNum(fElId, `+${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲`, 'passive-num', 200, 16);
+  addLog(`${attacker.emoji}${attacker.name} <b>龟派气波</b>：<span class="log-passive">+${skill.critGain}%暴击 +${skill.critDmgGain}%爆伤 +${skill.lifestealGain}%吸血 +${armorPenDelta}穿甲</span>`);
 
-  if (fEl) fEl.classList.add('chi-charging');
-  await sleep(600);
-  if (fEl) fEl.classList.remove('chi-charging');
-
-  // ── Step 2: Find row targets (same horizontal row as caster = same column index).
-  // Grid naming: slotKey `${row}-${col}` where col index 0/1/2 runs vertically on
-  // screen. So caster at front-1 and back-1 are on the SAME horizontal row (both
-  // at middle y). Targets are the enemy units sharing that col index (front & back
-  // of that column, max 2 enemies).
+  // ── Target selection (same col; front-row protects back) ──
   const casterCol = attacker._slotKey ? attacker._slotKey.split('-')[1] : null;
   const enemyTeam = attacker.side === 'left' ? rightTeam : leftTeam;
-  let targets = casterCol != null
+  let colCandidates = casterCol != null
     ? enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === casterCol)
     : [];
-  // Fallback: if the same-column has no live enemies, hit any alive enemy in
-  // the nearest populated column (so the skill isn't wasted).
+  // Protect-back rule: if any front-row enemy in this col is alive, only hit front.
+  const frontInCol = colCandidates.find(e => e._slotKey.startsWith('front'));
+  let targets = frontInCol ? [frontInCol] : colCandidates;
+  // Fallback: same-col empty → nearest alive enemy (still respects front-first)
   if (targets.length === 0) {
-    targets = enemyTeam.filter(e => e.alive).slice(0, 2);
+    const liveFront = enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.startsWith('front'));
+    const liveAny = enemyTeam.filter(e => e.alive);
+    targets = liveFront.length > 0 ? [liveFront[0]] : (liveAny.length > 0 ? [liveAny[0]] : []);
   }
   if (targets.length === 0) { await sleep(300); return; }
 
-  // ── Step 3: Spawn chi wave projectile ──
-  const battleField = document.querySelector('.battle-field') || document.querySelector('.battle-main-row') || document.body;
+  // ── Camera zoom (slight) + dash forward ──
+  const battleField = document.querySelector('.battle-field') || document.querySelector('.battle-main-row') || null;
+  const primaryTarget = targets[0];
+  const tEl = document.getElementById(getFighterElId(primaryTarget));
+  const dir = attacker.side === 'left' ? 1 : -1;
+
+  // Compute dash offset: land ~90px on caster's side of target
+  let dashPx = 0;
+  if (fEl && tEl) {
+    const fRect = fEl.getBoundingClientRect();
+    const tRect = tEl.getBoundingClientRect();
+    const casterCX = fRect.left + fRect.width / 2;
+    const targetCX = tRect.left + tRect.width / 2;
+    dashPx = (targetCX - casterCX) - (dir * 90);
+  }
+
+  // Camera zoom in on the battle field, centered near the caster
+  if (battleField && fEl) {
+    const bRect = battleField.getBoundingClientRect();
+    const fRect = fEl.getBoundingClientRect();
+    const ox = ((fRect.left + fRect.width / 2) - bRect.left) / bRect.width * 100;
+    const oy = ((fRect.top + fRect.height / 2) - bRect.top) / bRect.height * 100;
+    battleField.style.transformOrigin = `${ox}% ${oy}%`;
+    battleField.style.transition = 'transform 400ms ease-out';
+    battleField.style.transform = 'scale(1.08)';
+  }
+
+  // Scene-turtle dashes via transform override. Preserve base-scale.
+  const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
+  fEl.style.transition = 'transform 400ms cubic-bezier(.35,.9,.35,1)';
+  fEl.style.transform = `translateX(${dashPx}px) scale(${scale})`;
+  await sleep(420);
+
+  // ── Wind-up pause (~0.3s) ──
+  fEl.classList.add('chi-charging');
+  await sleep(300);
+  fEl.classList.remove('chi-charging');
+
+  // ── Fire the chi wave ──
   const wave = document.createElement('div');
   wave.className = 'chi-wave';
-  battleField.appendChild(wave);
+  const waveHost = battleField || document.body;
+  waveHost.appendChild(wave);
 
-  if (fEl && battleField) {
+  if (battleField) {
     const fRect = fEl.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
-    // Anchor wave at caster's center y, leading edge at caster's far side
-    const dir = attacker.side === 'left' ? 1 : -1;
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
     const startY = fRect.top - bRect.top + fRect.height / 2;
     wave.style.left = startX + 'px';
     wave.style.top = startY + 'px';
-    wave.style.height = '130px'; // single-row band — both targets share the caster's y
-    // Flip gradient for right-side caster
+    wave.style.height = '130px';
     if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
-    // Launch horizontally: translate to beyond targets
-    const farTarget = targets.reduce((acc, t) => {
-      const el = document.getElementById(getFighterElId(t));
-      if (!el) return acc;
-      const r = el.getBoundingClientRect();
-      const edge = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      return (acc === null || (dir === 1 ? edge > acc : edge < acc)) ? edge : acc;
-    }, null);
-    const travelDist = farTarget !== null ? Math.abs(farTarget - startX) + 80 : 420;
+    const tRect = tEl.getBoundingClientRect();
+    const tEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
+    const travelDist = Math.abs(tEdge - startX) + 40;
     requestAnimationFrame(() => {
       const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
-      wave.style.transition = 'transform 700ms cubic-bezier(.2,.6,.4,1), opacity 300ms ease-out 500ms';
-      wave.style.transform = `${base} translateX(${dir * travelDist / 1}px)`;
+      wave.style.transition = 'transform 550ms cubic-bezier(.25,.55,.4,1), opacity 250ms ease-out 420ms';
+      wave.style.transform = `${base} translateX(${dir * travelDist}px)`;
       wave.style.opacity = '0';
     });
   }
 
-  // ── Step 4: Stagger-hit each target as wave sweeps across ──
-  const sortedTargets = targets.slice().sort((a, b) => {
-    const aEl = document.getElementById(getFighterElId(a));
-    const bEl = document.getElementById(getFighterElId(b));
-    if (!aEl || !bEl) return 0;
-    const aX = aEl.getBoundingClientRect().left;
-    const bX = bEl.getBoundingClientRect().left;
-    return attacker.side === 'left' ? aX - bX : bX - aX;
-  });
+  // ── Wave arrival + 3-hit airborne combo ──
+  await sleep(300); // wave travel time before impact
+  const tElId = getFighterElId(primaryTarget);
+  const tElNode = document.getElementById(tElId);
+  if (tElNode) tElNode.classList.add('chi-launched');
+
   const perHitScale = (skill.atkScale || 1.5) / 3;
   const hits = 3;
+  for (let i = 0; i < hits; i++) {
+    if (!primaryTarget.alive) break;
+    const eDef = calcEffDef(attacker, primaryTarget);
+    const { isCrit, critMult } = calcCrit(attacker);
+    const dmg = Math.max(1, Math.round(attacker.atk * perHitScale * critMult * calcDmgMult(eDef)));
+    applyRawDmg(attacker, primaryTarget, dmg, false, false, 'physical');
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
+    updateHpBar(primaryTarget, tElId);
+    await triggerOnHitEffects(attacker, primaryTarget, dmg);
+    await sleep(240);
+  }
 
-  const tasks = sortedTargets.map((target, idx) => (async () => {
-    const arrival = 160 + idx * 110; // ms after wave launch
-    await sleep(arrival);
-    if (!target.alive) return;
-    const tElId = getFighterElId(target);
-    const tEl = document.getElementById(tElId);
-    if (tEl) tEl.classList.add('chi-launched');
+  // ── Enemy lands + brief recovery ──
+  if (tElNode) tElNode.classList.remove('chi-launched');
+  await sleep(350);
 
-    for (let i = 0; i < hits; i++) {
-      if (!target.alive) break;
-      const eDef = calcEffDef(attacker, target);
-      const { isCrit, critMult } = calcCrit(attacker);
-      const dmg = Math.max(1, Math.round(attacker.atk * perHitScale * critMult * calcDmgMult(eDef)));
-      applyRawDmg(attacker, target, dmg, false, false, 'physical');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
-      updateHpBar(target, tElId);
-      await triggerOnHitEffects(attacker, target, dmg);
-      await sleep(220);
-    }
+  // ── Caster dashes back, camera zooms out ──
+  fEl.style.transform = `translateX(0) scale(${scale})`;
+  if (battleField) battleField.style.transform = 'scale(1)';
+  await sleep(420);
 
-    if (tEl) {
-      tEl.classList.remove('chi-launched');
-    }
-  })());
-
-  await Promise.all(tasks);
-
-  // Cleanup wave element
-  setTimeout(() => { try { wave.remove(); } catch(e) {} }, 900);
-  await sleep(200);
+  // Cleanup
+  fEl.style.transition = '';
+  fEl.style.transform = '';
+  if (battleField) {
+    battleField.style.transition = '';
+    battleField.style.transform = '';
+    battleField.style.transformOrigin = '';
+  }
+  setTimeout(() => { try { wave.remove(); } catch(e) {} }, 600);
+  await sleep(120);
 }
 
 // ── ICE TURTLE SKILLS ─────────────────────────────────────
