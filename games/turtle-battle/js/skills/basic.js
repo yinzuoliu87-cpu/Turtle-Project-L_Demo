@@ -220,7 +220,11 @@ async function doBasicChiWave(attacker, target, skill) {
     const fRect = fBody.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
-    const startY = fRect.top - bRect.top + fRect.height / 2;
+    // Sprite's visible flame may not sit at the 256×256 canvas geometric
+    // center — tune this offset until the fireball lines up visually with
+    // the target's body. Positive = shift UP (fireball rises above center).
+    const WAVE_Y_CORRECTION = -20;
+    const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
     // Compute max travelDist (to the farthest target's far edge) so the wave
     // visually exits past the back row.
     for (const t of columnTargets) {
