@@ -135,15 +135,20 @@ async function doBasicChiWave(attacker, skill) {
   await sleep(600);
   if (fEl) fEl.classList.remove('chi-charging');
 
-  // ── Step 2: Find row targets (same row as caster) ──
-  const isFrontCaster = attacker._slotKey && attacker._slotKey.startsWith('front');
-  const targetRow = isFrontCaster ? 'front' : 'back';
+  // ── Step 2: Find row targets (same horizontal row as caster = same column index).
+  // Grid naming: slotKey `${row}-${col}` where col index 0/1/2 runs vertically on
+  // screen. So caster at front-1 and back-1 are on the SAME horizontal row (both
+  // at middle y). Targets are the enemy units sharing that col index (front & back
+  // of that column, max 2 enemies).
+  const casterCol = attacker._slotKey ? attacker._slotKey.split('-')[1] : null;
   const enemyTeam = attacker.side === 'left' ? rightTeam : leftTeam;
-  let targets = enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.startsWith(targetRow));
-  // Fallback: if nobody in same row, hit the other row so the skill isn't wasted
+  let targets = casterCol != null
+    ? enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === casterCol)
+    : [];
+  // Fallback: if the same-column has no live enemies, hit any alive enemy in
+  // the nearest populated column (so the skill isn't wasted).
   if (targets.length === 0) {
-    const altRow = isFrontCaster ? 'back' : 'front';
-    targets = enemyTeam.filter(e => e.alive && e._slotKey && e._slotKey.startsWith(altRow));
+    targets = enemyTeam.filter(e => e.alive).slice(0, 2);
   }
   if (targets.length === 0) { await sleep(300); return; }
 
@@ -162,7 +167,7 @@ async function doBasicChiWave(attacker, skill) {
     const startY = fRect.top - bRect.top + fRect.height / 2;
     wave.style.left = startX + 'px';
     wave.style.top = startY + 'px';
-    wave.style.height = '260px'; // tall vertical slab so it sweeps all 3 column slots
+    wave.style.height = '130px'; // single-row band — both targets share the caster's y
     // Flip gradient for right-side caster
     if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
     // Launch horizontally: translate to beyond targets

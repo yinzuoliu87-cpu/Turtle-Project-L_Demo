@@ -1022,6 +1022,13 @@ async function nextSideAction() {
     if (panel) panel.classList.remove('show');
     const picker = document.getElementById('turtlePicker');
     if (picker) picker.style.display = 'none';
+    // Test mode: AI side is all stationary dummies — auto-skip the entire side
+    if (gameMode === 'test' || canAct.every(x => x._isDummy)) {
+      for (const x of canAct) actedThisSide.add(allFighters.indexOf(x));
+      await sleep(200);
+      await finishSide();
+      return;
+    }
     const f = canAct[Math.floor(Math.random() * canAct.length)];
     // Safety watchdog: if AI hangs for 8s, force next action
     const watchdog = setTimeout(() => {

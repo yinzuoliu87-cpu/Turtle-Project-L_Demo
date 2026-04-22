@@ -37,6 +37,11 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     showSelectScreen('选择你的队伍（选3只龟）');
+  } else if (mode === 'test') {
+    difficulty = 'normal';
+    selecting = 'left';
+    selectedIds = [];
+    showSelectScreen('🎯 测试模式 — 选择你的队伍（6 个 2000HP 假人，不还手）');
   } else if (mode === 'boss') {
     difficulty = 'hard';
     selecting = 'left';
@@ -875,6 +880,29 @@ function _createAiFighter(petId, side, levelOverride) {
   return createFighter(petId, side, idxs, levelOverride);
 }
 
+// Test mode dummy: 2000 HP punching bag. No skills, no passive, no action.
+// Built on the basic turtle chassis so all fighter fields stay consistent,
+// then overridden.
+function _createTestDummy(side, slotKey) {
+  const d = createFighter('basic', side, [0,1,2], 1);
+  d.id = 'dummy';
+  d.name = '假人';
+  d.emoji = '🎯';
+  d.rarity = 'C';
+  d.maxHp = 2000; d.hp = 2000; d._initHp = 2000;
+  d.baseAtk = 0; d.atk = 0; d._initAtk = 0;
+  d.baseDef = 0; d.def = 0; d._initDef = 0;
+  d.baseMr = 0; d.mr = 0; d._initMr = 0;
+  d.crit = 0;
+  d.passive = null;
+  d.skills = [];
+  d._passiveSkills = [];
+  d._isDummy = true;
+  d._position = slotKey.startsWith('front') ? 'front' : 'back';
+  d._slotKey = slotKey;
+  return d;
+}
+
 function _avgLevel(team) {
   if (!team || !team.length) return 1;
   const sum = team.reduce((s, f) => s + (f._level || 1), 0);
@@ -918,6 +946,13 @@ function confirmTeam() {
     const avgLv = _avgLevel(leftTeam);
     rightTeam = [_createAiFighter(shuffled[0].id,'right',avgLv), _createAiFighter(shuffled[1].id,'right',avgLv), _createAiFighter(shuffled[2].id,'right',avgLv)];
     autoAssignPositions(rightTeam);
+    startBattle();
+  } else if (gameMode === 'test') {
+    // Test mode: 6 stationary 2000-HP dummies filling all enemy slots.
+    // They have no skills, no passive, and their AI turn auto-skips.
+    leftTeam = _buildTeamFromSlots('left');
+    const slots = ['front-0','front-1','front-2','back-0','back-1','back-2'];
+    rightTeam = slots.map(slotKey => _createTestDummy('right', slotKey));
     startBattle();
   } else if (gameMode === 'boss') {
     leftTeam = _buildTeamFromSlots('left');
