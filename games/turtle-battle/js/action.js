@@ -663,25 +663,8 @@ async function executeAction(action) {
   } else if (skill.type === 'shellCopy') {
     await doShellCopy(f, skill);
   } else if (skill.type === 'basicSlam') {
-    // 过肩摔: main target + splash to others
     const target = allFighters[action.targetId];
-    if (target && target.alive) {
-      const mainDmg = Math.round(f.atk * skill.atkScale) + Math.round(target.maxHp * skill.targetHpPct / 100);
-      const result = applyRawDmg(f, target, mainDmg, false, false, 'physical');
-      spawnFloatingNum(getFighterElId(target), `-${result.hpLoss||mainDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:mainDmg});
-      updateHpBar(target, getFighterElId(target));
-      addLog(`${f.emoji}${f.name} 过肩摔 ${target.emoji}${target.name}！造成 ${mainDmg} 物理伤害`);
-      await triggerOnHitEffects(f, target, mainDmg);
-      // Splash to other enemies
-      const others = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive && e !== target);
-      for (const o of others) {
-        const splashDmg = Math.round(f.atk * (skill.splashAtkScale||0.3)) + Math.round(target.maxHp * (skill.splashHpPct||20) / 100);
-        applyRawDmg(f, o, splashDmg, false, false, 'physical');
-        spawnFloatingNum(getFighterElId(o), `-${splashDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:splashDmg});
-        updateHpBar(o, getFighterElId(o));
-        addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理伤害`);
-      }
-    }
+    await doBasicSlam(f, target, skill);
   } else if (skill.type === 'ninjaBackstab') {
     // 背刺: +穿甲 then 3 hits
     const target = allFighters[action.targetId];

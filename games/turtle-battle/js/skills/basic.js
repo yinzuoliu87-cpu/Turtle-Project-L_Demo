@@ -449,4 +449,197 @@ async function doBasicChiWave(attacker, target, skill) {
   await sleep(120);
 }
 
+// ──────────────────────────────────────────────────────────
+// 过肩摔 — shoulder-throw slam
+// Flow:
+//  1. Camera zoom in on target row
+//  2. Caster dashes X+Y to land adjacent to target (caster-side)
+//  3. Grab pause + flash on both
+//  4. Target thrown in arc OVER caster's shoulder, landing BEHIND caster
+//     with 180° flip (face-down on ground)
+//  5. On slam: shockwave + dust + screen shake
+//     → main damage on target, splash damage to other enemies
+//  6. Target lies slammed briefly, then hops back to original slot
+//  7. Caster dashes back + camera zooms out
+async function doBasicSlam(attacker, target, skill) {
+  const fElId = getFighterElId(attacker);
+  const fEl = document.getElementById(fElId);
+  if (!fEl || !target || !target.alive) { await sleep(200); return; }
+
+  const tEl = document.getElementById(getFighterElId(target));
+  const battleField = document.getElementById('battleScene');
+  const dir = attacker.side === 'left' ? 1 : -1;
+  const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
+  const isMobile = window.innerWidth <= 768;
+
+  // Compute caster's dash destination (adjacent to target) in battleField local coords.
+  let casterShiftX = 0, casterShiftY = 0;
+  let zoom = 1;
+  if (fEl && tEl && battleField) {
+    const fBody = fEl.querySelector('.st-body') || fEl;
+    const tBody = tEl.querySelector('.st-body') || tEl;
+    const fRect = fBody.getBoundingClientRect();
+    const tRect = tBody.getBoundingClientRect();
+    const bRect = battleField.getBoundingClientRect();
+    zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    const adjacentGap = isMobile ? 40 : 58;
+    casterShiftX = ((tRect.left + tRect.width / 2) - (fRect.left + fRect.width / 2)) / zoom - dir * adjacentGap;
+    casterShiftY = ((tRect.top + tRect.height / 2) - (fRect.top + fRect.height / 2)) / zoom;
+  }
+
+  // ── Camera zoom ──
+  if (battleField && fEl && tEl) {
+    const bRect = battleField.getBoundingClientRect();
+    const fRect = fEl.getBoundingClientRect();
+    const tRect = tEl.getBoundingClientRect();
+    const midX = (fRect.left + fRect.width / 2 + tRect.left + tRect.width / 2) / 2;
+    const midY = tRect.top + tRect.height / 2;
+    const ox = (midX - bRect.left) / bRect.width * 100;
+    const oy = (midY - bRect.top) / bRect.height * 100;
+    battleField.style.transformOrigin = `${ox}% ${oy}%`;
+    battleField.style.transition = 'transform 380ms ease-out';
+    battleField.style.transform = 'scale(1.22)';
+  }
+
+  // ── Caster dashes to target ──
+  fEl.style.transition = 'transform 280ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transform = `translate(${casterShiftX}px, ${casterShiftY}px) scale(${scale})`;
+  fEl.style.zIndex = '50';
+  await sleep(310);
+
+  // ── Grab moment: flash on both ──
+  if (tEl) {
+    tEl.classList.add('chi-hit-flash');
+    setTimeout(() => tEl.classList.remove('chi-hit-flash'), 180);
+  }
+  fEl.classList.add('chi-hit-flash');
+  setTimeout(() => fEl.classList.remove('chi-hit-flash'), 180);
+  await sleep(120);
+
+  // ── Throw arc: target goes up-and-back-over to land BEHIND caster ──
+  // Landing offset from target's home position (backward along caster's direction)
+  const throwDx = (isMobile ? 140 : 200) * -dir;  // negative of dir = toward caster's side
+  const peakY   = isMobile ? -90 : -115;
+  const throwMs = 520;
+  const tBody = tEl ? tEl.querySelector('.st-body') : null;
+  let throwAnim = null;
+  if (tBody) {
+    const steps = 30;
+    const kf = [];
+    for (let i = 0; i <= steps; i++) {
+      const p = i / steps;
+      // Smooth X (ease-in-out)
+      const ex = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      // Parabolic Y peaking slightly before midpoint (slam-ward bias)
+      const peakP = 0.42;
+      const norm = p <= peakP ? (p / peakP) : (1 - (p - peakP) / (1 - peakP));
+      const y = peakY * Math.max(0, norm);
+      // Rotation: one full 360 over the shoulder. At end: visually upright (=360°).
+      const rot = -dir * 360 * ex;
+      kf.push({
+        transform: `translate(${(throwDx * ex).toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`,
+        offset: p
+      });
+    }
+    tEl.classList.add('slam-thrown');
+    throwAnim = tBody.animate(kf, { duration: throwMs, easing: 'linear', fill: 'forwards' });
+  }
+
+  await sleep(throwMs);
+
+  // ── SLAM IMPACT ──
+  if (tEl && battleField) {
+    const tRect = tEl.getBoundingClientRect();
+    const bRect = battleField.getBoundingClientRect();
+    const slamX = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
+    const slamY = ((tRect.top  + tRect.height)    - bRect.top)  / zoom;
+
+    const shock = document.createElement('div');
+    shock.className = 'slam-shockwave';
+    shock.style.left = slamX + 'px';
+    shock.style.top  = slamY + 'px';
+    battleField.appendChild(shock);
+    setTimeout(() => shock.remove(), 520);
+
+    const dust = document.createElement('div');
+    dust.className = 'slam-dust';
+    dust.style.left = slamX + 'px';
+    dust.style.top  = slamY + 'px';
+    battleField.appendChild(dust);
+    setTimeout(() => dust.remove(), 650);
+
+    battleField.style.setProperty('--cam-scale', '1.22');
+    battleField.classList.remove('battle-scene-shake');
+    void battleField.offsetWidth;
+    battleField.classList.add('battle-scene-shake');
+    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 260);
+  }
+
+  // Main damage + splash (both at slam instant)
+  const mainDmg = Math.round(attacker.atk * (skill.atkScale || 1)) + Math.round(target.maxHp * (skill.targetHpPct || 0) / 100);
+  const mainResult = applyRawDmg(attacker, target, mainDmg, false, false, 'physical');
+  spawnFloatingNum(getFighterElId(target), `-${mainResult.hpLoss || mainDmg}`, 'direct-dmg', 0, 0,
+    { atkSide: attacker.side, amount: mainDmg });
+  updateHpBar(target, getFighterElId(target));
+  if (tEl) {
+    tEl.classList.remove('chi-hit-flash');
+    void tEl.offsetWidth;
+    tEl.classList.add('chi-hit-flash');
+    setTimeout(() => tEl.classList.remove('chi-hit-flash'), 160);
+  }
+  await triggerOnHitEffects(attacker, target, mainDmg);
+  addLog(`${attacker.emoji}${attacker.name} <b>过肩摔</b> → ${target.emoji}${target.name}：${mainDmg} 物理伤害`);
+
+  const enemyTeam = attacker.side === 'left' ? rightTeam : leftTeam;
+  const others = enemyTeam.filter(e => e.alive && e !== target);
+  for (const o of others) {
+    const splashDmg = Math.round(attacker.atk * (skill.splashAtkScale || 0.3))
+                    + Math.round(target.maxHp * (skill.splashHpPct || 16) / 100);
+    applyRawDmg(attacker, o, splashDmg, false, false, 'physical');
+    const oEl = document.getElementById(getFighterElId(o));
+    if (oEl) {
+      oEl.classList.remove('chi-hit-flash');
+      void oEl.offsetWidth;
+      oEl.classList.add('chi-hit-flash');
+      setTimeout(() => oEl.classList.remove('chi-hit-flash'), 140);
+    }
+    spawnFloatingNum(getFighterElId(o), `-${splashDmg}`, 'direct-dmg', 0, 0,
+      { atkSide: attacker.side, amount: splashDmg });
+    updateHpBar(o, getFighterElId(o));
+    addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理`);
+  }
+
+  // ── Target lies slammed briefly ──
+  await sleep(340);
+
+  // ── Target hops back to original slot, caster dashes back, camera zooms out ──
+  if (tBody) {
+    const returnKf = [
+      { transform: `translate(${throwDx}px, 0px) rotate(${-dir * 360}deg)`,        offset: 0 },
+      { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, -26px) rotate(${-dir * 360}deg)`, offset: 0.55 },
+      { transform: `translate(0px, 0px) rotate(${-dir * 360}deg)`,                 offset: 1 }
+    ];
+    tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
+    setTimeout(() => {
+      if (tBody) tBody.style.transform = '';
+      if (tEl) tEl.classList.remove('slam-thrown');
+    }, 440);
+  }
+  fEl.style.transition = 'transform 340ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transform = `translate(0px, 0px) scale(${scale})`;
+  if (battleField) battleField.style.transform = 'scale(1)';
+  await sleep(360);
+
+  // Cleanup
+  fEl.style.transition = '';
+  fEl.style.transform = '';
+  fEl.style.zIndex = '';
+  if (battleField) {
+    battleField.style.transition = '';
+    battleField.style.transform = '';
+    battleField.style.transformOrigin = '';
+  }
+  await sleep(80);
+}
+
 // ── ICE TURTLE SKILLS ─────────────────────────────────────
