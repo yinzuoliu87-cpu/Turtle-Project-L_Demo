@@ -421,14 +421,20 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     if (tNode) tNode.classList.remove('chi-launched');
   });
+  // Schedule the camera pull-back to fire ~300ms after the LAST hit lands,
+  // in parallel with the still-running juggle/landing animations. Waiting
+  // for Promise.all would hold the zoomed-in view for ~2s of lie/get-up,
+  // which feels like the camera is stuck.
+  const maxHitDelay = targetHitSchedule.length ? Math.max(...targetHitSchedule.map(s => s.delay)) : 0;
+  const zoomOutAfter = maxHitDelay + 440 + 300; // last hit at delay+440 (3 hits × 220ms apart)
+  setTimeout(() => {
+    fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
+    fEl.style.transform = `translateY(0) scale(${scale})`;
+    if (battleField) battleField.style.transform = 'scale(1)';
+  }, zoomOutAfter);
+
   await Promise.all(hitTasks);
   await sleep(100);
-
-  // ── Caster slides back to own row + camera zooms out ──
-  fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
-  fEl.style.transform = `translateY(0) scale(${scale})`;
-  if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(340);
 
   // Cleanup
   fEl.style.transition = '';
