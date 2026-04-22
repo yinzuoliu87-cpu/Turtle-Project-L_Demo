@@ -152,7 +152,7 @@ async function doBasicChiWave(attacker, skill) {
   if (targets.length === 0) { await sleep(300); return; }
 
   // ── Camera zoom (slight) + dash forward ──
-  const battleField = document.querySelector('.battle-field') || document.querySelector('.battle-main-row') || null;
+  const battleField = document.getElementById('battleScene');
   const primaryTarget = targets[0];
   const tEl = document.getElementById(getFighterElId(primaryTarget));
   const dir = attacker.side === 'left' ? 1 : -1;
@@ -193,7 +193,7 @@ async function doBasicChiWave(attacker, skill) {
   const wave = document.createElement('div');
   wave.className = 'chi-wave';
   const waveHost = battleField || document.body;
-  waveHost.appendChild(wave);
+  if (waveHost) waveHost.appendChild(wave);
 
   if (battleField) {
     const fRect = fEl.getBoundingClientRect();
