@@ -24,10 +24,10 @@
 .scene-turtle .st-body{position:relative;display:flex;flex-direction:column;align-items:center}
 
 /* ── .st-shadow: stable ground shadow, unaffected by body animations ── */
-.scene-turtle .st-shadow{position:absolute;left:50%;bottom:-6px;width:54px;height:8px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(0,0,0,.55) 0%,rgba(0,0,0,.3) 40%,transparent 75%);pointer-events:none;z-index:0}
+.scene-turtle .st-shadow{position:absolute;left:50%;bottom:2px;width:54px;height:8px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(0,0,0,.55) 0%,rgba(0,0,0,.3) 40%,transparent 75%);pointer-events:none;z-index:0}
 .scene-turtle.dead .st-shadow{opacity:0}
 @media (max-width: 768px){
-  .scene-turtle .st-shadow{width:46px;height:7px;bottom:-4px}
+  .scene-turtle .st-shadow{width:46px;height:7px;bottom:3px}
 }
 
 /* Death animation: 1.2s — full hop+tilt+sprite visible, then fade out in final 300ms */

@@ -220,10 +220,11 @@ async function doBasicChiWave(attacker, target, skill) {
     const fRect = fBody.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
-    // Sprite's visible flame may not sit at the 256×256 canvas geometric
-    // center — tune this offset until the fireball lines up visually with
-    // the target's body. Positive = shift UP (fireball rises above center).
-    const WAVE_Y_CORRECTION = -20;
+    // Y-fine-tuning: shift wave DOWN to match the VISIBLE turtle center.
+    // The sprite frame (80×80) has ~28px transparent padding on top — so
+    // .st-body geometric center sits ~13px (unscaled) / ~18px (at 1.375×)
+    // ABOVE the visible turtle middle. Positive = push wave DOWN.
+    const WAVE_Y_CORRECTION = 18;
     const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
     // Compute max travelDist (to the farthest target's far edge) so the wave
     // visually exits past the back row.
@@ -237,17 +238,18 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     const travelDist = maxTravelDist + 60;
 
-    // Per-target contact delay. Element is 256×256 (sprite scaled 2×). Leading
-    // edge = centerX + 128. Flame tip inside sprite is inset ~15-20px from
-    // image edge at 2× scale, so visual lead ≈ 110px.
+    // Per-target contact delay: trigger when the flame TIP reaches the
+    // target's NEAR edge (the side facing the caster) — i.e., first touch.
+    // Element is 256×256; flame tip sits ~110px ahead of element center.
     const WAVE_VISUAL_LEAD = 110;
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
       const r = el.getBoundingClientRect();
-      const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      const hitCenterDist = Math.abs(tFar - startX) - WAVE_VISUAL_LEAD;
-      const delay = Math.max(150, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
+      // tNear: target's edge facing the caster (dir=1 → left edge; dir=-1 → right edge)
+      const tNear = r.left - bRect.left + (dir === 1 ? 0 : r.width);
+      const hitCenterDist = Math.abs(tNear - startX) - WAVE_VISUAL_LEAD;
+      const delay = Math.max(80, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
     targetHitSchedule.sort((a, b) => a.delay - b.delay);
