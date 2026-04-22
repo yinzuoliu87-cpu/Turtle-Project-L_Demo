@@ -493,24 +493,25 @@
 .scene-turtle.chi-launched .sprite-inner{
   animation-play-state:paused !important;
 }
-/* One keyframe per hit apex + slam + recover. Linear interpolation between
-   them keeps motion smooth; spacing builds the arc shape. */
+/* Per-segment easing builds the gravity feel:
+     rises use ease-out (impact launches fast, slows to apex)
+     fall uses ease-in (gravity accelerates downward) */
 @keyframes chiLaunchKnockdown{
-  0%  {transform:translate(0,0)                                  rotate(0)}
+  0%  {transform:translate(0,0)                                  rotate(0);      animation-timing-function:ease-out}
   /* Hit 1 apex (t=220ms) */
-  11% {transform:translate(calc(var(--chi-knock-x,55px)*.35), -28px) rotate(-8deg)}
+  11% {transform:translate(calc(var(--chi-knock-x,55px)*.35), -28px) rotate(-8deg);  animation-timing-function:ease-out}
   /* Hit 2 apex (t=440ms) */
-  22% {transform:translate(calc(var(--chi-knock-x,55px)*.72), -56px) rotate(6deg)}
-  /* Hit 3 apex (t=700ms) — highest */
-  35% {transform:translate(calc(var(--chi-knock-x,55px)*1.02),-78px) rotate(-16deg)}
-  /* Falling through mid-air */
-  50% {transform:translate(calc(var(--chi-knock-x,55px)*1.1), -28px) rotate(-48deg)}
+  22% {transform:translate(calc(var(--chi-knock-x,55px)*.72), -56px) rotate(6deg);   animation-timing-function:ease-out}
+  /* Hit 3 apex (t=700ms) — highest; now gravity takes over */
+  35% {transform:translate(calc(var(--chi-knock-x,55px)*1.02),-78px) rotate(-16deg); animation-timing-function:cubic-bezier(.5,0,.85,.5)}
+  /* Mid-fall (accelerating) */
+  50% {transform:translate(calc(var(--chi-knock-x,55px)*1.1), -28px) rotate(-48deg); animation-timing-function:cubic-bezier(.6,0,.9,.4)}
   /* Slam on ground */
-  58% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg)}
+  58% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg); animation-timing-function:linear}
   /* Lying sprawled (hold) */
-  78% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg)}
+  78% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg); animation-timing-function:ease-out}
   /* Get up and run back */
-  90% {transform:translate(calc(var(--chi-knock-x,55px)*.5),   -3px) rotate(-16deg)}
+  90% {transform:translate(calc(var(--chi-knock-x,55px)*.5),   -3px) rotate(-16deg); animation-timing-function:ease-in}
   100%{transform:translate(0,0)                                  rotate(0)}
 }
 
@@ -518,14 +519,14 @@
   .chi-wave{width:44px;height:130px}
   .scene-turtle.chi-launched .st-body{animation-duration:1.85s}
   @keyframes chiLaunchKnockdown{
-    0%  {transform:translate(0,0)                                rotate(0)}
-    11% {transform:translate(calc(var(--chi-knock-x,30px)*.35), -16px) rotate(-8deg)}
-    22% {transform:translate(calc(var(--chi-knock-x,30px)*.72), -34px) rotate(6deg)}
-    35% {transform:translate(calc(var(--chi-knock-x,30px)*1.02),-46px) rotate(-16deg)}
-    50% {transform:translate(calc(var(--chi-knock-x,30px)*1.1), -16px) rotate(-48deg)}
-    58% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg)}
-    78% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg)}
-    90% {transform:translate(calc(var(--chi-knock-x,30px)*.5),   -2px) rotate(-16deg)}
+    0%  {transform:translate(0,0)                                rotate(0);        animation-timing-function:ease-out}
+    11% {transform:translate(calc(var(--chi-knock-x,30px)*.35), -16px) rotate(-8deg);  animation-timing-function:ease-out}
+    22% {transform:translate(calc(var(--chi-knock-x,30px)*.72), -34px) rotate(6deg);   animation-timing-function:ease-out}
+    35% {transform:translate(calc(var(--chi-knock-x,30px)*1.02),-46px) rotate(-16deg); animation-timing-function:cubic-bezier(.5,0,.85,.5)}
+    50% {transform:translate(calc(var(--chi-knock-x,30px)*1.1), -16px) rotate(-48deg); animation-timing-function:cubic-bezier(.6,0,.9,.4)}
+    58% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg); animation-timing-function:linear}
+    78% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg); animation-timing-function:ease-out}
+    90% {transform:translate(calc(var(--chi-knock-x,30px)*.5),   -2px) rotate(-16deg); animation-timing-function:ease-in}
     100%{transform:translate(0,0)                                rotate(0)}
   }
 }
