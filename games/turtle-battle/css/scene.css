@@ -486,36 +486,32 @@
      Fall → slam → lie → recover → run back.
    JS sets --chi-knock-x (total knock-back distance) before adding the class. */
 .scene-turtle.chi-launched .st-body{
-  animation:chiLaunchKnockdown 2s cubic-bezier(.35,.55,.4,1);
+  animation:chiLaunchKnockdown 2s linear;
 }
 /* Freeze the idle walk sprite-sheet while airborne — the stepping animation
    makes the turtle look like it's moonwalking mid-air otherwise. */
 .scene-turtle.chi-launched .sprite-inner{
   animation-play-state:paused !important;
 }
+/* One keyframe per hit apex + slam + recover. Linear interpolation between
+   them keeps motion smooth; spacing builds the arc shape. */
 @keyframes chiLaunchKnockdown{
-  /* ── Hit 1 impact (t=0): initial launch ── */
-  0%  {transform:translate(0,0)                                rotate(0)}
-  8%  {transform:translate(calc(var(--chi-knock-x,55px)*.3),  -28px) rotate(-10deg)}
-  /* settle briefly, ready for next hit */
-  11% {transform:translate(calc(var(--chi-knock-x,55px)*.35), -24px) rotate(-4deg)}
-  /* ── Hit 2 impact (t=220ms): re-bounce higher ── */
-  18% {transform:translate(calc(var(--chi-knock-x,55px)*.65), -56px) rotate(10deg)}
-  22% {transform:translate(calc(var(--chi-knock-x,55px)*.72), -52px) rotate(4deg)}
-  /* ── Hit 3 impact (t=440ms): apex pop ── */
-  30% {transform:translate(calc(var(--chi-knock-x,55px)*.95), -76px) rotate(-12deg)}
-  38% {transform:translate(calc(var(--chi-knock-x,55px)*1.05),-62px) rotate(-28deg)}
-  /* ── Falling ── */
-  48% {transform:translate(calc(var(--chi-knock-x,55px)*1.1), -26px) rotate(-52deg)}
-  /* ── Slam to ground ── */
-  55% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   0)   rotate(-78deg)}
+  0%  {transform:translate(0,0)                                  rotate(0)}
+  /* Hit 1 apex (t=220ms) */
+  11% {transform:translate(calc(var(--chi-knock-x,55px)*.35), -28px) rotate(-8deg)}
+  /* Hit 2 apex (t=440ms) */
+  22% {transform:translate(calc(var(--chi-knock-x,55px)*.72), -56px) rotate(6deg)}
+  /* Hit 3 apex (t=700ms) — highest */
+  35% {transform:translate(calc(var(--chi-knock-x,55px)*1.02),-78px) rotate(-16deg)}
+  /* Falling through mid-air */
+  50% {transform:translate(calc(var(--chi-knock-x,55px)*1.1), -28px) rotate(-48deg)}
+  /* Slam on ground */
   58% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg)}
-  /* ── Lying sprawled ── */
+  /* Lying sprawled (hold) */
   78% {transform:translate(calc(var(--chi-knock-x,55px)*1.1),   2px) rotate(-84deg)}
-  /* ── Get up and run back ── */
-  85% {transform:translate(calc(var(--chi-knock-x,55px)*1.0),  -6px) rotate(-30deg)}
-  92% {transform:translate(calc(var(--chi-knock-x,55px)*.45),  -2px) rotate(0)}
-  100%{transform:translate(0,0)                                rotate(0)}
+  /* Get up and run back */
+  90% {transform:translate(calc(var(--chi-knock-x,55px)*.5),   -3px) rotate(-16deg)}
+  100%{transform:translate(0,0)                                  rotate(0)}
 }
 
 @media (max-width:768px){
@@ -523,18 +519,13 @@
   .scene-turtle.chi-launched .st-body{animation-duration:1.85s}
   @keyframes chiLaunchKnockdown{
     0%  {transform:translate(0,0)                                rotate(0)}
-    8%  {transform:translate(calc(var(--chi-knock-x,30px)*.3),  -16px) rotate(-10deg)}
-    11% {transform:translate(calc(var(--chi-knock-x,30px)*.35), -14px) rotate(-4deg)}
-    18% {transform:translate(calc(var(--chi-knock-x,30px)*.65), -34px) rotate(10deg)}
-    22% {transform:translate(calc(var(--chi-knock-x,30px)*.72), -30px) rotate(4deg)}
-    30% {transform:translate(calc(var(--chi-knock-x,30px)*.95), -46px) rotate(-12deg)}
-    38% {transform:translate(calc(var(--chi-knock-x,30px)*1.05),-36px) rotate(-28deg)}
-    48% {transform:translate(calc(var(--chi-knock-x,30px)*1.1), -14px) rotate(-52deg)}
-    55% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   0)   rotate(-78deg)}
+    11% {transform:translate(calc(var(--chi-knock-x,30px)*.35), -16px) rotate(-8deg)}
+    22% {transform:translate(calc(var(--chi-knock-x,30px)*.72), -34px) rotate(6deg)}
+    35% {transform:translate(calc(var(--chi-knock-x,30px)*1.02),-46px) rotate(-16deg)}
+    50% {transform:translate(calc(var(--chi-knock-x,30px)*1.1), -16px) rotate(-48deg)}
     58% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg)}
     78% {transform:translate(calc(var(--chi-knock-x,30px)*1.1),   1px) rotate(-84deg)}
-    85% {transform:translate(calc(var(--chi-knock-x,30px)*1.0),  -4px) rotate(-30deg)}
-    92% {transform:translate(calc(var(--chi-knock-x,30px)*.45),  -1px) rotate(0)}
+    90% {transform:translate(calc(var(--chi-knock-x,30px)*.5),   -2px) rotate(-16deg)}
     100%{transform:translate(0,0)                                rotate(0)}
   }
 }
