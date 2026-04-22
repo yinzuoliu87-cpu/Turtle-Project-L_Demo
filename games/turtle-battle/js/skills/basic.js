@@ -532,12 +532,19 @@ async function doBasicSlam(attacker, target, skill) {
     slamAnchorX_local = mapped.px;
     slamAnchorY_local = mapped.py;
 
-    // Target's current body center in local coords
+    // CRITICAL: re-measure zoom NOW. The `zoom` variable captured at the top of
+    // doBasicSlam was taken before the camera zoom transition started (=1.0);
+    // by this point the camera is at scale(1.22). Using the stale zoom would
+    // make tCenterX_local come out in screen pixels (22% too large), and the
+    // target would be thrown the WRONG DIRECTION (in front of F1 instead of
+    // at F1-B1 midpoint).
+    const bRect = battleField.getBoundingClientRect();
+    const zoomNow = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    // Target's current body center in local coords (uses fresh zoom)
     const tBodyEl = tEl.querySelector('.st-body') || tEl;
     const tRect = tBodyEl.getBoundingClientRect();
-    const bRect = battleField.getBoundingClientRect();
-    const tCenterX_local = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
-    const tCenterY_local = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
+    const tCenterX_local = ((tRect.left + tRect.width / 2) - bRect.left) / zoomNow;
+    const tCenterY_local = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoomNow;
     // .st-body sits inside .scene-turtle (scale 1.375) — a translate value of N
     // becomes N × 1.375 on screen. Divide by that scale so the target visually
     // lands at the same battleField-local coord as the slam anchor.
