@@ -224,7 +224,7 @@ async function doBasicChiWave(attacker, target, skill) {
     // The sprite frame (80×80) has ~28px transparent padding on top — so
     // .st-body geometric center sits ~13px (unscaled) / ~18px (at 1.375×)
     // ABOVE the visible turtle middle. Positive = push wave DOWN.
-    const WAVE_Y_CORRECTION = 18;
+    const WAVE_Y_CORRECTION = -40;
     const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
     // Compute max travelDist (to the farthest target's far edge) so the wave
     // visually exits past the back row.
