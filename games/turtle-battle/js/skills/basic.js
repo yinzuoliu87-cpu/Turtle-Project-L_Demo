@@ -287,12 +287,20 @@ async function doBasicChiWave(attacker, target, skill) {
     const fBody = fEl.querySelector('.st-body') || fEl;
     const fRect = fBody.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
-    const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
+    // battleField may be scaled (camera zoom). getBoundingClientRect is in
+    // screen pixels, but wave.style.left/top is in battleField LOCAL coords
+    // (pre-transform). Convert screen → local by dividing by zoom.
+    const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    const fLeft = (fRect.left - bRect.left) / zoom;
+    const fTop  = (fRect.top  - bRect.top)  / zoom;
+    const fW = fRect.width / zoom;
+    const fH = fRect.height / zoom;
+    const startX = fLeft + fW / 2 + (dir * fW * 0.4);
     // Y offset from .st-body geometric center to the visible "strike zone"
     // on the turtle (roughly chest/upper-shell height — reads best for KOF
     // fireball impact). Empirically tuned: negative = push wave UP.
     const WAVE_Y_CORRECTION = -40;
-    const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
+    const startY = fTop + fH / 2 + WAVE_Y_CORRECTION;
     // Trajectory MUST be invariant of which enemies are alive — always travel
     // to the column's back-row slot position (from the fixed layout table),
     // so the wave speed is constant. Look up position from BATTLE_POSITIONS
@@ -304,22 +312,23 @@ async function doBasicChiWave(attacker, target, skill) {
       const backPos = posSet[`back-${targetCol}`];
       if (backPos) {
         const imgX = enemySide === 'left' ? backPos.x : (100 - backPos.x);
-        const mapped = mapCoverPos(imgX, backPos.y, bRect.width, bRect.height);
+        // Use unscaled (local) battlefield dimensions so mapped result is local.
+        const mapped = mapCoverPos(imgX, backPos.y, battleField.offsetWidth, battleField.offsetHeight);
         backRowCenterX = mapped.px;
       }
     }
     if (backRowCenterX != null) {
-      // Overshoot by half a turtle width so wave visibly exits past back row.
-      const halfW = fRect.width / 2;
+      const halfW = fW / 2;
       const tFar = backRowCenterX + (dir === 1 ? halfW : -halfW);
       maxTravelDist = Math.abs(tFar - startX);
     } else {
-      // Fallback (no targetCol / no back slot defined): farthest live in column.
       for (const t of columnTargets) {
         const el = document.getElementById(getFighterElId(t));
         if (!el) continue;
         const r = el.getBoundingClientRect();
-        const tFar = r.left - bRect.left + (dir === 1 ? r.width : 0);
+        const rLeft = (r.left - bRect.left) / zoom;
+        const rW = r.width / zoom;
+        const tFar = rLeft + (dir === 1 ? rW : 0);
         const d = Math.abs(tFar - startX);
         if (d > maxTravelDist) maxTravelDist = d;
       }
@@ -334,8 +343,10 @@ async function doBasicChiWave(attacker, target, skill) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
       const r = el.getBoundingClientRect();
+      const rLeft = (r.left - bRect.left) / zoom;
+      const rW = r.width / zoom;
       // tNear: target's edge facing the caster (dir=1 → left edge; dir=-1 → right edge)
-      const tNear = r.left - bRect.left + (dir === 1 ? 0 : r.width);
+      const tNear = rLeft + (dir === 1 ? 0 : rW);
       const hitCenterDist = Math.abs(tNear - startX) - WAVE_VISUAL_LEAD;
       const delay = Math.max(80, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
