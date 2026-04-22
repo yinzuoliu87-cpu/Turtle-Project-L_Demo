@@ -788,11 +788,20 @@ async function processRoundEndBuffs() {
     // Tick down all buffs, remove expired
     const hadPhysImmune = f.buffs.some(b => b.type === 'physImmune');
     const hadCritUp = f.buffs.find(b => b.type === 'critUp' && b.turns === 1); // about to expire
+    const hadChiWave = f.buffs.find(b => b.type === 'chiWaveActive' && b.turns === 1); // about to expire
     f.buffs.forEach(b => b.turns--);
     f.buffs = f.buffs.filter(b => b.turns > 0);
     // CritUp expired: remove the crit bonus
     if (hadCritUp && !f.buffs.some(b => b.type === 'critUp')) {
       f.crit = Math.max(0, (f.crit || 0) - hadCritUp.value / 100);
+    }
+    // ChiWave self-buff expired: revert crit/critDmg/lifesteal/armorPen deltas
+    if (hadChiWave && hadChiWave.revert && !f.buffs.some(b => b.type === 'chiWaveActive')) {
+      const r = hadChiWave.revert;
+      f.crit = Math.max(0, (f.crit || 0) - (r.crit || 0));
+      f._extraCritDmgPerm = Math.max(0, (f._extraCritDmgPerm || 0) - (r.critDmg || 0));
+      f._lifestealPct = Math.max(0, (f._lifestealPct || 0) - (r.lifesteal || 0));
+      f.armorPen = Math.max(0, (f.armorPen || 0) - (r.armorPen || 0));
     }
     // Ghost phantom: physImmune expired → trigger stored strike
     if (hadPhysImmune && !f.buffs.some(b => b.type === 'physImmune') && f._phantomStrike && f.alive) {

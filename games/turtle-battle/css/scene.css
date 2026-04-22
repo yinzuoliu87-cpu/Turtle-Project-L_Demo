@@ -358,3 +358,74 @@
   .picker-name{font-size:12px}
   .picker-emoji{font-size:18px}
 }
+
+/* ── 龟派气波 (Chi Wave) ─────────────────────────────────
+   Horizontal energy projectile. JS sets position + height + transitions
+   the transform to sweep across the row. The wave is a translucent oval
+   with a bright leading edge (cyan→white→fade) + outer glow. */
+.chi-wave{
+  position:absolute;
+  width:68px;
+  height:200px;
+  pointer-events:none;
+  z-index:30;
+  border-radius:50%/50%;
+  background:linear-gradient(90deg,
+    rgba(88,166,255,0) 0%,
+    rgba(88,166,255,.55) 30%,
+    rgba(200,230,255,.95) 52%,
+    rgba(140,210,255,.7) 62%,
+    rgba(88,166,255,0) 100%);
+  box-shadow:
+    0 0 28px rgba(120,200,255,.85),
+    0 0 56px rgba(88,166,255,.55),
+    inset 0 0 20px rgba(255,255,255,.4);
+  transform:translate(-50%,-50%);
+  mix-blend-mode:screen;
+  animation:chiWavePulse 160ms ease-in-out infinite alternate;
+  filter:blur(.5px);
+}
+@keyframes chiWavePulse{
+  0%{filter:brightness(1) blur(.5px)}
+  100%{filter:brightness(1.35) blur(0)}
+}
+
+/* Caster charging up: brief glow pulse before releasing the wave */
+.scene-turtle.chi-charging .st-body{
+  animation:chiCharge .6s ease-out;
+}
+@keyframes chiCharge{
+  0%{filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
+  50%{filter:drop-shadow(0 0 18px rgba(120,200,255,.95)) brightness(1.25)}
+  100%{filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
+}
+
+/* Enemy caught by wave: pop up, wobble 3 times in the air, settle */
+.scene-turtle.chi-launched .st-body{
+  animation:chiLaunch .95s ease-out;
+}
+@keyframes chiLaunch{
+  0%  {transform:translate(0,0) rotate(0)}
+  10% {transform:translate(0,-38px) rotate(-4deg)}
+  25% {transform:translate(0,-50px) rotate(3deg)}
+  40% {transform:translate(0,-44px) rotate(-3deg)}
+  55% {transform:translate(0,-52px) rotate(4deg)}
+  70% {transform:translate(0,-46px) rotate(-2deg)}
+  85% {transform:translate(0,-26px) rotate(1deg)}
+  100%{transform:translate(0,0) rotate(0)}
+}
+
+@media (max-width:768px){
+  .chi-wave{width:44px;height:130px}
+  .scene-turtle.chi-launched .st-body{animation-duration:.85s}
+  @keyframes chiLaunch{
+    0%{transform:translate(0,0) rotate(0)}
+    10%{transform:translate(0,-22px) rotate(-4deg)}
+    25%{transform:translate(0,-30px) rotate(3deg)}
+    40%{transform:translate(0,-26px) rotate(-3deg)}
+    55%{transform:translate(0,-32px) rotate(4deg)}
+    70%{transform:translate(0,-26px) rotate(-2deg)}
+    85%{transform:translate(0,-14px) rotate(1deg)}
+    100%{transform:translate(0,0) rotate(0)}
+  }
+}
