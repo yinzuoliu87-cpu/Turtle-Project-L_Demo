@@ -225,20 +225,28 @@ async function doBasicChiWave(attacker, target, skill) {
     // fireball impact). Empirically tuned: negative = push wave UP.
     const WAVE_Y_CORRECTION = -40;
     const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
-    // Trajectory MUST be invariant of enemy aliveness — always travel to the
-    // back-row slot position of this column so wave speed stays constant.
-    // Look up back-row DOM element regardless of alive state.
-    const backSlotKey = targetCol != null ? `back-${targetCol}` : null;
-    const backRowFighter = backSlotKey
-      ? enemyTeam.find(e => e._slotKey === backSlotKey)
-      : null;
-    const backEl = backRowFighter ? document.getElementById(getFighterElId(backRowFighter)) : null;
-    if (backEl) {
-      const r = backEl.getBoundingClientRect();
-      const tFar = r.left - bRect.left + (dir === 1 ? r.width : 0);
+    // Trajectory MUST be invariant of which enemies are alive — always travel
+    // to the column's back-row slot position (from the fixed layout table),
+    // so the wave speed is constant. Look up position from BATTLE_POSITIONS
+    // rather than a DOM element, so empty back slots still work.
+    let backRowCenterX = null;
+    if (targetCol != null && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
+      const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+      const enemySide = attacker.side === 'left' ? 'right' : 'left';
+      const backPos = posSet[`back-${targetCol}`];
+      if (backPos) {
+        const imgX = enemySide === 'left' ? backPos.x : (100 - backPos.x);
+        const mapped = mapCoverPos(imgX, backPos.y, bRect.width, bRect.height);
+        backRowCenterX = mapped.px;
+      }
+    }
+    if (backRowCenterX != null) {
+      // Overshoot by half a turtle width so wave visibly exits past back row.
+      const halfW = fRect.width / 2;
+      const tFar = backRowCenterX + (dir === 1 ? halfW : -halfW);
       maxTravelDist = Math.abs(tFar - startX);
     } else {
-      // Fallback (single-target mode / no back slot): farthest live in column.
+      // Fallback (no targetCol / no back slot defined): farthest live in column.
       for (const t of columnTargets) {
         const el = document.getElementById(getFighterElId(t));
         if (!el) continue;
