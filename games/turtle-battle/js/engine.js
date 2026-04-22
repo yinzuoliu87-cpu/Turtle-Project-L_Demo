@@ -183,10 +183,13 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
     // Auto-extract amount from text if not provided (e.g. "-42" -> 42)
     if (!amount && typeof text === 'string') { const m = text.match(/\d+/); if (m) amount = parseInt(m[0]); }
     {
-      let sz = amount < 20 ? 24 : amount < 60 ? 24 + (amount-20)/40*5 : amount < 150 ? 29 + (amount-60)/90*7 : 36;
-      sz = Math.min(40, sz);
+      // <20 → 20px; 20–60 → 20→24; 60–400 → 24→35; ≥400 → 35px. Crit ×1.2.
+      let sz = amount < 20 ? 20
+             : amount < 60  ? 20 + (amount -  20) /  40 *  4
+             : amount < 400 ? 24 + (amount -  60) / 340 * 11
+             : 35;
       const isCrit = cls.startsWith('crit');
-      if (isCrit) sz = Math.min(46, sz * 1.2);
+      if (isCrit) sz = sz * 1.2;
       num.style.fontSize = sz + 'px';
     }
 
