@@ -360,35 +360,30 @@
 }
 
 /* ── 龟派气波 (Chi Wave) ─────────────────────────────────
-   Horizontal energy projectile. JS sets position + height + transitions
-   the transform to sweep across the row. The wave is a translucent oval
-   with a bright leading edge (cyan→white→fade) + outer glow. */
+   Sprite-sheet driven projectile: 15 frames × 128×128 horizontal sheet,
+   played once over 1500ms (= wave's full lifecycle). JS applies position
+   + translateX transition to sweep the element across the row; the sprite
+   animation inside plays its own birth → peak → dissipate sequence. */
 .chi-wave{
   position:absolute;
-  width:68px;
-  height:200px;
+  width:128px;
+  height:128px;
   pointer-events:none;
   z-index:30;
-  border-radius:50%/50%;
-  background:linear-gradient(90deg,
-    rgba(88,166,255,0) 0%,
-    rgba(88,166,255,.55) 30%,
-    rgba(200,230,255,.95) 52%,
-    rgba(140,210,255,.7) 62%,
-    rgba(88,166,255,0) 100%);
-  box-shadow:
-    0 0 28px rgba(120,200,255,.85),
-    0 0 56px rgba(88,166,255,.55),
-    inset 0 0 20px rgba(255,255,255,.4);
+  background:url('../assets/vfx/chi-wave.png') 0 0 no-repeat;
+  background-size:1920px 128px;
   transform:translate(-50%,-50%);
-  mix-blend-mode:screen;
-  animation:chiWavePulse 160ms ease-in-out infinite alternate;
-  filter:blur(.5px);
+  image-rendering:pixelated;
+  animation:chiWaveLife 1500ms steps(15) forwards;
 }
-@keyframes chiWavePulse{
-  0%{filter:brightness(1) blur(.5px)}
-  100%{filter:brightness(1.35) blur(0)}
+@keyframes chiWaveLife{
+  from{background-position:0 0}
+  to  {background-position:-1920px 0}
 }
+/* Legacy trail classes — kept for any code still spawning them, but they're
+   no longer used: the sprite sheet itself contains motion streak visuals. */
+.chi-wave.chi-wave-trail,
+.chi-wave.chi-wave-trail-far{display:none}
 
 /* Caster charging up: squeeze down → pop up (KOF breath/anticipation).
    Glow builds through the squeeze, releases at peak.

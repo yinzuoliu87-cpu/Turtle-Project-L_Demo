@@ -191,20 +191,16 @@ async function doBasicChiWave(attacker, target, skill) {
   await sleep(550);
   fEl.classList.remove('chi-charging');
 
-  // ── Fire chi wave with 2 trailing copies for motion streak ──
-  // KOF OL's 霸王翔吼拳 wave lifetime ≈ 2s; we use 1500ms travel to the
-  // target's FAR edge + 300ms fadeout after to match that feel.
+  // ── Fire chi wave ──
+  // Single wave element driven by sprite-sheet animation (15 frames × 100ms
+  // = 1500ms lifecycle). The sprite's own frames handle spawn/peak/dissipate
+  // visuals — no separate DOM trail copies needed.
   const WAVE_DURATION_MS = 1500;
-  const TRAIL_COUNT = 2; // 1 lead + 2 trails = total 3 waves
-  const TRAIL_DELAY_MS = 90;
   const waveHost = battleField || document.body;
-  const waves = [];
-  for (let i = 0; i <= TRAIL_COUNT; i++) {
-    const w = document.createElement('div');
-    w.className = 'chi-wave' + (i === 1 ? ' chi-wave-trail' : i === 2 ? ' chi-wave-trail-far' : '');
-    waves.push(w);
-    if (waveHost) waveHost.appendChild(w);
-  }
+  const wave = document.createElement('div');
+  wave.className = 'chi-wave';
+  const waves = [wave]; // kept as array so cleanup loop still works
+  if (waveHost) waveHost.appendChild(wave);
 
   // Per-target hit-trigger delay: each column target launches when the wave
   // passes through 90% of its own width (KOF-style "overshoot then launch").
@@ -228,12 +224,11 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     const travelDist = maxTravelDist + 60;
 
-    // Per-target contact delay. Wave visual lead = element half-width (34px)
-    // + box-shadow glow reach (~56px) ≈ 90px. Subtract this from the target
-    // far-edge distance so hit fires when the VISIBLE wave front reaches
-    // the target's back. (User report: was ~1 body-width late because the
-    // glow halo made the visible front much further ahead than the element.)
-    const WAVE_VISUAL_LEAD = 90;
+    // Per-target contact delay. Sprite is 128px wide centered on the element's
+    // transform origin — leading edge = centerX + 64. Actual flame tip inside
+    // the sprite is usually inset from the image edge by ~10px, so visual lead
+    // ≈ 55px. Adjust if hit timing feels off after seeing the sprite in action.
+    const WAVE_VISUAL_LEAD = 55;
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
@@ -243,24 +238,16 @@ async function doBasicChiWave(attacker, target, skill) {
       const delay = Math.max(150, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
-    // Sort by arrival time so we process front → back in order
     targetHitSchedule.sort((a, b) => a.delay - b.delay);
 
-    // Spawn waves with staggered travel
-    waves.forEach((w, i) => {
-      w.style.left = startX + 'px';
-      w.style.top = startY + 'px';
-      w.style.height = '130px';
-      if (dir === -1) w.style.transform = 'translate(-50%, -50%) scaleX(-1)';
-      setTimeout(() => {
-        const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
-        // LINEAR motion — physical wave travels at constant speed. Non-linear
-        // easing was making hits fire after the wave visually passed, because
-        // the per-target delay is computed against linear distance.
-        w.style.transition = `transform ${WAVE_DURATION_MS}ms linear, opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
-        w.style.transform = `${base} translateX(${dir * travelDist}px)`;
-        w.style.opacity = '0';
-      }, i * TRAIL_DELAY_MS);
+    // Position the single wave element and launch its travel.
+    wave.style.left = startX + 'px';
+    wave.style.top = startY + 'px';
+    if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
+    requestAnimationFrame(() => {
+      const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
+      wave.style.transition = `transform ${WAVE_DURATION_MS}ms linear`;
+      wave.style.transform = `${base} translateX(${dir * travelDist}px)`;
     });
   } else {
     targetHitSchedule.push({ target, delay: 600, tNode: tEl });
