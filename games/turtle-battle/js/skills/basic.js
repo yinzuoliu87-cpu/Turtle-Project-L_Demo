@@ -110,6 +110,74 @@ async function doBasicBarrage(attacker, skill) {
 //  5. Target launches into air for 3-hit combo
 //  6. Target lands, brief recovery pause
 //  7. Caster dashes back, camera zooms out
+
+// Physics-driven juggle keyframes. Each hit applies an upward + backward
+// impulse; gravity accelerates the body continuously between impulses so
+// rise decelerates and fall accelerates smoothly — true parabolic motion.
+// Sampled at 60fps, handed to WAAPI with linear easing so the browser
+// only interpolates between adjacent samples (never introduces its own
+// velocity curves that would clash with the physics).
+function buildJuggleKeyframes(knockX, isMobile) {
+  const totalMs = isMobile ? 1850 : 2000;
+  const g = isMobile ? 900 : 1500;            // px/s² — tuned by feel
+  const hits = isMobile
+    ? [{ t: 0, vy: -180, vx: knockX * 1.7 }, { t: 220, vy: -220, vx: knockX * 1.4 }, { t: 440, vy: -250, vx: knockX * 0.9 }]
+    : [{ t: 0, vy: -260, vx: knockX * 1.6 }, { t: 220, vy: -310, vx: knockX * 1.3 }, { t: 440, vy: -360, vx: knockX * 0.9 }];
+  const rotImpulses = [-45, 70, -95];
+  const liePoseMs = isMobile ? 520 : 560;
+  const recoverMs = isMobile ? 300 : 330;
+  const slamRot = -82;
+  const steps = 64;
+  const dt = totalMs / steps / 1000;
+
+  const s = { x: 0, y: 0, rot: 0, vx: 0, vy: 0, vrot: 0 };
+  let hitIdx = 0;
+  let slamT = null;
+  let slamPose = null;
+  let recoverT = null;
+
+  const kf = [];
+  for (let i = 0; i <= steps; i++) {
+    const tMs = (i / steps) * totalMs;
+    while (hitIdx < hits.length && tMs >= hits[hitIdx].t) {
+      s.vy = hits[hitIdx].vy;
+      s.vx = hits[hitIdx].vx;
+      s.vrot = rotImpulses[hitIdx];
+      hitIdx++;
+    }
+    if (slamT == null) {
+      // Ballistic
+      s.vy += g * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.rot += s.vrot * dt;
+      // Ground check (but only after all hits have fired)
+      if (s.y >= 0 && hitIdx === hits.length && tMs > 500) {
+        s.y = 0;
+        s.rot = slamRot;
+        s.vx = s.vy = s.vrot = 0;
+        slamT = tMs;
+        slamPose = { x: s.x, y: 0, rot: slamRot };
+      }
+    } else if (recoverT == null) {
+      // Lie still
+      if (tMs >= slamT + liePoseMs) recoverT = tMs;
+    } else {
+      // Tween back to origin
+      const p = Math.min(1, (tMs - recoverT) / recoverMs);
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2; // ease-in-out
+      s.x = slamPose.x * (1 - e);
+      s.y = slamPose.y * (1 - e);
+      s.rot = slamPose.rot * (1 - e);
+    }
+    kf.push({
+      transform: `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) rotate(${s.rot.toFixed(1)}deg)`,
+      offset: i / steps
+    });
+  }
+  return { kf, totalMs };
+}
+
 async function doBasicChiWave(attacker, target, skill) {
   const fElId = getFighterElId(attacker);
   const fEl = document.getElementById(fElId);
@@ -302,14 +370,20 @@ async function doBasicChiWave(attacker, target, skill) {
       setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
     }
     const tId = getFighterElId(tgt);
-    // Set knock direction (wave's travel direction) before launching
-    if (tNode) {
-      tNode.style.setProperty('--chi-knock-x', (dir * 55) + 'px');
+    // Launch physics-driven juggle on .st-body via WAAPI. CSS .chi-launched
+    // class stays (pauses the sprite-sheet while airborne) but no longer
+    // drives transforms — JS handles that now.
+    const tBody = tNode ? tNode.querySelector('.st-body') : null;
+    let juggleAnim = null;
+    if (tBody) {
+      const isMobile = window.innerWidth <= 768;
+      const knockX = isMobile ? dir * 30 : dir * 55;
+      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile);
+      juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
       tNode.classList.add('chi-launched');
     }
-    // Hits land at 0 / 220 / 440ms — matches keyframes at 0% / 11% / 22% of
-    // the 2000ms chi-launched animation. Each hit visibly re-pops the target
-    // higher while airborne (aerial juggle).
+    // Hits land at t=0 / 220 / 440ms — matches the physics hit-impulse
+    // timings. Each hit re-launches the target upward (aerial juggle).
     for (let i = 0; i < hits; i++) {
       if (!tgt.alive) break;
       const eDef = calcEffDef(attacker, tgt);
@@ -327,13 +401,14 @@ async function doBasicChiWave(attacker, target, skill) {
       await triggerOnHitEffects(attacker, tgt, dmg);
       if (i < hits - 1) await sleep(220);
     }
-    // 3 hits end at ~440ms. Animation is 2000ms: remaining ~1560ms covers
-    // fall + slam + lying + get-up + run-back.
-    await sleep(1560);
-    if (tNode) {
-      tNode.classList.remove('chi-launched');
-      tNode.style.removeProperty('--chi-knock-x');
+    // Wait for physics animation to finish (rise → slam → lie → recover).
+    if (juggleAnim) {
+      try { await juggleAnim.finished; } catch (e) {}
+      if (tBody) tBody.style.transform = '';
+    } else {
+      await sleep(1560);
     }
+    if (tNode) tNode.classList.remove('chi-launched');
   });
   await Promise.all(hitTasks);
   await sleep(100);
