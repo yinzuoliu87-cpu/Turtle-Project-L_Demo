@@ -198,7 +198,20 @@
       "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo push origin main)",
       "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo add games/turtle-battle/js/main.js games/turtle-battle/js/ui.js games/turtle-battle/js/engine.js games/turtle-battle/style.css)",
       "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo add games/turtle-battle/index.html games/turtle-battle/js/main.js games/turtle-battle/js/ui.js games/turtle-battle/style.css)",
-      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo log --oneline -10)"
+      "Bash(git -C /c/Users/Louis/Documents/GitHub/Turtle-Project-L_Demo log --oneline -10)",
+      "Bash(npm init:*)",
+      "Bash(npm install:*)",
+      "Bash(npm i:*)",
+      "Bash(npm run:*)",
+      "Bash(npm exec:*)",
+      "Bash(npx:*)",
+      "Bash(mkdir:*)",
+      "Bash(mv games/turtle-battle/js/*.js:*)",
+      "Bash(mv *.js games/turtle-battle/js/skills/)",
+      "Bash(cp:*)",
+      "Bash(git branch:*)",
+      "Bash(git checkout main)",
+      "Bash(git switch main)"
     ]
   }
 }
