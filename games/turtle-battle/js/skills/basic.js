@@ -299,7 +299,7 @@ async function doBasicChiWave(attacker, target, skill) {
     // Y offset from .st-body geometric center to the visible "strike zone"
     // on the turtle (roughly chest/upper-shell height — reads best for KOF
     // fireball impact). Empirically tuned: negative = push wave UP.
-    const WAVE_Y_CORRECTION = -40;
+    const WAVE_Y_CORRECTION = -20;
     const startY = fTop + fH / 2 + WAVE_Y_CORRECTION;
     // Trajectory MUST be invariant of which enemies are alive — always travel
     // to the column's back-row slot position (from the fixed layout table),
