@@ -99,8 +99,8 @@ function renderScene() {
     const shieldPct = f.shield / barMax * 100;
     const bsPct = (f.bubbleShieldVal || 0) / barMax * 100;
     const hpGrad = isAlly
-      ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
-      : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
+      ? 'linear-gradient(180deg, #3deb9e 58%, #089e6b 62%)'
+      : 'linear-gradient(180deg, #c084fc 58%, #7c3aed 62%)';
 
     // Tick marks: minor every 50 HP (half height), major every 500 HP
     // (full height). Boss-scale (>1000) doubles both steps to keep density
