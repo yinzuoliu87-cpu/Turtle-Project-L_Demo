@@ -102,14 +102,17 @@ function renderScene() {
       ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
       : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
 
-    // Tick marks: 1 line per 100 HP (200 HP for boss-scale pools) — avoids
-    // the old 20-HP minor clutter that crowded high-HP bars.
-    const tickStep = barMax > 1000 ? 200 : 100;
+    // Tick marks: major every 100 HP (full height), minor every 50 HP
+    // (half height). Boss-scale (>1000) doubles both steps: major 200,
+    // minor 100. Keeps density readable across the full HP range.
+    const majorStep = barMax > 1000 ? 200 : 100;
+    const minorStep = majorStep / 2;
     let ticksHtml = '';
-    for (let v = tickStep; v < barMax; v += tickStep) {
+    for (let v = minorStep; v < barMax; v += minorStep) {
       const pct = v / barMax * 100;
       if (pct >= 99.5) break;
-      ticksHtml += `<div class="st-hp-tick" style="left:${pct}%"></div>`;
+      const isMajor = v % majorStep === 0;
+      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
     }
 
     // Layout note: .scene-turtle is the stable positioning anchor. Ground-level
@@ -328,12 +331,14 @@ function updateSceneHp(f) {
   // ── Tick marks (rebuild if barMax changed) ──
   const tickContainer = el.querySelector('.st-hp-ticks');
   if (tickContainer && tickContainer._barMax !== barMax) {
-    const tickStep = barMax > 1000 ? 200 : 100;
+    const majorStep = barMax > 1000 ? 200 : 100;
+    const minorStep = majorStep / 2;
     let ticksHtml = '';
-    for (let v = tickStep; v < barMax; v += tickStep) {
+    for (let v = minorStep; v < barMax; v += minorStep) {
       const pct = v / barMax * 100;
       if (pct >= 99.5) break;
-      ticksHtml += `<div class="st-hp-tick" style="left:${pct}%"></div>`;
+      const isMajor = v % majorStep === 0;
+      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
     }
     tickContainer.innerHTML = ticksHtml;
     tickContainer._barMax = barMax;
