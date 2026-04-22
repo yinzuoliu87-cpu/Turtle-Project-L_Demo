@@ -152,31 +152,41 @@ async function doBasicChiWave(attacker, target, skill) {
     : [target];
   if (columnTargets.length === 0) columnTargets = [target];
 
-  // ── Camera zoom + visuals anchor on the player-picked target ──
+  // ── Caster moves Y to target's row (KOF-style: stand on target's line) ──
   const battleField = document.getElementById('battleScene');
   const tEl = document.getElementById(getFighterElId(target));
   const dir = attacker.side === 'left' ? 1 : -1;
-
-  // NOTE: sprites are ~196px wide packed into ~200px column gaps — there's
-  // literally no room to "dash forward" without overlapping the enemy. We
-  // skip the dash and rely on the wave + camera zoom to sell the impact.
-
-  // Camera zoom centered between caster and target (mid-battle focus)
   const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
+
+  let casterYShift = 0;
+  if (fEl && tEl) {
+    const fRect0 = fEl.getBoundingClientRect();
+    const tRect0 = tEl.getBoundingClientRect();
+    casterYShift = (tRect0.top + tRect0.height / 2) - (fRect0.top + fRect0.height / 2);
+  }
+  // Camera zoom anchored on the target's row
   if (battleField && fEl && tEl) {
     const bRect = battleField.getBoundingClientRect();
     const fRect = fEl.getBoundingClientRect();
     const tRect = tEl.getBoundingClientRect();
     const midX = (fRect.left + fRect.width / 2 + tRect.left + tRect.width / 2) / 2;
-    const midY = fRect.top + fRect.height / 2;
+    const midY = tRect.top + tRect.height / 2;
     const ox = (midX - bRect.left) / bRect.width * 100;
     const oy = (midY - bRect.top) / bRect.height * 100;
     battleField.style.transformOrigin = `${ox}% ${oy}%`;
     battleField.style.transition = 'transform 350ms ease-out';
     battleField.style.transform = 'scale(1.1)';
   }
+  // Slide caster vertically to target's row — keep his own X, just change Y.
+  // z-index bump so he renders above teammates during skill.
+  fEl.style.transition = 'transform 280ms cubic-bezier(.4,.9,.4,1)';
+  fEl.style.transform = `translateY(${casterYShift}px) scale(${scale})`;
+  fEl.style.zIndex = '50';
+  await sleep(300);
 
   // ── Windup: caster pulses briefly to show "charging" ──
+  // chi-charging's keyframe uses its OWN transform on .st-body, which composes
+  // inside the scene-turtle's translateY (applied above). No collision.
   fEl.classList.add('chi-charging');
   await sleep(550);
   fEl.classList.remove('chi-charging');
@@ -264,7 +274,11 @@ async function doBasicChiWave(attacker, target, skill) {
       setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
     }
     const tId = getFighterElId(tgt);
-    if (tNode) tNode.classList.add('chi-launched');
+    // Set knock direction (wave's travel direction) before launching
+    if (tNode) {
+      tNode.style.setProperty('--chi-knock-x', (dir * 55) + 'px');
+      tNode.classList.add('chi-launched');
+    }
     for (let i = 0; i < hits; i++) {
       if (!tgt.alive) break;
       const eDef = calcEffDef(attacker, tgt);
@@ -282,16 +296,24 @@ async function doBasicChiWave(attacker, target, skill) {
       await triggerOnHitEffects(attacker, tgt, dmg);
       await sleep(260);
     }
-    if (tNode) tNode.classList.remove('chi-launched');
+    if (tNode) {
+      tNode.classList.remove('chi-launched');
+      tNode.style.removeProperty('--chi-knock-x');
+    }
   });
   await Promise.all(hitTasks);
   await sleep(200);
 
-  // ── Camera zooms back out ──
+  // ── Caster slides back to own row + camera zooms out ──
+  fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transform = `translateY(0) scale(${scale})`;
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(320);
+  await sleep(340);
 
   // Cleanup
+  fEl.style.transition = '';
+  fEl.style.transform = '';
+  fEl.style.zIndex = '';
   if (battleField) {
     battleField.style.transition = '';
     battleField.style.transform = '';
