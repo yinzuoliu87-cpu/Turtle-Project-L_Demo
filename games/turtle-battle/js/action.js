@@ -168,7 +168,7 @@ function pickSkill(idx) {
   if (!f) return;
   const skill = f.skills[idx];
   pendingSkillIdx = idx;
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless' || skill.type === 'bubbleHeal' || skill.type === 'crystalResHeal' || skill.type === 'phoenixPurify' || skill.isAlly;
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'angelBless' || skill.type === 'bubbleHeal' || skill.type === 'crystalResHeal' || skill.type === 'phoenixPurify' || skill.isAlly;
 
   // Self-cast: no target selection
   if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || skill.type === 'shellCopy' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
@@ -333,6 +333,22 @@ async function executeAction(action) {
 
   if (skill.cd > 0) skill.cdLeft = skill.cd;
 
+  // Stone taunt redirect: if attacking an enemy single-target, and that enemy's
+  // team has a different ally with redirectAll buff active (stone turtle), swap
+  // the target to the tank. Ally-target / self-cast / AoE skills bypass.
+  if (action.targetId != null && action.targetId >= 0 && !skill.aoe && !skill.aoeAlly && !skill.selfCast && !skill.isAlly) {
+    const origT = allFighters[action.targetId];
+    if (origT && origT.side !== f.side && origT.alive) {
+      const tTeam = origT.side === 'left' ? leftTeam : rightTeam;
+      const tank = tTeam.find(t => t.alive && t !== origT && t.buffs && t.buffs.some(b => b.type === 'redirectAll' && b.turns > 0));
+      if (tank) {
+        action.targetId = allFighters.indexOf(tank);
+        spawnFloatingNum(getFighterElId(tank), '🛡嘲讽!', 'crit-label', 0, -30);
+        addLog(`${tank.emoji}${tank.name} 嘲讽：将攻击引向自己`);
+      }
+    }
+  }
+
   // Lava rage: check transform before action
   await processLavaTransform();
   if (battleOver) { animating=false; return; }
@@ -397,7 +413,8 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     await doGamblerCards(f, target, skill);
   } else if (skill.type === 'gamblerDraw') {
-    await doGamblerDraw(f, skill);
+    const target = allFighters[action.targetId];
+    await doGamblerDraw(f, target, skill);
   } else if (skill.type === 'gamblerBet') {
     const target = allFighters[action.targetId];
     await doGamblerBet(f, target, skill);
@@ -609,9 +626,9 @@ async function executeAction(action) {
   } else if (skill.type === 'ninjaShuriken') {
     const target = allFighters[action.targetId];
     await doNinjaShuriken(f, target, skill);
-  } else if (skill.type === 'ninjaTrap') {
+  } else if (skill.type === 'ninjaImpact') {
     const target = allFighters[action.targetId];
-    await doNinjaTrap(f, target, skill);
+    await doNinjaImpact(f, target, skill);
   } else if (skill.type === 'ninjaBomb') {
     await doNinjaBomb(f, skill);
   } else if (skill.type === 'iceShield') {
@@ -633,15 +650,8 @@ async function executeAction(action) {
     await doDiceAllIn(f, skill);
   } else if (skill.type === 'diceFate') {
     await doDiceFate(f, skill);
-  } else if (skill.type === 'diceStableShield') {
-    // Permanent shield: 10% ATK + crit*100
-    const shieldAmt = Math.round(Math.round(f.atk * 0.1 + f.crit * 100) * getShieldMult());
-    f.shield += shieldAmt;
-    const elId = getFighterElId(f);
-    spawnFloatingNum(elId, `+${shieldAmt}`, 'shield-num', 0, 0);
-    updateHpBar(f, elId);
-    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-shield">+${shieldAmt}永久护盾</span>（10%ATK+暴击率×100）`);
-    await sleep(800);
+  } else if (skill.type === 'diceFlashStrike') {
+    await doDiceFlashStrike(f, skill);
   } else if (skill.type === 'chestOpen') {
     await doChestOpen(f, skill);
   } else if (skill.type === 'mechAttack') {
@@ -833,12 +843,17 @@ async function executeAction(action) {
     addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">全体攻击+${pct}% ${turns}回合</span>`);
     sfxBuff(); await sleep(800);
   } else if (skill.type === 'stoneTaunt') {
-    if (skill.defUp) { f.buffs.push({ type:'defUp', value:skill.defUp.val, turns:skill.defUp.turns }); const elId = getFighterElId(f); spawnFloatingNum(elId, `+${skill.defUp.val}护甲`, 'passive-num', 0, 0); }
-    f.buffs.push({ type:'taunt', value:1, turns:skill.defUp?.turns||3 });
-    recalcStats(); const elId = getFighterElId(f);
-    spawnFloatingNum(elId, `嘲讽`, 'passive-num', 200, 0); renderStatusIcons(f); updateFighterStats(f, elId);
-    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">护甲+${skill.defUp?.val||8} ${skill.defUp?.turns||3}回合，嘲讽敌方</span>`);
-    sfxBuff(); await sleep(800);
+    // Redirect all single-target enemy attacks/debuffs from allies to stone turtle.
+    const turns = skill.redirectTurns || 3;
+    f.buffs = f.buffs.filter(b => b.type !== 'redirectAll');
+    f.buffs.push({ type:'redirectAll', turns });
+    const elId = getFighterElId(f);
+    spawnFloatingNum(elId, `🛡嘲讽!`, 'crit-label', 0, -20);
+    spawnFloatingNum(elId, `转移${turns}回合`, 'passive-num', 200, 0);
+    renderStatusIcons(f);
+    addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">嘲讽 ${turns} 回合，敌方对我方的单体伤害与效果全部转移到自身</span>`);
+    try { sfxBuff(); } catch(e) {}
+    await sleep(800);
   } else if (skill.type === 'ghostPhantom') {
     f.buffs.push({ type:'physImmune', value:1, turns:skill.phantomTurns||2 });
     f._phantomStrike = { turns:skill.phantomTurns||2, hits:skill.hits||2, atkScale:skill.atkScale||0.6 };

@@ -1450,7 +1450,7 @@ function renderStatusIcons(f) {
     if (b.type === 'hot')     return `<span class="status-hot" title="回复${b.value}/回合 剩${b.turns}回合">💚${b.turns}</span>`;
     if (b.type === 'defUp')   return `<span class="status-defup" title="护甲+${b.value} 剩${b.turns}回合">⬆护${b.turns}</span>`;
     if (b.type === 'atkUp')   return `<span class="status-defup" title="攻击力+${b.value} 剩${b.turns}回合">⬆攻力${b.turns}</span>`;
-    if (b.type === 'bubbleBind') return `<span class="status-bubble" title="被束缚：攻击者获得${b.value}%伤害护盾 剩${b.turns}回合"><img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
+    if (b.type === 'bubbleBind') return `<span class="status-bubble" title="束缚：每受一段伤害 护甲/魔抗各 -${b.perHitLoss || 1} 剩${b.turns}回合"><img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'dodge') return `<span class="status-dodge" title="闪避${b.value}% 剩${b.turns}回合"><img src="assets/status/dodge-new-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'fear')  return `<span class="status-atkdown" title="恐惧：对双头龟伤害-${b.value}% 剩${b.turns}回合"><img src="assets/status/fear-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
     if (b.type === 'wormhole') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="虫洞标记：真实+${b.pierceBonusPct}% 魔伤+${b.normalBonusPct}% 剩${b.turns}回合"><img src="assets/status/wormhole-icon.png" style="width:14px;height:14px;vertical-align:middle">${b.turns}</span>`;
@@ -1460,6 +1460,7 @@ function renderStatusIcons(f) {
     if (b.type === 'diceFateCrit') return `<span style="color:#ff6b6b;background:rgba(255,107,107,.15);padding:1px 5px;border-radius:6px" title="命运骰子+${b.value}%暴击 剩${b.turns}回合"><img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle">+${b.value}%</span>`;
     if (b.type === 'healReduce') return `<span style="color:#6b8e23;background:rgba(107,142,35,.15);padding:1px 5px;border-radius:6px" title="治疗削减-${b.value}% 剩${b.turns}回合"><img src="assets/status/heal-reduce-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%治疗${b.turns}</span>`;
     if (b.type === 'taunt') return `<span style="color:#ff4444;background:rgba(255,68,68,.15);padding:1px 5px;border-radius:6px" title="嘲讽 剩${b.turns}回合"><img src="assets/status/taunt-icon.png" style="width:14px;height:14px;vertical-align:middle">嘲讽${b.turns}</span>`;
+    if (b.type === 'redirectAll') return `<span style="color:#ff4444;background:rgba(255,68,68,.2);padding:1px 5px;border-radius:6px" title="嘲讽：敌方单体攻击转移到我方 剩${b.turns}回合"><img src="assets/status/taunt-icon.png" style="width:14px;height:14px;vertical-align:middle">🛡${b.turns}</span>`;
     if (b.type === 'reflect') return `<span style="color:#ff8c00;background:rgba(255,140,0,.15);padding:1px 5px;border-radius:6px" title="反弹${b.value}% 剩${b.turns}回合"><img src="assets/status/reflect-icon.png" style="width:14px;height:14px;vertical-align:middle">反弹${b.turns}</span>`;
     if (b.type === 'dmgReduce') return `<span style="color:#4dabf7;background:rgba(77,171,247,.15);padding:1px 5px;border-radius:6px" title="受伤-${b.value}% 剩${b.turns}回合"><img src="assets/status/shield-icon.png" style="width:14px;height:14px;vertical-align:middle">-${b.value}%${b.turns}</span>`;
     if (b.type === 'dodgeCounter') return `<span style="color:#ffa500;background:rgba(255,165,0,.15);padding:1px 5px;border-radius:6px" title="闪避反击${b.value}伤害 剩${b.turns}回合"><img src="assets/status/counter-icon.png" style="width:14px;height:14px;vertical-align:middle">反击${b.turns}</span>`;
@@ -2097,7 +2098,7 @@ function buildSkillDetail(s, f) {
     physical:'⚔️ 物理', magic:'✨ 魔法', heal:'💚 治疗', shield:'<img src="assets/status/shield-icon.png" style="width:14px;height:14px;vertical-align:middle"> 护盾',
     bubbleShield:'<img src=\"assets/passive/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡盾', bubbleBind:'<img src=\"assets/passive/bubble-store-icon.png\" style=\"width:14px;height:14px;vertical-align:middle\"> 泡泡束缚',
     hunterShot:'🏹 猎人射击', hunterBarrage:'🏹 箭雨', hunterStealth:'🏹 隐蔽',
-    ninjaShuriken:'🥷 飞镖', ninjaTrap:'🥷 陷阱', ninjaBomb:'🥷 炸弹',
+    ninjaShuriken:'🥷 飞镖', ninjaImpact:'🥷 冲击', ninjaBomb:'🥷 炸弹',
     phoenixBurn:'🔥 灼烧', phoenixShield:'🔥 熔岩盾', phoenixScald:'🔥 烫伤',
     lightningStrike:'⚡ 闪电打击', lightningBuff:'⚡ 增幅', lightningBarrage:'⚡ 雷暴',
     fortuneDice:'<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 骰子', fortuneAllIn:'<img src="assets/battle/gold-coin-icon.png" style="width:14px;height:14px;vertical-align:middle"> 梭哈',
@@ -2172,7 +2173,7 @@ function buildSkillDetail(s, f) {
   }
   if (s.type === 'bubbleBind') {
     lines.push(`<b>🫧束缚</b> ${s.duration}回合`);
-    lines.push(`<b>效果</b> 攻击→获得伤害×${s.bindPct}% ${S('永久护盾')}`);
+    lines.push(`<b>效果</b> 每受一段伤害 <span class="val-debuff">护甲/魔抗各-1 或 -2</span>（按等级）`);
   }
   if (s.type === 'hunterShot') {
     lines.push(`<b>猎人本能</b> HP<${s.execThresh}%→${B('+'+s.execCrit+'%暴击')} ${B('+'+s.execCritDmg+'%爆伤')}`);
@@ -2192,9 +2193,10 @@ function buildSkillDetail(s, f) {
     const v = f?Math.round(atk*s.atkScale):'?';
     lines.push(`<b>🥷暴击转真实</b> 暴击→全部${P(v+'真实')}（无视护甲和魔抗）`);
   }
-  if (s.type === 'ninjaTrap') {
-    const v = f?Math.round(atk*s.trapScale):'?';
-    lines.push(`<b>🪤夹子</b> 隐形→被攻击触发 ${N(v+'伤害')}`);
+  if (s.type === 'ninjaImpact') {
+    const v1 = f?Math.round(atk*(s.atkScale||1.2)):'?';
+    const v2 = f?Math.round(atk*(s.behindScale||0.8)):'?';
+    lines.push(`<b>💥冲击</b> 主目标 ${N(v1+'物理')} + 身后 ${N(v2+'物理')}（如有）`);
   }
   if (s.type === 'ninjaBomb') {
     lines.push(`<b>🔨破甲</b> <span class="detail-debuff">${s.armorBreak.pct}%防御削减</span> ${s.armorBreak.turns}回合`);

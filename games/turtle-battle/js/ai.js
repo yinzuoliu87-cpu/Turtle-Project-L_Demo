@@ -104,7 +104,7 @@ function aiAction(f) {
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
   else if (skill.selfCast || skill.type==='shield' || skill.type==='hidingDefend' || skill.type==='hidingCommand' || skill.type==='ghostPhase' || skill.type==='diamondFortify' || skill.type==='diceFate' || skill.type==='chestOpen' || skill.type==='chestCount' || skill.type==='iceShield' || skill.type==='headlessRegen' || skill.type==='stoneTaunt' || skill.type==='ghostShadow' || skill.type==='starWarp' || skill.type==='hidingReflect' || skill.type==='starShield' || skill.type==='shellEnergyShield' || skill.type==='lightningShield') target = f; // self-cast
-  else if (skill.type==='angelBless' || skill.type==='bubbleShield' || skill.type==='ninjaTrap' || skill.type==='bubbleBind' || skill.type==='phoenixPurify' || skill.type==='rainbowGuard') {
+  else if (skill.type==='angelBless' || skill.type==='bubbleShield' || skill.type==='bubbleBind' || skill.type==='phoenixPurify' || skill.type==='rainbowGuard') {
     // Ally-target skills: pick weakest ally (bubbleBind targets enemy but is listed in isAlly wrongly — fix here)
     if (skill.type==='bubbleBind') target = enemies.sort((a,b)=>a.hp-b.hp)[0]; // bubbleBind marks enemy
     else if (skill.type==='phoenixPurify') {

@@ -473,13 +473,17 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const actual = target.bubbleStore - before;
     if (actual > 0) spawnFloatingNum(tElId, `+${actual}🫧`, 'bubble-num', 200, 0);
   }
-  // BubbleBind — attacker gains shield
+  // BubbleBind — reworked: each hit reduces target's DEF and MR by perHitLoss.
   const bindBuff = target.buffs.find(b => b.type === 'bubbleBind');
-  if (bindBuff && attacker.alive) {
-    const gained = Math.round(dmg * bindBuff.value / 100);
-    attacker.shield += gained;
-    spawnFloatingNum(getFighterElId(attacker), `+${gained}`, 'bubble-num', 200, 0);
-    updateHpBar(attacker, getFighterElId(attacker));
+  if (bindBuff && bindBuff.perHitLoss > 0 && target.alive && dmg > 0) {
+    const loss = bindBuff.perHitLoss;
+    target.baseDef = Math.max(0, target.baseDef - loss);
+    target.def = Math.max(0, target.def - loss);
+    target.baseMr = Math.max(0, target.baseMr - loss);
+    target.mr = Math.max(0, target.mr - loss);
+    const tElId = getFighterElId(target);
+    spawnFloatingNum(tElId, `-${loss}甲/抗`, 'debuff-num', 150, 14);
+    updateFighterStats(target, tElId);
   }
   // Crystallize stacking (crystal turtle passive)
   if (attacker.passive && attacker.passive.type === 'crystalResonance' && target.alive) {

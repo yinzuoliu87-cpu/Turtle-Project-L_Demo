@@ -9,54 +9,62 @@ function calcCrit(f) {
   return { isCrit, critMult };
 }
 
-async function doGamblerDraw(caster, _skill) {
-  const roll = Math.floor(Math.random() * 3);
+// 万能牌: 2-hit attack + self permanent shield + heal + random debuff on target.
+async function doGamblerDraw(caster, target, skill) {
   const fElId = getFighterElId(caster);
-
-  if (roll === 0) {
-    // 1: Heal 10%HP + 5%HP shield
-    const healAmt = Math.round(caster.maxHp * 0.10);
-    const shieldAmt = Math.round(caster.maxHp * 0.05);
-    const before = caster.hp;
-    caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
-    const actual = Math.round(caster.hp - before);
-    caster.shield += shieldAmt;
-    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌`, 'passive-num', 0, -20);
-    if (actual > 0) spawnFloatingNum(fElId, `+${actual}`, 'heal-num', 200, 0);
-    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 400, 0);
-    updateHpBar(caster, fElId);
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">回复牌！<span class="log-heal">+${actual}HP</span> <span class="log-shield">+${shieldAmt}护盾</span>`);
-  } else if (roll === 1) {
-    // 2: Bomb card — 0.9ATK to all enemies, triggers multi-hit
-    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌`, 'crit-label', 0, -20);
-    const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-    const baseDmg = Math.round(caster.atk * 0.9);
-    for (const e of enemies) {
-      const eDef = calcEffDef(caster, e);
-            const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
-      applyRawDmg(caster, e, dmg, false, false, 'physical');
-      const eId = getFighterElId(e);
-      spawnFloatingNum(eId, `-${dmg}`, 'direct-dmg', 0, 0);
-      updateHpBar(e, eId);
-      await triggerOnHitEffects(caster, e, dmg);
-      await tryGamblerMultiHit(caster, e, eId);
+  const tElId = target ? getFighterElId(target) : null;
+  // 2 hits × 0.5 ATK = 1 ATK total physical
+  const perHit = Math.round(caster.atk * (skill.atkScale || 0.5));
+  if (target && target.alive) {
+    for (let i = 0; i < 2; i++) {
+      if (!target.alive) break;
+      const eDef = calcEffDef(caster, target);
+      const isCrit = Math.random() < caster.crit;
+      const critMult = isCrit ? (1.5 + (caster._extraCritDmg || 0) + (caster._extraCritDmgPerm || 0)) : 1;
+      const dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(eDef)));
+      applyRawDmg(caster, target, dmg, false, false, 'physical');
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 180, 0, {atkSide: caster.side, amount: dmg});
+      updateHpBar(target, tElId);
+      await triggerOnHitEffects(caster, target, dmg);
+      await sleep(220);
     }
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">炸弹牌！对全体敌方 <span class="log-direct">${baseDmg}伤害</span>`);
-  } else {
-    // 3: Self buff — +15%ATK, +25%crit, +15%critDmg, 20% dmg→pierce, 3 turns
-    const atkGain = Math.round(caster.baseAtk * 0.15);
-    caster.buffs.push({ type:'atkUp', value:atkGain, turns:3 });
-    caster.crit += 0.25;
-    caster._extraCritDmgPerm = (caster._extraCritDmgPerm || 0) + 0.15;
-    caster.buffs.push({ type:'gamblerPierceConvert', value:20, turns:3 });
-    spawnFloatingNum(fElId, `<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌`, 'crit-label', 0, -20);
-    spawnFloatingNum(fElId, `+ATK+暴击+爆伤+转真实`, 'passive-num', 200, 0);
-    recalcStats();
-    renderStatusIcons(caster);
-    updateFighterStats(caster, fElId);
-    addLog(`${caster.emoji}${caster.name} <b>抽牌</b>：<img src="assets/battle/card-draw-icon.png" style="width:16px;height:16px;vertical-align:middle">强化牌！<span class="log-passive">+15%ATK +25%暴击 +15%爆伤 20%伤害转真实 3回合</span>`);
   }
-  await sleep(1000);
+  // Self permanent shield
+  const shieldAmt = Math.round(caster.atk * (skill.selfShieldAtkPct || 25) / 100);
+  caster.shield += shieldAmt;
+  spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 200, 0);
+  // Self heal
+  const healAmt = Math.round(caster.atk * (skill.selfHealAtkPct || 25) / 100);
+  const before = caster.hp;
+  caster.hp = Math.min(caster.maxHp, caster.hp + healAmt);
+  const actualHeal = Math.round(caster.hp - before);
+  if (actualHeal > 0) spawnFloatingNum(fElId, `+${actualHeal}`, 'heal-num', 350, 0);
+  updateHpBar(caster, fElId);
+  // Random debuff on target (1 of 8)
+  let debuffLog = '';
+  if (target && target.alive) {
+    const pool = [
+      { type:'atkDown', value:20, turns:3, label:'⬇20%攻击' },
+      { type:'defDown', value:20, turns:3, label:'⬇20%护甲' },
+      { type:'mrDown',  value:20, turns:3, label:'⬇20%魔抗' },
+      { type:'healReduce', value:50, turns:3, label:'⬇50%治疗' },
+      { type:'poison', value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, label:'🟢中毒' },
+      { type:'bleed',  value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, label:'🩸流血' },
+      { type:'phoenixBurnDot', value:Math.round(caster.atk * 0.15), hpPct:4, turns:3, sourceSide: caster.side, sourceIdx: allFighters.indexOf(caster), label:'🔥灼烧' },
+      { type:'chilled', value:1, turns:2, label:'❄冰寒' },
+    ];
+    const pick = pool[Math.floor(Math.random() * pool.length)];
+    const { label, ...buff } = pick;
+    target.buffs.push(buff);
+    debuffLog = label;
+    spawnFloatingNum(tElId, label, 'debuff-label', 500, -14);
+    renderStatusIcons(target);
+  }
+  recalcStats();
+  renderStatusIcons(caster);
+  updateFighterStats(caster, fElId);
+  addLog(`${caster.emoji}${caster.name} <b>万能牌</b> → ${target ? (target.emoji + target.name) : ''}：<span class="log-direct">2段物理</span> <span class="log-shield">+${shieldAmt}护盾</span> <span class="log-heal">+${actualHeal}HP</span>${debuffLog ? ' <span class="log-debuff">' + debuffLog + '</span>' : ''}`);
+  await sleep(600);
 }
 
 async function doGamblerBet(attacker, target, skill) {
@@ -350,7 +358,7 @@ async function doTwoHeadSteal(attacker, target, _skill) {
 
   // Execute the stolen skill as if attacker used it
   // Determine target for stolen skill
-  const isAlly = stolen.type === 'heal' || stolen.type === 'shield' || stolen.type === 'bubbleShield' || stolen.type === 'ninjaTrap' || stolen.type === 'angelBless';
+  const isAlly = stolen.type === 'heal' || stolen.type === 'shield' || stolen.type === 'bubbleShield' || stolen.type === 'angelBless';
   const isAoe = stolen.aoe || stolen.aoeAlly || stolen.type === 'hunterBarrage' || stolen.type === 'ninjaBomb' || stolen.type === 'lightningBarrage';
   const isSelf = stolen.type === 'phoenixShield' || stolen.type === 'fortuneDice' || stolen.type === 'lightningBuff';
 
@@ -453,7 +461,7 @@ async function summonAutoAction(summon, owner) {
   const SELF_TYPES = new Set(['phoenixShield','fortuneDice','lightningBuff','hidingDefend','hidingCommand',
     'cyberDeploy','cyberBuff','ghostPhase','diamondFortify','diceFate','chestCount','bambooHeal',
     'iceShield','volcanoArmor','crystalBarrier']);
-  const ALLY_TYPES = new Set(['heal','shield','bubbleShield','ninjaTrap','angelBless']);
+  const ALLY_TYPES = new Set(['heal','shield','bubbleShield','angelBless']);
 
   const healS = ready.find(s => s.type === 'heal' || s.type === 'bambooHeal');
   const shieldS = ready.find(s => s.type === 'shield' || s.type === 'bubbleShield' || s.type === 'iceShield');
@@ -564,7 +572,7 @@ async function summonUseRandomSkill(summon, owner) {
   // Add owner to allies list for heal/shield targeting
   if (owner && owner.alive && !allies.includes(owner)) allies.push(owner);
 
-  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'ninjaTrap' || skill.type === 'angelBless';
+  const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'angelBless';
   const isAoe = skill.aoe || skill.aoeAlly || skill.type === 'hunterBarrage' || skill.type === 'ninjaBomb' || skill.type === 'lightningBarrage' || skill.type === 'iceFrost';
   const isSelf = skill.type === 'phoenixShield' || skill.type === 'fortuneDice' || skill.type === 'lightningBuff' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand';
 
@@ -1923,19 +1931,41 @@ async function doNinjaShuriken(attacker, target, skill) {
   await sleep(80);
 }
 
-async function doNinjaTrap(caster, target, skill) {
-  // Place hidden trap on ally — enemy can't see who has it
-  // Remove old trap from this caster
-  const allies = (caster.side === 'left' ? leftTeam : rightTeam);
-  allies.forEach(a => { a.buffs = a.buffs.filter(b => !(b.type === 'trap' && b.casterId === allFighters.indexOf(caster))); });
-  // Add trap
-  target.buffs.push({ type:'trap', value: Math.round(caster.atk * skill.trapScale), turns:99, casterId: allFighters.indexOf(caster), hidden:true });
+// 冲击: physical hit to target + physical hit to the unit directly behind (same column, back row)
+async function doNinjaImpact(attacker, target, skill) {
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, '夹子已布置', 'passive-num', 0, 0);
-  // Don't reveal which ally has it in the log (hidden from enemy)
-  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：在友方布置了隐形夹子`);
-  // Don't show trap in status icons (hidden)
-  await sleep(1000);
+  // Main hit
+  const mainScale = skill.atkScale || 1.2;
+  const mainDef = calcEffDef(attacker, target);
+  const isCrit1 = Math.random() < attacker.crit;
+  const critMult1 = isCrit1 ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+  const mainDmg = Math.max(1, Math.round(attacker.atk * mainScale * critMult1 * calcDmgMult(mainDef)));
+  applyRawDmg(attacker, target, mainDmg, false, false, 'physical');
+  spawnFloatingNum(tElId, `-${mainDmg}`, isCrit1 ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: mainDmg});
+  updateHpBar(target, tElId);
+  await triggerOnHitEffects(attacker, target, mainDmg);
+  // Behind hit
+  const behind = (typeof fighterBehind === 'function') ? fighterBehind(target) : null;
+  let behindDmg = 0;
+  if (behind && behind.alive) {
+    const behindScale = skill.behindScale || 0.8;
+    const bDef = calcEffDef(attacker, behind);
+    const isCrit2 = Math.random() < attacker.crit;
+    const critMult2 = isCrit2 ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+    behindDmg = Math.max(1, Math.round(attacker.atk * behindScale * critMult2 * calcDmgMult(bDef)));
+    applyRawDmg(attacker, behind, behindDmg, false, false, 'physical');
+    const bElId = getFighterElId(behind);
+    spawnFloatingNum(bElId, `-${behindDmg}`, isCrit2 ? 'crit-dmg' : 'direct-dmg', 200, 0, {atkSide: attacker.side, amount: behindDmg});
+    updateHpBar(behind, bElId);
+    await triggerOnHitEffects(attacker, behind, behindDmg);
+  }
+  const behindNote = behind ? ` + ${behind.emoji}${behind.name} <span class="log-direct">${behindDmg}物理</span>` : '';
+  addLog(`${attacker.emoji}${attacker.name} <b>冲击</b> → ${target.emoji}${target.name}：<span class="log-direct">${mainDmg}物理</span>${behindNote}`);
+  const tEl = document.getElementById(tElId);
+  if (tEl) tEl.classList.add('hit-shake');
+  await sleep(500);
+  if (tEl) tEl.classList.remove('hit-shake');
+  await sleep(150);
 }
 
 async function doNinjaBomb(attacker, skill) {
@@ -2049,14 +2079,16 @@ async function doBubbleShield(caster, target, skill) {
   await sleep(1000);
 }
 
+// Bubble bind: target loses DEF/MR per hit received while bound (lv1-5: 1, lv6-10: 2).
 async function doBubbleBind(caster, target, skill) {
-  // Remove existing bind on this target
+  const lv = caster._level || 1;
+  const perHitLoss = lv >= 6 ? 2 : 1;
   target.buffs = target.buffs.filter(b => b.type !== 'bubbleBind');
-  target.buffs.push({ type:'bubbleBind', value:skill.bindPct, turns:skill.duration });
+  target.buffs.push({ type:'bubbleBind', perHitLoss, turns: skill.duration });
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, '<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">束缚', 'bubble-num', 0, 0);
   renderStatusIcons(target);
-  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">泡泡束缚${skill.duration}回合（攻击者获得${skill.bindPct}%伤害护盾）</span>`);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">束缚${skill.duration}回合（每受一段伤害 护甲/魔抗各 -${perHitLoss}）</span>`);
   await sleep(1000);
 }
 
@@ -2178,7 +2210,7 @@ async function doShellCopy(caster, _skill) {
     'shellAbsorb','shellErode','shellFortify', // 龟壳专属机制
     'fortuneBuyEquip','fortuneGainCoins', // 财神龟金币技能
     'ghostPhantom','starShieldBreak', // 依赖特殊状态
-    'hidingBuffSummon','diceStableShield', // 依赖随从/暴击率
+    'hidingBuffSummon', // 依赖随从/暴击率
   ];
 
   const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
@@ -2237,7 +2269,7 @@ async function doShellCopy(caster, _skill) {
     copied.cdLeft = 0;
 
     // Target selection: auto, no picker
-    const ALLY_TYPES = ['heal','shield','bubbleShield','ninjaTrap','angelBless'];
+    const ALLY_TYPES = ['heal','shield','bubbleShield','angelBless'];
     const AOE_TYPES_SET = new Set(['hunterBarrage','ninjaBomb','lightningBarrage','iceFrost','basicBarrage','starMeteor','diceAllIn',
       'lavaQuake','volcanoErupt','rainbowStorm','pirateCannonBarrage','chestStorm','crystalBurst','soulReap','candyBarrage']);
     const SELF_TYPES_SET = new Set(['phoenixShield','lightningBuff','gamblerDraw','volcanoArmor','crystalBarrier']);
@@ -2833,6 +2865,37 @@ async function doDiceAllIn(attacker, skill) {
   const dmgClass = dmgType === 'magic' ? 'log-magic' : dmgType === 'true' ? 'log-pierce' : 'log-direct';
   addLog(`${attacker.emoji}${attacker.name} <b>孤注一掷</b>：全体敌方 <span class="${dmgClass}">${totalDmg}${dmgLabel}</span>${totalCrits > 0 ? ' <span class="log-crit">'+totalCrits+'暴击</span>' : ''} + ${skill.lifestealPct||10}%吸血`);
   await sleep(500);
+}
+
+// 稳定骰子 → 闪现攻击: roll 1d6, flash to N random enemies, 0.5 ATK physical per hit.
+async function doDiceFlashStrike(caster, skill) {
+  const fElId = getFighterElId(caster);
+  const roll = 1 + Math.floor(Math.random() * 6);
+  spawnFloatingNum(fElId, `🎲${roll}点!`, 'crit-label', 0, -20);
+  await sleep(500);
+  const perHitScale = skill.perHitScale || 0.5;
+  let totalDmg = 0;
+  for (let i = 0; i < roll; i++) {
+    const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+    if (!enemies.length) break;
+    const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const tElId = getFighterElId(target);
+    const eDef = calcEffDef(caster, target);
+    const isCrit = Math.random() < caster.crit;
+    const critMult = isCrit ? (1.5 + (caster._extraCritDmg || 0) + (caster._extraCritDmgPerm || 0)) : 1;
+    const dmg = Math.max(1, Math.round(caster.atk * perHitScale * critMult * calcDmgMult(eDef)));
+    applyRawDmg(caster, target, dmg, false, false, 'physical');
+    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: caster.side, amount: dmg});
+    updateHpBar(target, tElId);
+    const tEl = document.getElementById(tElId);
+    if (tEl) tEl.classList.add('hit-shake');
+    await triggerOnHitEffects(caster, target, dmg);
+    await sleep(280);
+    if (tEl) tEl.classList.remove('hit-shake');
+    totalDmg += dmg;
+  }
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：🎲${roll}点 × <span class="log-direct">${perHitScale * 100}%ATK</span> = ${roll}段共 <span class="log-direct">${totalDmg}物理</span>`);
+  await sleep(400);
 }
 
 async function doDiceFate(caster, skill) {
