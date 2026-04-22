@@ -307,6 +307,9 @@ async function doBasicChiWave(attacker, target, skill) {
       tNode.style.setProperty('--chi-knock-x', (dir * 55) + 'px');
       tNode.classList.add('chi-launched');
     }
+    // Hits land at 0 / 220 / 440ms — matches keyframes at 0% / 11% / 22% of
+    // the 2000ms chi-launched animation. Each hit visibly re-pops the target
+    // higher while airborne (aerial juggle).
     for (let i = 0; i < hits; i++) {
       if (!tgt.alive) break;
       const eDef = calcEffDef(attacker, tgt);
@@ -322,12 +325,11 @@ async function doBasicChiWave(attacker, target, skill) {
       spawnFloatingNum(tId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
       updateHpBar(tgt, tId);
       await triggerOnHitEffects(attacker, tgt, dmg);
-      await sleep(260);
+      if (i < hits - 1) await sleep(220);
     }
-    // 3 hits finished at ~780ms. chi-launched animation is 1700ms (slam +
-    // lie + get up + run back). Wait remaining ~920ms for landing sequence
-    // to play before removing the class.
-    await sleep(920);
+    // 3 hits end at ~440ms. Animation is 2000ms: remaining ~1560ms covers
+    // fall + slam + lying + get-up + run-back.
+    await sleep(1560);
     if (tNode) {
       tNode.classList.remove('chi-launched');
       tNode.style.removeProperty('--chi-knock-x');
