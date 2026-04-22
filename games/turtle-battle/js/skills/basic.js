@@ -187,12 +187,12 @@ async function doBasicChiWave(attacker, target, skill) {
   const armorPenDelta = Math.round(attacker.atk * (skill.armorPenGain || 0.1));
   attacker.crit += (skill.critGain || 25) / 100;
   attacker._extraCritDmgPerm = (attacker._extraCritDmgPerm || 0) + (skill.critDmgGain || 20) / 100;
-  attacker._lifestealPct = (attacker._lifestealPct || 0) + (skill.lifestealGain || 10) / 100;
+  attacker._lifestealPct = (attacker._lifestealPct || 0) + (skill.lifestealGain || 10);
   attacker.armorPen += armorPenDelta;
-  attacker.buffs.push({ type: 'chiWaveActive', turns: 2, revert: {
+  attacker.buffs.push({ type: 'chiWaveActive', turns: 1, revert: {
     crit: (skill.critGain || 25) / 100,
     critDmg: (skill.critDmgGain || 20) / 100,
-    lifesteal: (skill.lifestealGain || 10) / 100,
+    lifesteal: (skill.lifestealGain || 10),
     armorPen: armorPenDelta,
   }});
   recalcStats();
@@ -516,24 +516,19 @@ async function doBasicSlam(attacker, target, skill) {
   setTimeout(() => fEl.classList.remove('chi-hit-flash'), 180);
   await sleep(120);
 
-  // ── Throw arc: target lands at the FIXED center of enemy's 6 slots ──
-  // Compute enemy formation center in battleField local coords — same drop
-  // point regardless of which target was picked. Independent of aliveness.
+  // ── Throw arc: target lands at the midpoint of enemy's F1 and B1 slots ──
+  // (front-1 and back-1 — the horizontal middle of the formation, caster-facing).
   let throwDx = 0, throwDy = 0;
   let slamAnchorX_local = 0, slamAnchorY_local = 0;
   if (tEl && battleField && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
     const posSet = isMobile ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
     const enemySide = attacker.side === 'left' ? 'right' : 'left';
-    const slots = ['front-0','front-1','front-2','back-0','back-1','back-2'];
-    let sumX = 0, sumY = 0;
-    for (const k of slots) {
-      const p = posSet[k];
-      sumX += enemySide === 'left' ? p.x : (100 - p.x);
-      sumY += p.y;
-    }
-    const avgImgX = sumX / slots.length;
-    const avgImgY = sumY / slots.length;
-    const mapped = mapCoverPos(avgImgX, avgImgY, battleField.offsetWidth, battleField.offsetHeight);
+    const f1 = posSet['front-1'], b1 = posSet['back-1'];
+    const f1x = enemySide === 'left' ? f1.x : (100 - f1.x);
+    const b1x = enemySide === 'left' ? b1.x : (100 - b1.x);
+    const anchorImgX = (f1x + b1x) / 2;
+    const anchorImgY = (f1.y + b1.y) / 2;
+    const mapped = mapCoverPos(anchorImgX, anchorImgY, battleField.offsetWidth, battleField.offsetHeight);
     slamAnchorX_local = mapped.px;
     slamAnchorY_local = mapped.py;
 
