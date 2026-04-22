@@ -73,7 +73,7 @@ const ALL_PETS = [
       { name:'打击', type:'basicBarrage', hits:10, power:0, pierce:0, cd:4, atkScale:2.9,
         brief:'小龟发射10段共{N:2.9*ATK}物理伤害随机分布敌方',
         detail:'小龟对敌方发射10段攻击，随机分布。\n共 290%×(攻击力={ATK}) = {N:2.9*ATK} 物理伤害。\n冷却{cd}回合。' },
-      { name:'龟派气波', type:'basicChiWave', hits:3, power:0, pierce:0, cd:0, atkScale:1.5,
+      { name:'龟派气波', type:'basicChiWave', hits:3, power:0, pierce:0, cd:4, atkScale:1.5,
         critGain:25, critDmgGain:20, lifestealGain:10, armorPenGain:0.1,
         brief:'自增 <span class="val-atk">+25%暴击</span> / <span class="val-atk">+20%爆伤</span> / <span class="val-heal">+10%吸血</span> / <span class="val-atk">+{N:0.1*ATK}穿甲</span> 1回合，气波穿透目标所在一列的前后排敌人，每人3段共（{N:1.5*ATK}）物理伤害',
         detail:'小龟获得 1 回合增益：\n· <span class="val-atk">+25%</span> 暴击率\n· <span class="val-atk">+20%</span> 暴击伤害\n· <span class="val-heal">+10%</span> 生命偷取\n· <span class="val-atk">+</span>（10%×攻击力 = {N:0.1*ATK}）护甲穿透\n\n选择敌方一个目标（前排优先），镜头推近 → 蓄力 → 气波缓缓飞出，穿透目标所在一列的**前后排**敌人：\n· 每个被气波击中的敌人被击飞空中，3 段连击共（150%×攻击力({ATK}) = {N:1.5*ATK}）物理伤害\n· 前排先被击飞，气波继续前行命中后排\n\n冷却{cd}回合。' },
