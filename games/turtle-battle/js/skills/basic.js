@@ -296,13 +296,17 @@ async function doBasicChiWave(attacker, target, skill) {
       await triggerOnHitEffects(attacker, tgt, dmg);
       await sleep(260);
     }
+    // 3 hits finished at ~780ms. chi-launched animation is 1700ms (slam +
+    // lie + get up + run back). Wait remaining ~920ms for landing sequence
+    // to play before removing the class.
+    await sleep(920);
     if (tNode) {
       tNode.classList.remove('chi-launched');
       tNode.style.removeProperty('--chi-knock-x');
     }
   });
   await Promise.all(hitTasks);
-  await sleep(200);
+  await sleep(100);
 
   // ── Caster slides back to own row + camera zooms out ──
   fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
