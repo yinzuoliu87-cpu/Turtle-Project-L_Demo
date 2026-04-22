@@ -390,14 +390,49 @@
   100%{filter:brightness(1.35) blur(0)}
 }
 
-/* Caster charging up: brief glow pulse before releasing the wave */
+/* Caster charging up: squeeze down → pop up (KOF breath/anticipation).
+   Glow builds through the squeeze, releases at peak.
+   The st-body already carries hop/knockback transforms elsewhere, but since
+   chi-charging is a momentary state before the wave fires, we can own the
+   transform for this 550ms without collision. */
 .scene-turtle.chi-charging .st-body{
-  animation:chiCharge .6s ease-out;
+  animation:chiCharge .55s cubic-bezier(.35,.8,.25,1);
 }
 @keyframes chiCharge{
-  0%{filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
-  50%{filter:drop-shadow(0 0 18px rgba(120,200,255,.95)) brightness(1.25)}
-  100%{filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
+  0%  {transform:translateY(0)          scaleY(1)    scaleX(1);    filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
+  40% {transform:translateY(6px)        scaleY(.88)  scaleX(1.08); filter:drop-shadow(0 0 14px rgba(120,200,255,.85)) brightness(1.2)}
+  65% {transform:translateY(-12px)      scaleY(1.12) scaleX(.92);  filter:drop-shadow(0 0 24px rgba(180,230,255,1)) brightness(1.45) saturate(1.4)}
+  100%{transform:translateY(0)          scaleY(1)    scaleX(1);    filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
+}
+
+/* Wave motion trail: 2 semi-transparent copies spawned behind the leading
+   wave, each with slightly larger blur + lower opacity. Gives the "flying
+   projectile" feel a proper streak. JS spawns them with a 60-80ms stagger. */
+.chi-wave.chi-wave-trail{opacity:.55;filter:blur(2px) brightness(.95)}
+.chi-wave.chi-wave-trail-far{opacity:.3;filter:blur(4px) brightness(.85)}
+
+/* Camera shake on wave-contact: briefly jitter the whole battle scene so
+   the impact reads as weight. ~220ms, tight amplitude. */
+.battle-scene-shake{animation:camShake .22s linear}
+@keyframes camShake{
+  0%  {transform:scale(var(--cam-scale,1.1)) translate(0,0)}
+  12% {transform:scale(var(--cam-scale,1.1)) translate(-8px,3px)}
+  28% {transform:scale(var(--cam-scale,1.1)) translate(7px,-2px)}
+  44% {transform:scale(var(--cam-scale,1.1)) translate(-5px,4px)}
+  62% {transform:scale(var(--cam-scale,1.1)) translate(4px,-3px)}
+  80% {transform:scale(var(--cam-scale,1.1)) translate(-2px,1px)}
+  100%{transform:scale(var(--cam-scale,1.1)) translate(0,0)}
+}
+
+/* Target hit-flash: overlay white/red glow on each of the 3 hits. Driven by
+   JS adding/removing the class with a 130ms window per hit. */
+.scene-turtle.chi-hit-flash .st-sprite{
+  animation:chiHitFlash .13s ease-out;
+}
+@keyframes chiHitFlash{
+  0%  {filter:brightness(1) saturate(1)}
+  40% {filter:brightness(1.9) saturate(.3) drop-shadow(0 0 12px rgba(255,240,200,.95))}
+  100%{filter:brightness(1) saturate(1)}
 }
 
 /* Enemy caught by wave: pop up, wobble 3 times in the air, settle */

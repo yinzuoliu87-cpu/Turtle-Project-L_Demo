@@ -181,44 +181,58 @@ async function doBasicChiWave(attacker, skill) {
   await sleep(550);
   fEl.classList.remove('chi-charging');
 
-  // ── Fire the chi wave (slower travel so the projectile reads clearly) ──
-  const wave = document.createElement('div');
-  wave.className = 'chi-wave';
-  const waveHost = battleField || document.body;
-  if (waveHost) waveHost.appendChild(wave);
-
-  // Wave travel timing: aim for ~900ms from spawn to target-contact. Because
-  // travelDist includes a past-target overshoot, the contact time is shorter
-  // than the full animation — we compute it explicitly so hits fire exactly
-  // when the wave visually reaches the target.
+  // ── Fire chi wave with 2 trailing copies for motion streak ──
   const WAVE_DURATION_MS = 900;
+  const TRAIL_COUNT = 2; // 1 lead + 2 trails = total 3 waves
+  const TRAIL_DELAY_MS = 70;
+  const waveHost = battleField || document.body;
+  const waves = [];
+  for (let i = 0; i <= TRAIL_COUNT; i++) {
+    const w = document.createElement('div');
+    w.className = 'chi-wave' + (i === 1 ? ' chi-wave-trail' : i === 2 ? ' chi-wave-trail-far' : '');
+    waves.push(w);
+    if (waveHost) waveHost.appendChild(w);
+  }
+
   let waveContactDelay = 550;
   if (battleField) {
     const fRect = fEl.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
     const startY = fRect.top - bRect.top + fRect.height / 2;
-    wave.style.left = startX + 'px';
-    wave.style.top = startY + 'px';
-    wave.style.height = '130px';
-    if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
     const tRect = tEl.getBoundingClientRect();
     const tNearEdge = tRect.left - bRect.left + (dir === 1 ? 0 : tRect.width);
     const tFarEdge = tRect.left - bRect.left + (dir === 1 ? tRect.width : 0);
     const contactDist = Math.abs(tNearEdge - startX);
     const travelDist = Math.abs(tFarEdge - startX) + 40;
-    // Sync hit moment to wave contact
     waveContactDelay = Math.max(300, Math.round(WAVE_DURATION_MS * contactDist / travelDist));
-    requestAnimationFrame(() => {
-      const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
-      wave.style.transition = `transform ${WAVE_DURATION_MS}ms cubic-bezier(.3,.55,.5,1), opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
-      wave.style.transform = `${base} translateX(${dir * travelDist}px)`;
-      wave.style.opacity = '0';
+
+    waves.forEach((w, i) => {
+      w.style.left = startX + 'px';
+      w.style.top = startY + 'px';
+      w.style.height = '130px';
+      if (dir === -1) w.style.transform = 'translate(-50%, -50%) scaleX(-1)';
+      // Stagger each trail's start so it "follows" the leader
+      setTimeout(() => {
+        const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
+        w.style.transition = `transform ${WAVE_DURATION_MS}ms cubic-bezier(.3,.55,.5,1), opacity 250ms ease-out ${WAVE_DURATION_MS - 200}ms`;
+        w.style.transform = `${base} translateX(${dir * travelDist}px)`;
+        w.style.opacity = '0';
+      }, i * TRAIL_DELAY_MS);
     });
   }
 
-  // ── Wait for wave to visually touch target, THEN begin hits ──
+  // ── Wait for wave to visually touch target ──
   await sleep(waveContactDelay);
+
+  // ── Impact: camera shake + launch target ──
+  if (battleField) {
+    battleField.style.setProperty('--cam-scale', '1.1');
+    battleField.classList.remove('battle-scene-shake');
+    void battleField.offsetWidth; // reflow to restart animation
+    battleField.classList.add('battle-scene-shake');
+    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
+  }
   const tElId = getFighterElId(primaryTarget);
   const tElNode = document.getElementById(tElId);
   if (tElNode) tElNode.classList.add('chi-launched');
@@ -231,6 +245,13 @@ async function doBasicChiWave(attacker, skill) {
     const { isCrit, critMult } = calcCrit(attacker);
     const dmg = Math.max(1, Math.round(attacker.atk * perHitScale * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, primaryTarget, dmg, false, false, 'physical');
+    // Flash target on each hit
+    if (tElNode) {
+      tElNode.classList.remove('chi-hit-flash');
+      void tElNode.offsetWidth;
+      tElNode.classList.add('chi-hit-flash');
+      setTimeout(() => tElNode.classList.remove('chi-hit-flash'), 140);
+    }
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
     updateHpBar(primaryTarget, tElId);
     await triggerOnHitEffects(attacker, primaryTarget, dmg);
@@ -251,7 +272,7 @@ async function doBasicChiWave(attacker, skill) {
     battleField.style.transform = '';
     battleField.style.transformOrigin = '';
   }
-  setTimeout(() => { try { wave.remove(); } catch(e) {} }, 600);
+  setTimeout(() => { waves.forEach(w => { try { w.remove(); } catch(e) {} }); }, 600);
   await sleep(120);
 }
 
