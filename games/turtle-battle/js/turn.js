@@ -980,6 +980,13 @@ async function nextSideAction() {
   canAct.filter(f => f._isPirateShip).forEach(f => actedThisSide.add(allFighters.indexOf(f)));
   canAct = canAct.filter(f => !f._isPirateShip);
 
+  // If the only remaining "actors" were pirate ships, this side is done.
+  // (All real fighters dead, only the pirate ship companion alive → hang.)
+  if (canAct.length === 0) {
+    await finishSide();
+    return;
+  }
+
   // Check for stunned fighters — auto-skip them (only once per stun)
   const stunned = canAct.filter(f => f.buffs.some(b => b.type === 'stun') && !f._stunUsed);
   if (stunned.length > 0) {
