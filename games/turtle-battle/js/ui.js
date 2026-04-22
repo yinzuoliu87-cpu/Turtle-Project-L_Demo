@@ -102,11 +102,11 @@ function renderScene() {
       ? 'linear-gradient(180deg, #3deb9e 40%, #089e6b 60%)'
       : 'linear-gradient(180deg, #c084fc 40%, #7c3aed 60%)';
 
-    // Tick marks: major every 100 HP (full height), minor every 50 HP
-    // (half height). Boss-scale (>1000) doubles both steps: major 200,
-    // minor 100. Keeps density readable across the full HP range.
-    const majorStep = barMax > 1000 ? 200 : 100;
-    const minorStep = majorStep / 2;
+    // Tick marks: minor every 50 HP (half height), major every 500 HP
+    // (full height). Boss-scale (>1000) doubles both steps to keep density
+    // readable: minor 100, major 1000.
+    const majorStep = barMax > 1000 ? 1000 : 500;
+    const minorStep = barMax > 1000 ? 100 : 50;
     let ticksHtml = '';
     for (let v = minorStep; v < barMax; v += minorStep) {
       const pct = v / barMax * 100;
@@ -331,8 +331,8 @@ function updateSceneHp(f) {
   // ── Tick marks (rebuild if barMax changed) ──
   const tickContainer = el.querySelector('.st-hp-ticks');
   if (tickContainer && tickContainer._barMax !== barMax) {
-    const majorStep = barMax > 1000 ? 200 : 100;
-    const minorStep = majorStep / 2;
+    const majorStep = barMax > 1000 ? 1000 : 500;
+    const minorStep = barMax > 1000 ? 100 : 50;
     let ticksHtml = '';
     for (let v = minorStep; v < barMax; v += minorStep) {
       const pct = v / barMax * 100;
