@@ -228,19 +228,19 @@ async function doBasicChiWave(attacker, target, skill) {
     }
     const travelDist = maxTravelDist + 60;
 
-    // Per-target contact delay. The wave element has physical width (68px,
-    // .chi-wave in CSS) — its CENTER is what's transform-ed by JS, so the
-    // LEADING edge is 34px ahead of the computed center position. We subtract
-    // half the wave width so hit fires the instant the leading edge reaches
-    // the target's far edge (+ 10px for "slightly past" feel).
-    const WAVE_HALF_W = 34; // matches .chi-wave width:68 / 2
+    // Per-target contact delay. Wave visual lead = element half-width (34px)
+    // + box-shadow glow reach (~56px) ≈ 90px. Subtract this from the target
+    // far-edge distance so hit fires when the VISIBLE wave front reaches
+    // the target's back. (User report: was ~1 body-width late because the
+    // glow halo made the visible front much further ahead than the element.)
+    const WAVE_VISUAL_LEAD = 90;
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
       const r = el.getBoundingClientRect();
       const tFar  = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      const hitCenterDist = Math.abs(tFar - startX) - WAVE_HALF_W;
-      const delay = Math.max(300, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
+      const hitCenterDist = Math.abs(tFar - startX) - WAVE_VISUAL_LEAD;
+      const delay = Math.max(150, Math.round(WAVE_DURATION_MS * hitCenterDist / travelDist));
       targetHitSchedule.push({ target: t, delay, tNode: el });
     }
     // Sort by arrival time so we process front → back in order
