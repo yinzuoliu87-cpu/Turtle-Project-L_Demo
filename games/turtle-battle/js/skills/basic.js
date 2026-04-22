@@ -248,8 +248,8 @@ async function doBasicChiWave(attacker, target, skill) {
     const ox = (midX - bRect.left) / bRect.width * 100;
     const oy = (midY - bRect.top) / bRect.height * 100;
     battleField.style.transformOrigin = `${ox}% ${oy}%`;
-    battleField.style.transition = 'transform 350ms ease-out';
-    battleField.style.transform = 'scale(1.1)';
+    battleField.style.transition = 'transform 400ms ease-out';
+    battleField.style.transform = 'scale(1.2)';
   }
   // Slide caster vertically to target's row — keep his own X, just change Y.
   // z-index bump so he renders above teammates during skill.
