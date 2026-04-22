@@ -363,7 +363,7 @@ async function doBasicChiWave(attacker, target, skill) {
     if (!tgt.alive) return;
     // Camera shake on FIRST target's hit (to sell the impact once)
     if (battleField && tgt === targetHitSchedule[0].target) {
-      battleField.style.setProperty('--cam-scale', '1.1');
+      battleField.style.setProperty('--cam-scale', '1.2');
       battleField.classList.remove('battle-scene-shake');
       void battleField.offsetWidth;
       battleField.classList.add('battle-scene-shake');
