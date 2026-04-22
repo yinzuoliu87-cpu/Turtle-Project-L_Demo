@@ -518,7 +518,7 @@ async function doBasicSlam(attacker, target, skill) {
 
   // ── Throw arc: target goes up-and-back-over to land BEHIND caster ──
   // Landing offset from target's home position (backward along caster's direction)
-  const throwDx = (isMobile ? 140 : 200) * -dir;  // negative of dir = toward caster's side
+  const throwDx = (isMobile ? 110 : 150) * dir;   // same as dir = deeper into enemy side
   const peakY   = isMobile ? -90 : -115;
   const throwMs = 520;
   const tBody = tEl ? tEl.querySelector('.st-body') : null;
@@ -535,7 +535,7 @@ async function doBasicSlam(attacker, target, skill) {
       const norm = p <= peakP ? (p / peakP) : (1 - (p - peakP) / (1 - peakP));
       const y = peakY * Math.max(0, norm);
       // Rotation: one full 360 over the shoulder. At end: visually upright (=360°).
-      const rot = -dir * 360 * ex;
+      const rot = dir * 360 * ex;
       kf.push({
         transform: `translate(${(throwDx * ex).toFixed(1)}px, ${y.toFixed(1)}px) rotate(${rot.toFixed(1)}deg)`,
         offset: p
@@ -615,9 +615,9 @@ async function doBasicSlam(attacker, target, skill) {
   // ── Target hops back to original slot, caster dashes back, camera zooms out ──
   if (tBody) {
     const returnKf = [
-      { transform: `translate(${throwDx}px, 0px) rotate(${-dir * 360}deg)`,        offset: 0 },
-      { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, -26px) rotate(${-dir * 360}deg)`, offset: 0.55 },
-      { transform: `translate(0px, 0px) rotate(${-dir * 360}deg)`,                 offset: 1 }
+      { transform: `translate(${throwDx}px, 0px) rotate(${dir * 360}deg)`,        offset: 0 },
+      { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, -26px) rotate(${dir * 360}deg)`, offset: 0.55 },
+      { transform: `translate(0px, 0px) rotate(${dir * 360}deg)`,                 offset: 1 }
     ];
     tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
     setTimeout(() => {
