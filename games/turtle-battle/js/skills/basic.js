@@ -220,21 +220,33 @@ async function doBasicChiWave(attacker, target, skill) {
     const fRect = fBody.getBoundingClientRect();
     const bRect = battleField.getBoundingClientRect();
     const startX = fRect.left - bRect.left + fRect.width / 2 + (dir * fRect.width * 0.4);
-    // Y-fine-tuning: shift wave DOWN to match the VISIBLE turtle center.
-    // The sprite frame (80×80) has ~28px transparent padding on top — so
-    // .st-body geometric center sits ~13px (unscaled) / ~18px (at 1.375×)
-    // ABOVE the visible turtle middle. Positive = push wave DOWN.
+    // Y offset from .st-body geometric center to the visible "strike zone"
+    // on the turtle (roughly chest/upper-shell height — reads best for KOF
+    // fireball impact). Empirically tuned: negative = push wave UP.
     const WAVE_Y_CORRECTION = -40;
     const startY = fRect.top - bRect.top + fRect.height / 2 + WAVE_Y_CORRECTION;
-    // Compute max travelDist (to the farthest target's far edge) so the wave
-    // visually exits past the back row.
-    for (const t of columnTargets) {
-      const el = document.getElementById(getFighterElId(t));
-      if (!el) continue;
-      const r = el.getBoundingClientRect();
+    // Trajectory MUST be invariant of enemy aliveness — always travel to the
+    // back-row slot position of this column so wave speed stays constant.
+    // Look up back-row DOM element regardless of alive state.
+    const backSlotKey = targetCol != null ? `back-${targetCol}` : null;
+    const backRowFighter = backSlotKey
+      ? enemyTeam.find(e => e._slotKey === backSlotKey)
+      : null;
+    const backEl = backRowFighter ? document.getElementById(getFighterElId(backRowFighter)) : null;
+    if (backEl) {
+      const r = backEl.getBoundingClientRect();
       const tFar = r.left - bRect.left + (dir === 1 ? r.width : 0);
-      const d = Math.abs(tFar - startX);
-      if (d > maxTravelDist) maxTravelDist = d;
+      maxTravelDist = Math.abs(tFar - startX);
+    } else {
+      // Fallback (single-target mode / no back slot): farthest live in column.
+      for (const t of columnTargets) {
+        const el = document.getElementById(getFighterElId(t));
+        if (!el) continue;
+        const r = el.getBoundingClientRect();
+        const tFar = r.left - bRect.left + (dir === 1 ? r.width : 0);
+        const d = Math.abs(tFar - startX);
+        if (d > maxTravelDist) maxTravelDist = d;
+      }
     }
     const travelDist = maxTravelDist + 60;
 
