@@ -338,7 +338,7 @@ async function doBasicChiWave(attacker, target, skill) {
     // Per-target contact delay: trigger when the flame TIP reaches the
     // target's NEAR edge (the side facing the caster) — i.e., first touch.
     // Element is 256×256; flame tip sits ~110px ahead of element center.
-    const WAVE_VISUAL_LEAD = 110;
+    const WAVE_VISUAL_LEAD = 80;
     for (const t of columnTargets) {
       const el = document.getElementById(getFighterElId(t));
       if (!el) continue;
