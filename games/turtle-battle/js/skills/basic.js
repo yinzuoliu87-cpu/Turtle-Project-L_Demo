@@ -637,29 +637,32 @@ async function doBasicSlam(attacker, target, skill) {
     addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理`);
   }
 
-  // ── Brief slammed beat, then everything returns in parallel ──
-  await sleep(160);
+  // ── Target lies slammed briefly ──
+  await sleep(340);
 
-  // ── Target hops back, caster dashes back, camera zooms out (all parallel) ──
+  // ── Target hops back to original slot, caster dashes back, camera zooms out ──
   if (tBody) {
     const returnKf = [
       { transform: `translate(${throwDx.toFixed(1)}px, ${throwDy.toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0 },
       { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, ${(throwDy * 0.5 - 26).toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0.55 },
       { transform: `translate(0px, 0px) rotate(${dir * 360}deg)`, offset: 1 }
     ];
-    tBody.animate(returnKf, { duration: 340, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
+    tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
     setTimeout(() => {
       if (tBody) tBody.style.transform = '';
       if (tEl) tEl.classList.remove('slam-thrown');
-    }, 360);
+    }, 440);
   }
-  fEl.style.transition = 'transform 300ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transition = 'transform 340ms cubic-bezier(.35,.9,.4,1)';
   fEl.style.transform = `translate(0px, 0px) scale(${scale})`;
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(320);
+  // Wait only long enough for the caster to reach home visually; don't hold
+  // the function for the trailing tail — the next-turn UI should appear
+  // the moment visuals are in place, not 80ms after.
+  await sleep(340);
 
-  // Cleanup — visuals have landed, function returns promptly so the next
-  // turn's UI can appear without a perceptible pause.
+  // Cleanup (fires as the function returns; inline styles clear to their
+  // CSS defaults with no visible snap because animation end-states match).
   fEl.style.transition = '';
   fEl.style.transform = '';
   fEl.style.zIndex = '';
