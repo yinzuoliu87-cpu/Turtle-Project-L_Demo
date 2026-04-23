@@ -637,28 +637,29 @@ async function doBasicSlam(attacker, target, skill) {
     addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理`);
   }
 
-  // ── Target lies slammed briefly ──
-  await sleep(340);
+  // ── Brief slammed beat, then everything returns in parallel ──
+  await sleep(160);
 
-  // ── Target hops back to original slot, caster dashes back, camera zooms out ──
+  // ── Target hops back, caster dashes back, camera zooms out (all parallel) ──
   if (tBody) {
     const returnKf = [
       { transform: `translate(${throwDx.toFixed(1)}px, ${throwDy.toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0 },
       { transform: `translate(${(throwDx * 0.45).toFixed(1)}px, ${(throwDy * 0.5 - 26).toFixed(1)}px) rotate(${dir * 360}deg)`, offset: 0.55 },
       { transform: `translate(0px, 0px) rotate(${dir * 360}deg)`, offset: 1 }
     ];
-    tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
+    tBody.animate(returnKf, { duration: 340, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
     setTimeout(() => {
       if (tBody) tBody.style.transform = '';
       if (tEl) tEl.classList.remove('slam-thrown');
-    }, 440);
+    }, 360);
   }
-  fEl.style.transition = 'transform 340ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transition = 'transform 300ms cubic-bezier(.35,.9,.4,1)';
   fEl.style.transform = `translate(0px, 0px) scale(${scale})`;
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(360);
+  await sleep(320);
 
-  // Cleanup
+  // Cleanup — visuals have landed, function returns promptly so the next
+  // turn's UI can appear without a perceptible pause.
   fEl.style.transition = '';
   fEl.style.transform = '';
   fEl.style.zIndex = '';
@@ -667,7 +668,6 @@ async function doBasicSlam(attacker, target, skill) {
     battleField.style.transform = '';
     battleField.style.transformOrigin = '';
   }
-  await sleep(80);
 }
 
 // ── ICE TURTLE SKILLS ─────────────────────────────────────
