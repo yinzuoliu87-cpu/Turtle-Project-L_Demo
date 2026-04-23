@@ -412,29 +412,38 @@ async function doBasicChiWave(attacker, target, skill) {
       await triggerOnHitEffects(attacker, tgt, dmg);
       if (i < hits - 1) await sleep(220);
     }
-    // Wait for physics animation to finish (rise → slam → lie → recover).
+    // Fire-and-forget juggle cleanup — the WAAPI animation keeps playing
+    // on the target's .st-body regardless of whether this hit task is
+    // awaited. Returning early lets Promise.all resolve right after the
+    // 3rd damage hit, so the next-turn UI can appear while the target is
+    // still lying/getting up in the corner (visually parallel, not stuck).
     if (juggleAnim) {
-      try { await juggleAnim.finished; } catch (e) {}
-      if (tBody) tBody.style.transform = '';
+      juggleAnim.finished
+        .then(() => {
+          if (tBody) tBody.style.transform = '';
+          if (tNode) tNode.classList.remove('chi-launched');
+        })
+        .catch(() => {
+          if (tNode) tNode.classList.remove('chi-launched');
+        });
     } else {
-      await sleep(1560);
+      setTimeout(() => {
+        if (tNode) tNode.classList.remove('chi-launched');
+      }, 1560);
     }
-    if (tNode) tNode.classList.remove('chi-launched');
   });
-  // Schedule the camera pull-back to fire ~300ms after the LAST hit lands,
-  // in parallel with the still-running juggle/landing animations. Waiting
-  // for Promise.all would hold the zoomed-in view for ~2s of lie/get-up,
-  // which feels like the camera is stuck.
-  const maxHitDelay = targetHitSchedule.length ? Math.max(...targetHitSchedule.map(s => s.delay)) : 0;
-  const zoomOutAfter = maxHitDelay + 440 + 300; // last hit at delay+440 (3 hits × 220ms apart)
-  setTimeout(() => {
-    fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
-    fEl.style.transform = `translateY(0) scale(${scale})`;
-    if (battleField) battleField.style.transform = 'scale(1)';
-  }, zoomOutAfter);
-
+  // Hit tasks now fire-and-forget the juggle tail (see inside map), so
+  // Promise.all resolves right after the 3rd damage tick on every target.
+  // We can then run camera pull-back + caster slide-back sequentially,
+  // while each target's WAAPI juggle continues playing on its own.
   await Promise.all(hitTasks);
-  await sleep(100);
+
+  // Camera + caster pull back. Targets' juggle animations keep playing
+  // in parallel (lying → get up → run back to home slot).
+  fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
+  fEl.style.transform = `translateY(0) scale(${scale})`;
+  if (battleField) battleField.style.transform = 'scale(1)';
+  await sleep(340);
 
   // Cleanup
   fEl.style.transition = '';
@@ -446,7 +455,6 @@ async function doBasicChiWave(attacker, target, skill) {
     battleField.style.transformOrigin = '';
   }
   setTimeout(() => { waves.forEach(w => { try { w.remove(); } catch(e) {} }); }, 600);
-  await sleep(120);
 }
 
 // ──────────────────────────────────────────────────────────
