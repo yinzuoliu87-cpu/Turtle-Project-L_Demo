@@ -118,7 +118,11 @@ async function doBasicBarrage(attacker, skill) {
 // only interpolates between adjacent samples (never introduces its own
 // velocity curves that would clash with the physics).
 function buildJuggleKeyframes(knockX, isMobile) {
-  const totalMs = isMobile ? 1850 : 2000;
+  // Mobile gravity is lighter so the target hangs in the air longer.
+  // Budget must cover: ballistic-to-slam (~1100ms mobile) + lie + recover.
+  // Previously totalMs=1850 truncated recovery at ~90% → target froze
+  // with residual ~-8deg rotation (visible as "leaning" post-hit).
+  const totalMs = isMobile ? 2100 : 2000;
   const g = isMobile ? 900 : 1500;            // px/s² — tuned by feel
   const hits = isMobile
     ? [{ t: 0, vy: -180, vx: knockX * 1.7 }, { t: 220, vy: -220, vx: knockX * 1.4 }, { t: 440, vy: -250, vx: knockX * 0.9 }]
