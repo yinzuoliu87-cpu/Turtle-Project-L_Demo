@@ -47,6 +47,22 @@ function mapCoverPos(imgX, imgY, containerW, containerH) {
   }
 }
 
+// Build two stacked repeating-linear-gradients for HP bar ticks.
+// Minor: half-height faint line every `minorStep` HP.
+// Major: full-height darker line every `majorStep` HP.
+// Uses calc() so the 1px line width is in device pixels regardless of
+// parent scale — sharper than scaling a 1px child div.
+function buildSceneTickBg(barMax) {
+  const majorStep = barMax > 1000 ? 1000 : 500;
+  const minorStep = barMax > 1000 ? 100 : 50;
+  const minorPct = (minorStep / barMax) * 100;
+  const majorPct = (majorStep / barMax) * 100;
+  const minorBg = `repeating-linear-gradient(90deg, transparent 0, transparent calc(${minorPct}% - 1px), rgba(0,0,0,.35) calc(${minorPct}% - 1px), rgba(0,0,0,.35) ${minorPct}%)`;
+  const majorBg = `repeating-linear-gradient(90deg, transparent 0, transparent calc(${majorPct}% - 1px), rgba(0,0,0,.6) calc(${majorPct}% - 1px), rgba(0,0,0,.6) ${majorPct}%)`;
+  // Minor on top half, major full height. Top layer first.
+  return `background-image:${majorBg},${minorBg};background-size:100% 100%,100% 50%;background-position:0 0,0 0;`;
+}
+
 function renderFighters() {
   renderScene();
 }
@@ -102,18 +118,12 @@ function renderScene() {
       ? 'linear-gradient(180deg, #3deb9e 38%, #1fb57f 42%)'
       : 'linear-gradient(180deg, #c084fc 38%, #9d5be8 42%)';
 
-    // Tick marks: minor every 50 HP (half height), major every 500 HP
-    // (full height). Boss-scale (>1000) doubles both steps to keep density
-    // readable: minor 100, major 1000.
-    const majorStep = barMax > 1000 ? 1000 : 500;
-    const minorStep = barMax > 1000 ? 100 : 50;
-    let ticksHtml = '';
-    for (let v = minorStep; v < barMax; v += minorStep) {
-      const pct = v / barMax * 100;
-      if (pct >= 99.5) break;
-      const isMajor = v % majorStep === 0;
-      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
-    }
+    // Tick marks: minor every 50 HP (top half, faint), major every 500 HP
+    // (full height, darker). Boss-scale (>1000) doubles both steps.
+    // Drawn as two stacked repeating-linear-gradients set as inline-style
+    // on .st-hp-ticks (see renderSceneTickBg below) — avoids sub-pixel
+    // blur from scaling 1px child divs.
+    const ticksBg = buildSceneTickBg(barMax);
 
     // Layout note: .scene-turtle is the stable positioning anchor. Ground-level
     // shadow (.st-shadow) and UI elements (.st-hp-row, .st-buffs, chest pile)
@@ -130,7 +140,7 @@ function renderScene() {
           <div class="st-hp-fill" style="width:${hpPct}%;background:${hpGrad}"></div>
           <div class="st-shield-fill" style="width:${shieldPct}%;left:${hpPct}%;${f.shield > 0 ? '' : 'display:none'}"></div>
           <div class="st-bubble-shield" style="width:${bsPct}%;left:${hpPct + shieldPct}%;${f.bubbleShieldVal > 0 ? '' : 'display:none'}"></div>
-          <div class="st-hp-ticks">${ticksHtml}</div>
+          <div class="st-hp-ticks" style="${ticksBg}" data-barmax="${barMax}"></div>
         </div>
         ${f.passive && f.passive.type === 'bubbleStore' ? `<div class="st-bubble-store-bar"><div class="st-bubble-store-fill" style="width:0%"></div></div>` : ''}
         ${f.passive && f.passive.type === 'lavaRage' ? `<div class="st-rage-bar"><div class="st-rage-fill" style="width:0%"></div></div>` : ''}
@@ -331,16 +341,8 @@ function updateSceneHp(f) {
   // ── Tick marks (rebuild if barMax changed) ──
   const tickContainer = el.querySelector('.st-hp-ticks');
   if (tickContainer && tickContainer._barMax !== barMax) {
-    const majorStep = barMax > 1000 ? 1000 : 500;
-    const minorStep = barMax > 1000 ? 100 : 50;
-    let ticksHtml = '';
-    for (let v = minorStep; v < barMax; v += minorStep) {
-      const pct = v / barMax * 100;
-      if (pct >= 99.5) break;
-      const isMajor = v % majorStep === 0;
-      ticksHtml += `<div class="st-hp-tick${isMajor ? ' st-hp-tick-major' : ''}" style="left:${pct}%"></div>`;
-    }
-    tickContainer.innerHTML = ticksHtml;
+    tickContainer.style.cssText = buildSceneTickBg(barMax);
+    tickContainer.dataset.barmax = barMax;
     tickContainer._barMax = barMax;
   }
 
