@@ -142,8 +142,8 @@
 /* Two tick styles — visual hierarchy for readability at a glance:
    minor (default): half-height, thin, faint — every 50 HP (100 for boss)
    major: full-height, slightly thicker, darker — every 100 HP (200 for boss) */
-.scene-turtle .st-hp-tick{position:absolute;top:0;width:1px;height:50%;background:rgba(0,0,0,.28)}
-.scene-turtle .st-hp-tick-major{top:0;width:1px;height:100%;background:rgba(0,0,0,.5)}
+.scene-turtle .st-hp-tick{position:absolute;top:0;width:2px;height:50%;background:rgba(0,0,0,.35);transform:translateX(-1px)}
+.scene-turtle .st-hp-tick-major{top:0;width:2px;height:100%;background:rgba(0,0,0,.6);transform:translateX(-1px)}
 .scene-turtle .st-hp-text{font-size:9px;color:rgba(255,255,255,.9);text-shadow:0 1px 2px rgba(0,0,0,.8);margin-top:1px;display:flex;align-items:center;gap:2px;justify-content:center}
 .scene-turtle .st-hp-text .shield-val{color:rgba(255,255,255,.9);font-weight:600}
 .scene-turtle .st-hp-text .bubble-val{color:#4cc9f0;font-weight:600}
