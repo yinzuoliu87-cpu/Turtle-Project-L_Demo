@@ -64,9 +64,9 @@ async function doBasicBarrage(attacker, skill) {
 
   // Fire N chi-bolts in parallel, staggered. Each targets a random alive
   // enemy at the moment it's spawned, so dead targets don't absorb shots.
-  const shotStagger = 220;  // ms between shots — readable, not machine-gun
-  const shotDuration = 320; // chi-bolt sprite play time (7 frames ~46ms ea.)
-  const damageAt = 180;     // ms into bolt life — bolt has reached target
+  const shotStagger = 280;  // ms between shots — breathing room per shot
+  const shotDuration = 220; // chi-bolt play time (7 frames ~31ms ea. — fast "zip")
+  const damageAt = 130;     // ms into bolt life — bolt has reached target
   const travelPx = isMobile ? 50 : 70;
 
   const shotTasks = [];

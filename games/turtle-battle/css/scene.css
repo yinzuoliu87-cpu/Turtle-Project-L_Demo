@@ -404,7 +404,7 @@
   image-rendering:pixelated;
   pointer-events:none;
   z-index:30;
-  animation:chiBoltLife 320ms steps(7) forwards;
+  animation:chiBoltLife 220ms steps(7) forwards;
 }
 @keyframes chiBoltLife{
   from{background-position:0 0}
