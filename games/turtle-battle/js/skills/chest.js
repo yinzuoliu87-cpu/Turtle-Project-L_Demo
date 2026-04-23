@@ -218,16 +218,21 @@ async function processEnergyWave() {
     if (!f._storedEnergy || f._storedEnergy <= 0) continue;
     const stored = f._storedEnergy;
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
-    // Wave damage to all enemies
-    const waveDmg = Math.round(stored * f.passive.energyDmgScale * f.atk);
+    // Level-scaled percentages (Lv.1 → 60%/80%, +1%/level).
+    const lvl = Math.max(1, f._level || 1);
+    const perLv = f.passive.perLevelPct || 0.01;
+    const dmgPct = (f.passive.energyDmgPct || 0.60) + (lvl - 1) * perLv;
+    const shieldPct = (f.passive.energyShieldPct || 0.80) + (lvl - 1) * perLv;
+    // Wave damage to all enemies (physical, no ATK multiplier)
+    const waveDmg = Math.max(1, Math.round(stored * dmgPct));
     for (const e of enemies) {
       applyRawDmg(f, e, waveDmg, false, false, 'physical');
       const eElId = getFighterElId(e);
-      spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'pierce-dmg', 0, 0);
+      spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'direct-dmg', 0, 0, { atkSide: f.side, amount: waveDmg });
       updateHpBar(e, eElId);
     }
     // Shield for self
-    const shieldAmt = Math.round(stored * f.passive.energyShieldScale * f.atk);
+    const shieldAmt = Math.round(stored * shieldPct);
     f.shield += shieldAmt;
     const fElId = getFighterElId(f);
     spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);

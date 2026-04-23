@@ -516,10 +516,12 @@
 }
 
 @media (max-width:768px){
-  .chi-wave{width:44px;height:130px}
-  .slam-impact{width:440px;height:440px;background-size:3960px 440px}
+  /* .chi-wave mobile size set earlier in the file (180×180). This block
+     used to clobber it to 44×130 without adjusting background-size,
+     cropping the sprite to ~24% of a frame — visible as a half-wave. */
+  .slam-impact{width:300px;height:300px;background-size:2700px 300px}
   @keyframes slamImpactLife{
     from{background-position:0 0}
-    to  {background-position:-3960px 0}
+    to  {background-position:-2700px 0}
   }
 }

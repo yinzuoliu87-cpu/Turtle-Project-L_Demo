@@ -713,6 +713,14 @@ async function processSideEnd(endedSide) {
     await processCyberDrones(endedSide);
     if (checkBattleEnd()) return;
   }
+  // Lava rage check — DoTs / on-hit reflects during this side end could
+  // have filled the rage meter past the transform threshold. Without this,
+  // the transform is delayed until the next skill action and the lava
+  // turtle can die full-rage.
+  if (typeof processLavaTransform === 'function') {
+    await processLavaTransform();
+    if (checkBattleEnd()) return;
+  }
   await sleep(600);
 }
 
