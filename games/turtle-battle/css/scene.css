@@ -393,6 +393,25 @@
     to  {background-position:-2700px 0}
   }
 }
+/* Mini chi-wave for 打击 barrage — smaller + faster, plays once per shot.
+   Reuses the same sprite, just scaled down to ~40% and sped up to 380ms. */
+.chi-wave.chi-wave-mini{
+  width:96px;height:96px;
+  background-size:1440px 96px;   /* 15 frames × 96 */
+  animation:chiWaveMiniLife 380ms steps(15) forwards;
+}
+@keyframes chiWaveMiniLife{
+  from{background-position:0 0}
+  to  {background-position:-1440px 0}
+}
+@media (max-width:768px){
+  .chi-wave.chi-wave-mini{width:64px;height:64px;background-size:960px 64px}
+  @keyframes chiWaveMiniLife{
+    from{background-position:0 0}
+    to  {background-position:-960px 0}
+  }
+}
+
 /* Legacy trail classes — kept for any code still spawning them, but they're
    no longer used: the sprite sheet itself contains motion streak visuals. */
 .chi-wave.chi-wave-trail,

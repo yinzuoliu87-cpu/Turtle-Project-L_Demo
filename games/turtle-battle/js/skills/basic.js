@@ -52,53 +52,100 @@ async function doTurtleShieldBash(attacker, target, skill) {
 async function doBasicBarrage(attacker, skill) {
   const hits = skill.hits;
   const perHit = Math.round(attacker.atk * skill.atkScale / hits);
-  let totalDmg = 0;
+  const battleField = document.getElementById('battleScene');
+  const dir = attacker.side === 'left' ? 1 : -1;
+  const isMobile = window.innerWidth <= 768;
+  const totals = { dmg: 0 };
 
-  const effectiveDef0 = DEF_CONSTANT; // placeholder, recalc per target
+  // Caster stays in place — no Y-slide, no dash. Just a brief windup pose.
+  const fEl = document.getElementById(getFighterElId(attacker));
+  if (fEl) fEl.classList.add('chi-charging');
+  await sleep(280);
 
+  // Fire N mini waves in parallel, staggered. Each targets a random alive
+  // enemy at the moment it's spawned, so dead targets don't absorb shots.
+  const shotStagger = 130;  // ms between shots
+  const shotDuration = 380; // mini-wave sprite play time
+  const damageAt = 230;     // ms into wave life — near peak flame frame
+  const travelPx = isMobile ? 50 : 70;
+
+  const shotTasks = [];
   for (let i = 0; i < hits; i++) {
-    const enemies = getAliveEnemiesWithSummons(attacker.side);
-    if (!enemies.length) break;
-    const target = enemies[Math.floor(Math.random() * enemies.length)];
-    const tElId = getFighterElId(target);
+    const shotIdx = i;
+    shotTasks.push((async () => {
+      await sleep(shotIdx * shotStagger);
+      const enemies = getAliveEnemiesWithSummons(attacker.side);
+      if (!enemies.length || battleOver) return;
+      const target = enemies[Math.floor(Math.random() * enemies.length)];
+      if (!target.alive) return;
 
-    let effectiveCrit = attacker.crit;
-    if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
-      effectiveCrit += attacker.passive.pct / 100;
-    }
-    const isCrit = Math.random() < effectiveCrit;
-    const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+      // Spawn mini wave in front of target (caster-side), drift into body.
+      if (battleField) {
+        const tEl = document.getElementById(getFighterElId(target));
+        const tBody = tEl && (tEl.querySelector('.st-body') || tEl);
+        if (tBody) {
+          const bRect = battleField.getBoundingClientRect();
+          const tRect = tBody.getBoundingClientRect();
+          const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+          const tCx = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
+          const tCy = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom - 6;
+          // Spawn position: caster-side of target, offset by travelPx
+          const spawnX = tCx - dir * travelPx;
+          const wave = document.createElement('div');
+          wave.className = 'chi-wave chi-wave-mini';
+          wave.style.left = spawnX + 'px';
+          wave.style.top  = tCy + 'px';
+          if (dir === -1) wave.style.transform = 'translate(-50%,-50%) scaleX(-1)';
+          battleField.appendChild(wave);
+          // Brief forward drift so it reads as "approaching the target"
+          requestAnimationFrame(() => {
+            const base = dir === -1 ? 'translate(-50%,-50%) scaleX(-1)' : 'translate(-50%,-50%)';
+            wave.style.transition = `transform ${shotDuration}ms linear`;
+            wave.style.transform = `${base} translateX(${dir * (travelPx - 6)}px)`;
+          });
+          setTimeout(() => wave.remove(), shotDuration + 60);
+        }
+      }
 
-    const effectiveDef = calcEffDef(attacker, target);
-        let dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(effectiveDef)));
+      // Wait until the flame tip reaches the target, then apply damage.
+      await sleep(damageAt);
+      if (!target.alive || battleOver) return;
 
-    // Passive: basicTurtle bonus
-    if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
-      const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
-      if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
-    }
-
-    applyRawDmg(attacker, target, dmg, false, false, 'physical', false, true);
-    totalDmg += dmg;
-
-    const yOff = 0;
-
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
-    updateHpBar(target, tElId);
-    await triggerOnHitEffects(attacker, target, dmg);
-
-    const tEl = document.getElementById(tElId);
-    if (tEl) { tEl.classList.add('hit-shake'); }
-    await sleep(350);
-    if (tEl) { tEl.classList.remove('hit-shake'); }
-    await sleep(100);
-
-    // No in-loop checkDeaths — pending-death targets stay in pool (alive=true)
-    // so later random hits can still land on them. Deaths resolve after action.
-    if (battleOver) break;
+      const tElId = getFighterElId(target);
+      let effectiveCrit = attacker.crit;
+      if (attacker.passive && attacker.passive.type === 'lowHpCrit' && attacker.hp / attacker.maxHp < 0.3) {
+        effectiveCrit += attacker.passive.pct / 100;
+      }
+      const isCrit = Math.random() < effectiveCrit;
+      const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
+      const effectiveDef = calcEffDef(attacker, target);
+      let dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(effectiveDef)));
+      if (attacker.passive && attacker.passive.type === 'basicTurtle' && attacker.passive.bonusMap) {
+        const bonusPct = attacker.passive.bonusMap[target.rarity] || 0;
+        if (bonusPct > 0) dmg = Math.round(dmg * (1 + bonusPct / 100));
+      }
+      applyRawDmg(attacker, target, dmg, false, false, 'physical', false, true);
+      totals.dmg += dmg;
+      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0,
+        { atkSide: attacker.side, amount: dmg });
+      updateHpBar(target, tElId);
+      await triggerOnHitEffects(attacker, target, dmg);
+      const tElFlash = document.getElementById(tElId);
+      if (tElFlash) {
+        tElFlash.classList.remove('chi-hit-flash');
+        void tElFlash.offsetWidth;
+        tElFlash.classList.add('chi-hit-flash');
+        setTimeout(() => tElFlash.classList.remove('chi-hit-flash'), 120);
+        tElFlash.classList.add('hit-shake');
+        setTimeout(() => tElFlash.classList.remove('hit-shake'), 180);
+      }
+    })());
   }
 
-  addLog(`${attacker.emoji}${attacker.name} <b>打击</b> ${hits}段随机分布：<span class="log-direct">共${totalDmg}伤害</span>`);
+  await Promise.all(shotTasks);
+  if (fEl) fEl.classList.remove('chi-charging');
+
+  addLog(`${attacker.emoji}${attacker.name} <b>打击</b> ${hits}段随机分布：<span class="log-direct">共${totals.dmg}伤害</span>`);
 }
 
 // ── 龟派气波 (basicChiWave) ────────────────────────────────
