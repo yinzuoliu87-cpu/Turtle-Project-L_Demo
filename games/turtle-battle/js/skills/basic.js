@@ -62,11 +62,11 @@ async function doBasicBarrage(attacker, skill) {
   if (fEl) fEl.classList.add('chi-charging');
   await sleep(280);
 
-  // Fire N mini waves in parallel, staggered. Each targets a random alive
+  // Fire N chi-bolts in parallel, staggered. Each targets a random alive
   // enemy at the moment it's spawned, so dead targets don't absorb shots.
-  const shotStagger = 130;  // ms between shots
-  const shotDuration = 380; // mini-wave sprite play time
-  const damageAt = 230;     // ms into wave life — near peak flame frame
+  const shotStagger = 220;  // ms between shots — readable, not machine-gun
+  const shotDuration = 320; // chi-bolt sprite play time (7 frames ~46ms ea.)
+  const damageAt = 180;     // ms into bolt life — bolt has reached target
   const travelPx = isMobile ? 50 : 70;
 
   const shotTasks = [];
@@ -92,7 +92,7 @@ async function doBasicBarrage(attacker, skill) {
           // Spawn position: caster-side of target, offset by travelPx
           const spawnX = tCx - dir * travelPx;
           const wave = document.createElement('div');
-          wave.className = 'chi-wave chi-wave-mini';
+          wave.className = 'chi-bolt';
           wave.style.left = spawnX + 'px';
           wave.style.top  = tCy + 'px';
           if (dir === -1) wave.style.transform = 'translate(-50%,-50%) scaleX(-1)';

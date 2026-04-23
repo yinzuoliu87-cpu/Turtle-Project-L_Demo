@@ -393,22 +393,28 @@
     to  {background-position:-2700px 0}
   }
 }
-/* Mini chi-wave for 打击 barrage — smaller + faster, plays once per shot.
-   Reuses the same sprite, just scaled down to ~40% and sped up to 380ms. */
-.chi-wave.chi-wave-mini{
-  width:96px;height:96px;
-  background-size:1440px 96px;   /* 15 frames × 96 */
-  animation:chiWaveMiniLife 380ms steps(15) forwards;
+/* Chi-bolt — small dedicated projectile for 打击 barrage.
+   7 frames × 128×128 (native) displayed at 104×104, 320ms playtime. */
+.chi-bolt{
+  position:absolute;
+  width:104px;height:104px;
+  background:url('../assets/vfx/chi-bolt.png') 0 0 no-repeat;
+  background-size:728px 104px;   /* 7 frames × 104 */
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:30;
+  animation:chiBoltLife 320ms steps(7) forwards;
 }
-@keyframes chiWaveMiniLife{
+@keyframes chiBoltLife{
   from{background-position:0 0}
-  to  {background-position:-1440px 0}
+  to  {background-position:-728px 0}
 }
 @media (max-width:768px){
-  .chi-wave.chi-wave-mini{width:64px;height:64px;background-size:960px 64px}
-  @keyframes chiWaveMiniLife{
+  .chi-bolt{width:72px;height:72px;background-size:504px 72px}
+  @keyframes chiBoltLife{
     from{background-position:0 0}
-    to  {background-position:-960px 0}
+    to  {background-position:-504px 0}
   }
 }
 
