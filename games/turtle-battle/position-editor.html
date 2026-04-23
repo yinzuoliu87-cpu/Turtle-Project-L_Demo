@@ -15,12 +15,15 @@ h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
 .preview-row{display:flex;gap:16px;flex-wrap:wrap;justify-content:center;margin-bottom:12px}
 .preview-box{position:relative;border:2px solid #333;border-radius:10px;overflow:hidden;background-size:cover;background-position:center;background-color:#0a1628}
 .preview-box .label{position:absolute;top:4px;left:50%;transform:translateX(-50%);font-size:10px;color:#58a6ff;background:rgba(0,0,0,.6);padding:2px 8px;border-radius:4px;z-index:20}
-.dot{position:absolute;width:32px;height:32px;border-radius:50%;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;z-index:10;user-select:none;transform:translateX(-50%)}
-.dot:hover{box-shadow:0 0 12px rgba(255,255,255,.5)}
-.dot.left-front{background:rgba(6,214,160,.7);border:2px solid #06d6a0}
-.dot.left-back{background:rgba(6,214,160,.35);border:2px dashed #06d6a0}
-.dot.right-front{background:rgba(199,125,255,.7);border:2px solid #c77dff}
-.dot.right-back{background:rgba(199,125,255,.35);border:2px dashed #c77dff}
+/* Dot sized to match the actual turtle footprint on the real battlefield
+   (≈110px on a 1240px-wide scene = ~9% width). On a 500px preview that's
+   ~45px. Semi-transparent so overlap is visually obvious. */
+.dot{position:absolute;border-radius:50%;cursor:grab;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;z-index:10;user-select:none;transform:translateX(-50%);text-shadow:0 1px 2px rgba(0,0,0,.9)}
+.dot:hover{z-index:20;box-shadow:0 0 12px rgba(255,255,255,.5)}
+.dot.left-front{background:rgba(6,214,160,.55);border:2px solid #06d6a0;color:#fff}
+.dot.left-back{background:rgba(6,214,160,.3);border:2px dashed #06d6a0;color:#fff}
+.dot.right-front{background:rgba(199,125,255,.55);border:2px solid #c77dff;color:#fff}
+.dot.right-back{background:rgba(199,125,255,.3);border:2px dashed #c77dff;color:#fff}
 .output{width:100%;max-width:700px;background:#111;border:1px solid #333;border-radius:8px;padding:10px;font-family:monospace;font-size:11px;white-space:pre;overflow-x:auto;color:#06d6a0;line-height:1.5}
 .legend{display:flex;gap:14px;margin-bottom:6px;font-size:11px;flex-wrap:wrap;justify-content:center}
 .legend span{display:flex;align-items:center;gap:3px}
@@ -44,9 +47,11 @@ h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
 
 <div class="controls">
   <select id="bgSelect" onchange="changeBg()">
-    <option value="assets/bg-cave-alt.png">洞穴(默认)</option>
-    <option value="assets/bg-cave.png">洞穴(Boss)</option>
-    <option value="assets/bg-shipwreck.png">沉船</option>
+    <option value="assets/bg/bg-cave-alt.png">紫色洞穴 (DALL-E, 默认)</option>
+    <option value="assets/bg/bg-cave.png">洞穴 (Boss)</option>
+    <option value="assets/bg/bg-shipwreck.png">沉船 (PVP)</option>
+    <option value="assets/bg/bg-ruins.png">夕阳废墟 (备选)</option>
+    <option value="assets/bg/bg-underwater.png">海底龙宫 (备选)</option>
   </select>
   <button onclick="resetPos()">重置</button>
   <button onclick="copyOutput()">📋 复制代码</button>
@@ -130,10 +135,13 @@ function render() {
   // Clear old dots
   document.querySelectorAll('.dot').forEach(d => d.remove());
 
-  // Render on both previews, each with its own position set
+  // Render on both previews, each with its own position set.
+  // Dot size: turtle is ~110px on a ~1240px scene = ~8.87% of width.
+  // We size dots as % of preview width so overlap visualization is accurate.
   const configs = [[desktopBox, 'desktop'], [mobileBox, 'mobile']];
   configs.forEach(([box, mode]) => {
     const cw = box.offsetWidth, ch = box.offsetHeight;
+    const dotSize = Math.max(26, Math.round(cw * 0.089));  // ≈ 44px on 500px preview
     ['left','right'].forEach(side => {
       SLOTS.forEach(slot => {
         const p = positions[mode][slot];
@@ -149,15 +157,16 @@ function render() {
         const el = document.createElement('div');
         el.className = 'dot ' + side + '-' + row;
         el.textContent = label;
+        el.style.width = dotSize + 'px';
+        el.style.height = dotSize + 'px';
         el.style.left = leftPct + '%';
-        el.style.bottom = bottomPct + '%';
+        el.style.bottom = 'calc(' + bottomPct + '% - ' + (dotSize / 2) + 'px)';
         el.style.top = 'auto';
 
         if (side === 'left') {
           el.addEventListener('mousedown', (e) => startDrag(e, slot, box, mode));
           el.addEventListener('touchstart', (e) => startDragTouch(e, slot, box, mode), {passive:false});
         } else {
-          el.style.opacity = '0.5';
           el.style.cursor = 'default';
         }
 
