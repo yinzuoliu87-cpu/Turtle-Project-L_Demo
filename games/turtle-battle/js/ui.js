@@ -634,6 +634,7 @@ function showFighterDetail(f) {
     if (f.passive.type === 'gamblerBlood') { const oc = Math.max(0, (f.crit||0) - 1.0); st.push(`<img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"> 暴击溢出：<span class="val-atk">${oc > 0 ? Math.round(oc*100)+'%→+'+Math.round(oc*f.passive.overflowMult*100)+'%爆伤' : '无'}</span>`); }
     if (f.passive.type === 'crystalResonance') st.push(`💎 结晶层数：<span class="val-atk">${f._crystallizeStacks||0}</span> / ${f.passive.crystallizeMax}`);
     if (f.passive.type === 'undeadRage') st.push(`💀 攻击加成：<span class="val-atk">+${Math.round(Math.min(f.passive.atkMaxBonus, (1 - f.hp/f.maxHp) * 100 * f.passive.atkPerLostPct))}%</span>　吸血：<span class="val-atk">${f.passive.lifestealBase}%</span>`);
+    if (f.passive.type === 'auraAwaken' && f.passive.energyStore) { const cap = Math.round(f.maxHp * 1.5); st.push(`⚡ 储能：<span class="val-atk">${Math.round(f._storedEnergy||0)}</span> / ${cap}`); }
     if (st.length) html += `<div class="fdp-passive-state">${st.join('<br>')}</div>`;
 
     html += `</div>`;

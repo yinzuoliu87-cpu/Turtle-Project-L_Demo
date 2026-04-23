@@ -100,6 +100,15 @@ function aiAction(f) {
     const other = ready.filter(s => s.type !== 'hidingCommand' && s.type !== 'hidingBuffSummon');
     if (other.length) skill = other[0];
   }
+  // Phoenix turtle AI: only use phoenixPurify when at least one ally has a cleansable debuff
+  if (skill && skill.type === 'phoenixPurify') {
+    const debuffTypes = ['atkDown','defDown','mrDown','healReduce','poison','bleed','burn','cursed','chilled','spdDown'];
+    const hasDebuff = allies.some(a => a.alive && a.buffs && a.buffs.some(b => debuffTypes.includes(b.type)));
+    if (!hasDebuff) {
+      const other = ready.filter(s => s.type !== 'phoenixPurify');
+      if (other.length) skill = other[0];
+    }
+  }
 
   let target;
   if (skill.type==='heal' || skill.type==='bambooHeal' || skill.type==='bubbleHeal' || skill.type==='crystalResHeal') target = allies.sort((a,b)=>(a.hp/a.maxHp)-(b.hp/b.maxHp))[0];
