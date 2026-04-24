@@ -66,54 +66,39 @@ function spawnBambooOrb(fromElId, toElId) {
   const sy = fromRect.top + fromRect.height / 2;
   const ex = toRect.left + toRect.width / 2;
   const ey = toRect.top + toRect.height / 2;
-  // Arc height: bigger arc for longer distances
   const dist = Math.sqrt((ex-sx)**2 + (ey-sy)**2);
   const arcH = Math.max(60, dist * 0.4);
 
-  // Burst flash at spawn point
-  const flash = document.createElement('div');
-  flash.className = 'bamboo-burst';
-  flash.style.left = (sx - 25) + 'px';
-  flash.style.top = (sy - 25) + 'px';
-  document.body.appendChild(flash);
-  setTimeout(() => flash.remove(), 400);
-
   const orb = document.createElement('div');
-  orb.className = 'bamboo-orb';
+  orb.className = 'leaf-orb';
   document.body.appendChild(orb);
 
   const duration = 650;
   const start = performance.now();
   function tick(now) {
     let t = Math.min(1, (now - start) / duration);
-    // Ease: slow start, fast middle, slow end
     const ease = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
-    // Position along path
     const x = sx + (ex - sx) * ease;
-    // Parabolic arc using ease for symmetric curve
     const arc = -4 * arcH * ease * (ease - 1);
     const y = sy + (ey - sy) * ease - arc;
-    // Scale: burst at start, grow in middle, shrink at end
-    const burstScale = t < 0.08 ? 2.0 - (t / 0.08) * 0.8 : 1;
-    const arcScale = 1 + 0.5 * Math.sin(t * Math.PI);
-    const scale = t < 0.08 ? burstScale : arcScale;
-    orb.style.left = (x - 11) + 'px';
-    orb.style.top = (y - 11) + 'px';
-    orb.style.transform = `scale(${scale})`;
-    orb.style.opacity = t > 0.85 ? (1 - t) / 0.15 : 1;
-    // Trail particles every ~40ms
-    if (t > 0.05 && _origMathRandom() < 0.5) {
-      const p = document.createElement('div');
-      p.className = 'bamboo-trail';
-      p.style.left = (x - 3 + (_origMathRandom()-0.5)*8) + 'px';
-      p.style.top = (y - 3 + (_origMathRandom()-0.5)*8) + 'px';
-      document.body.appendChild(p);
-      setTimeout(() => p.remove(), 350);
-    }
+    orb.style.left = x + 'px';
+    orb.style.top = y + 'px';
+    orb.style.opacity = t > 0.88 ? (1 - t) / 0.12 : 1;
     if (t < 1) requestAnimationFrame(tick);
     else orb.remove();
   }
   requestAnimationFrame(tick);
+}
+
+function spawnLeafBurst(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const burst = document.createElement('div');
+  burst.className = 'leaf-burst';
+  burst.style.left = '50%';
+  burst.style.top = '50%';
+  el.appendChild(burst);
+  setTimeout(() => burst.remove(), 320);
 }
 
 async function doBambooChargeAttack(attacker, target) {
@@ -133,6 +118,7 @@ async function doBambooChargeAttack(attacker, target) {
   const magicDmg = Math.max(1, Math.round(rawDmg * critMult * calcDmgMult(effMr)));
   applyRawDmg(attacker, target, magicDmg, false, false, 'magic');
   try { sfxBambooHit(); } catch(e) {}
+  spawnLeafBurst(tElId);
   spawnFloatingNum(tElId, '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'crit-label', 0, -20);
   spawnFloatingNum(tElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
   const tEl = document.getElementById(tElId);

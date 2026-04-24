@@ -416,6 +416,57 @@
   }
 }
 
+/* ── LEAF ORB (bamboo passive projectile) ──
+   4 frames × 128×128 native, displayed at 96×96, loops every 400ms as the
+   orb arcs from target back to the caster (~650ms flight, 1.6 loops). */
+.leaf-orb{
+  position:fixed;
+  width:96px;height:96px;
+  background:url('../assets/vfx/leaf-orb.png') 0 0 no-repeat;
+  background-size:384px 96px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:100;
+  animation:leafOrbLoop 400ms steps(4) infinite;
+}
+@keyframes leafOrbLoop{
+  from{background-position:0 0}
+  to  {background-position:-384px 0}
+}
+@media (max-width:768px){
+  .leaf-orb{width:64px;height:64px;background-size:256px 64px}
+  @keyframes leafOrbLoop{
+    from{background-position:0 0}
+    to  {background-position:-256px 0}
+  }
+}
+
+/* ── LEAF BURST (bamboo charge hit impact) ──
+   6 frames × 128×128 native, displayed at 160×160, one-shot 280ms on target. */
+.leaf-burst{
+  position:absolute;
+  width:160px;height:160px;
+  background:url('../assets/vfx/leaf-burst.png') 0 0 no-repeat;
+  background-size:960px 160px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:30;
+  animation:leafBurstLife 280ms steps(6) forwards;
+}
+@keyframes leafBurstLife{
+  from{background-position:0 0}
+  to  {background-position:-960px 0}
+}
+@media (max-width:768px){
+  .leaf-burst{width:112px;height:112px;background-size:672px 112px}
+  @keyframes leafBurstLife{
+    from{background-position:0 0}
+    to  {background-position:-672px 0}
+  }
+}
+
 /* Legacy trail classes — kept for any code still spawning them, but they're
    no longer used: the sprite sheet itself contains motion streak visuals. */
 .chi-wave.chi-wave-trail,
