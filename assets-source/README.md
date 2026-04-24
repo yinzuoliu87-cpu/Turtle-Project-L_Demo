@@ -6,17 +6,32 @@
 
 ```
 assets-source/
-└── pets/
-    └── <龟英文id>/
-        ├── attack/
-        │   ├── frame_0.png ~ frame_N.png   # 动画单帧
-        │   ├── attack_sheet.png             # 合并的 sprite sheet
-        │   ├── attack.json                  # Aseprite 元数据
-        │   └── attack.aseprite              # (可选) 手工编辑后的Aseprite项目
-        ├── idle/
-        ├── hurt/
-        └── death/
+├── pets/                      # 动作分帧（PixelLab/Aseprite 产出）
+│   └── <龟英文id>/
+│       ├── attack/
+│       │   ├── frame_0.png ~ frame_N.png   # 动画单帧
+│       │   ├── attack_sheet.png             # 合并的 sprite sheet
+│       │   ├── attack.json                  # Aseprite 元数据
+│       │   └── attack.aseprite              # (可选) 手工编辑后的Aseprite项目
+│       ├── idle/
+│       ├── hurt/
+│       └── death/
+├── characters/                # v1 角色完整 sheet 源文件
+│   ├── basic_v1.aseprite
+│   ├── stone_v1.aseprite
+│   ├── bamboo_v1.aseprite
+│   └── ...（每只龟一个 <id>_v1.aseprite，部分附 .json）
+├── vfx/                       # 技能/被动特效源文件
+│   └── bamboo/
+│       ├── leaf-orb.aseprite
+│       └── leaf-burst.aseprite
+└── sfx/                       # 音效源文件（wav 等）
 ```
+
+- **`pets/`** 按动作切帧（attack/idle/hurt/death），将来做逐动作动画时用
+- **`characters/`** 存放 v1 整体角色 sheet（每帧一个姿势的旧版龟设计稿，导出的 PNG 在 `assets/pets/<中文名>v1.png`）
+- **`vfx/<技能来源>/`** 存放技能/被动特效源文件（导出的 PNG 在 `games/turtle-battle/assets/vfx/<name>.png`）
+- **`sfx/`** 存放原始音频素材（导出的在 `games/turtle-battle/assets/sfx/`）
 
 ## 工作流
 
@@ -38,6 +53,8 @@ assets-source/
 - 动作目录：英文小写（`idle`, `attack`, `cast`, `hurt`, `death`）
 - 单帧文件：`frame_0.png`, `frame_1.png`...（从0开始）
 - Sprite sheet：`<action>_sheet.png` 或直接 `<action>.png`
+- 角色sheet（`characters/`）：`<id>_v<版本>.aseprite`（如 `basic_v1.aseprite`）
+- 特效（`vfx/<技能来源>/`）：导出文件名直接对应游戏端引用名（`leaf-orb.aseprite` ↔ `leaf-orb.png`）
 
 ## 尺寸标准
 
