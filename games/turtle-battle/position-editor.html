@@ -73,19 +73,29 @@ h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
 <script>
 const SLOTS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
 
-// Two sets: desktop and mobile, both in 16:9 image coordinates
-const defaults = {
-  desktop: {
-    'front-0': { x: 42, y: 43 }, 'front-1': { x: 41, y: 62 }, 'front-2': { x: 40, y: 81 },
-    'back-0':  { x: 31, y: 43 }, 'back-1':  { x: 26, y: 62 }, 'back-2':  { x: 22, y: 81 },
+// Per-bg defaults. Keyed by bg stem (matches ui.js BATTLE_POSITIONS_BY_BG).
+// Bg that don't have their own entry fall back to bg-cave-alt.
+const BG_DEFAULTS = {
+  'bg-cave-alt': {
+    desktop: {
+      'front-0': { x: 42, y: 53 }, 'front-1': { x: 40, y: 68 }, 'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 33, y: 53 }, 'back-1':  { x: 25, y: 68 }, 'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 38 }, 'front-1': { x: 45, y: 59 }, 'front-2': { x: 44, y: 79 },
+      'back-0':  { x: 39, y: 38 }, 'back-1':  { x: 37, y: 59 }, 'back-2':  { x: 35, y: 79 },
+    },
   },
-  mobile: {
-    'front-0': { x: 46, y: 38 }, 'front-1': { x: 45, y: 59 }, 'front-2': { x: 44, y: 79 },
-    'back-0':  { x: 39, y: 38 }, 'back-1':  { x: 37, y: 59 }, 'back-2':  { x: 35, y: 79 },
-  }
 };
+function bgStem(path) {
+  return (path || '').match(/([^\/]+?)(?:\.[^.]+)?$/)?.[1] || 'bg-cave-alt';
+}
+function getDefaultsFor(bg) {
+  return BG_DEFAULTS[bgStem(bg)] || BG_DEFAULTS['bg-cave-alt'];
+}
 
-let positions = JSON.parse(JSON.stringify(defaults));
+// `positions` holds the currently-edited set for the current bg.
+let positions = JSON.parse(JSON.stringify(getDefaultsFor('bg-cave-alt')));
 
 const desktopBox = document.getElementById('previewDesktop');
 const mobileBox = document.getElementById('previewMobile');
@@ -111,12 +121,11 @@ function init() {
   desktopBox.style.width = dw + 'px';
   desktopBox.style.height = Math.round(dw * 9/16) + 'px';
 
-  // Mobile: simulate phone ratio (9:16-ish scene area). Slightly shrunk
-  // so the mobile preview better represents that the scene takes less
-  // visual real estate on phones compared to desktop.
-  const mw = Math.min(210, window.innerWidth / 2 - 30);
+  // Mobile preview: less extreme portrait (1.25 aspect, was 1.55) so more
+  // of the 16:9 bg shows through before cover-cropping the sides.
+  const mw = Math.min(240, window.innerWidth / 2 - 30);
   mobileBox.style.width = mw + 'px';
-  mobileBox.style.height = Math.round(mw * 1.55) + 'px';
+  mobileBox.style.height = Math.round(mw * 1.25) + 'px';
 
   changeBg();
   render();
@@ -126,12 +135,18 @@ function changeBg() {
   const bg = document.getElementById('bgSelect').value;
   desktopBox.style.backgroundImage = 'url(' + bg + ')';
   mobileBox.style.backgroundImage = 'url(' + bg + ')';
+  // Swap positions to this bg's defaults (so different bgs have their
+  // own tuned layouts — matches game's per-bg BATTLE_POSITIONS_BY_BG).
+  positions = JSON.parse(JSON.stringify(getDefaultsFor(bg)));
+  render();
 }
 
 function resetPos() {
-  positions = JSON.parse(JSON.stringify(defaults));
+  const bg = document.getElementById('bgSelect').value;
+  positions = JSON.parse(JSON.stringify(getDefaultsFor(bg)));
   render();
 }
+
 
 function render() {
   // Clear old dots

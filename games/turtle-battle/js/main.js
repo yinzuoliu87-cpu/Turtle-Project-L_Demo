@@ -1127,6 +1127,9 @@ function startBattle(seed) {
   else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg/bg-cave.png' : 'assets/bg/bg-cave-alt.png';
   const battleScene = document.getElementById('battleScene');
   if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
+  // Swap turtle positions to match this bg's painted floor (falls back to
+  // purple cave if no per-bg entry defined yet).
+  if (typeof setBattlePositionsForBg === 'function') setBattlePositionsForBg(bgFile);
   document.getElementById('screenBattle').style.backgroundImage = 'none';
   // Spawn underwater bubble particles inside scene
   let bubbleContainer = battleScene ? battleScene.querySelector('.battle-bubbles') : null;

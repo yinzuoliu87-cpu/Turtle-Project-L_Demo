@@ -3,24 +3,39 @@
 // x = % from left edge of image, y = % from top edge of image.
 // Left side positions; right side auto-mirrors (100-x).
 // ONE config for ALL screen sizes — JS maps to actual container via cover math.
-const BATTLE_POSITIONS = {
-  desktop: {
-    'front-0': { x: 42, y: 53 },
-    'front-1': { x: 40, y: 68 },
-    'front-2': { x: 37, y: 84 },
-    'back-0':  { x: 33, y: 53 },
-    'back-1':  { x: 25, y: 68 },
-    'back-2':  { x: 17, y: 84 },
+// Per-background battle positions. Each bg (purple cave / boss / pvp / ...)
+// can have its own turtle layout tuned to where the floor is painted.
+// Key matches the bg filename stem (without path or extension).
+const BATTLE_POSITIONS_BY_BG = {
+  'bg-cave-alt': {  // 紫色洞穴（默认 PVE / dungeon 1-4）
+    desktop: {
+      'front-0': { x: 42, y: 53 },
+      'front-1': { x: 40, y: 68 },
+      'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 33, y: 53 },
+      'back-1':  { x: 25, y: 68 },
+      'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 38 },
+      'front-1': { x: 45, y: 59 },
+      'front-2': { x: 44, y: 79 },
+      'back-0':  { x: 39, y: 38 },
+      'back-1':  { x: 37, y: 59 },
+      'back-2':  { x: 35, y: 79 },
+    },
   },
-  mobile: {
-    'front-0': { x: 46, y: 38 },
-    'front-1': { x: 45, y: 59 },
-    'front-2': { x: 44, y: 79 },
-    'back-0':  { x: 39, y: 38 },
-    'back-1':  { x: 37, y: 59 },
-    'back-2':  { x: 35, y: 79 },
-  },
+  // Others not yet tuned — fall back to bg-cave-alt via getter below.
 };
+
+// `BATTLE_POSITIONS` is the ACTIVE set (what the rest of the code uses).
+// Mutable so main.js can swap it when the bg changes.
+let BATTLE_POSITIONS = BATTLE_POSITIONS_BY_BG['bg-cave-alt'];
+
+function setBattlePositionsForBg(bgFile) {
+  const stem = (bgFile || '').match(/([^\/]+?)(?:\.[^.]+)?$/)?.[1] || '';
+  BATTLE_POSITIONS = BATTLE_POSITIONS_BY_BG[stem] || BATTLE_POSITIONS_BY_BG['bg-cave-alt'];
+}
 
 // Map a point on the 16:9 source image to pixel position in a cover-cropped container
 function mapCoverPos(imgX, imgY, containerW, containerH) {
