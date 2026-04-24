@@ -9,20 +9,20 @@
 const BATTLE_POSITIONS_BY_BG = {
   'bg-cave-alt': {  // 紫色洞穴（默认 PVE / dungeon 1-4）
     desktop: {
-      'front-0': { x: 42, y: 53 },
+      'front-0': { x: 43, y: 51 },
       'front-1': { x: 40, y: 68 },
       'front-2': { x: 37, y: 84 },
-      'back-0':  { x: 33, y: 53 },
+      'back-0':  { x: 33, y: 51 },
       'back-1':  { x: 25, y: 68 },
       'back-2':  { x: 17, y: 84 },
     },
     mobile: {
-      'front-0': { x: 46, y: 38 },
-      'front-1': { x: 45, y: 59 },
-      'front-2': { x: 44, y: 79 },
-      'back-0':  { x: 39, y: 38 },
-      'back-1':  { x: 37, y: 59 },
-      'back-2':  { x: 35, y: 79 },
+      'front-0': { x: 46, y: 47 },
+      'front-1': { x: 45, y: 63 },
+      'front-2': { x: 43, y: 82 },
+      'back-0':  { x: 39, y: 47 },
+      'back-1':  { x: 35, y: 63 },
+      'back-2':  { x: 31, y: 82 },
     },
   },
   // Others not yet tuned — fall back to bg-cave-alt via getter below.
