@@ -97,6 +97,11 @@ function renderScene() {
       el.style.bottom = bottomPct + '%';
       el.style.right = 'auto';
       el.style.top = 'auto';
+      // z-index by y so nearer-camera (higher y) turtles overlap in front.
+      // Front-row bonus so within the same row, front > back. Kept in 4-9
+      // range so .targetable (z:10) and active caster (z:50) still win.
+      const isFront = slotKey && slotKey.startsWith('front');
+      el.style.zIndex = Math.round(pos.y / 10) + (isFront ? 1 : 0);
       // Center element on point (offsetWidth = layout width before scale transform)
       requestAnimationFrame(() => {
         el.style.marginLeft = (-el.offsetWidth / 2) + 'px';
