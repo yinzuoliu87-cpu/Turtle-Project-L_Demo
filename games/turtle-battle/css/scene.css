@@ -164,7 +164,11 @@
 .scene-turtle .st-bubble-store-fill{height:100%;background:linear-gradient(90deg,rgba(76,201,240,.3),rgba(76,201,240,.6));border-radius:2px;transition:width .4s ease}
 
 /* Buff icons below name */
-.scene-turtle .st-buffs{display:flex;gap:2px;margin-top:1px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center}
+/* Buffs icons: absolute so they don't inflate the scene-turtle's flex height.
+   Previously they sat as the last flex child — adding a buff would push
+   sprite + HP bar UP (since scene-turtle is bottom-anchored). Now they
+   float below the sprite feet without touching layout. */
+.scene-turtle .st-buffs{position:absolute;top:calc(100% + 2px);left:50%;transform:translateX(-50%);display:flex;gap:2px;font-size:8px;max-width:70px;overflow:hidden;flex-wrap:wrap;justify-content:center;pointer-events:none;z-index:3}
 
 /* Turtle positions now set by JS via BATTLE_POSITIONS config */
 /* Body size scales with maxHp (--body-scale set by updateSceneHp, default 1) */
