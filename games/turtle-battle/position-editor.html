@@ -160,7 +160,11 @@ function render() {
         el.style.width = dotSize + 'px';
         el.style.height = dotSize + 'px';
         el.style.left = leftPct + '%';
-        el.style.bottom = 'calc(' + bottomPct + '% - ' + (dotSize / 2) + 'px)';
+        // Dot BOTTOM at Y — matches game: .scene-turtle also anchors its
+        // bottom edge at the mapped Y (turtle's feet). If we centered the
+        // dot on Y instead, the in-game turtle would sit a half-body HIGHER
+        // than the dot position. Aligning bottoms keeps editor WYSIWYG.
+        el.style.bottom = bottomPct + '%';
         el.style.top = 'auto';
 
         if (side === 'left') {
