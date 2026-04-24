@@ -22,16 +22,27 @@ assets-source/
 │   ├── bamboo_v1.aseprite
 │   └── ...（每只龟一个 <id>_v1.aseprite，部分附 .json）
 ├── vfx/                       # 技能/被动特效源文件
-│   └── bamboo/
-│       ├── leaf-orb.aseprite
-│       └── leaf-burst.aseprite
+│   ├── basic/                 # 小龟专属（龟派气波、过肩摔、打击）
+│   │   ├── chi-wave.aseprite
+│   │   ├── chi-bolt.aseprite
+│   │   └── slam-impact.aseprite
+│   ├── bamboo/                # 竹叶龟专属
+│   │   ├── leaf-orb.aseprite
+│   │   └── leaf-burst.aseprite
+│   └── common/                # 跨龟通用特效（火焰DoT、冰冻等）
+│       └── burn-loop.aseprite
 └── sfx/                       # 音效源文件（wav 等）
 ```
 
 - **`pets/`** 按动作切帧（attack/idle/hurt/death），将来做逐动作动画时用
 - **`characters/`** 存放 v1 整体角色 sheet（每帧一个姿势的旧版龟设计稿，导出的 PNG 在 `assets/pets/<中文名>v1.png`）
-- **`vfx/<技能来源>/`** 存放技能/被动特效源文件（导出的 PNG 在 `games/turtle-battle/assets/vfx/<name>.png`）
+- **`vfx/<分类>/`** 技能/被动特效源文件：
+  - `basic/` 小龟专属 · `bamboo/` 竹叶龟专属 · `common/` 跨龟通用
+  - 新龟加特效时新建 `vfx/<龟id>/` 目录（如 `vfx/phoenix/`、`vfx/dice/`）
+  - 导出的 PNG + JSON 在 `games/turtle-battle/assets/vfx/<name>.png/json`
 - **`sfx/`** 存放原始音频素材（导出的在 `games/turtle-battle/assets/sfx/`）
+
+**规则**：源文件 (`.aseprite`) 只留在 `assets-source/`，游戏只消费 `.png` + `.json`。bamboo目录里同时存 `.png` 是因为用户习惯在 source 里做更新后同步，其他分类可选。
 
 ## 工作流
 
