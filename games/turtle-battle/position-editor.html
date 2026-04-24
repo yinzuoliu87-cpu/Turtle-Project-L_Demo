@@ -47,11 +47,11 @@ h1{font-size:18px;margin-bottom:8px;color:#58a6ff}
 
 <div class="controls">
   <select id="bgSelect" onchange="changeBg()">
-    <option value="assets/bg/bg-cave-alt.png">紫色洞穴 (DALL-E, 默认)</option>
-    <option value="assets/bg/bg-cave.png">洞穴 (Boss)</option>
-    <option value="assets/bg/bg-shipwreck.png">沉船 (PVP)</option>
-    <option value="assets/bg/bg-ruins.png">夕阳废墟 (备选)</option>
-    <option value="assets/bg/bg-underwater.png">海底龙宫 (备选)</option>
+    <option value="assets/bg/bg-cave-alt.png">紫色洞穴 (PVE 默认)</option>
+    <option value="assets/bg/bg-ruins.png">夕阳废墟 (Boss / Dungeon 最终关)</option>
+    <option value="assets/bg/bg-underwater.png">海底龙宫 (PVP 在线)</option>
+    <option value="assets/bg/bg-cave.png">老洞穴 (未用)</option>
+    <option value="assets/bg/bg-shipwreck.png">沉船 (未用)</option>
   </select>
   <button onclick="resetPos()">重置</button>
   <button onclick="copyOutput()">📋 复制代码</button>
@@ -77,6 +77,26 @@ const SLOTS = ['front-0','front-1','front-2','back-0','back-1','back-2'];
 // Bg that don't have their own entry fall back to bg-cave-alt.
 const BG_DEFAULTS = {
   'bg-cave-alt': {
+    desktop: {
+      'front-0': { x: 43, y: 51 }, 'front-1': { x: 40, y: 68 }, 'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 31, y: 51 }, 'back-1':  { x: 24, y: 68 }, 'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 51 }, 'front-1': { x: 45, y: 68 }, 'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 37, y: 51 }, 'back-1':  { x: 35, y: 68 }, 'back-2':  { x: 33, y: 87 },
+    },
+  },
+  'bg-ruins': {
+    desktop: {
+      'front-0': { x: 43, y: 51 }, 'front-1': { x: 40, y: 68 }, 'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 31, y: 51 }, 'back-1':  { x: 24, y: 68 }, 'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 51 }, 'front-1': { x: 45, y: 68 }, 'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 37, y: 51 }, 'back-1':  { x: 35, y: 68 }, 'back-2':  { x: 33, y: 87 },
+    },
+  },
+  'bg-underwater': {
     desktop: {
       'front-0': { x: 43, y: 51 }, 'front-1': { x: 40, y: 68 }, 'front-2': { x: 37, y: 84 },
       'back-0':  { x: 31, y: 51 }, 'back-1':  { x: 24, y: 68 }, 'back-2':  { x: 17, y: 84 },

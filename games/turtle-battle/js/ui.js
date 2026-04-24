@@ -25,7 +25,44 @@ const BATTLE_POSITIONS_BY_BG = {
       'back-2':  { x: 33, y: 87 },
     },
   },
-  // Others not yet tuned — fall back to bg-cave-alt via getter below.
+  // Ruins + underwater reuse the same layout until tuned individually.
+  'bg-ruins': {  // 夕阳废墟（Boss / dungeon Boss关）
+    desktop: {
+      'front-0': { x: 43, y: 51 },
+      'front-1': { x: 40, y: 68 },
+      'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 31, y: 51 },
+      'back-1':  { x: 24, y: 68 },
+      'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 51 },
+      'front-1': { x: 45, y: 68 },
+      'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 37, y: 51 },
+      'back-1':  { x: 35, y: 68 },
+      'back-2':  { x: 33, y: 87 },
+    },
+  },
+  'bg-underwater': {  // 海底龙宫（PVP）
+    desktop: {
+      'front-0': { x: 43, y: 51 },
+      'front-1': { x: 40, y: 68 },
+      'front-2': { x: 37, y: 84 },
+      'back-0':  { x: 31, y: 51 },
+      'back-1':  { x: 24, y: 68 },
+      'back-2':  { x: 17, y: 84 },
+    },
+    mobile: {
+      'front-0': { x: 46, y: 51 },
+      'front-1': { x: 45, y: 68 },
+      'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 37, y: 51 },
+      'back-1':  { x: 35, y: 68 },
+      'back-2':  { x: 33, y: 87 },
+    },
+  },
+  // Other bgs (bg-cave, bg-shipwreck) fall back to bg-cave-alt via getter.
 };
 
 // `BATTLE_POSITIONS` is the ACTIVE set (what the rest of the code uses).

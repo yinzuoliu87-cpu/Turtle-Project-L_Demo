@@ -1122,9 +1122,9 @@ function startBattle(seed) {
   showScreen('screenBattle');
   // Set battle background based on mode
   let bgFile = 'assets/bg/bg-cave-alt.png';
-  if (gameMode === 'boss') bgFile = 'assets/bg/bg-cave.png';
-  else if (gameMode === 'pvp-online') bgFile = 'assets/bg/bg-shipwreck.png';
-  else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg/bg-cave.png' : 'assets/bg/bg-cave-alt.png';
+  if (gameMode === 'boss') bgFile = 'assets/bg/bg-ruins.png';          // sunset ruins for boss
+  else if (gameMode === 'pvp-online') bgFile = 'assets/bg/bg-underwater.png';  // coral palace for PVP
+  else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg/bg-ruins.png' : 'assets/bg/bg-cave-alt.png';
   const battleScene = document.getElementById('battleScene');
   if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
   // Swap turtle positions to match this bg's painted floor (falls back to
