@@ -23,18 +23,6 @@
    top — no need to include scale in keyframes. */
 .scene-turtle .st-body{position:relative;display:flex;flex-direction:column;align-items:center}
 
-/* ── .st-shadow: stable ground shadow, unaffected by body animations ── */
-/* Wider, flatter, darker oval — matches the ~25° low-angle floor of the new
-   purple-cave background. Paired with a drop-shadow on .st-sprite to give
-   the turtle contact grounding (no more floating). */
-.scene-turtle .st-shadow{position:absolute;left:50%;bottom:1px;width:66px;height:10px;transform:translateX(-50%);background:radial-gradient(ellipse at center,rgba(0,0,0,.75) 0%,rgba(0,0,0,.4) 45%,transparent 80%);pointer-events:none;z-index:0}
-.scene-turtle.dead .st-shadow{opacity:0}
-/* Contact shadow on the sprite itself — glues the turtle to the ground. */
-.scene-turtle .st-sprite{filter:drop-shadow(0 3px 3px rgba(0,0,0,.55))}
-@media (max-width: 768px){
-  .scene-turtle .st-shadow{width:56px;height:8px;bottom:2px}
-  .scene-turtle .st-sprite{filter:drop-shadow(0 2px 2px rgba(0,0,0,.55))}
-}
 
 /* Death animation: 1.2s — full hop+tilt+sprite visible, then fade out in final 300ms */
 .scene-turtle.death-anim[class*="pos-left"] .st-body{animation:deathHopLeft 1.2s ease-out forwards}

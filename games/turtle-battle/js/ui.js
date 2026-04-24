@@ -188,7 +188,6 @@ function renderScene() {
     // sprite) is wrapped in .st-body so all knockback/hop/death keyframes
     // animate the body without dragging the shadow or HP bar around.
     el.innerHTML = `
-      <div class="st-shadow"></div>
       <div class="st-hp-row" style="display:flex;align-items:center;gap:0">
         ${f._level ? `<span class="st-level-badge">${f._level}</span>` : ''}
       <div class="st-hp-wrap">
