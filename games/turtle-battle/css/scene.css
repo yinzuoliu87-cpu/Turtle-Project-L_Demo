@@ -362,8 +362,8 @@
   /* battle-scene flex:1 inherited from 768px */
   /* Tiny screens: bump --base-scale so regular keyframes compose at the right
      size (static transform uses scale(var(--base-scale)) from the global rule). */
-  .scene-turtle{--base-scale:.9}
-  .scene-turtle.is-boss{--base-scale:1.26}
+  .scene-turtle{--base-scale:.85}
+  .scene-turtle.is-boss{--base-scale:1.19}
   .scene-turtle:hover{transform:scale(calc(var(--base-scale) * 1.1))}
   .scene-turtle.targetable:hover{transform:scale(calc(var(--base-scale) * 1.1))}
   .skill-announce{font-size:11px;padding:4px 10px}

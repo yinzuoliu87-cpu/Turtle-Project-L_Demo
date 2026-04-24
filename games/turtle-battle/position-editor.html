@@ -82,8 +82,8 @@ const BG_DEFAULTS = {
       'back-0':  { x: 33, y: 51 }, 'back-1':  { x: 25, y: 68 }, 'back-2':  { x: 17, y: 84 },
     },
     mobile: {
-      'front-0': { x: 46, y: 47 }, 'front-1': { x: 45, y: 63 }, 'front-2': { x: 43, y: 82 },
-      'back-0':  { x: 39, y: 47 }, 'back-1':  { x: 35, y: 63 }, 'back-2':  { x: 31, y: 82 },
+      'front-0': { x: 46, y: 51 }, 'front-1': { x: 45, y: 68 }, 'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 38, y: 51 }, 'back-1':  { x: 36, y: 68 }, 'back-2':  { x: 33, y: 87 },
     },
   },
 };
@@ -155,8 +155,8 @@ function render() {
   // Render on both previews, each with its own position set.
   // Dot size = turtle's proportion of scene width.
   //   desktop: turtle 80×1.375=110 / scene ~1240 ≈ 8.9%
-  //   mobile:  turtle 80×0.9=72   / scene ~450 ≈ 16% (phones are narrow)
-  const configs = [[desktopBox, 'desktop', 0.089], [mobileBox, 'mobile', 0.16]];
+  //   mobile:  turtle 80×0.85=68  / scene ~450 ≈ 15%
+  const configs = [[desktopBox, 'desktop', 0.089], [mobileBox, 'mobile', 0.151]];
   configs.forEach(([box, mode, ratio]) => {
     const cw = box.offsetWidth, ch = box.offsetHeight;
     const dotSize = Math.max(26, Math.round(cw * ratio));

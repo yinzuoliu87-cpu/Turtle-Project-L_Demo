@@ -17,12 +17,12 @@ const BATTLE_POSITIONS_BY_BG = {
       'back-2':  { x: 17, y: 84 },
     },
     mobile: {
-      'front-0': { x: 46, y: 47 },
-      'front-1': { x: 45, y: 63 },
-      'front-2': { x: 43, y: 82 },
-      'back-0':  { x: 39, y: 47 },
-      'back-1':  { x: 35, y: 63 },
-      'back-2':  { x: 31, y: 82 },
+      'front-0': { x: 46, y: 51 },
+      'front-1': { x: 45, y: 68 },
+      'front-2': { x: 44, y: 87 },
+      'back-0':  { x: 38, y: 51 },
+      'back-1':  { x: 36, y: 68 },
+      'back-2':  { x: 33, y: 87 },
     },
   },
   // Others not yet tuned — fall back to bg-cave-alt via getter below.
