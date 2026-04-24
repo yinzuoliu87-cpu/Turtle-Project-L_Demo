@@ -75,6 +75,7 @@ function spawnBambooOrb(fromElId, toElId) {
 
   const duration = 650;
   const start = performance.now();
+  let lastTrailAt = 0;
   function tick(now) {
     let t = Math.min(1, (now - start) / duration);
     const ease = t < 0.5 ? 2 * t * t : 1 - (-2 * t + 2) ** 2 / 2;
@@ -83,7 +84,16 @@ function spawnBambooOrb(fromElId, toElId) {
     const y = sy + (ey - sy) * ease - arc;
     orb.style.left = x + 'px';
     orb.style.top = y + 'px';
-    orb.style.opacity = t > 0.88 ? (1 - t) / 0.12 : 1;
+    // Sprinkle trail particles every ~45ms while in mid-flight
+    if (t > 0.08 && t < 0.92 && now - lastTrailAt > 45) {
+      const p = document.createElement('div');
+      p.className = 'leaf-trail';
+      p.style.left = (x - 3 + (_origMathRandom()-0.5)*10) + 'px';
+      p.style.top  = (y - 3 + (_origMathRandom()-0.5)*10) + 'px';
+      document.body.appendChild(p);
+      setTimeout(() => p.remove(), 340);
+      lastTrailAt = now;
+    }
     if (t < 1) requestAnimationFrame(tick);
     else orb.remove();
   }

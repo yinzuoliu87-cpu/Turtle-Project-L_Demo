@@ -417,38 +417,53 @@
 }
 
 /* ── LEAF ORB (bamboo passive projectile) ──
-   4 frames × 128×128 native, displayed at 96×96, loops every 400ms as the
-   orb arcs from target back to the caster (~650ms flight, 1.6 loops). */
+   8 frames × 128×128 native, one-shot across the full 650ms flight so the
+   sprite's own birth → travel → death frames play in sync with the arc. */
 .leaf-orb{
   position:fixed;
   width:96px;height:96px;
   background:url('../assets/vfx/leaf-orb.png') 0 0 no-repeat;
-  background-size:384px 96px;
+  background-size:768px 96px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:100;
-  animation:leafOrbLoop 400ms steps(4) infinite;
+  animation:leafOrbLife 650ms steps(8) forwards;
 }
-@keyframes leafOrbLoop{
+@keyframes leafOrbLife{
   from{background-position:0 0}
-  to  {background-position:-384px 0}
+  to  {background-position:-768px 0}
 }
 @media (max-width:768px){
-  .leaf-orb{width:64px;height:64px;background-size:256px 64px}
-  @keyframes leafOrbLoop{
+  .leaf-orb{width:64px;height:64px;background-size:512px 64px}
+  @keyframes leafOrbLife{
     from{background-position:0 0}
-    to  {background-position:-256px 0}
+    to  {background-position:-512px 0}
   }
 }
 
+/* ── LEAF TRAIL (small particle drops along the orb path) ── */
+.leaf-trail{
+  position:fixed;
+  width:6px;height:6px;border-radius:50%;
+  background:#7dffb3;
+  box-shadow:0 0 5px 2px rgba(125,255,179,.55);
+  pointer-events:none;
+  z-index:99;
+  animation:leafTrailFade 320ms ease-out forwards;
+}
+@keyframes leafTrailFade{
+  0%  {transform:scale(1);opacity:.85}
+  100%{transform:scale(.2);opacity:0}
+}
+
 /* ── LEAF BURST (bamboo charge hit impact) ──
-   6 frames × 128×128 native, displayed at 160×160, one-shot 280ms on target. */
+   6 frames × 128×128 native, displayed at 120×120, one-shot 280ms on target. */
 .leaf-burst{
   position:absolute;
-  width:160px;height:160px;
+  width:120px;height:120px;
   background:url('../assets/vfx/leaf-burst.png') 0 0 no-repeat;
-  background-size:960px 160px;
+  background-size:720px 120px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
@@ -457,13 +472,13 @@
 }
 @keyframes leafBurstLife{
   from{background-position:0 0}
-  to  {background-position:-960px 0}
+  to  {background-position:-720px 0}
 }
 @media (max-width:768px){
-  .leaf-burst{width:112px;height:112px;background-size:672px 112px}
+  .leaf-burst{width:84px;height:84px;background-size:504px 84px}
   @keyframes leafBurstLife{
     from{background-position:0 0}
-    to  {background-position:-672px 0}
+    to  {background-position:-504px 0}
   }
 }
 
