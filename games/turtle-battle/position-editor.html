@@ -111,10 +111,12 @@ function init() {
   desktopBox.style.width = dw + 'px';
   desktopBox.style.height = Math.round(dw * 9/16) + 'px';
 
-  // Mobile: simulate phone ratio (9:16-ish scene area)
-  const mw = Math.min(250, window.innerWidth / 2 - 30);
+  // Mobile: simulate phone ratio (9:16-ish scene area). Slightly shrunk
+  // so the mobile preview better represents that the scene takes less
+  // visual real estate on phones compared to desktop.
+  const mw = Math.min(210, window.innerWidth / 2 - 30);
   mobileBox.style.width = mw + 'px';
-  mobileBox.style.height = Math.round(mw * 1.6) + 'px';
+  mobileBox.style.height = Math.round(mw * 1.55) + 'px';
 
   changeBg();
   render();

@@ -5,20 +5,20 @@
 // ONE config for ALL screen sizes — JS maps to actual container via cover math.
 const BATTLE_POSITIONS = {
   desktop: {
-    'front-0': { x: 43, y: 57 },
-    'front-1': { x: 39, y: 67 },
-    'front-2': { x: 34, y: 75 },
-    'back-0':  { x: 31, y: 56 },
-    'back-1':  { x: 21, y: 66 },
-    'back-2':  { x: 10, y: 74 },
+    'front-0': { x: 42, y: 53 },
+    'front-1': { x: 40, y: 68 },
+    'front-2': { x: 37, y: 84 },
+    'back-0':  { x: 33, y: 53 },
+    'back-1':  { x: 25, y: 68 },
+    'back-2':  { x: 17, y: 84 },
   },
   mobile: {
-    'front-0': { x: 47, y: 61 },
-    'front-1': { x: 45, y: 72 },
-    'front-2': { x: 43, y: 83 },
-    'back-0':  { x: 41, y: 60 },
-    'back-1':  { x: 38, y: 71 },
-    'back-2':  { x: 35, y: 83 },
+    'front-0': { x: 46, y: 38 },
+    'front-1': { x: 45, y: 59 },
+    'front-2': { x: 44, y: 79 },
+    'back-0':  { x: 39, y: 38 },
+    'back-1':  { x: 37, y: 59 },
+    'back-2':  { x: 35, y: 79 },
   },
 };
 
