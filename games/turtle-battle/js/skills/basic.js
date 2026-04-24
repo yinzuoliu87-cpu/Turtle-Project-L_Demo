@@ -67,7 +67,7 @@ async function doBasicBarrage(attacker, skill) {
   const shotStagger = 280;  // ms between shots — breathing room per shot
   const shotDuration = 220; // chi-bolt play time (7 frames ~31ms ea. — fast "zip")
   const damageAt = 130;     // ms into bolt life — bolt has reached target
-  const travelPx = isMobile ? 50 : 70;
+  const travelPx = isMobile ? 75 : 105;  // 1.5× the old travel → faster feel, same playtime
 
   const shotTasks = [];
   for (let i = 0; i < hits; i++) {
