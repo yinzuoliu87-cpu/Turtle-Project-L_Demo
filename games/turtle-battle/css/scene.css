@@ -368,49 +368,49 @@
    played once over 1500ms (= wave's full lifecycle). Element is rendered
    at 2× the sprite's native size (256×256) so the fireball matches the
    turtle sprite scale (~196px). background-size scales up proportionally. */
-.chi-wave{
+.basic-chiwave{
   position:absolute;
   width:256px;
   height:256px;
   pointer-events:none;
   z-index:30;
-  background:url('../assets/vfx/chi-wave.png') 0 0 no-repeat;
+  background:url('../assets/vfx/basic-chiwave.png') 0 0 no-repeat;
   background-size:3840px 256px;  /* = 15 × 256 native-2x */
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
-  animation:chiWaveLife 1500ms steps(15) forwards;
+  animation:basicChiwaveLife 1500ms steps(15) forwards;
 }
-@keyframes chiWaveLife{
+@keyframes basicChiwaveLife{
   from{background-position:0 0}
   to  {background-position:-3840px 0}
 }
 @media (max-width:768px){
-  .chi-wave{width:180px;height:180px;background-size:2700px 180px}
-  @keyframes chiWaveLife{
+  .basic-chiwave{width:180px;height:180px;background-size:2700px 180px}
+  @keyframes basicChiwaveLife{
     from{background-position:0 0}
     to  {background-position:-2700px 0}
   }
 }
 /* Chi-bolt — small dedicated projectile for 打击 barrage.
    7 frames × 128×128 (native) displayed at 104×104, 320ms playtime. */
-.chi-bolt{
+.basic-barrage-bolt{
   position:absolute;
   width:104px;height:104px;
-  background:url('../assets/vfx/chi-bolt.png') 0 0 no-repeat;
+  background:url('../assets/vfx/basic-barrage-bolt.png') 0 0 no-repeat;
   background-size:728px 104px;   /* 7 frames × 104 */
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:30;
-  animation:chiBoltLife 220ms steps(7) forwards;
+  animation:basicBarrageBoltLife 220ms steps(7) forwards;
 }
-@keyframes chiBoltLife{
+@keyframes basicBarrageBoltLife{
   from{background-position:0 0}
   to  {background-position:-728px 0}
 }
 @media (max-width:768px){
-  .chi-bolt{width:72px;height:72px;background-size:504px 72px}
-  @keyframes chiBoltLife{
+  .basic-barrage-bolt{width:72px;height:72px;background-size:504px 72px}
+  @keyframes basicBarrageBoltLife{
     from{background-position:0 0}
     to  {background-position:-504px 0}
   }
@@ -419,24 +419,24 @@
 /* ── LEAF ORB (bamboo passive projectile) ──
    8 frames × 128×128 native, one-shot across the full 650ms flight so the
    sprite's own birth → travel → death frames play in sync with the arc. */
-.leaf-orb{
+.bamboo-charge-orb{
   position:fixed;
   width:56px;height:56px;
-  background:url('../assets/vfx/leaf-orb.png') 0 0 no-repeat;
+  background:url('../assets/vfx/bamboo-charge-orb.png') 0 0 no-repeat;
   background-size:448px 56px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:100;
-  animation:leafOrbLife 650ms steps(8) forwards;
+  animation:bambooChargeOrbLife 650ms steps(8) forwards;
 }
-@keyframes leafOrbLife{
+@keyframes bambooChargeOrbLife{
   from{background-position:0 0}
   to  {background-position:-448px 0}
 }
 @media (max-width:768px){
-  .leaf-orb{width:38px;height:38px;background-size:304px 38px}
-  @keyframes leafOrbLife{
+  .bamboo-charge-orb{width:38px;height:38px;background-size:304px 38px}
+  @keyframes bambooChargeOrbLife{
     from{background-position:0 0}
     to  {background-position:-304px 0}
   }
@@ -446,7 +446,7 @@
    Capsule streak rotated to the orb's velocity direction — reads as a
    glowing green ribbon-like tail rather than scattered dots. JS sets
    --angle from atan2 of the local velocity. */
-.leaf-trail{
+.bamboo-charge-trail{
   position:fixed;
   width:32px;height:7px;border-radius:4px;
   background:linear-gradient(90deg,rgba(125,255,179,0) 0%,rgba(125,255,179,.7) 30%,#a8ffc8 60%,rgba(6,214,160,.8) 90%,rgba(6,214,160,0) 100%);
@@ -454,9 +454,9 @@
   pointer-events:none;
   z-index:99;
   transform:translate(-50%,-50%) rotate(var(--angle,0deg));
-  animation:leafTrailFade 420ms ease-out forwards;
+  animation:bambooChargeTrailFade 420ms ease-out forwards;
 }
-@keyframes leafTrailFade{
+@keyframes bambooChargeTrailFade{
   0%  {opacity:1;filter:none}
   50% {opacity:.75}
   100%{opacity:0;filter:blur(1px)}
@@ -464,24 +464,24 @@
 
 /* ── LEAF BURST (bamboo charge hit impact) ──
    6 frames × 128×128 native, displayed at 88×88, one-shot 280ms on target. */
-.leaf-burst{
+.bamboo-charge-burst{
   position:absolute;
   width:88px;height:88px;
-  background:url('../assets/vfx/leaf-burst.png') 0 0 no-repeat;
+  background:url('../assets/vfx/bamboo-charge-burst.png') 0 0 no-repeat;
   background-size:528px 88px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:30;
-  animation:leafBurstLife 280ms steps(6) forwards;
+  animation:bambooChargeBurstLife 280ms steps(6) forwards;
 }
-@keyframes leafBurstLife{
+@keyframes bambooChargeBurstLife{
   from{background-position:0 0}
   to  {background-position:-528px 0}
 }
 @media (max-width:768px){
-  .leaf-burst{width:64px;height:64px;background-size:384px 64px}
-  @keyframes leafBurstLife{
+  .bamboo-charge-burst{width:64px;height:64px;background-size:384px 64px}
+  @keyframes bambooChargeBurstLife{
     from{background-position:0 0}
     to  {background-position:-384px 0}
   }
@@ -489,18 +489,18 @@
 
 /* Legacy trail classes — kept for any code still spawning them, but they're
    no longer used: the sprite sheet itself contains motion streak visuals. */
-.chi-wave.chi-wave-trail,
-.chi-wave.chi-wave-trail-far{display:none}
+.basic-chiwave.basic-chiwave-trail,
+.basic-chiwave.basic-chiwave-trail-far{display:none}
 
 /* Caster charging up: squeeze down → pop up (KOF breath/anticipation).
    Glow builds through the squeeze, releases at peak.
    The st-body already carries hop/knockback transforms elsewhere, but since
-   chi-charging is a momentary state before the wave fires, we can own the
+   basic-chiwave-charging is a momentary state before the wave fires, we can own the
    transform for this 550ms without collision. */
-.scene-turtle.chi-charging .st-body{
-  animation:chiCharge .55s cubic-bezier(.35,.8,.25,1);
+.scene-turtle.basic-chiwave-charging .st-body{
+  animation:basicChiwaveCharge .55s cubic-bezier(.35,.8,.25,1);
 }
-@keyframes chiCharge{
+@keyframes basicChiwaveCharge{
   0%  {transform:translateY(0)          scaleY(1)    scaleX(1);    filter:drop-shadow(0 0 0 rgba(120,200,255,0))}
   40% {transform:translateY(6px)        scaleY(.88)  scaleX(1.08); filter:drop-shadow(0 0 14px rgba(120,200,255,.85)) brightness(1.2)}
   65% {transform:translateY(-12px)      scaleY(1.12) scaleX(.92);  filter:drop-shadow(0 0 24px rgba(180,230,255,1)) brightness(1.45) saturate(1.4)}
@@ -510,8 +510,8 @@
 /* Wave motion trail: 2 semi-transparent copies spawned behind the leading
    wave, each with slightly larger blur + lower opacity. Gives the "flying
    projectile" feel a proper streak. JS spawns them with a 60-80ms stagger. */
-.chi-wave.chi-wave-trail{opacity:.55;filter:blur(2px) brightness(.95)}
-.chi-wave.chi-wave-trail-far{opacity:.3;filter:blur(4px) brightness(.85)}
+.basic-chiwave.basic-chiwave-trail{opacity:.55;filter:blur(2px) brightness(.95)}
+.basic-chiwave.basic-chiwave-trail-far{opacity:.3;filter:blur(4px) brightness(.85)}
 
 /* Camera shake on wave-contact: briefly jitter the whole battle scene so
    the impact reads as weight. ~220ms, tight amplitude. */
@@ -582,39 +582,39 @@
    basic.js → buildJuggleKeyframes) and played via WAAPI on .st-body.
    This class is still added by JS so the sprite-sheet stepping can be
    paused while the turtle is airborne. */
-.scene-turtle.chi-launched .sprite-inner{
+.scene-turtle.basic-chiwave-launched .sprite-inner{
   animation-play-state:paused !important;
 }
 
 /* ── 过肩摔 (shoulder-throw slam) VFX ──
    Sprite-sheet ground-shockwave: 9 frames × 128×128, displayed at 200×200
    (for punch), plays once at ~80ms/frame = 720ms total. */
-.slam-impact{
+.basic-slam-impact{
   position:absolute;
   width:640px;height:640px;
-  background:url('../assets/vfx/slam-impact.png') 0 0 no-repeat;
+  background:url('../assets/vfx/basic-slam-impact.png') 0 0 no-repeat;
   background-size:5760px 640px;
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:28;
-  animation:slamImpactLife 720ms steps(9) forwards;
+  animation:basicSlamImpactLife 720ms steps(9) forwards;
 }
-@keyframes slamImpactLife{
+@keyframes basicSlamImpactLife{
   from{background-position:0 0}
   to  {background-position:-5760px 0}
 }
 /* Sprite-pause during airborne/slammed target */
-.scene-turtle.slam-thrown .sprite-inner{
+.scene-turtle.basic-slam-thrown .sprite-inner{
   animation-play-state:paused !important;
 }
 
 @media (max-width:768px){
-  /* .chi-wave mobile size set earlier in the file (180×180). This block
+  /* .basic-chiwave mobile size set earlier in the file (180×180). This block
      used to clobber it to 44×130 without adjusting background-size,
      cropping the sprite to ~24% of a frame — visible as a half-wave. */
-  .slam-impact{width:300px;height:300px;background-size:2700px 300px}
-  @keyframes slamImpactLife{
+  .basic-slam-impact{width:300px;height:300px;background-size:2700px 300px}
+  @keyframes basicSlamImpactLife{
     from{background-position:0 0}
     to  {background-position:-2700px 0}
   }

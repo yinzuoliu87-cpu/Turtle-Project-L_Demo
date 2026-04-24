@@ -70,7 +70,7 @@ function spawnBambooOrb(fromElId, toElId) {
   const arcH = Math.max(60, dist * 0.4);
 
   const orb = document.createElement('div');
-  orb.className = 'leaf-orb';
+  orb.className = 'bamboo-charge-orb';
   document.body.appendChild(orb);
 
   const duration = 650;
@@ -90,7 +90,7 @@ function spawnBambooOrb(fromElId, toElId) {
       const dx = x - prevX, dy = y - prevY;
       const angle = Math.atan2(dy, dx) * 180 / Math.PI;
       const p = document.createElement('div');
-      p.className = 'leaf-trail';
+      p.className = 'bamboo-charge-trail';
       p.style.left = x + 'px';
       p.style.top  = y + 'px';
       p.style.setProperty('--angle', angle + 'deg');
@@ -109,7 +109,7 @@ function spawnLeafBurst(elId) {
   const el = document.getElementById(elId);
   if (!el) return;
   const burst = document.createElement('div');
-  burst.className = 'leaf-burst';
+  burst.className = 'bamboo-charge-burst';
   burst.style.left = '50%';
   burst.style.top = '50%';
   el.appendChild(burst);

@@ -59,13 +59,13 @@ async function doBasicBarrage(attacker, skill) {
 
   // Caster stays in place — no Y-slide, no dash. Just a brief windup pose.
   const fEl = document.getElementById(getFighterElId(attacker));
-  if (fEl) fEl.classList.add('chi-charging');
+  if (fEl) fEl.classList.add('basic-chiwave-charging');
   await sleep(280);
 
-  // Fire N chi-bolts in parallel, staggered. Each targets a random alive
+  // Fire N basic-barrage-bolts in parallel, staggered. Each targets a random alive
   // enemy at the moment it's spawned, so dead targets don't absorb shots.
   const shotStagger = 280;  // ms between shots — breathing room per shot
-  const shotDuration = 220; // chi-bolt play time (7 frames ~31ms ea. — fast "zip")
+  const shotDuration = 220; // basic-barrage-bolt play time (7 frames ~31ms ea. — fast "zip")
   const damageAt = 130;     // ms into bolt life — bolt has reached target
   const travelPx = isMobile ? 75 : 105;  // 1.5× the old travel → faster feel, same playtime
 
@@ -92,7 +92,7 @@ async function doBasicBarrage(attacker, skill) {
           // Spawn position: caster-side of target, offset by travelPx
           const spawnX = tCx - dir * travelPx;
           const wave = document.createElement('div');
-          wave.className = 'chi-bolt';
+          wave.className = 'basic-barrage-bolt';
           wave.style.left = spawnX + 'px';
           wave.style.top  = tCy + 'px';
           if (dir === -1) wave.style.transform = 'translate(-50%,-50%) scaleX(-1)';
@@ -143,7 +143,7 @@ async function doBasicBarrage(attacker, skill) {
   }
 
   await Promise.all(shotTasks);
-  if (fEl) fEl.classList.remove('chi-charging');
+  if (fEl) fEl.classList.remove('basic-chiwave-charging');
 
   addLog(`${attacker.emoji}${attacker.name} <b>打击</b> ${hits}段随机分布：<span class="log-direct">共${totals.dmg}伤害</span>`);
 }
@@ -310,11 +310,11 @@ async function doBasicChiWave(attacker, target, skill) {
   await sleep(300);
 
   // ── Windup: caster pulses briefly to show "charging" ──
-  // chi-charging's keyframe uses its OWN transform on .st-body, which composes
+  // basic-chiwave-charging's keyframe uses its OWN transform on .st-body, which composes
   // inside the scene-turtle's translateY (applied above). No collision.
-  fEl.classList.add('chi-charging');
+  fEl.classList.add('basic-chiwave-charging');
   await sleep(550);
-  fEl.classList.remove('chi-charging');
+  fEl.classList.remove('basic-chiwave-charging');
 
   // ── Fire chi wave ──
   // Single wave element driven by sprite-sheet animation (15 frames × 100ms
@@ -323,7 +323,7 @@ async function doBasicChiWave(attacker, target, skill) {
   const WAVE_DURATION_MS = 1500;
   const waveHost = battleField || document.body;
   const wave = document.createElement('div');
-  wave.className = 'chi-wave';
+  wave.className = 'basic-chiwave';
   const waves = [wave]; // kept as array so cleanup loop still works
   if (waveHost) waveHost.appendChild(wave);
 
@@ -432,7 +432,7 @@ async function doBasicChiWave(attacker, target, skill) {
       setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
     }
     const tId = getFighterElId(tgt);
-    // Launch physics-driven juggle on .st-body via WAAPI. CSS .chi-launched
+    // Launch physics-driven juggle on .st-body via WAAPI. CSS .basic-chiwave-launched
     // class stays (pauses the sprite-sheet while airborne) but no longer
     // drives transforms — JS handles that now.
     const tBody = tNode ? tNode.querySelector('.st-body') : null;
@@ -442,7 +442,7 @@ async function doBasicChiWave(attacker, target, skill) {
       const knockX = isMobile ? dir * 30 : dir * 55;
       const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile);
       juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
-      tNode.classList.add('chi-launched');
+      tNode.classList.add('basic-chiwave-launched');
     }
     // Hits land at t=0 / 220 / 440ms — matches the physics hit-impulse
     // timings. Each hit re-launches the target upward (aerial juggle).
@@ -472,14 +472,14 @@ async function doBasicChiWave(attacker, target, skill) {
       juggleAnim.finished
         .then(() => {
           if (tBody) tBody.style.transform = '';
-          if (tNode) tNode.classList.remove('chi-launched');
+          if (tNode) tNode.classList.remove('basic-chiwave-launched');
         })
         .catch(() => {
-          if (tNode) tNode.classList.remove('chi-launched');
+          if (tNode) tNode.classList.remove('basic-chiwave-launched');
         });
     } else {
       setTimeout(() => {
-        if (tNode) tNode.classList.remove('chi-launched');
+        if (tNode) tNode.classList.remove('basic-chiwave-launched');
       }, 1560);
     }
   });
@@ -636,7 +636,7 @@ async function doBasicSlam(attacker, target, skill) {
         offset: p
       });
     }
-    tEl.classList.add('slam-thrown');
+    tEl.classList.add('basic-slam-thrown');
     throwAnim = tBody.animate(kf, { duration: throwMs, easing: 'linear', fill: 'forwards' });
   }
 
@@ -649,7 +649,7 @@ async function doBasicSlam(attacker, target, skill) {
     const slamY = slamAnchorY_local;
 
     const impact = document.createElement('div');
-    impact.className = 'slam-impact';
+    impact.className = 'basic-slam-impact';
     impact.style.left = slamX + 'px';
     impact.style.top  = slamY + 'px';
     battleField.appendChild(impact);
@@ -709,7 +709,7 @@ async function doBasicSlam(attacker, target, skill) {
     tBody.animate(returnKf, { duration: 420, easing: 'cubic-bezier(.4,.9,.3,1)', fill: 'forwards' });
     setTimeout(() => {
       if (tBody) tBody.style.transform = '';
-      if (tEl) tEl.classList.remove('slam-thrown');
+      if (tEl) tEl.classList.remove('basic-slam-thrown');
     }, 440);
   }
   fEl.style.transition = 'transform 340ms cubic-bezier(.35,.9,.4,1)';
