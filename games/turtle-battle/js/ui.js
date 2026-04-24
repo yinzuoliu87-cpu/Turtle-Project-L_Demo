@@ -153,7 +153,7 @@ function renderScene() {
     el.innerHTML = `
       <div class="st-shadow"></div>
       <div class="st-hp-row" style="display:flex;align-items:center;gap:3px">
-        ${f._level ? `<span class="st-level-badge">Lv.${f._level}</span>` : ''}
+        ${f._level ? `<span class="st-level-badge">${f._level}</span>` : ''}
       <div class="st-hp-wrap">
         <div class="st-hp-bar">
           <div class="st-hp-delay" style="width:${hpPct}%"></div>
@@ -845,7 +845,7 @@ function renderSummonMiniCard(owner) {
   mini.innerHTML = `
     <div class="st-name" style="color:${RARITY_COLORS[summon.rarity]};font-size:8px">${summon.name}<span class="summon-tag" style="margin-left:3px">随从</span></div>
     <div class="st-hp-row" style="display:flex;align-items:center;gap:2px;justify-content:center">
-      ${summon._level ? `<span class="st-level-badge" style="font-size:8px;padding:0 2px">Lv.${summon._level}</span>` : ''}
+      ${summon._level ? `<span class="st-level-badge" style="font-size:8px;padding:0 2px">${summon._level}</span>` : ''}
     <div class="st-hp-wrap" style="width:60px">
       <div class="st-hp-bar" style="height:5px">
         <div class="st-hp-delay" style="width:${hpPct}%"></div>
