@@ -3,6 +3,18 @@
 // Depends on: engine.js (globals, spawnFloatingNum, etc.)
 // ══════════════════════════════════════════════════════════
 
+/* ── Shared VFX helper: spawn a lightning-strike sprite on a fighter. ──
+   Used by the 闪电龟 passive, its 8-stack detonate, and 财神龟 thunder
+   equipment's 5-stack detonate. Sprite auto-removes after its animation. */
+function spawnLightningStrike(elId) {
+  const el = document.getElementById(elId);
+  if (!el) return;
+  const bolt = document.createElement('div');
+  bolt.className = 'common-lightning-strike';
+  el.appendChild(bolt);
+  setTimeout(() => bolt.remove(), 420);
+}
+
 /* ── Equipment: 雷鸣贝壳 — counts skill hits, triggers AoE on every 3rd ── */
 function triggerThunderShell(attacker) {
   if (!attacker || !attacker._equipThunderShell || !attacker.alive) return;
@@ -576,6 +588,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     target._shockStacks = (target._shockStacks || 0) + 1;
     renderStatusIcons(target);
     if (target._shockStacks >= attacker.passive.stackMax) {
+      spawnLightningStrike(tElId);
       const sDmg = Math.round(attacker.atk * attacker.passive.shockScale);
       applyRawDmg(attacker, target, sDmg, false, false, 'true');
       target._shockStacks = 0;

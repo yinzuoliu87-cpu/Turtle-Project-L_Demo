@@ -679,10 +679,11 @@ async function processLightningStorm(side) {
     const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
     if (!enemies.length) continue;
     const target = enemies[Math.floor(Math.random() * enemies.length)];
+    const eElId = getFighterElId(target);
+    spawnLightningStrike(eElId);
     const shockDmg = Math.round(f.atk * f.passive.shockScale);
     // Pierce damage through applyRawDmg
     applyRawDmg(f, target, shockDmg, true, false, 'true');
-    const eElId = getFighterElId(target);
     const ownerTag = f._isSummon ? '(随从)' : '';
     spawnFloatingNum(eElId, `<img src="assets/passive/lightning-storm-icon.png" style="width:14px;height:14px;vertical-align:middle">${shockDmg}`, 'pierce-dmg', 0, 0);
     updateHpBar(target, eElId);

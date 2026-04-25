@@ -29,6 +29,7 @@ async function doChestSmash(attacker, target, skill) {
       renderStatusIcons(target);
       if (target._goldLightning >= 5) {
         target._goldLightning = 0;
+        spawnLightningStrike(tElId);
         const thunderDmg = Math.round(attacker.atk * 1.0);
         applyRawDmg(attacker, target, thunderDmg, false, false, 'true');
         spawnFloatingNum(tElId, `-${thunderDmg}⚡`, 'true-dmg', 150, 0, { atkSide: attacker.side, amount: thunderDmg });
@@ -52,6 +53,7 @@ async function doChestSmash(attacker, target, skill) {
           renderStatusIcons(secondary);
           if (secondary._goldLightning >= 5) {
             secondary._goldLightning = 0;
+            spawnLightningStrike(sElId);
             const thunderDmg = Math.round(attacker.atk * 1.0);
             applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
             spawnFloatingNum(sElId, `-${thunderDmg}⚡`, 'true-dmg', 200, 0, { atkSide: attacker.side, amount: thunderDmg });
@@ -152,6 +154,7 @@ async function doChestStorm(attacker, skill) {
         renderStatusIcons(enemy);
         if (enemy._goldLightning >= 5) {
           enemy._goldLightning = 0;
+          spawnLightningStrike(eElId);
           const thunderDmg = Math.round(attacker.atk * 1.0);
           applyRawDmg(attacker, enemy, thunderDmg, false, false, 'true');
           spawnFloatingNum(eElId, `-${thunderDmg}⚡`, 'true-dmg', 100, 0, { atkSide: attacker.side, amount: thunderDmg });
