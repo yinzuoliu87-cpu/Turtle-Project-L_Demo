@@ -64,20 +64,31 @@ async function doTurtleShieldBash(attacker, target, skill) {
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, dmg);
 
-  // Knock-up + knock-back arc on target st-body (away from attacker)
+  // Knock-up → fall prone on back → hold → get up → walk home (away from attacker)
   const tBody = tEl ? tEl.querySelector('.st-body') : null;
-  const knockDir = attackerLeft ? 1 : -1;  // push target away from attacker
+  const knockDir = attackerLeft ? 1 : -1;  // +1 = push right, -1 = push left
+  const proneRot = 90 * knockDir;           // landed-on-back rotation
   if (tBody) tBody.animate([
-    { transform: 'translate(0,0) rotate(0deg)' },
-    { transform: `translate(${12 * knockDir}px,-22px) rotate(${8 * knockDir}deg)`, offset: 0.25 },  // lift off
-    { transform: `translate(${28 * knockDir}px,-38px) rotate(${14 * knockDir}deg)`, offset: 0.5 },  // apex
-    { transform: `translate(${36 * knockDir}px,-14px) rotate(${10 * knockDir}deg)`, offset: 0.75 }, // descending
-    { transform: 'translate(0,0) rotate(0deg)', offset: 1 },  // land home
-  ], { duration: 650, easing: 'cubic-bezier(.3,.6,.5,1)', fill: 'forwards' });
+    // Phase 1: launch up and back (ease-out to apex, ease-in on fall)
+    { transform: 'translate(0,0) rotate(0deg)',                                     offset: 0,    easing: 'cubic-bezier(.25,.7,.4,1)' },
+    { transform: `translate(${14 * knockDir}px,-28px) rotate(${20 * knockDir}deg)`, offset: 0.10, easing: 'cubic-bezier(.25,.7,.4,1)' },
+    { transform: `translate(${30 * knockDir}px,-42px) rotate(${50 * knockDir}deg)`, offset: 0.22, easing: 'cubic-bezier(.5,0,.75,.3)'  }, // apex → fall
+    { transform: `translate(${42 * knockDir}px,-6px)  rotate(${80 * knockDir}deg)`, offset: 0.33, easing: 'cubic-bezier(.6,0,.9,.4)'   },
+    // Phase 2: slam onto ground, small bounce, hold prone
+    { transform: `translate(${44 * knockDir}px,8px)   rotate(${proneRot}deg)`,      offset: 0.38, easing: 'ease-out' }, // ground hit
+    { transform: `translate(${44 * knockDir}px,2px)   rotate(${proneRot}deg)`,      offset: 0.42, easing: 'ease-in'  }, // bounce
+    { transform: `translate(${44 * knockDir}px,5px)   rotate(${proneRot}deg)`,      offset: 0.55, easing: 'ease-out' }, // hold prone
+    // Phase 3: rise to upright
+    { transform: `translate(${44 * knockDir}px,0)     rotate(${proneRot * 0.4}deg)`,offset: 0.64, easing: 'ease-out' },
+    { transform: `translate(${44 * knockDir}px,-2px)  rotate(0deg)`,                offset: 0.70, easing: 'ease-in-out' },
+    // Phase 4: walk back home with gentle vertical bob
+    { transform: `translate(${30 * knockDir}px,-3px)  rotate(0deg)`,                offset: 0.80, easing: 'ease-in-out' },
+    { transform: `translate(${18 * knockDir}px,0)     rotate(0deg)`,                offset: 0.88, easing: 'ease-in-out' },
+    { transform: `translate(${8  * knockDir}px,-2px)  rotate(0deg)`,                offset: 0.95, easing: 'ease-in-out' },
+    { transform: 'translate(0,0) rotate(0deg)',                                     offset: 1    },
+  ], { duration: 1400, fill: 'forwards' });
 
-  await sleep(500);
-
-  // ── SHIELD AURA on caster as permanent shield is granted ──
+  // ── SHIELD AURA on caster (in parallel with target knockback) ──
   const shieldGain = Math.round(dmg * skill.shieldFromDmgPct / 100);
   if (shieldGain > 0 && attacker.alive) {
     attacker.shield += shieldGain;
@@ -90,7 +101,9 @@ async function doTurtleShieldBash(attacker, target, skill) {
     spawnFloatingNum(fElId, `+${shieldGain}`, 'shield-num', 0, 0);
     updateHpBar(attacker, fElId);
   }
-  await sleep(200);
+
+  // Wait for target to finish falling, rising and walking home
+  await sleep(1400);
 
   addLog(`${attacker.emoji}${attacker.name} <b>龟盾</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>${isCrit?' <span class="log-crit">暴击</span>':''} + <span class="log-shield">+${shieldGain}永久护盾</span>`);
   if (target.alive) applySkillDebuffs(skill, target);
