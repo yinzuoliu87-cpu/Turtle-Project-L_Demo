@@ -26,28 +26,40 @@ async function doTurtleShieldBash(attacker, target, skill) {
   const tEl = document.getElementById(tElId);
   const body = fEl ? fEl.querySelector('.st-body') : null;
   const attackerLeft = attacker.side === 'left';
+  const forwardPx = (attackerLeft ? 1 : -1) * 28;  // hop toward target, not all the way
 
-  // ── CASTER: downward chop pose (in place, no translation) ──
+  // ── CASTER: hop forward → chop at forward position → hop back ──
   if (body) body.animate([
-    { transform: 'translate(0,0) rotate(0deg)' },
-    { transform: 'translate(0,-3px) rotate(-4deg)',  offset: 0.18 },  // small wind-up back+up
-    { transform: 'translate(0,4px)  rotate(6deg)',   offset: 0.4  }, // chop down
-    { transform: 'translate(0,2px)  rotate(3deg)',   offset: 0.6  }, // settle
-    { transform: 'translate(0,0)    rotate(0deg)',   offset: 1    }, // return
-  ], { duration: 600, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'forwards' });
+    // Phase A: hop forward
+    { transform: 'translate(0,0) rotate(0deg)',                                offset: 0,    easing: 'ease-out' },
+    { transform: `translate(${forwardPx * 0.6}px,-14px) rotate(0deg)`,         offset: 0.12, easing: 'ease-in'  }, // apex
+    { transform: `translate(${forwardPx}px,0) rotate(0deg)`,                   offset: 0.22, easing: 'ease-out' }, // landed forward
+    // Phase B: chop at forward position
+    { transform: `translate(${forwardPx}px,-3px) rotate(-4deg)`,               offset: 0.28, easing: 'ease-out' }, // windup
+    { transform: `translate(${forwardPx}px,4px)  rotate(6deg)`,                offset: 0.40, easing: 'ease-out' }, // chop down
+    { transform: `translate(${forwardPx}px,2px)  rotate(3deg)`,                offset: 0.50                    }, // settle
+    // Phase C: hop back to origin
+    { transform: `translate(${forwardPx}px,0) rotate(0deg)`,                   offset: 0.55, easing: 'ease-out' },
+    { transform: `translate(${forwardPx * 0.4}px,-14px) rotate(0deg)`,         offset: 0.72, easing: 'ease-in'  }, // return hop apex
+    { transform: 'translate(0,0) rotate(0deg)',                                offset: 0.88                    },
+    { transform: 'translate(0,0) rotate(0deg)',                                offset: 1                       },
+  ], { duration: 800, fill: 'forwards' });
 
-  // ── ARC: golden comet sweeps onto target (flip for right-side attacker) ──
-  await sleep(100);
+  // ── ARC: golden comet sweeps onto target — slightly forward (toward attacker) and up ──
+  // Wait until caster is at forward position and starting to chop
+  await sleep(180);
   if (tEl) {
     const arc = document.createElement('div');
     arc.className = 'basic-shieldbash-arc' + (attackerLeft ? '' : ' flip-x');
-    arc.style.left = '50%';
-    arc.style.top = '50%';
+    const arcOffsetX = attackerLeft ? -22 : 22;  // toward attacker = target's front
+    const arcOffsetY = -20;                       // slightly up
+    arc.style.left = `calc(50% + ${arcOffsetX}px)`;
+    arc.style.top  = `calc(50% + ${arcOffsetY}px)`;
     tEl.appendChild(arc);
     setTimeout(() => arc.remove(), 320);
   }
 
-  // Arc plays for 300ms; impact lands near end
+  // Arc plays 300ms; impact at arc's end
   await sleep(250);
 
   // ── IMPACT: burst sprite + damage + knockup-and-back ──
