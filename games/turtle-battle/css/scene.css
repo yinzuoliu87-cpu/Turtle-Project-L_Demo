@@ -620,6 +620,38 @@
   }
 }
 
+/* ── COMMON: 天降闪电 (lightning strike from sky) ──
+   Used by: 闪电龟 passive lightningStorm (random hit per turn),
+            闪电龟 8-stack detonate, 财神龟 thunder-item 5-stack detonate.
+   Sprite: 5 frames × 128×128. Bolt is in the middle ~1/3 of each frame
+   with ground spark at bottom — we anchor bottom of sprite to target's
+   bottom (feet) so the bolt visually descends from above into the turtle
+   and the spark ring lands at their feet. */
+.common-lightning-strike{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:140px;height:140px;
+  background:url('../assets/vfx/common-lightning-strike.png') 0 0 no-repeat;
+  background-size:700px 140px;
+  transform:translateX(-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:35;
+  animation:commonLightningStrikeLife 380ms steps(5) forwards;
+}
+@keyframes commonLightningStrikeLife{
+  from{background-position:0 0}
+  to  {background-position:-700px 0}
+}
+@media (max-width:768px){
+  .common-lightning-strike{width:100px;height:100px;background-size:500px 100px}
+  @keyframes commonLightningStrikeLife{
+    from{background-position:0 0}
+    to  {background-position:-500px 0}
+  }
+}
+
 /* ── 龟盾 (turtleShieldBash) VFX ──
    Arc trajectory (golden comet) sweeps upper-left → lower-right onto target.
    5 frames × 128×128, displayed at 160×160, 300ms. Flipped via scaleX(-1)
