@@ -47,6 +47,11 @@ function startMode(mode) {
     selecting = 'left';
     selectedIds = [];
     showSelectScreen('<img src="assets/equip/equip-crown-icon.png" style="width:24px;height:24px;vertical-align:middle"> Boss挑战 — 选择你的队伍（选3只龟）');
+  } else if (mode === 'boss-pick') {
+    difficulty = 'hard';
+    selecting = 'left';
+    selectedIds = [];
+    showSelectScreen('🎯 指定Boss — 选择你的队伍（选3只龟，下一步选Boss）');
   } else if (mode === 'dungeon') {
     difficulty = 'normal';
     selecting = 'left';
@@ -727,6 +732,50 @@ function updateConfirmBtn() {
   document.getElementById('btnConfirmTeam').disabled = placed !== 3;
 }
 
+// ── BOSS PICK MODAL (test variant of boss mode) ───────────
+// Grid of all pets — click one to make it the opposing boss.
+function showBossPickModal(onPick) {
+  let overlay = document.getElementById('bossPickOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'bossPickOverlay';
+    overlay.className = 'skill-pick-overlay';  // reuse skill-pick overlay styling
+    document.body.appendChild(overlay);
+  }
+  const cards = ALL_PETS.map(p => {
+    const lv = (typeof getPetLevel === 'function') ? getPetLevel(p.id) : 1;
+    return `<div class="skill-pick-card" style="cursor:pointer" onclick="window._bossPickChoose('${p.id}')">
+      <div class="spc-header" style="display:flex;align-items:center;gap:6px">
+        ${typeof buildPetImgHTML === 'function' ? buildPetImgHTML(p, 28) : (p.emoji || '🐢')}
+        <b>${p.name}</b>
+        <span class="spc-cd">Lv.${lv}</span>
+        <span class="spc-cd" style="background:rgba(255,200,80,.15);color:#ffc850">${p.rarity}</span>
+      </div>
+      <div class="spc-brief" style="font-size:10px;color:var(--fg2);line-height:1.3">
+        HP ${p.hp} · ATK ${p.atk} · DEF ${p.def} · MR ${p.mr || p.def}
+      </div>
+    </div>`;
+  }).join('');
+  overlay.innerHTML = `
+    <div class="skill-pick-box" style="max-width:720px">
+      <div class="skill-pick-title">🎯 选择 Boss（敌方上场龟）</div>
+      <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">点选任意龟成为本场Boss（享受 3.5×HP / 1.2×ATK / 1.4×DEF·MR 加成，等级=你方平均）</div>
+      <div class="skill-pick-grid">${cards}</div>
+      <div class="skill-pick-actions">
+        <button class="btn btn-secondary" onclick="window._bossPickCancel()">← 返回</button>
+      </div>
+    </div>`;
+  overlay.style.display = 'flex';
+  window._bossPickChoose = (petId) => {
+    overlay.style.display = 'none';
+    onPick(petId);
+  };
+  window._bossPickCancel = () => {
+    overlay.style.display = 'none';
+    showSelectScreen('🎯 指定Boss — 选择你的队伍（选3只龟，下一步选Boss）');
+  };
+}
+
 // ── SKILL PICK MODAL ──────────────────────────────────────
 function showSkillPickChain(petIds, idx, callback) {
   if (idx >= petIds.length) { callback(); return; }
@@ -954,6 +1003,26 @@ function confirmTeam() {
     const slots = ['front-0','front-1','front-2','back-0','back-1','back-2'];
     rightTeam = slots.map(slotKey => _createTestDummy('right', slotKey));
     startBattle();
+  } else if (gameMode === 'boss-pick') {
+    // Test variant of boss mode — player picks the opposing boss instead of random.
+    leftTeam = _buildTeamFromSlots('left');
+    showBossPickModal((bossPetId) => {
+      gameMode = 'boss';  // identical battle/UI flow from here
+      const bossLv = _avgLevel(leftTeam);
+      const boss = _createAiFighter(bossPetId, 'right', bossLv);
+      boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
+      boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
+      boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
+      boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
+      boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
+      boss._isBoss = true;
+      boss.name = 'BOSS ' + boss.name;
+      rightTeam = [boss];
+      boss._position = 'front';
+      boss._slotKey = 'front-1';
+      startBattle();
+    });
+    return;
   } else if (gameMode === 'boss') {
     leftTeam = _buildTeamFromSlots('left');
     const bossPool = ALL_PETS.filter(p => !selectedIds.includes(p.id));
