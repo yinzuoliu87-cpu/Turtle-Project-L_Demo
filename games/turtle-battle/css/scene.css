@@ -631,24 +631,24 @@
   position:absolute;
   left:50%;
   bottom:0;
-  width:140px;height:140px;
+  width:200px;height:200px;
   background:url('../assets/vfx/common-lightning-strike.png') 0 0 no-repeat;
-  background-size:700px 140px;
+  background-size:1000px 200px;
   transform:translateX(-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:35;
-  animation:commonLightningStrikeLife 380ms steps(5) forwards;
+  animation:commonLightningStrikeLife 560ms steps(5) forwards;
 }
 @keyframes commonLightningStrikeLife{
   from{background-position:0 0}
-  to  {background-position:-700px 0}
+  to  {background-position:-1000px 0}
 }
 @media (max-width:768px){
-  .common-lightning-strike{width:100px;height:100px;background-size:500px 100px}
+  .common-lightning-strike{width:144px;height:144px;background-size:720px 144px}
   @keyframes commonLightningStrikeLife{
     from{background-position:0 0}
-    to  {background-position:-500px 0}
+    to  {background-position:-720px 0}
   }
 }
 

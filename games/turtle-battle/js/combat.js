@@ -12,7 +12,7 @@ function spawnLightningStrike(elId) {
   const bolt = document.createElement('div');
   bolt.className = 'common-lightning-strike';
   el.appendChild(bolt);
-  setTimeout(() => bolt.remove(), 420);
+  setTimeout(() => bolt.remove(), 600);
 }
 
 /* ── Equipment: 雷鸣贝壳 — counts skill hits, triggers AoE on every 3rd ── */
