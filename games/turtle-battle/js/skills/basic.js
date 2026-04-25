@@ -167,11 +167,14 @@ async function doBasicBarrage(attacker, skill) {
           wave.style.top  = tCy + 'px';
           if (dir === -1) wave.style.transform = 'translate(-50%,-50%) scaleX(-1)';
           battleField.appendChild(wave);
-          // Brief forward drift so it reads as "approaching the target"
+          // Brief forward drift so it reads as "approaching the target".
+          // Note: with scaleX(-1) applied (dir === -1), translateX is visually
+          // inverted by the scale — so we always use POSITIVE travel offset and
+          // let scaleX handle the direction flip for right-side attackers.
           requestAnimationFrame(() => {
             const base = dir === -1 ? 'translate(-50%,-50%) scaleX(-1)' : 'translate(-50%,-50%)';
             wave.style.transition = `transform ${shotDuration}ms linear`;
-            wave.style.transform = `${base} translateX(${dir * (travelPx - 6)}px)`;
+            wave.style.transform = `${base} translateX(${travelPx - 6}px)`;
           });
           setTimeout(() => wave.remove(), shotDuration + 60);
         }
@@ -479,9 +482,11 @@ async function doBasicChiWave(attacker, target, skill) {
     wave.style.top = startY + 'px';
     if (dir === -1) wave.style.transform = 'translate(-50%, -50%) scaleX(-1)';
     requestAnimationFrame(() => {
+      // With scaleX(-1) applied, translateX is visually inverted by the scale —
+      // always use POSITIVE travelDist and let scaleX handle direction.
       const base = (dir === -1) ? 'translate(-50%, -50%) scaleX(-1)' : 'translate(-50%, -50%)';
       wave.style.transition = `transform ${WAVE_DURATION_MS}ms linear`;
-      wave.style.transform = `${base} translateX(${dir * travelDist}px)`;
+      wave.style.transform = `${base} translateX(${travelDist}px)`;
     });
   } else {
     targetHitSchedule.push({ target, delay: 600, tNode: tEl });
