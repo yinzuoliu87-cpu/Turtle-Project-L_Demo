@@ -782,9 +782,14 @@ function showSkillPickChain(petIds, idx, callback) {
   showSkillPickModal(petIds[idx], () => showSkillPickChain(petIds, idx + 1, callback));
 }
 
-function showSkillPickModal(petId, onDone) {
+function showSkillPickModal(petId, onDone, opts) {
+  // opts: { skipSave: bool, onCancel: ()=>void, titlePrefix: string }
+  // When skipSave=true, onDone receives the chosen skill indices array and
+  // saveLoadout is NOT called — used by boss-pick (don't pollute player's
+  // saved loadout for the pet they happen to set as boss).
+  opts = opts || {};
   const pet = ALL_PETS.find(p => p.id === petId);
-  if (!pet || !pet.skillPool) { onDone(); return; }
+  if (!pet || !pet.skillPool) { onDone(opts.skipSave ? (pet && pet.defaultSkills || [0,1,2]) : undefined); return; }
   const pool = pet.skillPool;
   const saved = getSavedLoadout(petId) || pet.defaultSkills || [0,1,2];
   let selected = [...saved];
@@ -837,10 +842,11 @@ function showSkillPickModal(petId, onDone) {
         ${isSel ? '<div class="spc-check">✓</div>' : ''}
       </div>`;
     };
+    const titlePrefix = opts.titlePrefix || '';
     overlay.innerHTML = `
       <div class="skill-pick-box">
-        <div class="skill-pick-title">${buildPetImgHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
-        <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">基础攻击技能固定，从剩余技能中选择2个</div>
+        <div class="skill-pick-title">${titlePrefix}${buildPetImgHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
+        <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">${opts.skipSave ? '（仅本场生效，不保存到该龟的默认配置）' : '基础攻击技能固定，从剩余技能中选择2个'}</div>
         <div class="skill-pick-grid">${pool.map((s, i) => renderCard(s, i)).join('')}</div>
         <div class="skill-pick-actions">
           <button class="btn btn-secondary skill-pick-back" onclick="window._skillPickBack()">← 关闭</button>
@@ -869,13 +875,19 @@ function showSkillPickModal(petId, onDone) {
 
   window._skillPickConfirm = () => {
     if (selected.length !== 3) return;
-    saveLoadout(petId, selected.sort((a,b) => a-b));
+    const finalIdxs = selected.sort((a,b) => a-b);
     overlay.style.display = 'none';
-    onDone();
+    if (opts.skipSave) {
+      onDone(finalIdxs);
+    } else {
+      saveLoadout(petId, finalIdxs);
+      onDone();
+    }
   };
 
   window._skillPickBack = () => {
     overlay.style.display = 'none';
+    if (typeof opts.onCancel === 'function') opts.onCancel();
   };
 
   render();
@@ -1004,24 +1016,32 @@ function confirmTeam() {
     rightTeam = slots.map(slotKey => _createTestDummy('right', slotKey));
     startBattle();
   } else if (gameMode === 'boss-pick') {
-    // Test variant of boss mode — player picks the opposing boss instead of random.
+    // Test variant of boss mode — player picks the opposing boss + their skills.
     leftTeam = _buildTeamFromSlots('left');
-    showBossPickModal((bossPetId) => {
-      gameMode = 'boss';  // identical battle/UI flow from here
-      const bossLv = _avgLevel(leftTeam);
-      const boss = _createAiFighter(bossPetId, 'right', bossLv);
-      boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
-      boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
-      boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
-      boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
-      boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
-      boss._isBoss = true;
-      boss.name = 'BOSS ' + boss.name;
-      rightTeam = [boss];
-      boss._position = 'front';
-      boss._slotKey = 'front-1';
-      startBattle();
+    const startBossPick = () => showBossPickModal((bossPetId) => {
+      // After boss pet chosen, configure that boss's skills (not saved globally).
+      showSkillPickModal(bossPetId, (chosenIdxs) => {
+        gameMode = 'boss';  // identical battle/UI flow from here
+        const bossLv = _avgLevel(leftTeam);
+        const boss = createFighter(bossPetId, 'right', chosenIdxs, bossLv);
+        boss.maxHp = Math.round(boss.maxHp * 3.5); boss.hp = boss.maxHp;
+        boss.baseAtk = Math.round(boss.baseAtk * 1.2); boss.atk = boss.baseAtk;
+        boss.baseDef = Math.round(boss.baseDef * 1.4); boss.def = boss.baseDef;
+        boss.baseMr = Math.round((boss.baseMr || boss.baseDef) * 1.4); boss.mr = boss.baseMr;
+        boss._initHp = boss.maxHp; boss._initAtk = boss.baseAtk; boss._initDef = boss.baseDef; boss._initMr = boss.baseMr;
+        boss._isBoss = true;
+        boss.name = 'BOSS ' + boss.name;
+        rightTeam = [boss];
+        boss._position = 'front';
+        boss._slotKey = 'front-1';
+        startBattle();
+      }, {
+        skipSave: true,
+        titlePrefix: '🎯 Boss技能配置 — ',
+        onCancel: startBossPick,  // back to boss pick if user cancels skill modal
+      });
     });
+    startBossPick();
     return;
   } else if (gameMode === 'boss') {
     leftTeam = _buildTeamFromSlots('left');
