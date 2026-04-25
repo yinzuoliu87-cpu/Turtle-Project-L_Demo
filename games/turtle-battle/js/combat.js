@@ -784,8 +784,18 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
       const tElId = getFighterElId(target);
       spawnFloatingNum(tElId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">无法死亡', 'crit-label', 0, -25);
     }
-    if (source && source._dmgDealt !== undefined) { source._dmgDealt += amount; }
-    if (target._dmgTaken !== undefined) { target._dmgTaken += amount; }
+    if (source && source._dmgDealt !== undefined) {
+      source._dmgDealt += amount;
+      if (dmgType === 'magic') source._magicDmgDealt = (source._magicDmgDealt||0) + amount;
+      else if (dmgType === 'true' || isPierce) source._trueDmgDealt = (source._trueDmgDealt||0) + amount;
+      else source._physDmgDealt = (source._physDmgDealt||0) + amount;
+    }
+    if (target._dmgTaken !== undefined) {
+      target._dmgTaken += amount;
+      if (dmgType === 'magic') target._magicDmgTaken = (target._magicDmgTaken||0) + amount;
+      else if (dmgType === 'true' || isPierce) target._trueDmgTaken = (target._trueDmgTaken||0) + amount;
+      else target._physDmgTaken = (target._physDmgTaken||0) + amount;
+    }
     updateDmgStats();
     return { hpLoss: hpLoss2, shieldAbs: shieldAbs2, bubbleAbs: bubbleAbs2 };
   }

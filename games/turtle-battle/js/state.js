@@ -316,8 +316,11 @@ function checkDeaths(attacker) {
         hunter._hunterStolenMr = (hunter._hunterStolenMr || 0) + sMr;
         hunter._hunterStolenHp = (hunter._hunterStolenHp || 0) + sHp;
         if (hunter.passive.lifesteal) hunter._lifestealPct = (hunter._lifestealPct || 0) + hunter.passive.lifesteal;
-        // Count stolen HP as damage dealt
-        if (hunter._dmgDealt !== undefined) hunter._dmgDealt += sHp;
+        // Count stolen HP as damage dealt (true-type, so bar breakdown shows it)
+        if (hunter._dmgDealt !== undefined) {
+          hunter._dmgDealt += sHp;
+          hunter._trueDmgDealt = (hunter._trueDmgDealt || 0) + sHp;
+        }
         const hElId = getFighterElId(hunter);
         spawnFloatingNum(hElId, `+${sAtk}攻+${sDef}甲+${sMr}抗+${sHp}HP`, 'passive-num', 300, 0);
         updateHpBar(hunter, hElId);
@@ -423,8 +426,11 @@ function processSummonDeath(summon, attacker, extraMsg) {
     hunter._hunterStolenDef = (hunter._hunterStolenDef || 0) + sDef;
     hunter._hunterStolenMr = (hunter._hunterStolenMr || 0) + sMr;
     hunter._hunterStolenHp = (hunter._hunterStolenHp || 0) + sHp;
-    // Count stolen HP as damage dealt
-    if (hunter._dmgDealt !== undefined) hunter._dmgDealt += sHp;
+    // Count stolen HP as damage dealt (true-type)
+    if (hunter._dmgDealt !== undefined) {
+      hunter._dmgDealt += sHp;
+      hunter._trueDmgDealt = (hunter._trueDmgDealt || 0) + sHp;
+    }
     const hElId = getFighterElId(hunter);
     spawnFloatingNum(hElId, `+${sAtk}攻+${sDef}甲`, 'passive-num', 300, 0);
     recalcStats(); updateFighterStats(hunter, hElId);
