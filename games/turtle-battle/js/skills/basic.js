@@ -22,30 +22,35 @@ async function doTurtleShieldBash(attacker, target, skill) {
     dmg = Math.round(dmg * (1 + attacker.passive.bonusDmgPct / 100));
   }
 
-  // ── DASH FORWARD (caster body translates toward target then recoils) ──
   const fEl = document.getElementById(fElId);
   const tEl = document.getElementById(tElId);
   const body = fEl ? fEl.querySelector('.st-body') : null;
-  const dir = attacker.side === 'left' ? 1 : -1;
-  let dashDistance = 0;
-  if (fEl && tEl) {
-    const fr = fEl.getBoundingClientRect();
-    const tr = tEl.getBoundingClientRect();
-    // Stop ~half the target width short so the impact reads as contact, not overlap.
-    dashDistance = Math.max(40, Math.abs(tr.left + tr.width/2 - (fr.left + fr.width/2)) - tr.width * 0.55);
-  }
-  const dashAnim = body ? body.animate([
-    { transform: 'translate(0,0) scaleX(1) scaleY(1)' },
-    { transform: `translate(${-6 * dir}px,2px) scaleX(.92) scaleY(1.06)`, offset: 0.18 },  // tiny squat-back windup
-    { transform: `translate(${dashDistance * dir}px,-2px) scaleX(1.06) scaleY(.94)`, offset: 0.42 }, // forward strike
-    { transform: `translate(${dashDistance * dir}px,-2px) scaleX(1.06) scaleY(.94)`, offset: 0.55 }, // hold on impact
-    { transform: 'translate(0,0) scaleX(1) scaleY(1)', offset: 1 },                  // recoil home
-  ], { duration: 600, easing: 'cubic-bezier(.6,.15,.4,1)', fill: 'forwards' }) : null;
+  const attackerLeft = attacker.side === 'left';
 
-  // Wait until dash reaches target (impact frame ~= 42% of 600ms = 252ms)
+  // ── CASTER: downward chop pose (in place, no translation) ──
+  if (body) body.animate([
+    { transform: 'translate(0,0) rotate(0deg)' },
+    { transform: 'translate(0,-3px) rotate(-4deg)',  offset: 0.18 },  // small wind-up back+up
+    { transform: 'translate(0,4px)  rotate(6deg)',   offset: 0.4  }, // chop down
+    { transform: 'translate(0,2px)  rotate(3deg)',   offset: 0.6  }, // settle
+    { transform: 'translate(0,0)    rotate(0deg)',   offset: 1    }, // return
+  ], { duration: 600, easing: 'cubic-bezier(.4,.1,.3,1)', fill: 'forwards' });
+
+  // ── ARC: golden comet sweeps onto target (flip for right-side attacker) ──
+  await sleep(100);
+  if (tEl) {
+    const arc = document.createElement('div');
+    arc.className = 'basic-shieldbash-arc' + (attackerLeft ? '' : ' flip-x');
+    arc.style.left = '50%';
+    arc.style.top = '50%';
+    tEl.appendChild(arc);
+    setTimeout(() => arc.remove(), 320);
+  }
+
+  // Arc plays for 300ms; impact lands near end
   await sleep(250);
 
-  // ── IMPACT: spawn shield-bash sprite + apply damage ──
+  // ── IMPACT: burst sprite + damage + knockup-and-back ──
   if (tEl) {
     const burst = document.createElement('div');
     burst.className = 'basic-shieldbash-impact';
@@ -58,11 +63,19 @@ async function doTurtleShieldBash(attacker, target, skill) {
   spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, dmg);
-  if (tEl) tEl.classList.add('hit-shake');
 
-  // Hold during impact, then recoil completes (350ms remaining of dash)
-  await sleep(350);
-  if (tEl) tEl.classList.remove('hit-shake');
+  // Knock-up + knock-back arc on target st-body (away from attacker)
+  const tBody = tEl ? tEl.querySelector('.st-body') : null;
+  const knockDir = attackerLeft ? 1 : -1;  // push target away from attacker
+  if (tBody) tBody.animate([
+    { transform: 'translate(0,0) rotate(0deg)' },
+    { transform: `translate(${12 * knockDir}px,-22px) rotate(${8 * knockDir}deg)`, offset: 0.25 },  // lift off
+    { transform: `translate(${28 * knockDir}px,-38px) rotate(${14 * knockDir}deg)`, offset: 0.5 },  // apex
+    { transform: `translate(${36 * knockDir}px,-14px) rotate(${10 * knockDir}deg)`, offset: 0.75 }, // descending
+    { transform: 'translate(0,0) rotate(0deg)', offset: 1 },  // land home
+  ], { duration: 650, easing: 'cubic-bezier(.3,.6,.5,1)', fill: 'forwards' });
+
+  await sleep(500);
 
   // ── SHIELD AURA on caster as permanent shield is granted ──
   const shieldGain = Math.round(dmg * skill.shieldFromDmgPct / 100);

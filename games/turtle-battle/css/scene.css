@@ -621,7 +621,34 @@
 }
 
 /* ── 龟盾 (turtleShieldBash) VFX ──
-   Impact sprite at target body on contact, golden cross flash with brown
+   Arc trajectory (golden comet) sweeps upper-left → lower-right onto target.
+   5 frames × 128×128, displayed at 160×160, 300ms. Flipped via scaleX(-1)
+   for right-side attackers so the arc always points "from attacker toward target". */
+.basic-shieldbash-arc{
+  position:absolute;
+  width:160px;height:160px;
+  background:url('../assets/vfx/basic-shieldbash-arc.png') 0 0 no-repeat;
+  background-size:800px 160px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:29;
+  animation:basicShieldbashArcLife 300ms steps(5) forwards;
+}
+.basic-shieldbash-arc.flip-x{transform:translate(-50%,-50%) scaleX(-1)}
+@keyframes basicShieldbashArcLife{
+  from{background-position:0 0}
+  to  {background-position:-800px 0}
+}
+@media (max-width:768px){
+  .basic-shieldbash-arc{width:112px;height:112px;background-size:560px 112px}
+  @keyframes basicShieldbashArcLife{
+    from{background-position:0 0}
+    to  {background-position:-560px 0}
+  }
+}
+
+/* Impact sprite at target body on contact, golden cross flash with brown
    carapace shards. 5 frames × 128×128, played once over ~250ms. */
 .basic-shieldbash-impact{
   position:absolute;
