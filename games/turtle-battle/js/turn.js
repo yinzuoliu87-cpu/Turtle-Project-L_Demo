@@ -190,9 +190,15 @@ async function beginTurn() {
         const fElId = getFighterElId(f);
         updateHpBar(f, fElId);
         updateFighterStats(f, fElId);
-        // Count as damage dealt/taken
-        if (f._dmgDealt !== undefined) f._dmgDealt += stealAmt;
-        if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
+        // Count as damage dealt/taken (true-type, so stat panel breakdown shows it)
+        if (f._dmgDealt !== undefined) {
+          f._dmgDealt += stealAmt;
+          f._trueDmgDealt = (f._trueDmgDealt || 0) + stealAmt;
+        }
+        if (target._dmgTaken !== undefined) {
+          target._dmgTaken += stealAmt;
+          target._trueDmgTaken = (target._trueDmgTaken || 0) + stealAmt;
+        }
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">🍬甜蜜掠夺！${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值</span>`);
         await sleep(800);
       }
@@ -413,8 +419,14 @@ async function beginTurn() {
         s.maxHp += stealAmt; s.hp += stealAmt;
         updateSummonHpBar(s);
         const owner = s._owner;
-        if (owner && owner._dmgDealt !== undefined) owner._dmgDealt += stealAmt;
-        if (target._dmgTaken !== undefined) target._dmgTaken += stealAmt;
+        if (owner && owner._dmgDealt !== undefined) {
+          owner._dmgDealt += stealAmt;
+          owner._trueDmgDealt = (owner._trueDmgDealt || 0) + stealAmt;
+        }
+        if (target._dmgTaken !== undefined) {
+          target._dmgTaken += stealAmt;
+          target._trueDmgTaken = (target._trueDmgTaken || 0) + stealAmt;
+        }
         addLog(`${s.emoji}${s.name}(随从) 被动：<span class="log-passive">🍬甜蜜掠夺！${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值</span>`);
       }
     }

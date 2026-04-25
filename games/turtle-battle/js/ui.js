@@ -2408,22 +2408,21 @@ function updateDmgStats() {
   const enemyDealt = byDealt.filter(f => f.side === enemySide);
   const allyTaken = byTaken.filter(f => f.side === playerSide);
   const enemyTaken = byTaken.filter(f => f.side === enemySide);
-  const maxAllyDealt = Math.max(1, ...allyDealt.map(f => f._dmgDealt));
-  const maxEnemyDealt = Math.max(1, ...enemyDealt.map(f => f._dmgDealt));
-  const maxAllyTaken = Math.max(1, ...allyTaken.map(f => f._dmgTaken));
-  const maxEnemyTaken = Math.max(1, ...enemyTaken.map(f => f._dmgTaken));
+  // Use GLOBAL max (across both sides) so a row's bar length is comparable
+  // across sides — e.g. boss with 1147 vs ally with 1023 should fill ~89%
+  // not 100% (which would be the per-side normalization).
 
   const tab = _dmgStatsTab || 'dealt';
   let content = '';
   if (tab === 'dealt') {
     content = `<div class="ds-columns">
-      <div class="ds-col"><div class="ds-col-label">我方</div>${allyDealt.map(f => dmgRow(f, maxAllyDealt, true)).join('')}</div>
-      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyDealt.map(f => dmgRow(f, maxEnemyDealt, true)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">我方</div>${allyDealt.map(f => dmgRow(f, maxDealt, true)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyDealt.map(f => dmgRow(f, maxDealt, true)).join('')}</div>
     </div>`;
   } else {
     content = `<div class="ds-columns">
-      <div class="ds-col"><div class="ds-col-label">我方</div>${allyTaken.map(f => dmgRow(f, maxAllyTaken, false)).join('')}</div>
-      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyTaken.map(f => dmgRow(f, maxEnemyTaken, false)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">我方</div>${allyTaken.map(f => dmgRow(f, maxTaken, false)).join('')}</div>
+      <div class="ds-col"><div class="ds-col-label">敌方</div>${enemyTaken.map(f => dmgRow(f, maxTaken, false)).join('')}</div>
     </div>`;
   }
 

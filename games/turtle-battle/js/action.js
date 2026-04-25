@@ -56,9 +56,18 @@ async function executeCombo(combo, side) {
       e.hp = Math.max(1, e.hp - steal);
       updateHpBar(e, getFighterElId(e));
       spawnFloatingNum(getFighterElId(e), `-${steal}`, 'direct-dmg', 0, 0);
-      // Credit damage to all combo participants equally, mark target taken
-      if (e._dmgTaken !== undefined) e._dmgTaken += steal;
-      fighters.forEach(f => { if (f._dmgDealt !== undefined) f._dmgDealt += Math.round(steal / fighters.length); });
+      // Credit damage to all combo participants equally, mark target taken (true type)
+      if (e._dmgTaken !== undefined) {
+        e._dmgTaken += steal;
+        e._trueDmgTaken = (e._trueDmgTaken || 0) + steal;
+      }
+      const credit = Math.round(steal / fighters.length);
+      fighters.forEach(f => {
+        if (f._dmgDealt !== undefined) {
+          f._dmgDealt += credit;
+          f._trueDmgDealt = (f._trueDmgDealt || 0) + credit;
+        }
+      });
     }
     const totalSteal = Math.round(aliveEnemies.reduce((s,e) => s + e.maxHp * combo.stealHpPct / 100, 0));
     fighters.forEach(f => { f.hp = Math.min(f.maxHp, f.hp + Math.round(totalSteal / 2)); updateHpBar(f, getFighterElId(f)); });
@@ -1015,7 +1024,9 @@ async function executeAction(action) {
       updateHpBar(f, fElId);
       updateFighterStats(f, fElId);
       f._dmgDealt += stealAmt;
+      f._trueDmgDealt = (f._trueDmgDealt || 0) + stealAmt;
       target._dmgTaken += stealAmt;
+      target._trueDmgTaken = (target._trueDmgTaken || 0) + stealAmt;
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：${target.emoji}${target.name} 损失 ${stealAmt}HP 和 ${stealAmt}最大生命值`);
     }
     await sleep(800);
