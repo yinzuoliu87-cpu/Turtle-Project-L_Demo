@@ -28,6 +28,12 @@ async function doTurtleShieldBash(attacker, target, skill) {
   const attackerLeft = attacker.side === 'left';
   const forwardPx = (attackerLeft ? 1 : -1) * 28;  // hop toward target, not all the way
 
+  // Cancel the default .attack-hop CSS animation that action.js added — we
+  // own the caster body choreography for this skill. Otherwise the CSS
+  // already translated the body forward, then our WAAPI snaps it back to
+  // origin and hops again (double-jump glitch).
+  if (fEl) fEl.classList.remove('attack-hop');
+
   // ── CASTER: hop forward → chop at forward position → hop back ──
   if (body) body.animate([
     // Phase A: hop forward
