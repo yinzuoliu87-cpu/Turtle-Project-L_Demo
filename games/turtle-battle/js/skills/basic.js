@@ -26,30 +26,19 @@ async function doTurtleShieldBash(attacker, target, skill) {
   const tEl = document.getElementById(tElId);
   const body = fEl ? fEl.querySelector('.st-body') : null;
   const attackerLeft = attacker.side === 'left';
-  const forwardPx = (attackerLeft ? 1 : -1) * 28;  // hop toward target, not all the way
 
-  // Cancel the default .attack-hop CSS animation that action.js added — we
-  // own the caster body choreography for this skill. Otherwise the CSS
-  // already translated the body forward, then our WAAPI snaps it back to
-  // origin and hops again (double-jump glitch).
-  if (fEl) fEl.classList.remove('attack-hop');
-
-  // ── CASTER: hop forward → chop at forward position → hop back ──
+  // ── CASTER CHOP (only rotation + tiny Y bob) ──
+  // The default .attack-hop CSS animation (added by action.js) already
+  // translates the caster body forward-hold-back over 1200ms — we leave
+  // that alone. Our WAAPI uses composite:'add' so it stacks rotation +
+  // small vertical bob on TOP of CSS's translate, without fighting it.
   if (body) body.animate([
-    // Phase A: hop forward
-    { transform: 'translate(0,0) rotate(0deg)',                                offset: 0,    easing: 'ease-out' },
-    { transform: `translate(${forwardPx * 0.6}px,-14px) rotate(0deg)`,         offset: 0.12, easing: 'ease-in'  }, // apex
-    { transform: `translate(${forwardPx}px,0) rotate(0deg)`,                   offset: 0.22, easing: 'ease-out' }, // landed forward
-    // Phase B: chop at forward position
-    { transform: `translate(${forwardPx}px,-3px) rotate(-4deg)`,               offset: 0.28, easing: 'ease-out' }, // windup
-    { transform: `translate(${forwardPx}px,4px)  rotate(6deg)`,                offset: 0.40, easing: 'ease-out' }, // chop down
-    { transform: `translate(${forwardPx}px,2px)  rotate(3deg)`,                offset: 0.50                    }, // settle
-    // Phase C: hop back to origin
-    { transform: `translate(${forwardPx}px,0) rotate(0deg)`,                   offset: 0.55, easing: 'ease-out' },
-    { transform: `translate(${forwardPx * 0.4}px,-14px) rotate(0deg)`,         offset: 0.72, easing: 'ease-in'  }, // return hop apex
-    { transform: 'translate(0,0) rotate(0deg)',                                offset: 0.88                    },
-    { transform: 'translate(0,0) rotate(0deg)',                                offset: 1                       },
-  ], { duration: 800, fill: 'forwards' });
+    { transform: 'translateY(0) rotate(0deg)',     offset: 0,    easing: 'ease-out' },
+    { transform: 'translateY(-2px) rotate(-4deg)', offset: 0.25, easing: 'ease-out' }, // windup up+back
+    { transform: 'translateY(3px)  rotate(6deg)',  offset: 0.55, easing: 'ease-out' }, // chop down
+    { transform: 'translateY(1px)  rotate(3deg)',  offset: 0.75                    }, // settle
+    { transform: 'translateY(0) rotate(0deg)',     offset: 1                       }, // return
+  ], { duration: 440, composite: 'add', fill: 'none' });
 
   // ── ARC: golden comet sweeps onto target — slightly forward (toward attacker) and up ──
   // Wait until caster is at forward position and starting to chop
