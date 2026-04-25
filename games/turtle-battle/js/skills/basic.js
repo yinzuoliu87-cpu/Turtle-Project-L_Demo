@@ -45,10 +45,11 @@ async function doTurtleShieldBash(attacker, target, skill) {
   await sleep(180);
   if (tEl) {
     const arc = document.createElement('div');
-    // Sprite default: comet head at lower-left, trail to upper-right.
-    // For an attacker on the LEFT, mirror so the head ends up on the right side
-    // of the frame (toward target's center, which is to the right of attacker).
-    arc.className = 'basic-shieldbash-arc' + (attackerLeft ? ' flip-x' : '');
+    // Sprite default reads as an arm-trail swung from upper-right to
+    // lower-left (player on LEFT chopping cross-body across to target).
+    // Flip for right-side attacker so the chop visually swings from
+    // upper-left across to lower-right toward the target.
+    arc.className = 'basic-shieldbash-arc' + (attackerLeft ? '' : ' flip-x');
     const arcOffsetX = attackerLeft ? -22 : 22;  // toward attacker = target's front
     const arcOffsetY = -20;                       // slightly up
     arc.style.left = `calc(50% + ${arcOffsetX}px)`;
