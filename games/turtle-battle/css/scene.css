@@ -619,3 +619,59 @@
     to  {background-position:-2700px 0}
   }
 }
+
+/* ── 龟盾 (turtleShieldBash) VFX ──
+   Impact sprite at target body on contact, golden cross flash with brown
+   carapace shards. 5 frames × 128×128, played once over ~250ms. */
+.basic-shieldbash-impact{
+  position:absolute;
+  width:144px;height:144px;
+  background:url('../assets/vfx/basic-shieldbash-impact.png') 0 0 no-repeat;
+  background-size:720px 144px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:30;
+  animation:basicShieldbashImpactLife 250ms steps(5) forwards;
+}
+@keyframes basicShieldbashImpactLife{
+  from{background-position:0 0}
+  to  {background-position:-720px 0}
+}
+@media (max-width:768px){
+  .basic-shieldbash-impact{width:104px;height:104px;background-size:520px 104px}
+  @keyframes basicShieldbashImpactLife{
+    from{background-position:0 0}
+    to  {background-position:-520px 0}
+  }
+}
+
+/* Shield aura — cyan/golden ring expanding outward around the caster as
+   the permanent shield is granted. Pure CSS, no sprite. Sits inside
+   .scene-turtle so it scales with --base-scale. */
+.basic-shieldbash-aura{
+  position:absolute;
+  left:50%;top:50%;
+  width:140px;height:140px;
+  border-radius:50%;
+  transform:translate(-50%,-50%) scale(0.3);
+  pointer-events:none;
+  z-index:4;
+  background:radial-gradient(circle,
+    rgba(125,200,255,0) 30%,
+    rgba(125,200,255,.55) 50%,
+    rgba(255,210,90,.7) 62%,
+    rgba(125,200,255,.45) 72%,
+    transparent 85%);
+  box-shadow:0 0 24px 6px rgba(125,200,255,.45),inset 0 0 18px 4px rgba(255,210,90,.5);
+  animation:shieldbashAura 540ms ease-out forwards;
+}
+@keyframes shieldbashAura{
+  0%   {transform:translate(-50%,-50%) scale(0.3);opacity:0}
+  25%  {transform:translate(-50%,-50%) scale(.85);opacity:1}
+  60%  {transform:translate(-50%,-50%) scale(1.15);opacity:.85}
+  100% {transform:translate(-50%,-50%) scale(1.4);opacity:0}
+}
+@media (max-width:768px){
+  .basic-shieldbash-aura{width:100px;height:100px}
+}
