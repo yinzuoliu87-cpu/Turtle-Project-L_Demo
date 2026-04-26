@@ -514,8 +514,14 @@ async function executeAction(action) {
       const trueScaleTotal = f._cyberEnhanced ? (skill.droneTrueScaleEnhanced || 0.07) : (skill.droneTrueScale || 0.10);
       const trueDmgPerSeg = Math.round(f.atk * (trueScaleTotal / 2) * droneCount);
       const oppTeam = (f.side === 'left' ? rightTeam : leftTeam);
-      const rowEnemies = oppTeam.filter(e => e.alive && e._position === target._position);
-      const enemies = rowEnemies.length ? rowEnemies : [target];
+      // Column = same slot-digit (target's column has up to 2 enemies:
+      // front-X + back-X). Earlier draft mistakenly used row instead — now
+      // matched to user spec: 能量大炮 hits the COLUMN (e.g. B1+F1).
+      const tCol = target._slotKey ? target._slotKey.split('-')[1] : null;
+      const colEnemies = tCol != null
+        ? oppTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === tCol)
+        : [target];
+      const enemies = colEnemies.length ? colEnemies : [target];
       const physHits = skill.hits || 2;
       const trueHits = 2;
       const physScale = skill.atkScale || 0.5;
@@ -627,8 +633,10 @@ async function executeAction(action) {
         logBits.push(`${enemy.emoji}${enemy.name}(${physTotal}物+${trueTotal}真)`);
         if (battleOver) break;
       }
-      const rowName = target._position === 'back' ? '后排' : '前排';
-      addLog(`${f.emoji}${f.name} <b>能量大炮</b> → ${rowName}（${droneCount}炮台）：${logBits.join('、')}`);
+      const rowLabel = tCol != null
+        ? (['上', '中', '下'][parseInt(tCol)] || '中') + '横排'
+        : '目标横排';
+      addLog(`${f.emoji}${f.name} <b>能量大炮</b> → ${rowLabel}（${droneCount}炮台）：${logBits.join('、')}`);
 
       // Wait for caster's hop-back to complete (animation 1400ms total, ~700ms used)
       await sleep(500);
@@ -1065,13 +1073,11 @@ async function executeAction(action) {
       const physScale = skill.atkScale || 0.8;
       const magicDmg = Math.round(consumed * magicScale);
       const physBaseRaw = Math.round(f.atk * physScale);
-      // Determine column from target's slotKey (e.g. 'front-1' → col '1')
-      const col = target._slotKey ? target._slotKey.split('-')[1] : null;
+      // 泡泡爆破 — hit target's whole ROW (front-0/1/2 or back-0/1/2,
+      // up to 3 enemies). Per user spec.
       const oppTeam = (f.side === 'left' ? rightTeam : leftTeam);
-      const colTargets = col != null
-        ? oppTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === col)
-        : [target];
-      const enemies = colTargets.length ? colTargets : [target];
+      const rowTargets = oppTeam.filter(e => e.alive && e._position === target._position);
+      const enemies = rowTargets.length ? rowTargets : [target];
       let logBits = [];
       for (const enemy of enemies) {
         const eElId = getFighterElId(enemy);
@@ -1092,7 +1098,8 @@ async function executeAction(action) {
         await triggerOnHitEffects(f, enemy, magicDmg + physBaseRaw);
         if (battleOver) break;
       }
-      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：消耗${consumed}泡泡值，对${col != null ? `第${col}列` : '目标'}（${enemies.length}个）：${logBits.join('、')}`);
+      const colName = target._position === 'back' ? '后竖排' : '前竖排';
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：消耗${consumed}泡泡值，对${colName}（${enemies.length}个）：${logBits.join('、')}`);
     }
     await sleep(400);
   } else if (skill.type === 'shellAuraBurst') {
