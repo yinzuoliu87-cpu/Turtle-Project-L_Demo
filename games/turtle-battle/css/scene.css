@@ -698,28 +698,26 @@
 .cyber-beam-sweep{
   position:absolute;
   height:160px;
-  /* Single-frame mode: pick the brightest frame (frame 3 / index 2) and
-     stretch IT alone to the full beam length. NO sheet scrubbing — frame
-     swapping was creating visible "joint" artifacts that read as two
-     pieces tiled together. Background-size renders the WHOLE 6-frame
-     sheet at 6× element width (so each frame = element width) and
-     background-position locks to the chosen frame. */
+  /* 6 frames, each stretched to fill the entire beam length sequentially.
+     Sheet rendered at 6× element width (so each frame = full beam width),
+     animation steps through frame boundaries (0%, 20%, 40%, 60%, 80%, 100%
+     of background-position).
+     KEY: animate to:120% (not 100%) with steps(6). steps(6) divides
+     the from→to range into 6 stops EXCLUDING the to value, giving
+     0/20/40/60/80/100% — perfect frame alignment. Using to:100% would
+     mis-align (stops at 0/16.7/33.3/50/66.7/83.3%), causing visible
+     adjacent-frame bleed = the "two pieces tiled" look. */
   background:url('../assets/vfx/cyber-beam-sweep.png') no-repeat;
   background-size:600% 100%;
-  background-position:-200% 0;  /* frame 3 of 6 (0%, -100%, -200%, ...) */
   image-rendering:auto;
   pointer-events:none;
   z-index:34;
-  /* Single-image fade-in / hold / fade-out via opacity. */
-  opacity:0;
-  animation:cyberBeamSweepLife 720ms ease-out forwards;
+  animation:cyberBeamSweepLife 720ms steps(6) forwards;
 }
 .cyber-beam-sweep.flip-x{transform:scaleX(-1)}
 @keyframes cyberBeamSweepLife{
-  0%   {opacity:0}
-  18%  {opacity:1}
-  72%  {opacity:1}
-  100% {opacity:0}
+  from {background-position:0%   0}
+  to   {background-position:120% 0}
 }
 @media (max-width:768px){
   .cyber-beam-sweep{height:112px}
