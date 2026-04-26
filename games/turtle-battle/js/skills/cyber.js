@@ -178,8 +178,13 @@ async function doCyberBeam(attacker, target, skill) {
   // Wait for beam to peak (frame 3 of 6 ≈ 360ms), then hit everyone at once.
   await sleep(360);
 
-  // Camera shake (single, on the simultaneous impact)
+  // Camera shake — IMPORTANT: must set --cam-scale to match the active zoom
+  // (1.2) BEFORE adding .battle-scene-shake. Otherwise the shake keyframe's
+  // scale(var(--cam-scale,1.1)) overrides our inline transform:scale(1.2),
+  // making the scene visibly snap from 1.2 → 1.1 → 1.2 across the shake
+  // duration ("rapid zoom" the user reported).
   if (battleField) {
+    battleField.style.setProperty('--cam-scale', '1.2');
     battleField.classList.remove('battle-scene-shake');
     void battleField.offsetWidth;
     battleField.classList.add('battle-scene-shake');
