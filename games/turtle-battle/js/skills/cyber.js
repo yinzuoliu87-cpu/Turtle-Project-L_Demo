@@ -53,7 +53,11 @@ async function doCyberBeam(attacker, target, skill) {
     battleField.style.transform = 'scale(1.2)';
   }
 
-  // ── 3) Caster slides Y to target's row (use .st-body geometry, not outer) ──
+  // ── 3) Caster HOPS in an arc to target's row ──
+  // Use WAAPI keyframes on the outer element so we get a proper jump arc
+  // (apex above the midpoint between rows), not a flat slide. After the
+  // hop, hold at the target-row Y via fill:'forwards' so the caster stays
+  // there during windup + beam.
   let casterYShift = 0;
   if (fEl && tEl) {
     const fBody = fEl.querySelector('.st-body') || fEl;
@@ -62,10 +66,26 @@ async function doCyberBeam(attacker, target, skill) {
     const tRect0 = tBody.getBoundingClientRect();
     casterYShift = (tRect0.top + tRect0.height / 2) - (fRect0.top + fRect0.height / 2);
   }
-  fEl.style.transition = 'transform 280ms cubic-bezier(.4,.9,.4,1)';
-  fEl.style.transform = `translateY(${casterYShift}px) scale(${scale})`;
   fEl.style.zIndex = '50';
-  await sleep(300);
+  let hopAnim = null;
+  if (Math.abs(casterYShift) > 4) {
+    // Apex 28-40px above the midpoint (more arc on bigger jumps)
+    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
+    const midY = casterYShift * 0.5 + apexLift;
+    hopAnim = fEl.animate([
+      { transform: `translateY(0) scale(${scale})`,             offset: 0,   easing: 'cubic-bezier(.3,.7,.5,1)' },  // takeoff (ease-out)
+      { transform: `translateY(${midY}px) scale(${scale})`,     offset: 0.5, easing: 'cubic-bezier(.5,0,.7,.4)' },  // apex → falling
+      { transform: `translateY(${casterYShift}px) scale(${scale})`, offset: 1 },                                       // land
+    ], { duration: 380, fill: 'forwards' });
+  } else {
+    // No row change — tiny up-down pulse to acknowledge the cast
+    hopAnim = fEl.animate([
+      { transform: `translateY(0) scale(${scale})` },
+      { transform: `translateY(-8px) scale(${scale})`, offset: 0.5 },
+      { transform: `translateY(0) scale(${scale})` },
+    ], { duration: 280, fill: 'forwards' });
+  }
+  await sleep(400);
 
   // ── 4) Windup beat (reuse chi-wave's charging pose — blue glow fits cyber) ──
   fEl.classList.add('basic-chiwave-charging');
@@ -192,11 +212,22 @@ async function doCyberBeam(attacker, target, skill) {
     : '目标横排';
   addLog(`${attacker.emoji}${attacker.name} <b>能量大炮</b> → ${rowLabel}（${droneCount}炮台）：${logBits.join('、')}`);
 
-  // ── 7) Restore caster Y + camera zoom ──
-  fEl.style.transition = 'transform 320ms cubic-bezier(.35,.9,.4,1)';
-  fEl.style.transform = `translateY(0) scale(${scale})`;
+  // ── 7) Caster hops back to original row + camera zoom out ──
+  if (Math.abs(casterYShift) > 4) {
+    // Hop back via WAAPI (cancel the previous fill:'forwards' first)
+    if (hopAnim) { try { hopAnim.cancel(); } catch (e) {} }
+    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
+    const midY = casterYShift * 0.5 + apexLift;
+    fEl.animate([
+      { transform: `translateY(${casterYShift}px) scale(${scale})`, offset: 0,   easing: 'cubic-bezier(.3,.7,.5,1)' },
+      { transform: `translateY(${midY}px) scale(${scale})`,         offset: 0.5, easing: 'cubic-bezier(.5,0,.7,.4)' },
+      { transform: `translateY(0) scale(${scale})`,                 offset: 1 },
+    ], { duration: 380, fill: 'forwards' });
+  } else if (hopAnim) {
+    try { hopAnim.cancel(); } catch (e) {}
+  }
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(340);
+  await sleep(400);
   fEl.style.transition = '';
   fEl.style.transform = '';
   fEl.style.zIndex = '';

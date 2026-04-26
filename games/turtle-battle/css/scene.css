@@ -629,21 +629,21 @@
   left:50%;
   bottom:0;
   width:160px;height:160px;
+  margin-left:-80px;  /* center horizontally without using transform */
   background:url('../assets/vfx/cyber-mech-birth.png') 0 0 no-repeat;
   background-size:1280px 160px;
-  transform:translateX(-50%);
   image-rendering:pixelated;
   pointer-events:none;
   z-index:35;
   animation:cyberMechBirthLife 720ms steps(8) forwards;
 }
-.cyber-mech-birth.flip-x{transform:translateX(-50%) scaleX(-1)}
+.cyber-mech-birth.flip-x{transform:scaleX(-1)}  /* flip in place, no position offset */
 @keyframes cyberMechBirthLife{
   from{background-position:0 0}
   to  {background-position:-1280px 0}
 }
 @media (max-width:768px){
-  .cyber-mech-birth{width:112px;height:112px;background-size:896px 112px}
+  .cyber-mech-birth{width:112px;height:112px;margin-left:-56px;background-size:896px 112px}
   @keyframes cyberMechBirthLife{
     from{background-position:0 0}
     to  {background-position:-896px 0}
@@ -703,12 +703,13 @@
      scrub via 0%→100% background-position (percentages auto-handle any
      width JS sets inline). */
   background-size:600% 100%;
-  transform-origin:left center;
   image-rendering:pixelated;
   pointer-events:none;
   z-index:34;
   animation:cyberBeamSweepLife 420ms steps(6) forwards;
 }
+/* Flip in place around the element's center (no transform-origin override
+   so positioning stays correct for both attacker sides). */
 .cyber-beam-sweep.flip-x{transform:scaleX(-1)}
 @keyframes cyberBeamSweepLife{
   from{background-position:0% 0}
