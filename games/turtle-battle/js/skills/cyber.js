@@ -1,4 +1,59 @@
 // ─────────────────────────────────────────────────────────
+// 2-hit cyber juggle — physics-driven knockup-and-back tailored for
+// 能量大炮's two beam segments. Adapted from buildJuggleKeyframes (3-hit
+// chi-wave version). Returns { kf, totalMs, segMs[] } so callers can
+// time their damage/float spawns to each in-air hit moment.
+function buildCyberBeamJuggle(knockX, isMobile) {
+  const totalMs = isMobile ? 1700 : 1600;
+  const g = isMobile ? 900 : 1500;
+  // 2 launch impulses spaced ~280ms apart
+  const hits = isMobile
+    ? [{ t: 0, vy: -200, vx: knockX * 1.5 }, { t: 280, vy: -250, vx: knockX * 1.0 }]
+    : [{ t: 0, vy: -280, vx: knockX * 1.5 }, { t: 280, vy: -340, vx: knockX * 1.0 }];
+  const rotImpulses = [-50, 90];
+  const liePoseMs = isMobile ? 480 : 500;
+  const recoverMs = isMobile ? 280 : 300;
+  const slamRot = -82;
+  const steps = 56;
+  const dt = totalMs / steps / 1000;
+  const s = { x:0, y:0, rot:0, vx:0, vy:0, vrot:0 };
+  let hitIdx = 0, slamT = null, slamPose = null, recoverT = null;
+  const kf = [];
+  for (let i = 0; i <= steps; i++) {
+    const tMs = (i / steps) * totalMs;
+    while (hitIdx < hits.length && tMs >= hits[hitIdx].t) {
+      s.vy = hits[hitIdx].vy;
+      s.vx = hits[hitIdx].vx;
+      s.vrot = rotImpulses[hitIdx];
+      hitIdx++;
+    }
+    if (slamT == null) {
+      s.vy += g * dt;
+      s.x += s.vx * dt;
+      s.y += s.vy * dt;
+      s.rot += s.vrot * dt;
+      if (s.y >= 0 && hitIdx === hits.length && tMs > 380) {
+        s.y = 0; s.rot = slamRot; s.vx = s.vy = s.vrot = 0;
+        slamT = tMs; slamPose = { x: s.x, y: 0, rot: slamRot };
+      }
+    } else if (recoverT == null) {
+      if (tMs >= slamT + liePoseMs) recoverT = tMs;
+    } else {
+      const p = Math.min(1, (tMs - recoverT) / recoverMs);
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p + 2, 2)/2;
+      s.x = slamPose.x * (1 - e);
+      s.y = slamPose.y * (1 - e);
+      s.rot = slamPose.rot * (1 - e);
+    }
+    kf.push({
+      transform: `translate(${s.x.toFixed(1)}px, ${s.y.toFixed(1)}px) rotate(${s.rot.toFixed(1)}deg)`,
+      offset: i / steps
+    });
+  }
+  return { kf, totalMs, segHits: hits.map(h => h.t) };
+}
+
+// ─────────────────────────────────────────────────────────
 // 能量大炮 cyberBeam — KOF-style choreographed cyber laser sweep.
 // Pattern follows 龟派气波 (basic chi-wave): cut-in → camera zoom →
 // caster Y-hops to target row → windup pose (beat) → fire beam →
@@ -131,17 +186,29 @@ async function doCyberBeam(attacker, target, skill) {
     setTimeout(() => battleField.classList.remove('battle-scene-shake'), 260);
   }
 
-  // Per enemy: 2 segments. Each segment = phys + true dealt at the SAME
-  // moment (one knockback per segment). Total 2 floats × 2 segments per
-  // enemy = 4 floats but 2 distinct hit-impulses.
+  // Per enemy: 2-hit physics juggle (knockup + crash + lie + recover).
+  // Damage segments time-aligned with the in-air hits so floats sync
+  // with the impulses. 2 segments = 2 distinct knockup impulses.
   const hitTasks = rowEnemies.map(enemy => (async () => {
     if (!enemy.alive) return { enemy, physTotal: 0, trueTotal: 0 };
     const eElId = getFighterElId(enemy);
     const eNode = document.getElementById(eElId);
+    const tBody = eNode ? eNode.querySelector('.st-body') : null;
+    // Launch 2-hit juggle on this target's body
+    let juggleAnim = null;
+    let segTimes = [0, 280];
+    if (tBody) {
+      const knockX = isMobile ? dir * 28 : dir * 50;
+      const built = buildCyberBeamJuggle(knockX, isMobile);
+      juggleAnim = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
+      segTimes = built.segHits;
+      eNode.classList.add('basic-chiwave-launched');  // pause sprite-sheet during airtime
+    }
+
     let physTotal = 0, trueTotal = 0;
     for (let seg = 0; seg < 2; seg++) {
       if (!enemy.alive) break;
-      // Physical portion
+      // Phys + true at same impulse moment (matches juggle hit time)
       const { isCrit, critMult } = calcCrit(attacker);
       const physBase = Math.round(attacker.atk * physScale);
       const eDef = calcEffDef(attacker, enemy);
@@ -149,23 +216,34 @@ async function doCyberBeam(attacker, target, skill) {
       applyRawDmg(attacker, enemy, physDmg, false, false, 'physical');
       spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: physDmg });
       physTotal += physDmg;
-      // True portion at same moment
       if (trueDmgPerSeg > 0 && enemy.alive) {
         applyRawDmg(attacker, enemy, trueDmgPerSeg, false, false, 'true');
         spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 0, 24, { atkSide: attacker.side, amount: trueDmgPerSeg });
         trueTotal += trueDmgPerSeg;
       }
-      // Single knockback per segment (hit-shake's quick recoil + flash)
       if (eNode) {
-        eNode.classList.remove('hit-shake', 'chi-hit-flash');
+        eNode.classList.remove('chi-hit-flash');
         void eNode.offsetWidth;
-        eNode.classList.add('hit-shake', 'chi-hit-flash');
+        eNode.classList.add('chi-hit-flash');
         setTimeout(() => { if (eNode) eNode.classList.remove('chi-hit-flash'); }, 140);
-        setTimeout(() => { if (eNode) eNode.classList.remove('hit-shake'); }, 320);
       }
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmgPerSeg);
       updateHpBar(enemy, eElId);
-      if (seg < 1) await sleep(220);  // gap between the 2 segments
+      // Wait until next juggle hit impulse (2nd impulse at segTimes[1])
+      if (seg < 1) {
+        const gap = (segTimes[1] || 280) - (segTimes[0] || 0);
+        await sleep(gap);
+      }
+    }
+
+    // Fire-and-forget juggle cleanup so caller proceeds immediately
+    if (juggleAnim) {
+      juggleAnim.finished
+        .then(() => {
+          if (tBody) tBody.style.transform = '';
+          if (eNode) eNode.classList.remove('basic-chiwave-launched');
+        })
+        .catch(() => { if (eNode) eNode.classList.remove('basic-chiwave-launched'); });
     }
     return { enemy, physTotal, trueTotal };
   })());
