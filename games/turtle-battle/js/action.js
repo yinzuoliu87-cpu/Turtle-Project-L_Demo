@@ -284,9 +284,9 @@ async function processPendingMechTransforms() {
       const elId = getFighterElId(ff); const el = document.getElementById(elId);
       ff.hp = 0; ff.alive = false; if (el) el.classList.add('dead'); updateHpBar(ff, elId);
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
-      // Mech birth VFX — MUST be appended to battleField (not el), since el has
-      // the .dead class which sets opacity:0 on its entire subtree, hiding any
-      // sprite added as its child. Position absolutely at el's location.
+      // ── Mech birth VFX (cyber-mech-birth.png 8-frame sprite) ──
+      // Append to #battleScene (NOT to el — el has .dead class which sets
+      // opacity:0 on the whole subtree, hiding any sprite inside it).
       const battleField = document.getElementById('battleScene');
       if (el && battleField) {
         const bRect = battleField.getBoundingClientRect();
@@ -298,19 +298,15 @@ async function processPendingMechTransforms() {
         const sw = isMobile ? 112 : 160;
         const birth = document.createElement('div');
         birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
-        // Override CSS positioning — since we're now in battleField scope,
-        // we set explicit left/bottom in scene-local coords.
         birth.style.position = 'absolute';
         birth.style.left = (cx - sw / 2) + 'px';
         birth.style.bottom = (battleField.offsetHeight - by) + 'px';
-        birth.style.marginLeft = '0';  // override the centered margin
+        birth.style.marginLeft = '0';
         battleField.appendChild(birth);
         setTimeout(() => birth.remove(), 760);
       }
-      try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
-      try { sfxExplosion(); } catch(e) {} await sleep(1000);
-      try { const flash = document.createElement('div'); flash.className = 'mech-transform-flash'; document.body.appendChild(flash); setTimeout(() => flash.remove(), 600); } catch(e) {}
-      try { sfxRebirth(); } catch(e) {} await sleep(300);
+      try { sfxExplosion(); } catch(e) {} await sleep(720);  // wait full sprite life
+      try { sfxRebirth(); } catch(e) {} await sleep(160);
       const finalHp = ff.passive.mechHpPer * dc; const finalAtk = ff.passive.mechAtkPer * dc;
       ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
       const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
@@ -320,7 +316,7 @@ async function processPendingMechTransforms() {
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
-      if (el) { el.classList.remove('dead'); el.classList.add('mech-transform-anim'); setTimeout(() => el.classList.remove('mech-transform-anim'), 800); }
+      if (el) el.classList.remove('dead');  // mech sprite about to render in same slot
       renderFighterCard(ff, elId); updateHpBar(ff, elId);
       spawnFloatingNum(elId, `🤖机甲充能中...`, 'crit-label', 0, -25);
       const rampSteps = 20; const rampInterval = 150;
