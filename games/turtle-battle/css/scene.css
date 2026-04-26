@@ -654,22 +654,33 @@
   }
 }
 
-/* ── 忍者龟: 冲击 dash trail (CSS placeholder until sprite is made) ──
-   Adds horizontal motion blur + cyan after-image lines behind the body
-   while the .ninja-dashing class is active. Direction handled by ninja's
-   side via existing .pos-left/.pos-right scaleX on st-sprite. */
-.scene-turtle.ninja-dashing .st-body{
-  filter:drop-shadow(-12px 0 0 rgba(120,200,255,.5))
-         drop-shadow(-22px 0 0 rgba(120,200,255,.3))
-         drop-shadow(-32px 0 0 rgba(120,200,255,.18))
-         drop-shadow(0 0 8px rgba(255,255,255,.6));
+/* ── 忍者龟: 冲击 dash trail sprite ──
+   4 frames × 128×128, loops every 200ms while .ninja-dash-trail element
+   exists. The sprite shows trail tapering LEFT (figure moving RIGHT);
+   the .flip-x modifier mirrors for left-moving figure (return run or
+   right-side attacker dashing left). */
+.ninja-dash-trail{
+  position:absolute;
+  width:128px;height:128px;
+  background:url('../assets/vfx/ninja-dash-trail.png') 0 0 no-repeat;
+  background-size:512px 128px;
+  transform:translate(-50%,-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:34;
+  animation:ninjaDashTrailLoop 200ms steps(4) infinite;
 }
-.scene-turtle[class*="pos-right"].ninja-dashing .st-body{
-  /* mirror trail direction for right-side ninja */
-  filter:drop-shadow(12px 0 0 rgba(120,200,255,.5))
-         drop-shadow(22px 0 0 rgba(120,200,255,.3))
-         drop-shadow(32px 0 0 rgba(120,200,255,.18))
-         drop-shadow(0 0 8px rgba(255,255,255,.6));
+.ninja-dash-trail.flip-x{transform:translate(-50%,-50%) scaleX(-1)}
+@keyframes ninjaDashTrailLoop{
+  from{background-position:0 0}
+  to  {background-position:-512px 0}
+}
+@media (max-width:768px){
+  .ninja-dash-trail{width:96px;height:96px;background-size:384px 96px}
+  @keyframes ninjaDashTrailLoop{
+    from{background-position:0 0}
+    to  {background-position:-384px 0}
+  }
 }
 
 /* ── 赛博龟: 能量大炮 cut-in (single cyan pulse) ──
