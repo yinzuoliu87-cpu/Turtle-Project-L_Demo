@@ -628,10 +628,14 @@
   position:absolute;
   left:50%;
   bottom:0;
-  width:160px;height:160px;
-  margin-left:-80px;  /* center horizontally without using transform */
+  /* Sized to match the actual mech sprite (rendered at 80×80 by
+     buildPetImgHTML). The mech occupies ~85% of each 128px sprite frame,
+     so 96×96 display puts the end-frame mech at ~82px tall — close to 80
+     so the swap from sprite → static mech-form-icon doesn't visibly shrink. */
+  width:96px;height:96px;
+  margin-left:-48px;
   background:url('../assets/vfx/cyber-mech-birth.png') 0 0 no-repeat;
-  background-size:1280px 160px;
+  background-size:768px 96px;  /* 8 frames × 96 */
   image-rendering:pixelated;
   pointer-events:none;
   z-index:35;
@@ -640,13 +644,13 @@
 .cyber-mech-birth.flip-x{transform:scaleX(-1)}  /* flip in place, no position offset */
 @keyframes cyberMechBirthLife{
   from{background-position:0 0}
-  to  {background-position:-1280px 0}
+  to  {background-position:-768px 0}
 }
 @media (max-width:768px){
-  .cyber-mech-birth{width:112px;height:112px;margin-left:-56px;background-size:896px 112px}
+  .cyber-mech-birth{width:84px;height:84px;margin-left:-42px;background-size:672px 84px}
   @keyframes cyberMechBirthLife{
     from{background-position:0 0}
-    to  {background-position:-896px 0}
+    to  {background-position:-672px 0}
   }
 }
 

@@ -295,7 +295,7 @@ async function processPendingMechTransforms() {
         const cx = ((eRect.left + eRect.width / 2) - bRect.left) / zoom;
         const by = ((eRect.bottom) - bRect.top) / zoom;
         const isMobile = window.innerWidth <= 768;
-        const sw = isMobile ? 112 : 160;
+        const sw = isMobile ? 84 : 96;  // matches CSS .cyber-mech-birth width
         const birth = document.createElement('div');
         birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
         birth.style.position = 'absolute';
