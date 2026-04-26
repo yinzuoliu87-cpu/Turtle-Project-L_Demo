@@ -34,9 +34,9 @@ async function doNinjaShuriken(attacker, target, skill) {
 // One strong vertical knockup, ballistic flight, ground slam, brief lie,
 // recover. Total ~1100ms. Returns { kf, totalMs } for tBody.animate().
 function buildNinjaKnockupJuggle(knockX, isMobile) {
-  const totalMs = isMobile ? 1200 : 1100;
-  const g = isMobile ? 900 : 1500;
-  const liftVy = isMobile ? -380 : -460;     // strong "高高撞飞"
+  const totalMs = isMobile ? 1500 : 1400;     // longer flight time
+  const g = isMobile ? 800 : 1300;            // lighter gravity → hangs higher/longer
+  const liftVy = isMobile ? -520 : -640;     // ~40% taller knockup
   const liftVx = knockX;
   const slamRot = -82;
   const liePoseMs = isMobile ? 320 : 280;
@@ -144,43 +144,47 @@ async function doNinjaImpact(attacker, target, skill) {
   const fBody = fEl.querySelector('.st-body') || fEl;
   fEl.style.zIndex = '60';
 
+  // .scene-turtle has CSS transform: scale(var(--base-scale)). fBody is its
+  // child, so any translate(N) applied to fBody is in PRE-parent-scale local
+  // units → the visual movement is N × baseScale screen pixels. Divide our
+  // screen-pixel deltas by baseScale to get the local-pixel value to use.
+  const lyShift = casterYShift / baseScale;
+  const ldashX  = dashX / baseScale;
+
   // ── Phase 1: hop to target row Y (~280ms) ──
   if (Math.abs(casterYShift) > 4) {
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
+    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25) / baseScale;
     const N = 10; const kfHop = [];
     for (let i = 0; i <= N; i++) {
       const t = i / N;
-      const y = casterYShift * t + apexLift * 4 * t * (1 - t);
+      const y = lyShift * t + apexLift * 4 * t * (1 - t);
       kfHop.push({ transform: `translate(0, ${y}px)`, offset: t });
     }
     fBody.animate(kfHop, { duration: 280, easing: 'linear', fill: 'forwards' });
     await sleep(290);
   }
 
-  // ── Phase 2: pause / windup (150ms) ──
-  // Brief crouch — slight squat for "ready to dash" anticipation
+  // ── Phase 2: pause / windup (200ms) ──
   fBody.animate([
-    { transform: `translate(0, ${casterYShift}px) scaleY(1)` },
-    { transform: `translate(0, ${casterYShift + 4}px) scaleY(.9)`, offset: 0.5 },
-    { transform: `translate(0, ${casterYShift}px) scaleY(1)`, offset: 1 },
+    { transform: `translate(0, ${lyShift}px) scaleY(1)` },
+    { transform: `translate(0, ${lyShift + 4 / baseScale}px) scaleY(.9)`, offset: 0.5 },
+    { transform: `translate(0, ${lyShift}px) scaleY(1)`, offset: 1 },
   ], { duration: 200, easing: 'ease-out', fill: 'forwards' });
   await sleep(220);
 
   // ── Phase 3: FAST dash forward (180ms) — spawn dash trail ──
   const dashMs = 180;
-  // Spawn trail that follows the body
   let trail = null;
   if (fBody) {
     trail = document.createElement('div');
     trail.className = 'ninja-dash-trail' + (dir === -1 ? ' flip-x' : '');
-    // Position trail at the body's center via CSS top/left (relative to .st-body)
     trail.style.left = '50%';
     trail.style.top  = '50%';
     fBody.appendChild(trail);
   }
   fBody.animate([
-    { transform: `translate(0, ${casterYShift}px)` },
-    { transform: `translate(${dashX}px, ${casterYShift}px)`, offset: 1 },
+    { transform: `translate(0, ${lyShift}px)` },
+    { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 1 },
   ], { duration: dashMs, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
 
   // Per-enemy hits triggered as ninja passes their X
@@ -198,7 +202,7 @@ async function doNinjaImpact(attacker, target, skill) {
     await triggerOnHitEffects(attacker, enemy, dmg);
     const tBody = eNode ? eNode.querySelector('.st-body') : null;
     if (tBody) {
-      const knockX = (isMobile ? 18 : 32) * dir;
+      const knockX = (isMobile ? 30 : 56) * dir;  // ~75% wider knockback
       const built = buildNinjaKnockupJuggle(knockX, isMobile);
       const j = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       eNode.classList.add('basic-chiwave-launched');
@@ -228,46 +232,33 @@ async function doNinjaImpact(attacker, target, skill) {
   }
 
   // ── Phase 4: hold at far end (wait for enemies to land) ──
-  await sleep(700);
+  await sleep(900);  // longer hold so enemies fly higher and farther before landing
 
-  // Remove the dash trail before turning around
   if (trail) { trail.remove(); trail = null; }
 
   // ── Phase 5: TURN AROUND (flip sprite scaleX to face return direction) ──
   if (sprite) sprite.style.transform = flippedSpriteTransform;
   await sleep(120);
 
-  // ── Phase 6: dash back (180ms) — re-spawn trail in reversed direction ──
+  // ── Phase 6: dash directly back to ORIGIN (combine X-back + Y-back into
+  // one straight motion — no extra hop after, per user "不用拐两下") ──
   if (fBody) {
     trail = document.createElement('div');
-    // Now the figure runs in the OPPOSITE direction → flip the trail
     trail.className = 'ninja-dash-trail' + (dir === 1 ? ' flip-x' : '');
     trail.style.left = '50%';
     trail.style.top  = '50%';
     fBody.appendChild(trail);
   }
   fBody.animate([
-    { transform: `translate(${dashX}px, ${casterYShift}px)` },
-    { transform: `translate(0, ${casterYShift}px)`,            offset: 1 },
-  ], { duration: 200, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
-  await sleep(220);
+    { transform: `translate(${ldashX}px, ${lyShift}px)` },
+    { transform: `translate(0, 0)`,                            offset: 1 },
+  ], { duration: 240, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
+  await sleep(260);
 
   if (trail) trail.remove();
 
-  // ── Phase 7: turn back to original facing + drop to original Y ──
-  if (sprite) sprite.style.transform = '';  // restore CSS-driven default
-  // Hop back down to original Y
-  if (Math.abs(casterYShift) > 4) {
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
-    const N = 10; const kfHop = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const y = casterYShift - casterYShift * t + apexLift * 4 * t * (1 - t);
-      kfHop.push({ transform: `translate(0, ${y}px)`, offset: t });
-    }
-    fBody.animate(kfHop, { duration: 240, easing: 'linear', fill: 'forwards' });
-    await sleep(260);
-  }
+  // ── Phase 7: restore original facing ──
+  if (sprite) sprite.style.transform = '';
   fBody.style.transform = '';
   fEl.style.zIndex = '';
 
