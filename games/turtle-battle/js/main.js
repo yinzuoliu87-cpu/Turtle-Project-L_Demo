@@ -73,6 +73,11 @@ function toggleCustomModes() {
   const panel = document.getElementById('customModesPanel');
   if (panel) panel.style.display = panel.style.display === 'none' ? 'flex' : 'none';
 }
+// Bullet-proof: also expose on window so inline onclick can't ever miss it
+// (some bundler / module wrapping accidents would otherwise scope-hide it).
+window.toggleCustomModes = toggleCustomModes;
+window.startMode = startMode;
+window.showScreen = showScreen;
 
 // ── ONLINE LOBBY (PeerJS) ─────────────────────────────────
 function cleanupPeer() {
