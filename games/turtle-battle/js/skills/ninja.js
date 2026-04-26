@@ -34,14 +34,14 @@ async function doNinjaShuriken(attacker, target, skill) {
 // One strong vertical knockup, ballistic flight, ground slam, brief lie,
 // recover. Total ~1100ms. Returns { kf, totalMs } for tBody.animate().
 function buildNinjaKnockupJuggle(knockX, isMobile) {
-  const totalMs = isMobile ? 1500 : 1400;     // longer flight time
-  const g = isMobile ? 800 : 1300;            // lighter gravity → hangs higher/longer
-  const liftVy = isMobile ? -520 : -640;     // ~40% taller knockup
+  const totalMs = isMobile ? 1900 : 1800;     // long enough for flight + lie + recover
+  const g = isMobile ? 800 : 1300;
+  const liftVy = isMobile ? -520 : -640;
   const liftVx = knockX;
   const slamRot = -82;
   const liePoseMs = isMobile ? 320 : 280;
   const recoverMs = isMobile ? 240 : 220;
-  const steps = 48;
+  const steps = 56;
   const dt = totalMs / steps / 1000;
   const s = { x:0, y:0, rot:0, vx: liftVx, vy: liftVy, vrot: -100 };
   let slamT = null, slamPose = null, recoverT = null;
@@ -71,6 +71,10 @@ function buildNinjaKnockupJuggle(knockX, isMobile) {
       offset: i / steps
     });
   }
+  // Safety: force the absolute LAST keyframe to (0,0,0) so the enemy
+  // never holds a residual tilt after the juggle's fill:'forwards'
+  // (the physics sim sometimes can't quite recover to 0 in budget).
+  if (kf.length > 0) kf[kf.length - 1].transform = 'translate(0px, 0px) rotate(0deg)';
   return { kf, totalMs };
 }
 
@@ -113,7 +117,8 @@ async function doNinjaImpact(attacker, target, skill) {
     behindDmg = Math.max(1, Math.round(attacker.atk * behindScale * critMult2 * calcDmgMult(bDef)));
   }
 
-  // ── Geometry: row Y diff + dash X to past back-row ──
+  // ── Geometry: row Y diff + dash X to past BACK-ROW (always, even if
+  // back slot is empty — look up via BATTLE_POSITIONS, not DOM elements) ──
   let casterYShift = 0, dashX = 0, mainHitX = 0, behindHitX = 0;
   if (battleField && fEl && tEl) {
     const bRect = battleField.getBoundingClientRect();
@@ -135,7 +140,23 @@ async function doNinjaImpact(attacker, target, skill) {
         behindHitX = ((bb.left + bb.width/2) - bRect.left) / zoom - fCx;
       }
     }
-    const farX = behind ? behindHitX : mainHitX;
+    // Always dash to PAST the back-row position of target's column,
+    // regardless of whether anyone's standing there.
+    let backSlotX = null;
+    const targetCol = target._slotKey ? target._slotKey.split('-')[1] : null;
+    if (targetCol != null && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
+      const posSet = isMobile ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+      const enemySide = attacker.side === 'left' ? 'right' : 'left';
+      const backPos = posSet[`back-${targetCol}`];
+      if (backPos) {
+        const imgX = enemySide === 'left' ? backPos.x : (100 - backPos.x);
+        const mapped = mapCoverPos(imgX, backPos.y, battleField.offsetWidth, battleField.offsetHeight);
+        backSlotX = mapped.px - fCx;  // delta from caster body center
+      }
+    }
+    // Fallback if BATTLE_POSITIONS unavailable: behind-enemy if alive, else main + 60
+    const farX = backSlotX != null ? backSlotX
+               : (behind ? behindHitX : mainHitX);
     dashX = farX + dir * 60;
   } else {
     dashX = dir * 280; mainHitX = dir * 200; behindHitX = dir * 240;
