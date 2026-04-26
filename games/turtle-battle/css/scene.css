@@ -650,6 +650,46 @@
   }
 }
 
+/* ── 赛博龟: 能量大炮 cut-in (blue/cyan variant of chi-cutin) ── */
+.cyber-cutin{
+  position:fixed;
+  top:0;left:0;right:0;bottom:0;
+  pointer-events:none;
+  z-index:998;
+  background:radial-gradient(circle at center,
+    rgba(160,240,255,.95) 0%,
+    rgba(60,180,255,.85) 15%,
+    rgba(20,80,200,.55) 35%,
+    rgba(0,0,0,.85) 70%,
+    rgba(0,0,0,.95) 100%);
+  animation:cyberCutin .5s ease-out;
+}
+.cyber-cutin::before{
+  content:'';
+  position:absolute;
+  left:50%;top:50%;
+  width:340px;height:340px;
+  border-radius:50%;
+  transform:translate(-50%,-50%);
+  background:radial-gradient(circle,
+    #fff 0%, #b8f0ff 20%, #4cc9f0 55%, rgba(20,80,200,.3) 85%, transparent 100%);
+  box-shadow:0 0 80px 20px rgba(60,180,255,.8), 0 0 160px 40px rgba(20,80,200,.5);
+  animation:cyberCutinOrb .5s ease-out;
+  mix-blend-mode:screen;
+}
+@keyframes cyberCutin{
+  0%  {opacity:0}
+  15% {opacity:1}
+  75% {opacity:1}
+  100%{opacity:0}
+}
+@keyframes cyberCutinOrb{
+  0%  {transform:translate(-50%,-50%) scale(.2);filter:brightness(1.5)}
+  25% {transform:translate(-50%,-50%) scale(1.1);filter:brightness(1.8)}
+  60% {transform:translate(-50%,-50%) scale(1);filter:brightness(1.3)}
+  100%{transform:translate(-50%,-50%) scale(1.4);filter:brightness(.6);opacity:0}
+}
+
 /* ── 赛博龟: 能量大炮 sweep (horizontal cyber beam) ──
    6 frames × 128×128 native. Stretched horizontally at runtime to span
    from caster to far enemy in the row. Default orientation: emit on left,
