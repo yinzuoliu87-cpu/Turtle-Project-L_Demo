@@ -180,7 +180,7 @@ function pickSkill(idx) {
   const isAlly = skill.type === 'heal' || skill.type === 'shield' || skill.type === 'bubbleShield' || skill.type === 'angelBless' || skill.type === 'bubbleHeal' || skill.type === 'crystalResHeal' || skill.type === 'phoenixPurify' || skill.isAlly;
 
   // Self-cast: no target selection
-  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'cyberBuff' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || skill.type === 'shellCopy' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
+  if (skill.selfCast || skill.type === 'fortuneDice' || skill.type === 'phoenixShield' || skill.type === 'gamblerDraw' || skill.type === 'hidingDefend' || skill.type === 'hidingCommand' || skill.type === 'cyberDeploy' || skill.type === 'ghostPhase' || skill.type === 'diamondFortify' || skill.type === 'diceFate' || skill.type === 'chestOpen' || skill.type === 'chestCount' || skill.type === 'bambooHeal' || skill.type === 'iceShield' || skill.type === 'volcanoArmor' || skill.type === 'crystalBarrier' || skill.type === 'shellCopy' || (skill.type === 'twoHeadSwitch' && skill.switchTo === 'melee')) {
     executePlayerAction(f, skill, f);
     return;
   }
@@ -502,19 +502,50 @@ async function executeAction(action) {
   } else if (skill.type === 'lineFinish') {
     const target = allFighters[action.targetId];
     await doLineFinish(f, target, skill);
-  } else if (skill.type === 'cyberBuff') {
-    // Self ATK buff
-    if (skill.selfAtkUpPct) {
-      const atkGain = Math.round(f.baseAtk * skill.selfAtkUpPct.pct / 100);
-      f.buffs.push({ type:'atkUp', value:atkGain, turns:skill.selfAtkUpPct.turns });
-      recalcStats();
-      const elId = getFighterElId(f);
-      spawnFloatingNum(elId, `+${atkGain}攻`, 'passive-num', 0, 0);
-      renderStatusIcons(f);
-      updateFighterStats(f, elId);
-      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：<span class="log-passive">自身攻击+${atkGain}(${skill.selfAtkUpPct.pct}%) ${skill.selfAtkUpPct.turns}回合</span>`);
+  } else if (skill.type === 'cyberBeam') {
+    // Energy beam: hits the entire row (front or back) of the targeted enemy.
+    // Per enemy: 2 physical segments (50%ATK each) + true damage = 10%ATK ×
+    // drone count (7% if 强化浮游炮 equipped).
+    const target = allFighters[action.targetId];
+    if (!target || !target.alive) { await sleep(400); }
+    else {
+      const droneCount = (f._drones || []).length;
+      const trueScale = f._cyberEnhanced ? (skill.droneTrueScaleEnhanced || 0.07) : (skill.droneTrueScale || 0.10);
+      const trueDmg = Math.round(f.atk * trueScale * droneCount);
+      const oppTeam = (f.side === 'left' ? rightTeam : leftTeam);
+      const rowEnemies = oppTeam.filter(e => e.alive && e._position === target._position);
+      const enemies = rowEnemies.length ? rowEnemies : [target];
+      const hits = skill.hits || 2;
+      const physScale = skill.atkScale || 0.5;
+      let logBits = [];
+      for (const enemy of enemies) {
+        if (!enemy.alive) continue;
+        const eElId = getFighterElId(enemy);
+        let physTotal = 0;
+        for (let h = 0; h < hits; h++) {
+          if (!enemy.alive) break;
+          const {isCrit, critMult} = calcCrit(f);
+          const physBase = Math.round(f.atk * physScale);
+          const eDef = calcEffDef(f, enemy);
+          const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(eDef)));
+          applyRawDmg(f, enemy, physDmg, false, false, 'physical');
+          spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:physDmg});
+          physTotal += physDmg;
+          await triggerOnHitEffects(f, enemy, physDmg);
+          await sleep(120);
+        }
+        if (trueDmg > 0 && enemy.alive) {
+          applyRawDmg(f, enemy, trueDmg, false, false, 'true');
+          spawnFloatingNum(eElId, `-${trueDmg}`, 'true-dmg', 220, 22, {atkSide:f.side, amount:trueDmg});
+        }
+        updateHpBar(enemy, eElId);
+        logBits.push(`${enemy.emoji}${enemy.name}(${physTotal}物+${trueDmg}真)`);
+        if (battleOver) break;
+      }
+      const rowName = target._position === 'back' ? '后排' : '前排';
+      addLog(`${f.emoji}${f.name} <b>能量大炮</b> → ${rowName}（${droneCount}炮台）：${logBits.join('、')}`);
     }
-    await sleep(800);
+    await sleep(400);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
   } else if (skill.type === 'crystalSpike') {
@@ -777,16 +808,20 @@ async function executeAction(action) {
       addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span>`);
     }
     await sleep(800);
-  } else if (skill.type === 'cyberFirewall') {
+  } else if (skill.type === 'cyberSwarmShield' || skill.type === 'cyberFirewall') {
+    // Permanent shield to all allies. Per-drone bonus: 15% ATK / drone, or
+    // 10% if 强化浮游炮 is equipped. Shield does NOT expire.
+    const droneCount = (f._drones || []).length;
+    const perDronePct = f._cyberEnhanced ? (skill.shieldPerDroneEnhanced || 10) : (skill.shieldPerDronePct || 15);
+    const totalScale = (skill.shieldAtkScale || 0.6) + (perDronePct / 100) * droneCount;
     const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive);
     for (const ally of allies) {
-      const amount = Math.round(Math.round(f.atk * (skill.shieldAtkScale||0.6)) * getShieldMult());
+      const amount = Math.round(Math.round(f.atk * totalScale) * getShieldMult());
       ally.shield += amount;
       const elId = getFighterElId(ally);
       spawnFloatingNum(elId, `+${amount}`, 'shield-num', 0, 0); updateHpBar(ally, elId);
-      if (skill.dmgReduction) { ally.buffs.push({ type:'dmgReduce', value:skill.dmgReduction.pct, turns:skill.dmgReduction.turns }); spawnFloatingNum(elId, `-${skill.dmgReduction.pct}%受伤`, 'passive-num', 200, 0); }
       renderStatusIcons(ally);
-      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}护盾</span> <span class="log-passive">-${skill.dmgReduction?.pct||15}%受伤 ${skill.dmgReduction?.turns||3}回合</span>`);
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${ally.emoji}${ally.name}：<span class="log-shield">+${amount}永久护盾</span>（基础60% + ${droneCount}炮台×${perDronePct}%）`);
     }
     await sleep(800);
   } else if (skill.type === 'starShield') {
