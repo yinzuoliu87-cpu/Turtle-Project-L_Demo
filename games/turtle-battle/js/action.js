@@ -503,10 +503,10 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     await doLineFinish(f, target, skill);
   } else if (skill.type === 'cyberBeam') {
-    // Energy beam: cyber laser sweeps from caster to far enemy in target's
-    // row. Per enemy: 2 physical (50%ATK each) + 2 true (5%ATK × droneCount
-    // each, 3.5% if enhanced — total still 10% / 7% × drones, split into
-    // two floats so the visual reads "double red + double gold").
+    // Energy beam: caster (a) screen-flashes blue, (b) hops to target's row,
+    // (c) fires a horizontal cyber-laser from caster all the way to the
+    // scene edge. Per enemy in target row: 2 physical (50%ATK each) + 2
+    // true (5%ATK × drones each, 3.5% if enhanced).
     const target = allFighters[action.targetId];
     if (!target || !target.alive) { await sleep(400); }
     else {
@@ -519,30 +519,62 @@ async function executeAction(action) {
       const physHits = skill.hits || 2;
       const trueHits = 2;
       const physScale = skill.atkScale || 0.5;
-
-      // ── Beam sweep visual: stretch sprite from caster to far enemy ──
       const battleField = document.getElementById('battleScene');
       const fEl = document.getElementById(getFighterElId(f));
-      if (battleField && fEl && enemies.length) {
+      const fBody = fEl ? fEl.querySelector('.st-body') : null;
+
+      // ── (a) Screen flash (blue/cyan tint) ──
+      try {
+        const flash = document.createElement('div');
+        flash.className = 'screen-flash flash-magic';
+        document.body.appendChild(flash);
+        flash.addEventListener('animationend', () => flash.remove());
+      } catch (e) {}
+
+      // ── (b) Hop caster to target row's Y ──
+      let bodyAnim = null;
+      let dyToRow = 0;
+      if (battleField && fEl && enemies[0]) {
+        const bRect = battleField.getBoundingClientRect();
+        const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+        const fRect = fEl.getBoundingClientRect();
+        const fCy = ((fRect.top + fRect.height/2) - bRect.top) / zoom;
+        const targetEl = document.getElementById(getFighterElId(enemies[0]));
+        if (targetEl) {
+          const tRect = targetEl.getBoundingClientRect();
+          const tCy = ((tRect.top + tRect.height/2) - bRect.top) / zoom;
+          dyToRow = tCy - fCy;
+        }
+      }
+      if (fBody && Math.abs(dyToRow) > 4) {
+        bodyAnim = fBody.animate([
+          { transform: 'translate(0,0)' },
+          { transform: `translate(0,${dyToRow}px)`, offset: 0.3 },
+          { transform: `translate(0,${dyToRow}px)`, offset: 0.7 },
+          { transform: 'translate(0,0)', offset: 1 },
+        ], { duration: 1400, easing: 'cubic-bezier(.5,.05,.5,.95)', fill: 'forwards' });
+      }
+      // Wait for caster to arrive at row before firing
+      await sleep(280);
+
+      // ── (c) Beam: from caster all the way to scene edge ──
+      if (battleField && fEl) {
         const bRect = battleField.getBoundingClientRect();
         const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
         const fRect = fEl.getBoundingClientRect();
         const fCx = ((fRect.left + fRect.width/2) - bRect.left) / zoom;
-        const fCy = ((fRect.top  + fRect.height/2) - bRect.top)  / zoom - 4;
-        let farX = fCx;
-        for (const e of enemies) {
-          const ee = document.getElementById(getFighterElId(e));
-          if (!ee) continue;
-          const er = ee.getBoundingClientRect();
-          const eCx = ((er.left + er.width/2) - bRect.left) / zoom;
-          if (Math.abs(eCx - fCx) > Math.abs(farX - fCx)) farX = eCx;
-        }
-        const beamLen = Math.max(80, Math.abs(farX - fCx) + 30);
+        // Caster Y after the row hop
+        const fCyOriginal = ((fRect.top + fRect.height/2) - bRect.top) / zoom;
+        const fCyNow = fCyOriginal + dyToRow - 4;
+        const sceneW = battleField.offsetWidth;
+        // Beam runs to the FAR edge of the scene in attacker's facing direction
+        const farEdgeX = (f.side === 'left') ? sceneW : 0;
+        const beamLen = Math.max(120, Math.abs(farEdgeX - fCx));
         const beam = document.createElement('div');
         beam.className = 'cyber-beam-sweep';
         beam.style.width = beamLen + 'px';
-        beam.style.top = (fCy - 40) + 'px';
-        if (farX >= fCx) {
+        beam.style.top = (fCyNow - 40) + 'px';
+        if (f.side === 'left') {
           beam.style.left = fCx + 'px';
         } else {
           beam.style.left = (fCx - beamLen) + 'px';
@@ -570,7 +602,6 @@ async function executeAction(action) {
         if (!enemy.alive) continue;
         const eElId = getFighterElId(enemy);
         let physTotal = 0, trueTotal = 0;
-        // 2 physical hits
         for (let h = 0; h < physHits; h++) {
           if (!enemy.alive) break;
           const {isCrit, critMult} = calcCrit(f);
@@ -583,7 +614,6 @@ async function executeAction(action) {
           await triggerOnHitEffects(f, enemy, physDmg);
           await sleep(80);
         }
-        // 2 true hits — only if there are drones
         if (trueDmgPerSeg > 0) {
           for (let h = 0; h < trueHits; h++) {
             if (!enemy.alive) break;
@@ -599,8 +629,11 @@ async function executeAction(action) {
       }
       const rowName = target._position === 'back' ? '后排' : '前排';
       addLog(`${f.emoji}${f.name} <b>能量大炮</b> → ${rowName}（${droneCount}炮台）：${logBits.join('、')}`);
+
+      // Wait for caster's hop-back to complete (animation 1400ms total, ~700ms used)
+      await sleep(500);
     }
-    await sleep(400);
+    await sleep(200);
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
   } else if (skill.type === 'crystalSpike') {
