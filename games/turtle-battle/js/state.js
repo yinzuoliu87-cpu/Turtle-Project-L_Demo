@@ -136,6 +136,12 @@ function reviveFighter(f, opts) {
 
 function checkDeaths(attacker) {
   allFighters.forEach(f => {
+    // Skip fighters whose mech transform is already queued — subsequent
+    // damage during the side-end (e.g. extra drone hits on a dying boss)
+    // would otherwise hit the normal death path, add .death-anim class,
+    // and play the deathHop rotate(15deg) on the boss while we're trying
+    // to play the mech-birth sprite. (User saw this as "图片转一圈".)
+    if (f._pendingMech) return;
     if (f.hp <= 0 && !f._deathProcessed) {
       // Phoenix rebirth: revive once
       if (f.passive && f.passive.type === 'phoenixRebirth' && !f._rebirthUsed) {

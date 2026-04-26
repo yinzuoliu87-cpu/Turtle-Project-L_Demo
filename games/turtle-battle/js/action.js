@@ -315,7 +315,7 @@ async function processPendingMechTransforms() {
       // ATK number on the card visually climb so the player sees the mech
       // "powering on".
       ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
-      const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
+      const mechDef = ff._cyberEnhanced ? dc * 3 : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
       ff.shield = 0; ff.bubbleShieldVal = 0; ff.crit = 0.25; ff.armorPen = 0;
       ff.alive = true; ff._deathProcessed = false; ff.name = '机甲'; ff.emoji = '🤖'; ff.id = 'mech';
       ff.img = 'assets/passive/mech-form-icon.png'; ff.buffs = [];
