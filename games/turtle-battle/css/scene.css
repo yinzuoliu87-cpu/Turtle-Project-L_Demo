@@ -697,30 +697,32 @@
    .flip-x mirrors. JS sets `width` inline to the desired beam length. */
 .cyber-beam-sweep{
   position:absolute;
-  height:160px;  /* doubled for thicker beam per user request */
-  background:url('../assets/vfx/cyber-beam-sweep.png') 0% 0 no-repeat;
-  /* 6 frames horizontal: render sheet at 600% × 100% of element box, then
-     scrub via 0%→100% background-position (percentages auto-handle any
-     width JS sets inline). */
+  height:160px;
+  /* Single-frame mode: pick the brightest frame (frame 3 / index 2) and
+     stretch IT alone to the full beam length. NO sheet scrubbing — frame
+     swapping was creating visible "joint" artifacts that read as two
+     pieces tiled together. Background-size renders the WHOLE 6-frame
+     sheet at 6× element width (so each frame = element width) and
+     background-position locks to the chosen frame. */
+  background:url('../assets/vfx/cyber-beam-sweep.png') no-repeat;
   background-size:600% 100%;
-  /* image-rendering: auto — pixelated made the 4-5× horizontal stretch
-     look like joined rectangles (each native pixel column became a wide
-     bar, with visible "joints" at end-cap / body transitions). Smooth
-     scaling reads as one continuous beam. */
+  background-position:-200% 0;  /* frame 3 of 6 (0%, -100%, -200%, ...) */
   image-rendering:auto;
   pointer-events:none;
   z-index:34;
-  animation:cyberBeamSweepLife 720ms steps(6) forwards;
+  /* Single-image fade-in / hold / fade-out via opacity. */
+  opacity:0;
+  animation:cyberBeamSweepLife 720ms ease-out forwards;
 }
-/* Flip in place around the element's center (no transform-origin override
-   so positioning stays correct for both attacker sides). */
 .cyber-beam-sweep.flip-x{transform:scaleX(-1)}
 @keyframes cyberBeamSweepLife{
-  from{background-position:0% 0}
-  to  {background-position:100% 0}
+  0%   {opacity:0}
+  18%  {opacity:1}
+  72%  {opacity:1}
+  100% {opacity:0}
 }
 @media (max-width:768px){
-  .cyber-beam-sweep{height:112px}  /* doubled */
+  .cyber-beam-sweep{height:112px}
 }
 
 /* ── COMMON: 天降闪电 (lightning strike from sky) ──
