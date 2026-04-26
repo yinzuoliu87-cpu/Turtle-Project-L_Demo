@@ -284,10 +284,27 @@ async function processPendingMechTransforms() {
       const elId = getFighterElId(ff); const el = document.getElementById(elId);
       ff.hp = 0; ff.alive = false; if (el) el.classList.add('dead'); updateHpBar(ff, elId);
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
-      if (el) {
+      // Mech birth VFX — MUST be appended to battleField (not el), since el has
+      // the .dead class which sets opacity:0 on its entire subtree, hiding any
+      // sprite added as its child. Position absolutely at el's location.
+      const battleField = document.getElementById('battleScene');
+      if (el && battleField) {
+        const bRect = battleField.getBoundingClientRect();
+        const eRect = el.getBoundingClientRect();
+        const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+        const cx = ((eRect.left + eRect.width / 2) - bRect.left) / zoom;
+        const by = ((eRect.bottom) - bRect.top) / zoom;
+        const isMobile = window.innerWidth <= 768;
+        const sw = isMobile ? 112 : 160;
         const birth = document.createElement('div');
         birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
-        el.appendChild(birth);
+        // Override CSS positioning — since we're now in battleField scope,
+        // we set explicit left/bottom in scene-local coords.
+        birth.style.position = 'absolute';
+        birth.style.left = (cx - sw / 2) + 'px';
+        birth.style.bottom = (battleField.offsetHeight - by) + 'px';
+        birth.style.marginLeft = '0';  // override the centered margin
+        battleField.appendChild(birth);
         setTimeout(() => birth.remove(), 760);
       }
       try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
