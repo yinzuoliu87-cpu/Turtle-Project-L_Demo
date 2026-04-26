@@ -305,25 +305,23 @@ async function processPendingMechTransforms() {
         battleField.appendChild(birth);
         setTimeout(() => birth.remove(), 760);
       }
-      try { sfxExplosion(); } catch(e) {} await sleep(720);  // wait full sprite life
+      // JS particle convergence (drone parts flying inward) — keep this on top
+      // of the sprite for extra visual density.
+      try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
+      try { sfxExplosion(); } catch(e) {} await sleep(720);
       try { sfxRebirth(); } catch(e) {} await sleep(160);
       const finalHp = ff.passive.mechHpPer * dc; const finalAtk = ff.passive.mechAtkPer * dc;
-      ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
+      ff.maxHp = finalHp; ff.hp = finalHp;
       const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
+      ff.baseAtk = finalAtk; ff.atk = finalAtk;
       ff.shield = 0; ff.bubbleShieldVal = 0; ff.crit = 0.25; ff.armorPen = 0;
       ff.alive = true; ff._deathProcessed = false; ff.name = '机甲'; ff.emoji = '🤖'; ff.id = 'mech';
       ff.img = 'assets/passive/mech-form-icon.png'; ff.buffs = [];
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
-      ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
-      if (el) el.classList.remove('dead');  // mech sprite about to render in same slot
-      renderFighterCard(ff, elId); updateHpBar(ff, elId);
-      spawnFloatingNum(elId, `🤖机甲充能中...`, 'crit-label', 0, -25);
-      const rampSteps = 20; const rampInterval = 150;
-      for (let ri = 1; ri <= rampSteps; ri++) { ff.hp = Math.round(finalHp * ri / rampSteps); ff.baseAtk = Math.round(finalAtk * ri / rampSteps); ff.atk = ff.baseAtk; updateHpBar(ff, elId); updateFighterStats(ff, elId); await sleep(rampInterval); }
-      ff.hp = finalHp; ff.maxHp = finalHp; ff.baseAtk = finalAtk; ff.atk = finalAtk;
-      updateHpBar(ff, elId); updateFighterStats(ff, elId);
-      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25); spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
+      ff._initAtk = finalAtk; ff._initDef = mechDef; ff._initHp = finalHp;
+      if (el) el.classList.remove('dead');
+      renderFighterCard(ff, elId); updateHpBar(ff, elId); updateFighterStats(ff, elId);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
       const mechIdx = allFighters.indexOf(ff); if (typeof actedThisSide !== 'undefined' && actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
       await sleep(400);

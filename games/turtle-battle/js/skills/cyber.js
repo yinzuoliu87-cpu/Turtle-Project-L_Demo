@@ -207,8 +207,10 @@ async function doCyberBeam(attacker, target, skill) {
 
     let physTotal = 0, trueTotal = 0;
     for (let seg = 0; seg < 2; seg++) {
-      if (!enemy.alive) break;
-      // Phys + true at same impulse moment (matches juggle hit time)
+      // NOTE: don't break on !enemy.alive — boss's cyberDrone passive will
+      // revive into mech later, and we want both segments' floats to show
+      // visually (the 2nd hit is "wasted" damage on a dying boss but the
+      // user explicitly asked for 2 number jumps per enemy).
       const { isCrit, critMult } = calcCrit(attacker);
       const physBase = Math.round(attacker.atk * physScale);
       const eDef = calcEffDef(attacker, enemy);
@@ -216,7 +218,7 @@ async function doCyberBeam(attacker, target, skill) {
       applyRawDmg(attacker, enemy, physDmg, false, false, 'physical');
       spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: physDmg });
       physTotal += physDmg;
-      if (trueDmgPerSeg > 0 && enemy.alive) {
+      if (trueDmgPerSeg > 0) {
         applyRawDmg(attacker, enemy, trueDmgPerSeg, false, false, 'true');
         spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 0, 24, { atkSide: attacker.side, amount: trueDmgPerSeg });
         trueTotal += trueDmgPerSeg;
@@ -229,7 +231,6 @@ async function doCyberBeam(attacker, target, skill) {
       }
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmgPerSeg);
       updateHpBar(enemy, eElId);
-      // Wait until next juggle hit impulse (2nd impulse at segTimes[1])
       if (seg < 1) {
         const gap = (segTimes[1] || 280) - (segTimes[0] || 0);
         await sleep(gap);
