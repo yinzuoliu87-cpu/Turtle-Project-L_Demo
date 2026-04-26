@@ -1206,7 +1206,7 @@ async function executeAction(action) {
     await sleep(800);
   } else if (skill.type === 'shellErode') {
     const target = allFighters[action.targetId];
-    if (target && target.alive) { await doDamage(f, target, skill); const mrShred = Math.round(f.atk * (skill.mrShredAtkPct||0.1)); if (mrShred > 0) { target.baseMr = Math.max(0, target.baseMr - mrShred); recalcStats(); spawnFloatingNum(getFighterElId(target), `-${mrShred}魔抗`, 'debuff-num', 200, 0); updateFighterStats(target, getFighterElId(target)); addLog(`${target.emoji}${target.name} 永久魔抗-${mrShred}`); } if (skill.cdReducePerUse && skill.cd > 0) { skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse); } }
+    if (target && target.alive) { await doDamage(f, target, skill); const mrShred = Math.round(f.atk * (skill.mrShredAtkPct||0.1)); if (mrShred > 0) { target.baseMr -= mrShred; recalcStats(); spawnFloatingNum(getFighterElId(target), `-${mrShred}魔抗`, 'debuff-num', 200, 0); updateFighterStats(target, getFighterElId(target)); addLog(`${target.emoji}${target.name} 永久魔抗-${mrShred}`); } if (skill.cdReducePerUse && skill.cd > 0) { skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse); } }
   } else if (skill.type === 'shellFortify') {
     const target = allFighters[action.targetId];
     if (target && target.alive) { await doDamage(f, target, skill); const atkGain = Math.round(f.atk * (skill.selfAtkGainPct||0.1)); if (atkGain > 0) { f.baseAtk += atkGain; recalcStats(); spawnFloatingNum(getFighterElId(f), `+${atkGain}攻`, 'passive-num', 200, 0); updateFighterStats(f, getFighterElId(f)); addLog(`${f.emoji}${f.name} 永久攻击+${atkGain}`); } if (skill.cdReducePerUse && skill.cd > 0) { skill.cd = Math.max(0, skill.cd - skill.cdReducePerUse); } }
