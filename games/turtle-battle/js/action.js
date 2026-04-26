@@ -549,7 +549,20 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     await doLineFinish(f, target, skill);
   } else if (skill.type === 'cyberBeam') {
-    await doCyberBeam(f, allFighters[action.targetId], skill);
+    if (typeof doCyberBeam === 'function') {
+      try {
+        await doCyberBeam(f, allFighters[action.targetId], skill);
+      } catch (err) {
+        console.error('doCyberBeam threw:', err);
+        // Fall back to a visible damage application so the turn still resolves
+        const target = allFighters[action.targetId];
+        if (target && target.alive) await doDamage(f, target, skill);
+      }
+    } else {
+      console.error('doCyberBeam not defined — cyber.js may not have loaded yet');
+      const target = allFighters[action.targetId];
+      if (target && target.alive) await doDamage(f, target, skill);
+    }
   } else if (skill.type === 'cyberDeploy') {
     await doCyberDeploy(f, skill);
   } else if (skill.type === 'crystalSpike') {
