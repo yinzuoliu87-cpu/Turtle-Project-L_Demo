@@ -86,13 +86,15 @@ async function doCyberBeam(attacker, target, skill) {
   }
   await sleep(480);
 
-  // ── 4) Windup beat (reuse chi-wave's charging pose — blue glow fits cyber) ──
-  fEl.classList.add('basic-chiwave-charging');
+  // ── 4) Windup beat (own cyber-beam-charging class — separate from chi-wave) ──
+  fEl.classList.add('cyber-beam-charging');
   await sleep(550);
-  fEl.classList.remove('basic-chiwave-charging');
+  fEl.classList.remove('cyber-beam-charging');
 
   // ── 5) Fire beam: stretch sprite from caster center to scene edge ──
-  let beamLifeMs = 420;
+  // Beam life bumped to 720ms (matches CSS). Caster waits for the FULL beam
+  // life + tail before hopping back.
+  const beamLifeMs = 720;
   if (battleField && fEl) {
     const bRect = battleField.getBoundingClientRect();
     const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
@@ -106,7 +108,7 @@ async function doCyberBeam(attacker, target, skill) {
     const beam = document.createElement('div');
     beam.className = 'cyber-beam-sweep';
     beam.style.width = beamLen + 'px';
-    beam.style.top = (fCy - (isMobile ? 28 : 40)) + 'px';
+    beam.style.top = (fCy - (isMobile ? 56 : 80)) + 'px';  // half of new beam height
     if (dir === 1) {
       beam.style.left = fCx + 'px';
     } else {
@@ -114,102 +116,69 @@ async function doCyberBeam(attacker, target, skill) {
       beam.classList.add('flip-x');
     }
     battleField.appendChild(beam);
-    setTimeout(() => beam.remove(), beamLifeMs + 40);
+    setTimeout(() => beam.remove(), beamLifeMs + 60);
   }
 
-  // ── 6) Per-target hit schedule based on distance from caster ──
-  const fRectStart = fEl ? fEl.getBoundingClientRect() : null;
-  const sortedEnemies = rowEnemies.slice().sort((a, b) => {
-    const ea = document.getElementById(getFighterElId(a));
-    const eb = document.getElementById(getFighterElId(b));
-    if (!ea || !eb || !fRectStart) return 0;
-    return Math.abs(ea.getBoundingClientRect().left - fRectStart.left)
-         - Math.abs(eb.getBoundingClientRect().left - fRectStart.left);
-  });
+  // ── 6) Damage all row enemies SIMULTANEOUSLY (this is one beam, not a sweep) ──
+  // Wait for beam to peak (frame 3 of 6 ≈ 360ms), then hit everyone at once.
+  await sleep(360);
 
-  // Beam visual takes ~beamLifeMs to reach far edge. Each enemy lights up as
-  // beam passes. Spread hits across 60% of beam life for a "sweep" feel.
-  const totalSweep = Math.round(beamLifeMs * 0.65);
-  const baseDelay = 80;
-  const perEnemyOffset = sortedEnemies.length > 1
-    ? Math.round((totalSweep - baseDelay) / Math.max(1, sortedEnemies.length - 1))
-    : 0;
+  // Camera shake (single, on the simultaneous impact)
+  if (battleField) {
+    battleField.classList.remove('battle-scene-shake');
+    void battleField.offsetWidth;
+    battleField.classList.add('battle-scene-shake');
+    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 260);
+  }
 
-  const hitTasks = sortedEnemies.map((enemy, idx) => (async () => {
-    const startDelay = baseDelay + idx * perEnemyOffset;
-    await sleep(startDelay);
+  // Per enemy: 2 segments. Each segment = phys + true dealt at the SAME
+  // moment (one knockback per segment). Total 2 floats × 2 segments per
+  // enemy = 4 floats but 2 distinct hit-impulses.
+  const hitTasks = rowEnemies.map(enemy => (async () => {
     if (!enemy.alive) return { enemy, physTotal: 0, trueTotal: 0 };
     const eElId = getFighterElId(enemy);
     const eNode = document.getElementById(eElId);
-
-    // Camera shake on first hit only
-    if (idx === 0 && battleField) {
-      battleField.classList.remove('battle-scene-shake');
-      void battleField.offsetWidth;
-      battleField.classList.add('battle-scene-shake');
-      setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
-    }
-
-    // Juggle animation on target — reuse chi-wave's physics keyframes
-    const tBody = eNode ? eNode.querySelector('.st-body') : null;
-    let juggleAnim = null;
-    if (tBody && typeof buildJuggleKeyframes === 'function') {
-      const knockX = isMobile ? dir * 24 : dir * 44;
-      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile);
-      juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
-      eNode.classList.add('basic-chiwave-launched');
-    }
-
     let physTotal = 0, trueTotal = 0;
-    // 2 physical
-    for (let h = 0; h < physHits; h++) {
+    for (let seg = 0; seg < 2; seg++) {
       if (!enemy.alive) break;
+      // Physical portion
       const { isCrit, critMult } = calcCrit(attacker);
-      const eDef = calcEffDef(attacker, enemy);
       const physBase = Math.round(attacker.atk * physScale);
+      const eDef = calcEffDef(attacker, enemy);
       const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(eDef)));
       applyRawDmg(attacker, enemy, physDmg, false, false, 'physical');
-      if (eNode) {
-        eNode.classList.remove('chi-hit-flash');
-        void eNode.offsetWidth;
-        eNode.classList.add('chi-hit-flash');
-        setTimeout(() => eNode.classList.remove('chi-hit-flash'), 140);
-      }
-      spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', h * 60, 0, { atkSide: attacker.side, amount: physDmg });
+      spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: physDmg });
       physTotal += physDmg;
-      await triggerOnHitEffects(attacker, enemy, physDmg);
-      if (h < physHits - 1) await sleep(140);
-    }
-    // 2 true (only if drones)
-    if (trueDmgPerSeg > 0) {
-      for (let h = 0; h < trueHits; h++) {
-        if (!enemy.alive) break;
+      // True portion at same moment
+      if (trueDmgPerSeg > 0 && enemy.alive) {
         applyRawDmg(attacker, enemy, trueDmgPerSeg, false, false, 'true');
-        spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 160 + h * 60, 22, { atkSide: attacker.side, amount: trueDmgPerSeg });
+        spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 0, 24, { atkSide: attacker.side, amount: trueDmgPerSeg });
         trueTotal += trueDmgPerSeg;
-        if (h < trueHits - 1) await sleep(110);
       }
-    }
-    updateHpBar(enemy, eElId);
-
-    // Fire-and-forget juggle cleanup
-    if (juggleAnim) {
-      juggleAnim.finished
-        .then(() => {
-          if (tBody) tBody.style.transform = '';
-          if (eNode) eNode.classList.remove('basic-chiwave-launched');
-        })
-        .catch(() => { if (eNode) eNode.classList.remove('basic-chiwave-launched'); });
+      // Single knockback per segment (hit-shake's quick recoil + flash)
+      if (eNode) {
+        eNode.classList.remove('hit-shake', 'chi-hit-flash');
+        void eNode.offsetWidth;
+        eNode.classList.add('hit-shake', 'chi-hit-flash');
+        setTimeout(() => { if (eNode) eNode.classList.remove('chi-hit-flash'); }, 140);
+        setTimeout(() => { if (eNode) eNode.classList.remove('hit-shake'); }, 320);
+      }
+      await triggerOnHitEffects(attacker, enemy, physDmg + trueDmgPerSeg);
+      updateHpBar(enemy, eElId);
+      if (seg < 1) await sleep(220);  // gap between the 2 segments
     }
     return { enemy, physTotal, trueTotal };
   })());
-
   const results = await Promise.all(hitTasks);
   const logBits = results.map(r => `${r.enemy.emoji}${r.enemy.name}(${r.physTotal}物+${r.trueTotal}真)`);
   const rowLabel = tIdx != null
     ? (['上', '中', '下'][parseInt(tIdx)] || '中') + '横排'
     : '目标横排';
   addLog(`${attacker.emoji}${attacker.name} <b>能量大炮</b> → ${rowLabel}（${droneCount}炮台）：${logBits.join('、')}`);
+
+  // Wait for beam visual to fully end before letting caster hop back
+  // (we already used: 360 + 220 + ~hit gap; topup so hopback starts at beam-end).
+  await sleep(Math.max(0, beamLifeMs - 600));
 
   // ── 7) Caster hops back to original row + camera zoom out ──
   if (hopAnim) { try { hopAnim.cancel(); } catch (e) {} }
