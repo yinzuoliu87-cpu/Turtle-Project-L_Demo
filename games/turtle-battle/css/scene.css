@@ -620,6 +620,64 @@
   }
 }
 
+/* ── 赛博龟: 机甲诞生 (mech birth assembly) ──
+   8 frames × 128×128. Plays at the (dying) turtle's position when drones
+   assemble into a mech. Mirrored for right-side casters via .flip-x.
+   Bottom-anchored to feet so the energy column rises from the ground. */
+.cyber-mech-birth{
+  position:absolute;
+  left:50%;
+  bottom:0;
+  width:160px;height:160px;
+  background:url('../assets/vfx/cyber-mech-birth.png') 0 0 no-repeat;
+  background-size:1280px 160px;
+  transform:translateX(-50%);
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:35;
+  animation:cyberMechBirthLife 720ms steps(8) forwards;
+}
+.cyber-mech-birth.flip-x{transform:translateX(-50%) scaleX(-1)}
+@keyframes cyberMechBirthLife{
+  from{background-position:0 0}
+  to  {background-position:-1280px 0}
+}
+@media (max-width:768px){
+  .cyber-mech-birth{width:112px;height:112px;background-size:896px 112px}
+  @keyframes cyberMechBirthLife{
+    from{background-position:0 0}
+    to  {background-position:-896px 0}
+  }
+}
+
+/* ── 赛博龟: 能量大炮 sweep (horizontal cyber beam) ──
+   6 frames × 128×128 native. Stretched horizontally at runtime to span
+   from caster to far enemy in the row. Default orientation: emit on left,
+   beam extends right (caster on left → no flip). For right-side caster,
+   .flip-x mirrors. JS sets `width` inline to the desired beam length. */
+.cyber-beam-sweep{
+  position:absolute;
+  height:80px;
+  background:url('../assets/vfx/cyber-beam-sweep.png') 0% 0 no-repeat;
+  /* 6 frames horizontal: render sheet at 600% × 100% of element box, then
+     scrub via 0%→100% background-position (percentages auto-handle any
+     width JS sets inline). */
+  background-size:600% 100%;
+  transform-origin:left center;
+  image-rendering:pixelated;
+  pointer-events:none;
+  z-index:34;
+  animation:cyberBeamSweepLife 420ms steps(6) forwards;
+}
+.cyber-beam-sweep.flip-x{transform:scaleX(-1)}
+@keyframes cyberBeamSweepLife{
+  from{background-position:0% 0}
+  to  {background-position:100% 0}
+}
+@media (max-width:768px){
+  .cyber-beam-sweep{height:56px}
+}
+
 /* ── COMMON: 天降闪电 (lightning strike from sky) ──
    Used by: 闪电龟 passive lightningStorm (random hit per turn),
             闪电龟 8-stack detonate, 财神龟 thunder-item 5-stack detonate.

@@ -503,43 +503,98 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     await doLineFinish(f, target, skill);
   } else if (skill.type === 'cyberBeam') {
-    // Energy beam: hits the entire row (front or back) of the targeted enemy.
-    // Per enemy: 2 physical segments (50%ATK each) + true damage = 10%ATK ×
-    // drone count (7% if 强化浮游炮 equipped).
+    // Energy beam: cyber laser sweeps from caster to far enemy in target's
+    // row. Per enemy: 2 physical (50%ATK each) + 2 true (5%ATK × droneCount
+    // each, 3.5% if enhanced — total still 10% / 7% × drones, split into
+    // two floats so the visual reads "double red + double gold").
     const target = allFighters[action.targetId];
     if (!target || !target.alive) { await sleep(400); }
     else {
       const droneCount = (f._drones || []).length;
-      const trueScale = f._cyberEnhanced ? (skill.droneTrueScaleEnhanced || 0.07) : (skill.droneTrueScale || 0.10);
-      const trueDmg = Math.round(f.atk * trueScale * droneCount);
+      const trueScaleTotal = f._cyberEnhanced ? (skill.droneTrueScaleEnhanced || 0.07) : (skill.droneTrueScale || 0.10);
+      const trueDmgPerSeg = Math.round(f.atk * (trueScaleTotal / 2) * droneCount);
       const oppTeam = (f.side === 'left' ? rightTeam : leftTeam);
       const rowEnemies = oppTeam.filter(e => e.alive && e._position === target._position);
       const enemies = rowEnemies.length ? rowEnemies : [target];
-      const hits = skill.hits || 2;
+      const physHits = skill.hits || 2;
+      const trueHits = 2;
       const physScale = skill.atkScale || 0.5;
+
+      // ── Beam sweep visual: stretch sprite from caster to far enemy ──
+      const battleField = document.getElementById('battleScene');
+      const fEl = document.getElementById(getFighterElId(f));
+      if (battleField && fEl && enemies.length) {
+        const bRect = battleField.getBoundingClientRect();
+        const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+        const fRect = fEl.getBoundingClientRect();
+        const fCx = ((fRect.left + fRect.width/2) - bRect.left) / zoom;
+        const fCy = ((fRect.top  + fRect.height/2) - bRect.top)  / zoom - 4;
+        let farX = fCx;
+        for (const e of enemies) {
+          const ee = document.getElementById(getFighterElId(e));
+          if (!ee) continue;
+          const er = ee.getBoundingClientRect();
+          const eCx = ((er.left + er.width/2) - bRect.left) / zoom;
+          if (Math.abs(eCx - fCx) > Math.abs(farX - fCx)) farX = eCx;
+        }
+        const beamLen = Math.max(80, Math.abs(farX - fCx) + 30);
+        const beam = document.createElement('div');
+        beam.className = 'cyber-beam-sweep';
+        beam.style.width = beamLen + 'px';
+        beam.style.top = (fCy - 40) + 'px';
+        if (farX >= fCx) {
+          beam.style.left = fCx + 'px';
+        } else {
+          beam.style.left = (fCx - beamLen) + 'px';
+          beam.classList.add('flip-x');
+        }
+        battleField.appendChild(beam);
+        setTimeout(() => beam.remove(), 460);
+      }
+
+      // Let the beam render its first frames before damage starts ticking
+      await sleep(120);
+
+      // Sort enemies by distance from caster so far targets get hit later (sweep feel)
+      const fRectStart = fEl ? fEl.getBoundingClientRect() : null;
+      enemies.sort((a, b) => {
+        const ea = document.getElementById(getFighterElId(a));
+        const eb = document.getElementById(getFighterElId(b));
+        if (!ea || !eb || !fRectStart) return 0;
+        return Math.abs(ea.getBoundingClientRect().left - fRectStart.left)
+             - Math.abs(eb.getBoundingClientRect().left - fRectStart.left);
+      });
+
       let logBits = [];
       for (const enemy of enemies) {
         if (!enemy.alive) continue;
         const eElId = getFighterElId(enemy);
-        let physTotal = 0;
-        for (let h = 0; h < hits; h++) {
+        let physTotal = 0, trueTotal = 0;
+        // 2 physical hits
+        for (let h = 0; h < physHits; h++) {
           if (!enemy.alive) break;
           const {isCrit, critMult} = calcCrit(f);
           const physBase = Math.round(f.atk * physScale);
           const eDef = calcEffDef(f, enemy);
           const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(eDef)));
           applyRawDmg(f, enemy, physDmg, false, false, 'physical');
-          spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:physDmg});
+          spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', h * 70, 0, {atkSide:f.side, amount:physDmg});
           physTotal += physDmg;
           await triggerOnHitEffects(f, enemy, physDmg);
-          await sleep(120);
+          await sleep(80);
         }
-        if (trueDmg > 0 && enemy.alive) {
-          applyRawDmg(f, enemy, trueDmg, false, false, 'true');
-          spawnFloatingNum(eElId, `-${trueDmg}`, 'true-dmg', 220, 22, {atkSide:f.side, amount:trueDmg});
+        // 2 true hits — only if there are drones
+        if (trueDmgPerSeg > 0) {
+          for (let h = 0; h < trueHits; h++) {
+            if (!enemy.alive) break;
+            applyRawDmg(f, enemy, trueDmgPerSeg, false, false, 'true');
+            spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 200 + h * 70, 22, {atkSide:f.side, amount:trueDmgPerSeg});
+            trueTotal += trueDmgPerSeg;
+            await sleep(60);
+          }
         }
         updateHpBar(enemy, eElId);
-        logBits.push(`${enemy.emoji}${enemy.name}(${physTotal}物+${trueDmg}真)`);
+        logBits.push(`${enemy.emoji}${enemy.name}(${physTotal}物+${trueTotal}真)`);
         if (battleOver) break;
       }
       const rowName = target._position === 'back' ? '后排' : '前排';
@@ -1162,6 +1217,13 @@ async function executeAction(action) {
       const elId = getFighterElId(ff); const el = document.getElementById(elId);
       ff.hp = 0; ff.alive = false; if (el) el.classList.add('dead'); updateHpBar(ff, elId);
       addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
+      // Mech birth VFX: cyan energy column + assembling drones at the turtle's spot.
+      if (el) {
+        const birth = document.createElement('div');
+        birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
+        el.appendChild(birth);
+        setTimeout(() => birth.remove(), 760);
+      }
       try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
       try { sfxExplosion(); } catch(e) {} await sleep(1000);
       try { const flash = document.createElement('div'); flash.className = 'mech-transform-flash'; document.body.appendChild(flash); setTimeout(() => flash.remove(), 600); } catch(e) {}
