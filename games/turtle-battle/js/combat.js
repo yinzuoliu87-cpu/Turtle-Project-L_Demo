@@ -922,6 +922,6 @@ function _applyInkBonus(source, target, originalAmount, _isInkBonus) {
   applyRawDmg(source, target, bonus, false, true, bonusType, true, false, true);
   const tElId = getFighterElId(target);
   const cls = bonusType === 'true' ? 'pierce-dmg' : 'magic-dmg';
-  spawnFloatingNum(tElId, `-${bonus}🖊`, cls, 60, 24);
+  spawnFloatingNum(tElId, `-${bonus}`, cls, 60, 24);
   updateHpBar(target, tElId);
 }

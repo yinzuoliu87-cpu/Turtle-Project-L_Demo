@@ -478,7 +478,7 @@ const ALL_PETS = [
     img:'../../assets/pets/线条龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'inkMark', name:'墨迹', pctPerStack:5, maxStacks:5,
               brief:'线条龟的攻击为目标叠加墨迹（上限5层）。目标每受到一段伤害，额外承受（每层 <span class="val-magic">5%×该段伤害</span>）的<span class="val-magic">魔法伤害</span>（满5层 = +25%）。',
-              desc:'线条龟的墨迹印记。\n\n每段攻击命中敌人叠加1层墨迹（上限5层）。\n\n带墨迹的目标每受到一段伤害，会额外承受一次<span class="val-magic">魔法伤害</span>，伤害值 = 该段伤害 × 5% × 当前墨迹层数。\n\n例：受20魔法伤害+4层墨迹 → 跳「-20」+「-4🖊」共24点蓝；受20物理+4层 → 跳「-20」红 +「-4🖊」蓝。\n\n「连笔」连接的两个敌人共享墨迹层数。\n「画龙点睛」可引爆墨迹造成大量魔法伤害（速写后转为真实）。' },
+              desc:'线条龟的墨迹印记。\n\n每段攻击命中敌人叠加1层墨迹（上限5层）。\n\n带墨迹的目标每受到一段伤害，会额外承受一次<span class="val-magic">魔法伤害</span>，伤害值 = 该段伤害 × 5% × 当前墨迹层数。\n\n例：受20魔法伤害+4层墨迹 → 跳「-20」+「-4」共24点蓝；受20物理+4层 → 跳「-20」红 +「-4」蓝。\n\n「连笔」连接的两个敌人共享墨迹层数。\n「画龙点睛」可引爆墨迹造成大量魔法伤害（速写后转为真实）。' },
     skillPool:[
       { name:'素描', type:'lineSketch', hits:3, power:0, pierce:0, cd:0, atkScale:0.45,
         brief:'线条龟画出3笔，每笔（{N:0.45*ATK}）物理伤害，共（{N:0.45*ATK*3}），每段叠1层墨迹',
