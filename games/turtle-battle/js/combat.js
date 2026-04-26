@@ -681,6 +681,9 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       const existing = target.buffs.find(b => b.type === 'phoenixBurnDot');
       if (existing) { existing.turns = Math.max(existing.turns, 4); }
       else target.buffs.push({ type:'phoenixBurnDot', value:burnVal, hpPct:8, turns:4, sourceSide:attacker.side, sourceIdx:allFighters.indexOf(attacker), dmgType:'magic' });
+      // Refresh icons + burning-class visual (renderSceneBuffs is the
+      // single source of truth for the .burning flame overlay).
+      renderStatusIcons(target);
     }
   }
 }
