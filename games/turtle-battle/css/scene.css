@@ -699,7 +699,11 @@
      scrub via 0%→100% background-position (percentages auto-handle any
      width JS sets inline). */
   background-size:600% 100%;
-  image-rendering:pixelated;
+  /* image-rendering: auto — pixelated made the 4-5× horizontal stretch
+     look like joined rectangles (each native pixel column became a wide
+     bar, with visible "joints" at end-cap / body transitions). Smooth
+     scaling reads as one continuous beam. */
+  image-rendering:auto;
   pointer-events:none;
   z-index:34;
   animation:cyberBeamSweepLife 720ms steps(6) forwards;
