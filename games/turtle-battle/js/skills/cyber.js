@@ -54,10 +54,10 @@ async function doCyberBeam(attacker, target, skill) {
   }
 
   // ── 3) Caster HOPS in an arc to target's row ──
-  // Use WAAPI keyframes on the outer element so we get a proper jump arc
-  // (apex above the midpoint between rows), not a flat slide. After the
-  // hop, hold at the target-row Y via fill:'forwards' so the caster stays
-  // there during windup + beam.
+  // Build a smooth parabolic arc with many keyframes (linear interpolation
+  // between them follows the formula y(t) = Yshift × t + 4·apex·t·(1-t)).
+  // Per-keyframe easing was causing visible kinks at apex — pure linear
+  // between dense keyframes reads smoother for a jump.
   let casterYShift = 0;
   if (fEl && tEl) {
     const fBody = fEl.querySelector('.st-body') || fEl;
@@ -68,24 +68,23 @@ async function doCyberBeam(attacker, target, skill) {
   }
   fEl.style.zIndex = '50';
   let hopAnim = null;
+  const buildArc = (dy, apexLift, dur) => {
+    const N = 12;
+    const kf = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const y = dy * t + apexLift * 4 * t * (1 - t);
+      kf.push({ transform: `translateY(${y}px) scale(${scale})`, offset: t });
+    }
+    return fEl.animate(kf, { duration: dur, easing: 'linear', fill: 'forwards' });
+  };
   if (Math.abs(casterYShift) > 4) {
-    // Apex 28-40px above the midpoint (more arc on bigger jumps)
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
-    const midY = casterYShift * 0.5 + apexLift;
-    hopAnim = fEl.animate([
-      { transform: `translateY(0) scale(${scale})`,             offset: 0,   easing: 'cubic-bezier(.3,.7,.5,1)' },  // takeoff (ease-out)
-      { transform: `translateY(${midY}px) scale(${scale})`,     offset: 0.5, easing: 'cubic-bezier(.5,0,.7,.4)' },  // apex → falling
-      { transform: `translateY(${casterYShift}px) scale(${scale})`, offset: 1 },                                       // land
-    ], { duration: 380, fill: 'forwards' });
+    const apexLift = -Math.min(44, 24 + Math.abs(casterYShift) * 0.28);
+    hopAnim = buildArc(casterYShift, apexLift, 460);
   } else {
-    // No row change — tiny up-down pulse to acknowledge the cast
-    hopAnim = fEl.animate([
-      { transform: `translateY(0) scale(${scale})` },
-      { transform: `translateY(-8px) scale(${scale})`, offset: 0.5 },
-      { transform: `translateY(0) scale(${scale})` },
-    ], { duration: 280, fill: 'forwards' });
+    hopAnim = buildArc(0, -10, 280);
   }
-  await sleep(400);
+  await sleep(480);
 
   // ── 4) Windup beat (reuse chi-wave's charging pose — blue glow fits cyber) ──
   fEl.classList.add('basic-chiwave-charging');
@@ -213,21 +212,23 @@ async function doCyberBeam(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>能量大炮</b> → ${rowLabel}（${droneCount}炮台）：${logBits.join('、')}`);
 
   // ── 7) Caster hops back to original row + camera zoom out ──
+  if (hopAnim) { try { hopAnim.cancel(); } catch (e) {} }
   if (Math.abs(casterYShift) > 4) {
-    // Hop back via WAAPI (cancel the previous fill:'forwards' first)
-    if (hopAnim) { try { hopAnim.cancel(); } catch (e) {} }
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25);
-    const midY = casterYShift * 0.5 + apexLift;
-    fEl.animate([
-      { transform: `translateY(${casterYShift}px) scale(${scale})`, offset: 0,   easing: 'cubic-bezier(.3,.7,.5,1)' },
-      { transform: `translateY(${midY}px) scale(${scale})`,         offset: 0.5, easing: 'cubic-bezier(.5,0,.7,.4)' },
-      { transform: `translateY(0) scale(${scale})`,                 offset: 1 },
-    ], { duration: 380, fill: 'forwards' });
-  } else if (hopAnim) {
-    try { hopAnim.cancel(); } catch (e) {}
+    // Hop back: build the SAME arc but with start-Y = casterYShift, end-Y = 0
+    const apexLift = -Math.min(44, 24 + Math.abs(casterYShift) * 0.28);
+    const N = 12;
+    const kf = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      // y(t) = startY + (endY - startY) * t + apex * 4t(1-t)
+      // Here startY=casterYShift, endY=0 → delta = -casterYShift
+      const y = casterYShift - casterYShift * t + apexLift * 4 * t * (1 - t);
+      kf.push({ transform: `translateY(${y}px) scale(${scale})`, offset: t });
+    }
+    fEl.animate(kf, { duration: 460, easing: 'linear', fill: 'forwards' });
   }
   if (battleField) battleField.style.transform = 'scale(1)';
-  await sleep(400);
+  await sleep(480);
   fEl.style.transition = '';
   fEl.style.transform = '';
   fEl.style.zIndex = '';
