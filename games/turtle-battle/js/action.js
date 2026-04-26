@@ -311,17 +311,31 @@ async function processPendingMechTransforms() {
       try { sfxExplosion(); } catch(e) {} await sleep(720);
       try { sfxRebirth(); } catch(e) {} await sleep(160);
       const finalHp = ff.passive.mechHpPer * dc; const finalAtk = ff.passive.mechAtkPer * dc;
-      ff.maxHp = finalHp; ff.hp = finalHp;
+      // Stats start at 0 and ramp up — no floating text, but the HP bar /
+      // ATK number on the card visually climb so the player sees the mech
+      // "powering on".
+      ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
       const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
-      ff.baseAtk = finalAtk; ff.atk = finalAtk;
       ff.shield = 0; ff.bubbleShieldVal = 0; ff.crit = 0.25; ff.armorPen = 0;
       ff.alive = true; ff._deathProcessed = false; ff.name = '机甲'; ff.emoji = '🤖'; ff.id = 'mech';
       ff.img = 'assets/passive/mech-form-icon.png'; ff.buffs = [];
       ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
-      ff._initAtk = finalAtk; ff._initDef = mechDef; ff._initHp = finalHp;
+      ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) el.classList.remove('dead');
-      renderFighterCard(ff, elId); updateHpBar(ff, elId); updateFighterStats(ff, elId);
+      renderFighterCard(ff, elId); updateHpBar(ff, elId);
+      // HP/ATK ramp 0→max so the bar/numbers visibly climb
+      const rampSteps = 20; const rampInterval = 150;
+      for (let ri = 1; ri <= rampSteps; ri++) {
+        ff.hp = Math.round(finalHp * ri / rampSteps);
+        ff.baseAtk = Math.round(finalAtk * ri / rampSteps);
+        ff.atk = ff.baseAtk;
+        updateHpBar(ff, elId); updateFighterStats(ff, elId);
+        await sleep(rampInterval);
+      }
+      ff.hp = finalHp; ff.maxHp = finalHp; ff.baseAtk = finalAtk; ff.atk = finalAtk;
+      ff._initAtk = finalAtk; ff._initDef = mechDef; ff._initHp = finalHp;
+      updateHpBar(ff, elId); updateFighterStats(ff, elId);
       addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
       const mechIdx = allFighters.indexOf(ff); if (typeof actedThisSide !== 'undefined' && actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
       await sleep(400);
