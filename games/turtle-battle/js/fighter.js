@@ -264,8 +264,8 @@ function applyPassiveSkills(f) {
     if (ps.type === 'rainbowEnhancedPrism') {
       f._enhancedPrism = true;
     }
-    // 线条龟 速写: ink cap 7 + convert to true damage
-    if (ps.type === 'lineSpeedWrite') {
+    // 线条龟 速写: ink cap 7 + convert ink mark / link transfer / finish to true damage
+    if (ps.type === 'lineRapid') {
       f._inkCapOverride = 7;
       f._inkTrueDmg = true;
     }

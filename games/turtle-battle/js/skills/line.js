@@ -4,18 +4,22 @@ function addInkStack(target, count, attacker) {
   const before = target._inkStacks || 0;
   target._inkStacks = Math.min(max, before + count);
   const gained = target._inkStacks - before;
+  // Track whether the marks are 真实 (rapid passive active) or 魔法 (default).
+  // Whoever placed the most recent stacks decides — single battle rarely has
+  // both rapid and non-rapid line turtles attacking the same target.
+  if (gained > 0 && attacker) {
+    target._inkRapidActive = !!attacker._inkTrueDmg;
+  }
   if (gained > 0) {
-    const tElId = getFighterElId(target);
     renderStatusIcons(target);
     // Ink link: sync stacks to partner
     if (target._inkLink && target._inkLink.partner && target._inkLink.partner.alive) {
       const partner = target._inkLink.partner;
       const pBefore = partner._inkStacks || 0;
       partner._inkStacks = Math.min(max, pBefore + gained);
+      partner._inkRapidActive = target._inkRapidActive;
       const pGained = partner._inkStacks - pBefore;
       if (pGained > 0) {
-        const pElId = getFighterElId(partner);
-        renderStatusIcons(partner);
         renderStatusIcons(partner);
       }
     }
@@ -82,15 +86,17 @@ async function doLineLink(attacker, target, skill) {
     await triggerOnHitEffects(attacker, second, dmg2);
     updateHpBar(second, sElId);
 
-    // Establish ink link between the two
-    target._inkLink = { partner: second, turns: skill.duration, transferPct: skill.transferPct };
-    second._inkLink = { partner: target, turns: skill.duration, transferPct: skill.transferPct };
+    // Establish ink link between the two — transfer type follows the line turtle's
+    // rapid-passive flag (魔法 by default, 真实 if rapid).
+    const linkType = attacker._inkTrueDmg ? 'true' : 'magic';
+    target._inkLink = { partner: second, turns: skill.duration, transferPct: skill.transferPct, dmgType: linkType };
+    second._inkLink = { partner: target, turns: skill.duration, transferPct: skill.transferPct, dmgType: linkType };
     spawnFloatingNum(tElId, '🔗连笔', 'crit-label', 0, -20);
     spawnFloatingNum(sElId, '🔗连笔', 'crit-label', 0, -20);
     renderStatusIcons(target);
     renderStatusIcons(second);
 
-    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b>：连接${target.emoji}${target.name}与${second.emoji}${second.name} ${skill.duration}回合（伤害传递${skill.transferPct}%真实）`);
+    addLog(`${attacker.emoji}${attacker.name} <b>连笔</b>：连接${target.emoji}${target.name}与${second.emoji}${second.name} ${skill.duration}回合（伤害传递${skill.transferPct}%${linkType === 'true' ? '真实' : '魔法'}）`);
   } else {
     addLog(`${attacker.emoji}${attacker.name} <b>连笔</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg1}物理伤害</span>+墨迹（无第二目标，无法建立连接）`);
   }
@@ -102,23 +108,32 @@ async function doLineFinish(attacker, target, skill) {
   const stacks = target._inkStacks || 0;
   const {isCrit, critMult} = calcCrit(attacker);
 
-  // Base normal damage
+  // Per-stack burst damage type: 真实 if attacker has rapid passive, else 魔法.
+  const burstType = attacker._inkTrueDmg ? 'true' : 'magic';
+  const burstFloatCls = isCrit
+    ? (burstType === 'true' ? 'crit-pierce' : 'crit-magic')
+    : (burstType === 'true' ? 'pierce-dmg' : 'magic-dmg');
+
+  // Base normal damage (physical, defense-reduced)
   const baseNormal = Math.round(attacker.atk * skill.baseScale);
   const eDef = calcEffDef(attacker, target);
-    // Ink amplification now handled in applyRawDmg
   let normalDmg = Math.max(1, Math.round(baseNormal * critMult * calcDmgMult(eDef)));
 
-  // Pierce damage per stack (ignores DEF)
-  const pierceDmg = Math.round(attacker.atk * skill.perStackScale * stacks * critMult);
+  // Per-stack burst damage. For magic, reduce by mr; for true, no reduction.
+  let burstDmg = Math.round(attacker.atk * skill.perStackScale * stacks * critMult);
+  if (burstDmg > 0 && burstType === 'magic') {
+    const eMr = calcEffDef(attacker, target, 'magic');
+    burstDmg = Math.max(1, Math.round(burstDmg * calcDmgMult(eMr)));
+  }
 
   applyRawDmg(attacker, target, normalDmg, false, false, 'physical');
-  if (pierceDmg > 0) applyRawDmg(attacker, target, pierceDmg, false, false, 'true');
-  const totalDmg = normalDmg + pierceDmg;
+  if (burstDmg > 0) applyRawDmg(attacker, target, burstDmg, false, false, burstType);
+  const totalDmg = normalDmg + burstDmg;
 
-  // Floating numbers: canonical stack — physical (red) bottom, pierce (white) top
+  // Floating numbers: physical (red) bottom, burst (magic blue / true white) top
   if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
   spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 22, {atkSide: attacker.side, amount: pierceDmg});
+  if (burstDmg > 0) spawnFloatingNum(tElId, `-${burstDmg}`, burstFloatCls, 0, 22, {atkSide: attacker.side, amount: burstDmg});
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -128,9 +143,14 @@ async function doLineFinish(attacker, target, skill) {
   // Clear ink stacks
   target._inkStacks = 0;
   renderStatusIcons(target);
-  // If linked partner, also clear partner's stacks? No — only clear targeted stacks.
 
-  addLog(`${attacker.emoji}${attacker.name} <b>画龙点睛</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}物理</span> + <span class="log-pierce">${pierceDmg}真实</span>（${stacks}层墨迹引爆）`);
+  // Kill-resets-cd: if 画龙点睛 just killed the target, refund this skill's cd.
+  const killed = !target.alive || target.hp <= 0;
+  if (killed) {
+    skill.cdLeft = 0;
+  }
+
+  addLog(`${attacker.emoji}${attacker.name} <b>画龙点睛</b> → ${target.emoji}${target.name}：<span class="log-direct">${normalDmg}物理</span> + <span class="${burstType === 'true' ? 'log-pierce' : 'log-magic'}">${burstDmg}${burstType === 'true' ? '真实' : '魔法'}</span>（${stacks}层墨迹引爆${killed ? '·斩杀，CD重置' : ''}）`);
   await sleep(800);
 }
 

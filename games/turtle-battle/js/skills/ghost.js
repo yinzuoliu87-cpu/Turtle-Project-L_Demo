@@ -5,8 +5,8 @@ async function doGhostTouch(attacker, target, skill) {
   const normalBase = Math.round(attacker.atk * skill.normalScale);
   const eDef = calcEffDef(attacker, target);
     let normalDmg = Math.max(1, Math.round(normalBase * critMult * calcDmgMult(eDef)));
-  // Ink amplification
-  if (target._inkStacks > 0) normalDmg = Math.round(normalDmg * (1 + target._inkStacks * 0.05));
+  // Ink amplification — handled in applyRawDmg as a separate ink-bonus event,
+  // so no pre-multiply needed here.
   // Pierce damage portion (ignores DEF)
   const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
   const totalDmg = normalDmg + pierceDmg;
@@ -51,12 +51,11 @@ async function doGhostStorm(attacker, target, skill) {
     if (!target.alive) continue; // keep animating remaining hits
     const {isCrit, critMult} = calcCrit(attacker);
     const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
-    // Ink amplification
-    const finalDmg = target._inkStacks > 0 ? Math.round(pierceDmg * (1 + target._inkStacks * 0.05)) : pierceDmg;
+    // Ink amplification handled in applyRawDmg.
 
-    applyRawDmg(attacker, target, finalDmg, true, false, 'true');
-    totalPierce += finalDmg;
-    spawnFloatingNum(tElId, `-${finalDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
+    applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
+    totalPierce += pierceDmg;
+    spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, finalDmg);
 
     const tEl = document.getElementById(tElId);

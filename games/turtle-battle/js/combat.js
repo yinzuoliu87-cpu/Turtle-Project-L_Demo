@@ -745,7 +745,7 @@ async function doGamblerCards(attacker, target, skill) {
 //     style). The caller is responsible for running checkDeaths() at the end
 //     of the action to finalize alive=false and play the death animation.
 //     Use this ONLY inside multi-hit loops (doDamage, AoE barrages).
-function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHurtAnim, deferDeath) {
+function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHurtAnim, deferDeath, _isInkBonus) {
   // physImmune: block all physical damage (ghost phantom state)
   if (dmgType === 'physical' && target.buffs && target.buffs.some(b => b.type === 'physImmune')) {
     spawnFloatingNum(getFighterElId(target), '免疫!', 'dodge-num', 0, 0);
@@ -756,10 +756,10 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
   if (dmgReduceBuff && amount > 0) {
     amount = Math.round(amount * (1 - dmgReduceBuff.value / 100));
   }
-  // Ink mark amplification: all damage to marked target is increased
-  if (target._inkStacks > 0 && amount > 0) {
-    amount = Math.round(amount * (1 + target._inkStacks * 0.05));
-  }
+  // Ink mark passive: deferred — applied as a SEPARATE damage event after the
+  // main hit lands (see end of this function). This way the ink bonus reads
+  // as its own floating number (魔法 by default, 真实 if rapid passive),
+  // and is properly mitigated by mr if magic.
   // Battle rule: 深海之日 — magic damage -20%
   if (dmgType === 'magic' && amount > 0) amount = Math.round(amount * getMagicDmgMult());
   // Equipment: flat damage reduction
@@ -797,6 +797,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
       else target._physDmgTaken = (target._physDmgTaken||0) + amount;
     }
     updateDmgStats();
+    _applyInkBonus(source, target, amount, _isInkBonus);
     return { hpLoss: hpLoss2, shieldAbs: shieldAbs2, bubbleAbs: bubbleAbs2 };
   }
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
@@ -879,14 +880,18 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     updateHpBar(target, getFighterElId(target)); // refresh rage bar
   }
   updateDmgStats();
-  // Ink link transfer: damage dealt to linked target transfers X% as pierce to partner
+  // Ink link transfer: damage dealt to linked target transfers X% to partner.
+  // Type follows _inkLink.dmgType (set when 连笔 is cast). Magic by default,
+  // 真实 if line turtle has 速写/lineRapid passive.
   if (!_skipLink && target._inkLink && target._inkLink.partner && target._inkLink.partner.alive && amount > 0) {
     const transferAmt = Math.round(amount * target._inkLink.transferPct / 100);
     if (transferAmt > 0) {
       const partner = target._inkLink.partner;
-      applyRawDmg(source, partner, transferAmt, true, true); // _skipLink=true to prevent infinite loop
+      const linkType = target._inkLink.dmgType || 'magic';
+      applyRawDmg(source, partner, transferAmt, false, true, linkType); // _skipLink=true to prevent infinite loop
       const pElId = getFighterElId(partner);
-      spawnFloatingNum(pElId, `-${transferAmt}🔗`, 'pierce-dmg', 0, 0);
+      const floatCls = linkType === 'true' ? 'pierce-dmg' : 'magic-dmg';
+      spawnFloatingNum(pElId, `-${transferAmt}🔗`, floatCls, 0, 0);
       updateHpBar(partner, pElId);
     }
   }
@@ -894,5 +899,29 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
   if (!_skipLink && !_noHurtAnim && rem > 0 && typeof playHurtAnimation === 'function') {
     playHurtAnimation(target);
   }
+  _applyInkBonus(source, target, amount, _isInkBonus);
   return { hpLoss: rem, shieldAbs, bubbleAbs };
+}
+
+// Ink mark bonus: when a marked target takes any damage, deal extra
+// magic (or 真实, if rapid passive) damage equal to amount × stacks × 5%.
+// Recursion-guarded by _isInkBonus param so the bonus call doesn't loop.
+function _applyInkBonus(source, target, originalAmount, _isInkBonus) {
+  if (_isInkBonus) return;
+  if (!target || !target.alive) return;
+  const stacks = target._inkStacks || 0;
+  if (stacks <= 0 || originalAmount <= 0) return;
+  const bonusType = target._inkRapidActive ? 'true' : 'magic';
+  let bonus = Math.round(originalAmount * stacks * 0.05);
+  if (bonus <= 0) return;
+  // For magic, mitigate by mr; for true, no further reduction.
+  if (bonusType === 'magic') {
+    const eMr = source ? calcEffDef(source, target, 'magic') : 0;
+    bonus = Math.max(1, Math.round(bonus * calcDmgMult(eMr)));
+  }
+  applyRawDmg(source, target, bonus, false, true, bonusType, true, false, true);
+  const tElId = getFighterElId(target);
+  const cls = bonusType === 'true' ? 'pierce-dmg' : 'magic-dmg';
+  spawnFloatingNum(tElId, `-${bonus}🖊`, cls, 60, 24);
+  updateHpBar(target, tElId);
 }
