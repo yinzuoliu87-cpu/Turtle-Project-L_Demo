@@ -246,6 +246,12 @@ function renderScene() {
 function renderSceneBuffs(f) {
   const el = document.getElementById(getFighterElId(f));
   if (!el) return;
+  // Toggle burn-loop overlay class here (single source of truth) so that
+  // any code path which adds phoenixBurnDot — including those that don't
+  // call renderStatusIcons (equipment burn-on-hit, fire battle rule) —
+  // still triggers the visual flame layer next time icons rerender.
+  const isBurning = f.alive && f.buffs && f.buffs.some(b => b.type === 'phoenixBurnDot');
+  el.classList.toggle('burning', isBurning);
   const box = el.querySelector('.st-buffs');
   if (!box) return;
   const ic = (src) => `<img src="assets/${src}" style="width:14px;height:14px;vertical-align:middle">`;
