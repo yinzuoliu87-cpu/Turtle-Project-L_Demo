@@ -323,7 +323,19 @@ async function processPendingMechTransforms() {
       ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
       ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
       if (el) el.classList.remove('dead');
+      // CSS .st-sprite has transition: transform 1.5s ease. The data-pid
+      // change from 'cyber' → 'mech' triggers different scaleX rules which
+      // would interpolate over 1.5s — producing a Y-axis rotation effect
+      // ("图片沿着竖向中心对称轴转一圈" the user reported). Suppress the
+      // transition for one frame during the renderFighterCard sprite swap.
+      const sprite = el ? el.querySelector('.st-sprite') : null;
+      if (sprite) sprite.style.transition = 'none';
       renderFighterCard(ff, elId); updateHpBar(ff, elId);
+      if (sprite) {
+        // Force reflow so the no-transition style commits, then restore
+        void sprite.offsetWidth;
+        sprite.style.transition = '';
+      }
       // HP/ATK ramp 0→max so the bar/numbers visibly climb
       const rampSteps = 20; const rampInterval = 150;
       for (let ri = 1; ri <= rampSteps; ri++) {
