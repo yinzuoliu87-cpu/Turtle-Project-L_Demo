@@ -272,6 +272,52 @@ async function useCombo(comboIdx) {
   onActionComplete();
 }
 
+// Shared helper — runs the mech-birth/transform sequence for any fighter
+// with _pendingMech set. Called from executeAction (after a player skill
+// killed a 赛博龟) AND from processSideEnd in turn.js (after side-end DoT
+// or drone-fire killed one). Without the latter call site, a 赛博龟 dying
+// during side-end would set _pendingMech but stay in zombie state forever.
+async function processPendingMechTransforms() {
+  for (const ff of allFighters) {
+    if (ff._pendingMech) {
+      const dc = ff._pendingMech; ff._pendingMech = null;
+      const elId = getFighterElId(ff); const el = document.getElementById(elId);
+      ff.hp = 0; ff.alive = false; if (el) el.classList.add('dead'); updateHpBar(ff, elId);
+      addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
+      if (el) {
+        const birth = document.createElement('div');
+        birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
+        el.appendChild(birth);
+        setTimeout(() => birth.remove(), 760);
+      }
+      try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
+      try { sfxExplosion(); } catch(e) {} await sleep(1000);
+      try { const flash = document.createElement('div'); flash.className = 'mech-transform-flash'; document.body.appendChild(flash); setTimeout(() => flash.remove(), 600); } catch(e) {}
+      try { sfxRebirth(); } catch(e) {} await sleep(300);
+      const finalHp = ff.passive.mechHpPer * dc; const finalAtk = ff.passive.mechAtkPer * dc;
+      ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
+      const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
+      ff.shield = 0; ff.bubbleShieldVal = 0; ff.crit = 0.25; ff.armorPen = 0;
+      ff.alive = true; ff._deathProcessed = false; ff.name = '机甲'; ff.emoji = '🤖'; ff.id = 'mech';
+      ff.img = 'assets/passive/mech-form-icon.png'; ff.buffs = [];
+      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
+      ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
+      ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
+      if (el) { el.classList.remove('dead'); el.classList.add('mech-transform-anim'); setTimeout(() => el.classList.remove('mech-transform-anim'), 800); }
+      renderFighterCard(ff, elId); updateHpBar(ff, elId);
+      spawnFloatingNum(elId, `🤖机甲充能中...`, 'crit-label', 0, -25);
+      const rampSteps = 20; const rampInterval = 150;
+      for (let ri = 1; ri <= rampSteps; ri++) { ff.hp = Math.round(finalHp * ri / rampSteps); ff.baseAtk = Math.round(finalAtk * ri / rampSteps); ff.atk = ff.baseAtk; updateHpBar(ff, elId); updateFighterStats(ff, elId); await sleep(rampInterval); }
+      ff.hp = finalHp; ff.maxHp = finalHp; ff.baseAtk = finalAtk; ff.atk = finalAtk;
+      updateHpBar(ff, elId); updateFighterStats(ff, elId);
+      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25); spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
+      addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
+      const mechIdx = allFighters.indexOf(ff); if (typeof actedThisSide !== 'undefined' && actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
+      await sleep(400);
+    }
+  }
+}
+
 function selectTarget(fi) {
   if (animating || battleOver) return;
   const f = currentActingFighter;
@@ -1112,46 +1158,8 @@ async function executeAction(action) {
     }
   }
 
-  // Process pending mech transforms (async with dramatic pause)
-  for (const ff of allFighters) {
-    if (ff._pendingMech) {
-      const dc = ff._pendingMech; ff._pendingMech = null;
-      const elId = getFighterElId(ff); const el = document.getElementById(elId);
-      ff.hp = 0; ff.alive = false; if (el) el.classList.add('dead'); updateHpBar(ff, elId);
-      addLog(`${ff.emoji}${ff.name} 被击败...浮游炮开始组装！`);
-      // Mech birth VFX: cyan energy column + assembling drones at the turtle's spot.
-      if (el) {
-        const birth = document.createElement('div');
-        birth.className = 'cyber-mech-birth' + (ff.side === 'left' ? '' : ' flip-x');
-        el.appendChild(birth);
-        setTimeout(() => birth.remove(), 760);
-      }
-      try { const cardRect = el ? el.getBoundingClientRect() : {left:100,top:100,width:100,height:50}; for (let di = 0; di < dc; di++) { const particle = document.createElement('div'); particle.className = 'mech-drone-particle'; const angle = (di / dc) * Math.PI * 2; const dist = 80 + _origMathRandom() * 60; particle.style.left = (cardRect.left + cardRect.width/2 + Math.cos(angle) * dist) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 + Math.sin(angle) * dist) + 'px'; document.body.appendChild(particle); requestAnimationFrame(() => { particle.style.transition = `all ${0.4 + di*0.05}s ease-in`; particle.style.left = (cardRect.left + cardRect.width/2 - 6) + 'px'; particle.style.top = (cardRect.top + cardRect.height/2 - 6) + 'px'; particle.style.opacity = '0'; particle.style.transform = 'scale(0.3)'; }); setTimeout(() => particle.remove(), 1500); } } catch(e) {}
-      try { sfxExplosion(); } catch(e) {} await sleep(1000);
-      try { const flash = document.createElement('div'); flash.className = 'mech-transform-flash'; document.body.appendChild(flash); setTimeout(() => flash.remove(), 600); } catch(e) {}
-      try { sfxRebirth(); } catch(e) {} await sleep(300);
-      const finalHp = ff.passive.mechHpPer * dc; const finalAtk = ff.passive.mechAtkPer * dc;
-      ff.maxHp = finalHp; ff.hp = 0; ff.baseAtk = 0; ff.atk = 0;
-      const mechDef = ff._cyberEnhanced ? dc : 0; ff.baseDef = mechDef; ff.def = mechDef; ff.baseMr = mechDef; ff.mr = mechDef;
-      ff.shield = 0; ff.bubbleShieldVal = 0; ff.crit = 0.25; ff.armorPen = 0;
-      ff.alive = true; ff._deathProcessed = false; ff.name = '机甲'; ff.emoji = '🤖'; ff.id = 'mech';
-      ff.img = 'assets/passive/mech-form-icon.png'; ff.buffs = [];
-      ff.passive = { type:'mechBody', droneCount:dc, mechHpPer:30, mechAtkPer:5, desc:`由 ${dc} 个浮游炮组装而成。\n\n· 生命值 = 35 × ${dc} = ${finalHp}\n· 攻击力 = 5 × ${dc} = ${finalAtk}\n· 护甲 = 0\n· 暴击率 = 25%\n\n每回合自动攻击生命值最低的敌人，造成（150%×攻击力 = ${Math.round(finalAtk*1.5)}）物理伤害。` };
-      ff.skills = [{ name:'机甲攻击', type:'mechAttack', hits:1, power:0, pierce:0, cd:0, cdLeft:0, atkScale:1.5, brief:'机甲自动攻击生命值最低的敌人，造成{N:1.5*ATK}物理伤害', detail:'机甲自动锁定生命值最低的敌方目标。\n造成 150%×(攻击力={ATK}) = {N:1.5*ATK} 物理伤害。' }];
-      ff._initAtk = 0; ff._initDef = 0; ff._initHp = 0;
-      if (el) { el.classList.remove('dead'); el.classList.add('mech-transform-anim'); setTimeout(() => el.classList.remove('mech-transform-anim'), 800); }
-      renderFighterCard(ff, elId); updateHpBar(ff, elId);
-      spawnFloatingNum(elId, `🤖机甲充能中...`, 'crit-label', 0, -25);
-      const rampSteps = 20; const rampInterval = 150;
-      for (let ri = 1; ri <= rampSteps; ri++) { ff.hp = Math.round(finalHp * ri / rampSteps); ff.baseAtk = Math.round(finalAtk * ri / rampSteps); ff.atk = ff.baseAtk; updateHpBar(ff, elId); updateFighterStats(ff, elId); await sleep(rampInterval); }
-      ff.hp = finalHp; ff.maxHp = finalHp; ff.baseAtk = finalAtk; ff.atk = finalAtk;
-      updateHpBar(ff, elId); updateFighterStats(ff, elId);
-      spawnFloatingNum(elId, `🤖机甲启动!`, 'crit-label', 0, -25); spawnFloatingNum(elId, `${dc}炮→HP${ff.hp} ATK${ff.atk}`, 'passive-num', 0, 0);
-      addLog(`🤖${ff.name} <span class="log-passive">浮游炮×${dc}组装完成！HP${ff.hp} ATK${ff.atk}</span>`);
-      const mechIdx = allFighters.indexOf(ff); if (actedThisSide.has(mechIdx)) actedThisSide.delete(mechIdx);
-      await sleep(400);
-    }
-  }
+  // Process pending mech transforms (extracted to shared helper so processSideEnd can also call it)
+  await processPendingMechTransforms();
 
   if (checkBattleEnd()) { animating=false; return; }
 

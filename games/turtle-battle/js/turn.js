@@ -710,6 +710,11 @@ async function processSideEnd(endedSide) {
   await sleep(1500);
   for (const f of dotCandidates) {
     await tickDotsOn(f);
+    // DoT may have killed a 赛博龟 — process pending mech transforms so it
+    // doesn't get stuck in zombie state (alive=true hp=1 with no real form).
+    if (typeof processPendingMechTransforms === 'function') {
+      await processPendingMechTransforms();
+    }
     if (checkBattleEnd()) return;
   }
   for (const f of hotCandidates) {
@@ -723,6 +728,12 @@ async function processSideEnd(endedSide) {
   // Cyber drones: our side's 赛博龟 spawns + fires drones at end of our turn
   if (droneOwners.length > 0) {
     await processCyberDrones(endedSide);
+    // A drone hit may have killed an enemy 赛博龟 → checkDeaths set
+    // _pendingMech but only executeAction processed it. Run the helper
+    // here so the mech-birth sequence actually plays during side-end too.
+    if (typeof processPendingMechTransforms === 'function') {
+      await processPendingMechTransforms();
+    }
     if (checkBattleEnd()) return;
   }
   // Lava rage check — DoTs / on-hit reflects during this side end could
