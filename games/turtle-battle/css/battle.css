@@ -261,14 +261,8 @@
   0%   { opacity: 1; }
   100% { opacity: 0; }
 }
-.mech-transform-anim {
-  animation: mechPop 0.6s ease-out !important;
-}
-@keyframes mechPop {
-  0%   { transform: scale(0.3); opacity: 0.5; }
-  50%  { transform: scale(1.15); opacity: 1; }
-  100% { transform: scale(1); opacity: 1; }
-}
+/* Old mech-transform-anim mechPop animation removed — was being seen as
+   "图片转一圈" old VFX. New cyber-mech-birth sprite handles the visual now. */
 
 /* ── BAMBOO CHARGE READY (pulsing glow) ── */
 .bamboo-charge-ready {
