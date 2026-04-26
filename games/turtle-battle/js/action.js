@@ -739,8 +739,20 @@ async function executeAction(action) {
       const actual = applyHeal(target, healAmt);
       const elId = getFighterElId(target);
       if (actual > 0) { spawnFloatingNum(elId, `+${actual}`, 'heal-num', 0, 0); updateHpBar(target, elId); }
-      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
-
+      // Splash heal — every other alive ally gets splashPct of the main heal amount
+      const splashPct = skill.splashPct || 0;
+      if (splashPct > 0 && healAmt > 0) {
+        const splashAmt = Math.round(healAmt * splashPct / 100);
+        const allies = (f.side==='left'?leftTeam:rightTeam).filter(a => a.alive && a !== target);
+        for (const ally of allies) {
+          const aActual = applyHeal(ally, splashAmt);
+          const aElId = getFighterElId(ally);
+          if (aActual > 0) { spawnFloatingNum(aElId, `+${aActual}`, 'heal-num', 100, 0); updateHpBar(ally, aElId); }
+        }
+        addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>，其他友军各回复 ~${splashAmt}HP`);
+      } else {
+        addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-heal">回复${actual}HP</span>`);
+      }
     }
     await sleep(800);
   } else if (skill.type === 'crystalResHeal') {
@@ -954,8 +966,47 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     if (target && target.alive) { const stacks = target._crystallize || 0; const baseDmg = Math.round(f.atk * (skill.atkScale||0.5)); const stackDmg = Math.round(f.atk * (skill.perStackScale||0.6) * stacks); const totalDmg = baseDmg + stackDmg; applyRawDmg(f, target, totalDmg, false, false, 'magic'); const tElId = getFighterElId(target); spawnFloatingNum(tElId, `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg}); updateHpBar(target, tElId); if (stacks > 0) spawnFloatingNum(tElId, `引爆${stacks}层`, 'debuff-num', 200, 0); if (skill.consumeStacks) target._crystallize = 0; renderStatusIcons(target); addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：引爆${stacks}层结晶，造成 ${totalDmg} 魔法伤害`); await triggerOnHitEffects(f, target, totalDmg); } await sleep(400);
   } else if (skill.type === 'bubbleBurst') {
+    // Column AOE: 100% bubble store consumed, hits everyone in target's column
+    // for (0.8 × consumed) magic + (0.8 × ATK) physical, two separate floats.
     const target = allFighters[action.targetId];
-    if (target && target.alive) { const consumed = Math.round(f.bubbleStore * (skill.bubbleConsumePct||60) / 100); f.bubbleStore -= consumed; updateHpBar(f, getFighterElId(f)); applyRawDmg(f, target, consumed, false, false, 'magic'); const tElId = getFighterElId(target); spawnFloatingNum(tElId, `-${consumed}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:consumed}); updateHpBar(target, tElId); addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：消耗${consumed}泡泡值，造成 ${consumed} 魔法伤害`); await triggerOnHitEffects(f, target, consumed); } await sleep(400);
+    if (target && target.alive) {
+      const consumed = Math.round(f.bubbleStore * (skill.bubbleConsumePct||100) / 100);
+      f.bubbleStore -= consumed;
+      updateHpBar(f, getFighterElId(f));
+      const magicScale = skill.bubbleMagicScale || 0.8;
+      const physScale = skill.atkScale || 0.8;
+      const magicDmg = Math.round(consumed * magicScale);
+      const physBaseRaw = Math.round(f.atk * physScale);
+      // Determine column from target's slotKey (e.g. 'front-1' → col '1')
+      const col = target._slotKey ? target._slotKey.split('-')[1] : null;
+      const oppTeam = (f.side === 'left' ? rightTeam : leftTeam);
+      const colTargets = col != null
+        ? oppTeam.filter(e => e.alive && e._slotKey && e._slotKey.split('-')[1] === col)
+        : [target];
+      const enemies = colTargets.length ? colTargets : [target];
+      let logBits = [];
+      for (const enemy of enemies) {
+        const eElId = getFighterElId(enemy);
+        if (magicDmg > 0) {
+          applyRawDmg(f, enemy, magicDmg, false, false, 'magic');
+          spawnFloatingNum(eElId, `-${magicDmg}`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:magicDmg});
+        }
+        if (physBaseRaw > 0 && enemy.alive) {
+          const eDef = calcEffDef(f, enemy);
+          const physDmg = Math.max(1, Math.round(physBaseRaw * calcDmgMult(eDef)));
+          applyRawDmg(f, enemy, physDmg, false, false, 'physical');
+          spawnFloatingNum(eElId, `-${physDmg}`, 'direct-dmg', 120, 22, {atkSide:f.side, amount:physDmg});
+          logBits.push(`${enemy.emoji}${enemy.name}(${magicDmg}魔+${physDmg}物)`);
+        } else {
+          logBits.push(`${enemy.emoji}${enemy.name}(${magicDmg}魔)`);
+        }
+        updateHpBar(enemy, eElId);
+        await triggerOnHitEffects(f, enemy, magicDmg + physBaseRaw);
+        if (battleOver) break;
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b>：消耗${consumed}泡泡值，对${col != null ? `第${col}列` : '目标'}（${enemies.length}个）：${logBits.join('、')}`);
+    }
+    await sleep(400);
   } else if (skill.type === 'shellAuraBurst') {
     const enemies = getAliveEnemiesWithSummons(f.side); const baseDmg = Math.round(f.atk * (skill.atkScale||0.5)); const energyDmg = Math.round(f._storedEnergy * (skill.energyDmgScale||1.2)); const totalDmg = baseDmg + energyDmg;
     for (const enemy of enemies) { applyRawDmg(f, enemy, totalDmg, false, false, 'physical'); spawnFloatingNum(getFighterElId(enemy), `-${totalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:totalDmg}); updateHpBar(enemy, getFighterElId(enemy)); await triggerOnHitEffects(f, enemy, totalDmg); if (battleOver) break; }

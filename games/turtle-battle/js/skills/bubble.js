@@ -16,11 +16,12 @@ async function doBubbleBind(caster, target, skill) {
   const lv = caster._level || 1;
   const perHitLoss = lv >= 6 ? 2 : 1;
   target.buffs = target.buffs.filter(b => b.type !== 'bubbleBind');
-  target.buffs.push({ type:'bubbleBind', perHitLoss, turns: skill.duration });
+  const lossCap = skill.lossCap || 30;
+  target.buffs.push({ type:'bubbleBind', perHitLoss, turns: skill.duration, lossCap, lossUsed: 0 });
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, '<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">束缚', 'bubble-num', 0, 0);
   renderStatusIcons(target);
-  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">束缚${skill.duration}回合（每受一段伤害 护甲/魔抗各 -${perHitLoss}）</span>`);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：<span class="log-passive">束缚${skill.duration}回合（每受一段伤害 护甲/魔抗各 -${perHitLoss}，累计上限 ${lossCap}）</span>`);
   await sleep(1000);
 }
 

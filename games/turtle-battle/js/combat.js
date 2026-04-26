@@ -485,17 +485,23 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const actual = target.bubbleStore - before;
     if (actual > 0) spawnFloatingNum(tElId, `+${actual}🫧`, 'bubble-num', 200, 0);
   }
-  // BubbleBind — reworked: each hit reduces target's DEF and MR by perHitLoss.
+  // BubbleBind — each hit reduces target's DEF and MR by perHitLoss, capped
+  // at lossCap total per active bubbleBind instance (resets on re-bind).
   const bindBuff = target.buffs.find(b => b.type === 'bubbleBind');
   if (bindBuff && bindBuff.perHitLoss > 0 && target.alive && dmg > 0) {
-    const loss = bindBuff.perHitLoss;
-    target.baseDef = Math.max(0, target.baseDef - loss);
-    target.def = Math.max(0, target.def - loss);
-    target.baseMr = Math.max(0, target.baseMr - loss);
-    target.mr = Math.max(0, target.mr - loss);
-    const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${loss}甲/抗`, 'debuff-num', 150, 14);
-    updateFighterStats(target, tElId);
+    const cap = bindBuff.lossCap || 30;
+    const used = bindBuff.lossUsed || 0;
+    const loss = Math.min(bindBuff.perHitLoss, cap - used);
+    if (loss > 0) {
+      target.baseDef = Math.max(0, target.baseDef - loss);
+      target.def = Math.max(0, target.def - loss);
+      target.baseMr = Math.max(0, target.baseMr - loss);
+      target.mr = Math.max(0, target.mr - loss);
+      bindBuff.lossUsed = used + loss;
+      const tElId = getFighterElId(target);
+      spawnFloatingNum(tElId, `-${loss}甲/抗`, 'debuff-num', 150, 14);
+      updateFighterStats(target, tElId);
+    }
   }
   // Crystallize stacking (crystal turtle passive)
   if (attacker.passive && attacker.passive.type === 'crystalResonance' && target.alive) {
