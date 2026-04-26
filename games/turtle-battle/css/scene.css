@@ -654,6 +654,24 @@
   }
 }
 
+/* ── 忍者龟: 冲击 dash trail (CSS placeholder until sprite is made) ──
+   Adds horizontal motion blur + cyan after-image lines behind the body
+   while the .ninja-dashing class is active. Direction handled by ninja's
+   side via existing .pos-left/.pos-right scaleX on st-sprite. */
+.scene-turtle.ninja-dashing .st-body{
+  filter:drop-shadow(-12px 0 0 rgba(120,200,255,.5))
+         drop-shadow(-22px 0 0 rgba(120,200,255,.3))
+         drop-shadow(-32px 0 0 rgba(120,200,255,.18))
+         drop-shadow(0 0 8px rgba(255,255,255,.6));
+}
+.scene-turtle[class*="pos-right"].ninja-dashing .st-body{
+  /* mirror trail direction for right-side ninja */
+  filter:drop-shadow(12px 0 0 rgba(120,200,255,.5))
+         drop-shadow(22px 0 0 rgba(120,200,255,.3))
+         drop-shadow(32px 0 0 rgba(120,200,255,.18))
+         drop-shadow(0 0 8px rgba(255,255,255,.6));
+}
+
 /* ── 赛博龟: 能量大炮 cut-in (single cyan pulse) ──
    Simpler than chi-cutin's nested orb to avoid the appearance of a
    "double flash" the user reported. Pure radial cyan that fades in,
