@@ -74,7 +74,8 @@ async function doDiceFlashStrike(caster, skill) {
   const roll = 1 + Math.floor(Math.random() * 6);
   spawnFloatingNum(fElId, `🎲${roll}点!`, 'crit-label', 0, -20);
   await sleep(500);
-  const perHitScale = skill.perHitScale || 0.5;
+  const perHitScale = skill.perHitScale || 1.0;
+  const falloff = (skill.falloffPct || 0) / 100;
   let totalDmg = 0;
   for (let i = 0; i < roll; i++) {
     const enemies = (caster.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
@@ -84,7 +85,9 @@ async function doDiceFlashStrike(caster, skill) {
     const eDef = calcEffDef(caster, target);
     const isCrit = Math.random() < caster.crit;
     const critMult = isCrit ? (1.5 + (caster._extraCritDmg || 0) + (caster._extraCritDmgPerm || 0)) : 1;
-    const dmg = Math.max(1, Math.round(caster.atk * perHitScale * critMult * calcDmgMult(eDef)));
+    // Falloff: each subsequent hit -5% (additive). Floor at 0 so we never go negative.
+    const hitScale = Math.max(0, perHitScale - falloff * i);
+    const dmg = Math.max(1, Math.round(caster.atk * hitScale * critMult * calcDmgMult(eDef)));
     applyRawDmg(caster, target, dmg, false, false, 'physical');
     spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: caster.side, amount: dmg});
     updateHpBar(target, tElId);
@@ -95,7 +98,7 @@ async function doDiceFlashStrike(caster, skill) {
     if (tEl) tEl.classList.remove('hit-shake');
     totalDmg += dmg;
   }
-  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：🎲${roll}点 × <span class="log-direct">${perHitScale * 100}%ATK</span> = ${roll}段共 <span class="log-direct">${totalDmg}物理</span>`);
+  addLog(`${caster.emoji}${caster.name} <b>${skill.name}</b>：🎲${roll}点 × <span class="log-direct">${Math.round(perHitScale * 100)}%ATK</span>${falloff>0?` (每段-${Math.round(falloff*100)}%)`:''} = ${roll}段共 <span class="log-direct">${totalDmg}物理</span>`);
   await sleep(400);
 }
 
