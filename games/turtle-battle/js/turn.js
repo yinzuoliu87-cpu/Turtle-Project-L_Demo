@@ -891,60 +891,84 @@ async function processRoundEndBuffs() {
   if (hadTick) await sleep(800);
 }
 
-function recalcStats() {
-  allFighters.forEach(f => {
-    // Reset to base
-    f.atk = f.baseAtk;
-    f.def = f.baseDef;
-    f.mr  = f.baseMr || f.baseDef;
-    // Diamond structure: amplify armor/mr buffs for all allies
-    const team = f.side === 'left' ? leftTeam : rightTeam;
-    const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
-    let defAmp = 1;
-    if (diamond) {
-      const isSelf = f === diamond;
-      const ampPct = (isSelf && diamond._diamondEnhanced) ? 100 : (diamond.passive.defBuffAmp || 50);
-      defAmp = 1 + ampPct / 100;
-    }
-    // Chilled: ATK -20%
-    if (f.buffs.some(b => b.type === 'chilled')) {
-      f.atk = Math.round(f.atk * 0.8);
-    }
-    // Apply debuffs & buffs
+// Per-fighter recompute (no UI side effects). Reads f.buffs / f.hp / cross-team
+// diamond state and writes f.atk/f.def/f.mr/f.crit. Always runs on hp-scaling
+// passives (undeadRage / gamblerBlood) since hp changes are not tracked.
+function _recalcOneFighter(f) {
+  // Reset to base
+  f.atk = f.baseAtk;
+  f.def = f.baseDef;
+  f.mr  = f.baseMr || f.baseDef;
+  // Diamond structure: amplify armor/mr buffs for all allies
+  const team = f.side === 'left' ? leftTeam : rightTeam;
+  const diamond = team.find(t => t.alive && t.passive && t.passive.type === 'diamondStructure');
+  let defAmp = 1;
+  if (diamond) {
+    const isSelf = f === diamond;
+    const ampPct = (isSelf && diamond._diamondEnhanced) ? 100 : (diamond.passive.defBuffAmp || 50);
+    defAmp = 1 + ampPct / 100;
+  }
+  // Chilled: ATK -20%
+  if (f.buffs.some(b => b.type === 'chilled')) {
+    f.atk = Math.round(f.atk * 0.8);
+  }
+  // Apply debuffs & buffs
+  for (const b of f.buffs) {
+    if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
+    if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
+    if (b.type === 'mrDown')  f.mr  = Math.round(f.mr  * (1 - b.value / 100));
+    if (b.type === 'defUp')   f.def += Math.round(b.value * defAmp);
+    if (b.type === 'mrUp')    f.mr  += Math.round(b.value * defAmp);
+    if (b.type === 'atkUp')   f.atk += b.value;
+    // Dice fate crit buff (managed separately by gamblerBlood recalc below)
+    if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
+  }
+  // UndeadRage: ATK scales with lost HP
+  if (f.passive && f.passive.type === 'undeadRage' && f.maxHp > 0) {
+    const lostPct = Math.max(0, 1 - f.hp / f.maxHp) * 100;
+    const atkBonus = Math.min(f.passive.atkMaxBonus, lostPct * f.passive.atkPerLostPct);
+    f.atk += Math.round(f.baseAtk * atkBonus / 100);
+  }
+  // GamblerBlood: dynamic crit based on lost HP
+  if (f.passive && f.passive.type === 'gamblerBlood') {
+    const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
+    const threshold = f.passive.maxCritAtLoss / 100;
+    const maxGain = f.passive.maxCritGain / 100;
+    const extraCrit = Math.min(maxGain, lostPct / threshold * maxGain);
+    f.crit = (f._initCrit || 0.25) + extraCrit;
+    // Re-apply diceFateCrit buff on top
     for (const b of f.buffs) {
-      if (b.type === 'atkDown') f.atk = Math.round(f.atk * (1 - b.value / 100));
-      if (b.type === 'defDown') f.def = Math.round(f.def * (1 - b.value / 100));
-      if (b.type === 'mrDown')  f.mr  = Math.round(f.mr  * (1 - b.value / 100));
-      if (b.type === 'defUp')   f.def += Math.round(b.value * defAmp);
-      if (b.type === 'mrUp')    f.mr  += Math.round(b.value * defAmp);
-      if (b.type === 'atkUp')   f.atk += b.value;
-      // Dice fate crit buff (managed separately by gamblerBlood recalc below)
-      if (b.type === 'diceFateCrit') f.crit = (f.crit || 0) + b.value / 100;
+      if (b.type === 'diceFateCrit') f.crit += b.value / 100;
     }
-    // UndeadRage: ATK scales with lost HP
-    if (f.passive && f.passive.type === 'undeadRage' && f.maxHp > 0) {
-      const lostPct = Math.max(0, 1 - f.hp / f.maxHp) * 100;
-      const atkBonus = Math.min(f.passive.atkMaxBonus, lostPct * f.passive.atkPerLostPct);
-      f.atk += Math.round(f.baseAtk * atkBonus / 100);
-    }
-    // GamblerBlood: dynamic crit based on lost HP
-    if (f.passive && f.passive.type === 'gamblerBlood') {
-      const lostPct = Math.max(0, 1 - f.hp / f.maxHp);
-      const threshold = f.passive.maxCritAtLoss / 100;
-      const maxGain = f.passive.maxCritGain / 100;
-      const extraCrit = Math.min(maxGain, lostPct / threshold * maxGain);
-      f.crit = (f._initCrit || 0.25) + extraCrit;
-      // Re-apply diceFateCrit buff on top
-      for (const b of f.buffs) {
-        if (b.type === 'diceFateCrit') f.crit += b.value / 100;
-      }
-    }
-  });
-  // Auto-refresh UI for all fighters after stat recalc
+  }
+  f._statsDirty = false;
+}
+
+function _hasHpScalingPassive(f) {
+  return f.passive && (f.passive.type === 'undeadRage' || f.passive.type === 'gamblerBlood');
+}
+
+// Public: full recompute (legacy semantics).
+// Forces every fighter dirty before computing — preserves backward compatibility
+// with all 50+ existing recalcStats() callers, which assume full recompute.
+function recalcStats() {
+  for (const f of allFighters) f._statsDirty = true;
+  _recalcDirtyFighters();
+}
+
+// New: lazy recompute. Only touches fighters with _statsDirty=true (set by
+// addBuff/removeBuffsWhere/etc) or hp-scaling passives (always live).
+// Helpers in fighter.js call this for O(1) recompute on isolated buff changes.
+function _recalcDirtyFighters() {
+  for (const f of allFighters) {
+    if (!f._statsDirty && !_hasHpScalingPassive(f)) continue;
+    _recalcOneFighter(f);
+  }
+  // UI refresh: always sync all alive fighters since callers expect it
   if (typeof updateFighterStats === 'function') {
-    allFighters.forEach(f => {
+    for (const f of allFighters) {
       if (f.alive) updateFighterStats(f, getFighterElId(f));
-    });
+    }
   }
 }
 

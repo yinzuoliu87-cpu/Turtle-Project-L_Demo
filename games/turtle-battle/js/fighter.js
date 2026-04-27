@@ -69,6 +69,7 @@ function createFighter(petId, side, equippedIdxs, levelOverride) {
     _position: 'front', // front or back (set by player in formation screen)
     alive:true,
     buffs: [],
+    _statsDirty: true,  // first read triggers recompute (Phase 2B)
     bubbleStore: 0,      // 泡泡龟被动储存值
     bubbleShieldVal: 0,  // 泡泡盾当前值(与普通护盾分开)
     bubbleShieldTurns: 0,// 泡泡盾剩余回合
@@ -336,24 +337,32 @@ function aiPickSkills(petId) {
 // ══════════════════════════════════════════════════════════
 // BUFF HELPERS — single API entry for buff manipulation
 // ══════════════════════════════════════════════════════════
-// Going forward, prefer these over direct `f.buffs.push(...)` so future
-// dirty-flag/event-bus refactors only need to touch this file.
-//
-// Each helper internally calls recalcStats() to keep stat-affecting buffs
-// (atkUp/defUp/mrUp/atkDown/defDown/mrDown/chilled/diceFateCrit) live.
-// Non-stat buffs (dot/stun/dodge/etc) pay a tiny redundant recalc, which is
-// fine for now — Phase 2B will swap recalcStats for a dirty-flag impl.
+// Prefer these over direct `f.buffs.push(...)`. Helpers mark only the affected
+// fighter dirty and call _recalcDirtyFighters for O(1) recompute (Phase 2B).
+// Legacy paths that still do `f.buffs.push(...) + recalcStats()` keep working
+// because recalcStats() force-marks all dirty before recomputing.
+
+function _markStatsDirty(f) {
+  if (f) f._statsDirty = true;
+}
+
+function _runDirtyRecalc() {
+  if (typeof _recalcDirtyFighters === 'function') _recalcDirtyFighters();
+  else if (typeof recalcStats === 'function') recalcStats();
+}
 
 function addBuff(f, buff) {
   if (!f || !f.buffs) return;
   f.buffs.push(buff);
-  if (typeof recalcStats === 'function') recalcStats();
+  _markStatsDirty(f);
+  _runDirtyRecalc();
 }
 
 function addBuffs(f, buffs) {
   if (!f || !f.buffs || !buffs || !buffs.length) return;
   for (const b of buffs) f.buffs.push(b);
-  if (typeof recalcStats === 'function') recalcStats();
+  _markStatsDirty(f);
+  _runDirtyRecalc();
 }
 
 function removeBuffsWhere(f, predicate) {
@@ -361,7 +370,10 @@ function removeBuffsWhere(f, predicate) {
   const before = f.buffs.length;
   f.buffs = f.buffs.filter(b => !predicate(b));
   const removed = before - f.buffs.length;
-  if (removed > 0 && typeof recalcStats === 'function') recalcStats();
+  if (removed > 0) {
+    _markStatsDirty(f);
+    _runDirtyRecalc();
+  }
   return removed;
 }
 
