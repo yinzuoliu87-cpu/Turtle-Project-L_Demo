@@ -343,7 +343,7 @@ async function beginTurn() {
           if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; t.buffs.push({type:'chilled',value:1,turns:2}); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/chilled-icon.png" style="width:14px;height:14px;vertical-align:middle">冰寒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🩵青光：${t.emoji}${t.name}被冰寒`); }
         } else if (color === 6) {
           // Purple: curse random enemy 3 turns
-          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; const dotDmg = Math.round(t.maxHp * 0.09); t.buffs.push({type:'dot',value:dotDmg,turns:3,sourceSide:f.side,floatCls:'true-dmg'}); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">诅咒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟣紫光：${t.emoji}${t.name}被诅咒3回合`); }
+          if (enemies.length) { const t = enemies[Math.floor(Math.random()*enemies.length)]; const dotDmg = Math.round(t.maxHp * 0.09); const fIdx = allFighters.indexOf(f); t.buffs.push({type:'dot',value:dotDmg,turns:3,sourceSide:f.side,sourceIdx:fIdx,floatCls:'true-dmg'}); spawnFloatingNum(getFighterElId(t), `<img src="assets/status/curse-debuff-icon.png" style="width:14px;height:14px;vertical-align:middle">诅咒`, 'debuff-num', 0, 0); renderStatusIcons(t); addLog(`${f.emoji}${f.name} 🟣紫光：${t.emoji}${t.name}被诅咒3回合`); }
         }
       }
       for (const c of picks) applyPrismColor(c);
@@ -531,6 +531,17 @@ async function tickDotsOn(f) {
     spawnFloatingNum(elId, `-${d.value}`, d.floatCls || 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
     tickHurt(elId, d.floatCls === 'true-dmg' ? 'hit-true' : 'hit-magic');
     updateHpBar(f, elId);
+    // Stats tracking: curse/generic dot bypasses shield+def, treat as true.
+    const dotSrc = (d.sourceIdx !== undefined && d.sourceIdx >= 0) ? allFighters[d.sourceIdx] : null;
+    if (dotSrc && dotSrc._dmgDealt !== undefined) {
+      dotSrc._dmgDealt += d.value;
+      dotSrc._trueDmgDealt = (dotSrc._trueDmgDealt || 0) + d.value;
+    }
+    if (f._dmgTaken !== undefined) {
+      f._dmgTaken += d.value;
+      f._trueDmgTaken = (f._trueDmgTaken || 0) + d.value;
+    }
+    if (typeof updateDmgStats === 'function') updateDmgStats();
     addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${d.value}持续伤害</span>（剩余${d.turns-1}回合）`);
     if (f.hp <= 0) { f.alive = false; break; }
   }
@@ -844,7 +855,7 @@ async function processRoundEndBuffs() {
         for (let h = 0; h < ps.hits; h++) {
           const dmg = Math.round(f.atk * ps.atkScale);
           applyRawDmg(f, target, dmg, false, false, 'true');
-          spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'direct-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
+          spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'true-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
         }
         updateHpBar(target, getFighterElId(target));
         const totalDmg = Math.round(f.atk * ps.atkScale * ps.hits);

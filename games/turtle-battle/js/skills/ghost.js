@@ -11,7 +11,9 @@ async function doGhostTouch(attacker, target, skill) {
   const pierceDmg = Math.round(attacker.atk * skill.pierceScale * critMult);
   const totalDmg = normalDmg + pierceDmg;
 
-  applyRawDmg(attacker, target, totalDmg, false, false, 'true');
+  // Apply as two separate events so stats track types correctly
+  if (normalDmg > 0) applyRawDmg(attacker, target, normalDmg, false, false, 'physical');
+  if (pierceDmg > 0) applyRawDmg(attacker, target, pierceDmg, false, false, 'true');
   // Canonical stack: pierce (white) above physical (red). yOffset=+22 pushes
   // pierce higher on screen per the "true > magic > physical" rule.
   if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
@@ -56,7 +58,7 @@ async function doGhostStorm(attacker, target, skill) {
     applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
     totalPierce += pierceDmg;
     spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
-    await triggerOnHitEffects(attacker, target, finalDmg);
+    await triggerOnHitEffects(attacker, target, pierceDmg);
 
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -68,7 +70,8 @@ async function doGhostStorm(attacker, target, skill) {
   // Apply curse: 10% target maxHP per turn
   if (target.alive) {
     const dotDmg = Math.round(target.maxHp * 0.09);
-    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side, floatCls:'true-dmg' });
+    const sourceIdx = (typeof allFighters !== 'undefined') ? allFighters.indexOf(attacker) : -1;
+    target.buffs.push({ type:'dot', value:dotDmg, turns:skill.dotTurns, sourceSide: attacker.side, sourceIdx, floatCls:'true-dmg' });
     spawnFloatingNum(tElId, '<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒', 'debuff-label', 200, -10);
     renderStatusIcons(target);
   }

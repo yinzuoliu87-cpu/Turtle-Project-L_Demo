@@ -286,11 +286,12 @@ function checkDeaths(attacker) {
       // Passive: ghostCurse — curse all enemies on death with pierce DoT
       if (f.passive && f.passive.type === 'ghostCurse') {
         const enemies = (f.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+        const fIdx = allFighters.indexOf(f);
         for (const e of enemies) {
           const dotDmg = Math.round(e.maxHp * f.passive.hpPct / 100);
           // floatCls: 'true-dmg' marks the tick as true (white) — curse bypasses
           // armor mechanically and should read white in the float stack.
-          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side, floatCls:'true-dmg' });
+          e.buffs.push({ type:'dot', value:dotDmg, turns:f.passive.turns, sourceSide: f.side, sourceIdx: fIdx, floatCls:'true-dmg' });
           const eElId = getFighterElId(e);
           spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
           renderStatusIcons(e);
@@ -399,9 +400,10 @@ function processSummonDeath(summon, attacker, extraMsg) {
     // Ghost curse
     if (summon.passive.type === 'ghostCurse') {
       const enemies = (summon.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
+      const sIdx = allFighters.indexOf(summon);
       for (const e of enemies) {
         const dotDmg = Math.round(e.maxHp * summon.passive.hpPct / 100);
-        e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side, floatCls:'true-dmg' });
+        e.buffs.push({ type:'dot', value:dotDmg, turns:summon.passive.turns, sourceSide: summon.side, sourceIdx: sIdx, floatCls:'true-dmg' });
         const eElId = getFighterElId(e);
         spawnFloatingNum(eElId, `<img src="assets/status/curse-debuff-icon.png" style="width:16px;height:16px;vertical-align:middle">诅咒!`, 'crit-label', 0, -20);
         renderStatusIcons(e);
