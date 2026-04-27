@@ -18,7 +18,9 @@ async function doNinjaShuriken(attacker, target, skill) {
 
   if (isCrit) {
     const pierceDmg = Math.round(baseDmg * critMult);
-    applyRawDmg(attacker, target, pierceDmg, false, false, 'physical');
+    // 描述: 暴击时全部转真实伤害. dmgType 必须传 'true' (之前误传 'physical'
+    // 导致 stats 算到 _physDmgDealt, 与飘字/log 的 "真实" 标识不一致).
+    applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
     spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0, {atkSide: attacker.side, amount: pierceDmg});
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}真实</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
