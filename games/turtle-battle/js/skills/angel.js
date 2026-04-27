@@ -2,9 +2,10 @@ async function doAngelBless(caster, target, skill) {
   const shieldAmt = Math.round(caster.atk * skill.shieldScale);
   const defGain = Math.round(caster.atk * skill.defBoostScale);
   target.shield += shieldAmt;
-  target.buffs.push({ type:'defUp', value:defGain, turns:skill.defBoostTurns });
-  target.buffs.push({ type:'mrUp', value:defGain, turns:skill.defBoostTurns });
-  recalcStats();
+  addBuffs(target, [
+    { type:'defUp', value:defGain, turns:skill.defBoostTurns },
+    { type:'mrUp',  value:defGain, turns:skill.defBoostTurns },
+  ]);
   const tElId = getFighterElId(target);
   spawnFloatingNum(tElId, `+${shieldAmt}`, 'shield-num', 0, 0);
   spawnFloatingNum(tElId, `+${defGain}护甲&魔抗`, 'passive-num', 300, 0);

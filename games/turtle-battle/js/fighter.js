@@ -332,3 +332,39 @@ function aiPickSkills(petId) {
   }
   return indices.sort((a,b) => a-b);
 }
+
+// ══════════════════════════════════════════════════════════
+// BUFF HELPERS — single API entry for buff manipulation
+// ══════════════════════════════════════════════════════════
+// Going forward, prefer these over direct `f.buffs.push(...)` so future
+// dirty-flag/event-bus refactors only need to touch this file.
+//
+// Each helper internally calls recalcStats() to keep stat-affecting buffs
+// (atkUp/defUp/mrUp/atkDown/defDown/mrDown/chilled/diceFateCrit) live.
+// Non-stat buffs (dot/stun/dodge/etc) pay a tiny redundant recalc, which is
+// fine for now — Phase 2B will swap recalcStats for a dirty-flag impl.
+
+function addBuff(f, buff) {
+  if (!f || !f.buffs) return;
+  f.buffs.push(buff);
+  if (typeof recalcStats === 'function') recalcStats();
+}
+
+function addBuffs(f, buffs) {
+  if (!f || !f.buffs || !buffs || !buffs.length) return;
+  for (const b of buffs) f.buffs.push(b);
+  if (typeof recalcStats === 'function') recalcStats();
+}
+
+function removeBuffsWhere(f, predicate) {
+  if (!f || !f.buffs) return 0;
+  const before = f.buffs.length;
+  f.buffs = f.buffs.filter(b => !predicate(b));
+  const removed = before - f.buffs.length;
+  if (removed > 0 && typeof recalcStats === 'function') recalcStats();
+  return removed;
+}
+
+function clearBuffsByType(f, type) {
+  return removeBuffsWhere(f, b => b.type === type);
+}

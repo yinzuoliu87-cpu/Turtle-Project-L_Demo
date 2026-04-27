@@ -989,7 +989,7 @@ async function executeAction(action) {
       const stealable = target.buffs.filter(b => ['atkUp','defUp','mrUp','critUp','shield','dodge','lifesteal'].includes(b.type));
       if (stealable.length > 0) {
         const stolen = stealable[Math.floor(Math.random() * stealable.length)];
-        target.buffs = target.buffs.filter(b => b !== stolen); f.buffs.push({ ...stolen }); recalcStats();
+        removeBuffsWhere(target, b => b === stolen); addBuff(f, { ...stolen });
         const tElId = getFighterElId(target); const fElId = getFighterElId(f);
         spawnFloatingNum(tElId, `被偷取`, 'debuff-num', 0, 0); spawnFloatingNum(fElId, `偷取成功`, 'passive-num', 0, 0);
         renderStatusIcons(target); renderStatusIcons(f); updateFighterStats(target, tElId); updateFighterStats(f, fElId);

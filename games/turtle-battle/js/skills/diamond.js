@@ -8,9 +8,9 @@ async function doDiamondFortify(caster, skill) {
   // Def + MR buff: 20%ATK each (diamondStructure passive will amplify in recalcStats)
   const defGain = Math.round(caster.atk * skill.defUpAtkPct / 100);
   const mrGain = Math.round(caster.atk * (skill.mrUpAtkPct || 0) / 100);
-  caster.buffs.push({ type:'defUp', value:defGain, turns:skill.defUpTurns + 1 });
-  if (mrGain > 0) caster.buffs.push({ type:'mrUp', value:mrGain, turns:skill.defUpTurns + 1 });
-  recalcStats();
+  const newBuffs = [{ type:'defUp', value:defGain, turns:skill.defUpTurns + 1 }];
+  if (mrGain > 0) newBuffs.push({ type:'mrUp', value:mrGain, turns:skill.defUpTurns + 1 });
+  addBuffs(caster, newBuffs);
   spawnFloatingNum(fElId, `+${defGain}甲+${mrGain}抗`, 'passive-num', 200, 0);
   updateHpBar(caster, fElId);
   renderStatusIcons(caster);

@@ -105,8 +105,7 @@ async function doDiceFlashStrike(caster, skill) {
 async function doDiceFate(caster, skill) {
   const fElId = getFighterElId(caster);
   const critGain = skill.minCrit + Math.floor(Math.random() * (skill.maxCrit - skill.minCrit + 1));
-  caster.buffs.push({ type:'diceFateCrit', value:critGain, turns:skill.duration + 1 });
-  recalcStats();
+  addBuff(caster, { type:'diceFateCrit', value:critGain, turns:skill.duration + 1 });
   spawnFloatingNum(fElId, `<img src="assets/passive/gambler-blood-icon.png" style="width:16px;height:16px;vertical-align:middle">+${critGain}%暴击!`, 'crit-label', 0, -20);
   renderStatusIcons(caster);
   updateFighterStats(caster, fElId);
