@@ -123,9 +123,9 @@ async function doTurtleShieldBash(attacker, target, skill) {
 async function doBasicBarrage(attacker, skill) {
   const hits = skill.hits;
   const perHit = Math.round(attacker.atk * skill.atkScale / hits);
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const dir = attacker.side === 'left' ? 1 : -1;
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
   const totals = { dmg: 0 };
 
   // Caster stays in place — no Y-slide, no dash. Just a brief windup pose.
@@ -346,7 +346,7 @@ async function doBasicChiWave(attacker, target, skill) {
   if (columnTargets.length === 0) columnTargets = [target];
 
   // ── Caster moves Y to target's row (KOF-style: stand on target's line) ──
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const tEl = document.getElementById(getFighterElId(target));
   const dir = attacker.side === 'left' ? 1 : -1;
   const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
@@ -432,7 +432,7 @@ async function doBasicChiWave(attacker, target, skill) {
     // rather than a DOM element, so empty back slots still work.
     let backRowCenterX = null;
     if (targetCol != null && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
-      const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+      const posSet = ENV.isMobile ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
       const enemySide = attacker.side === 'left' ? 'right' : 'left';
       const backPos = posSet[`back-${targetCol}`];
       if (backPos) {
@@ -514,7 +514,7 @@ async function doBasicChiWave(attacker, target, skill) {
     const tBody = tNode ? tNode.querySelector('.st-body') : null;
     let juggleAnim = null;
     if (tBody) {
-      const isMobile = window.innerWidth <= 768;
+      const isMobile = ENV.isMobile;
       const knockX = isMobile ? dir * 30 : dir * 55;
       const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile);
       juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
@@ -602,10 +602,10 @@ async function doBasicSlam(attacker, target, skill) {
   if (!fEl || !target || !target.alive) { await sleep(200); return; }
 
   const tEl = document.getElementById(getFighterElId(target));
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const dir = attacker.side === 'left' ? 1 : -1;
   const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
 
   // Compute caster's dash destination (adjacent to target) in battleField local coords.
   let casterShiftX = 0, casterShiftY = 0;

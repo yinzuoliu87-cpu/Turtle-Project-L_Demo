@@ -3,7 +3,7 @@
 // reaches the target (i.e. when damage should land). Caller is responsible
 // for applying damage + spawning floating numbers at that moment.
 function spawnHunterArrow(attacker, target, flightMs = 240) {
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const aEl = document.getElementById(getFighterElId(attacker));
   const tEl = document.getElementById(getFighterElId(target));
   const damageAt = Math.round(flightMs * 0.85);

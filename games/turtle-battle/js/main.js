@@ -468,7 +468,7 @@ function renderPetGrid() {
     const loadout = getSavedLoadout(p.id) || p.defaultSkills || [0,1,2];
     const pool = p.skillPool || p.skills || [];
     const skillNames = loadout.filter(i => i < pool.length).map(i => pool[i].name).join(' / ');
-    const _mob = window.innerWidth <= 768;
+    const _mob = ENV.isMobile;
     return `<div class="pet-card ${selectedIds.includes(p.id)?'selected':''}"
          style="--rc:${RARITY_COLORS[p.rarity]}" data-id="${p.id}"
          ${_mob ? '' : `draggable="true" ondragstart="fgDragStart(event,'${p.id}')" ondragend="fgDragEnd(event)"`}
@@ -535,7 +535,7 @@ function togglePet(e, id) {
 let _fgSelectedSlot = null; // for mobile tap-to-swap
 let _fgActiveSlot = null; // click slot first, then click turtle to place
 function fgSlotClick(key) {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
   if (isMobile && _fgSlots[key]) {
     if (_fgSelectedSlot === null) {
       // First tap: select this slot
@@ -695,7 +695,7 @@ function fgTouchEnd(e) {
 }
 
 function renderFgSlots() {
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
   const isDungeon = gameMode === 'dungeon';
   // Labels stay as-is: 前排/后排/替补 (bench row only visible in dungeon)
   const labels = document.querySelectorAll('.fg-label');
@@ -918,7 +918,7 @@ function showPetPassive(e, petId) {
     document.body.appendChild(popup);
   }
   popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${p.name} — ${passiveName}</div><div class="passive-popup-desc">${rendered}</div>`;
-  if (window.innerWidth <= 768) {
+  if (ENV.isMobile) {
     popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:0;right:0;bottom:0;top:auto;transform:none;max-height:70vh;overflow-y:auto;border-radius:16px 16px 0 0;animation:none;width:100%';
   } else {
     popup.style.cssText = 'display:block;position:fixed;z-index:9999;left:50%;top:40%;transform:translate(-50%,-50%);animation:none';
@@ -1219,7 +1219,7 @@ function startBattle(seed) {
   if (gameMode === 'boss') bgFile = 'assets/bg/bg-ruins.png';          // sunset ruins for boss
   else if (gameMode === 'pvp-online') bgFile = 'assets/bg/bg-underwater.png';  // coral palace for PVP
   else if (gameMode === 'dungeon') bgFile = dungeonState.stage >= 5 ? 'assets/bg/bg-ruins.png' : 'assets/bg/bg-cave-alt.png';
-  const battleScene = document.getElementById('battleScene');
+  const battleScene = ENV.battleField;
   if (battleScene) battleScene.style.backgroundImage = 'url(' + bgFile + ')';
   // Swap turtle positions to match this bg's painted floor (falls back to
   // purple cave if no per-bg entry defined yet).

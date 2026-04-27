@@ -120,7 +120,7 @@ function renderFighters() {
 }
 
 function renderScene() {
-  const scene = document.getElementById('battleScene');
+  const scene = ENV.battleField;
   if (!scene) return;
   // Remove old scene turtles
   scene.querySelectorAll('.scene-turtle').forEach(el => el.remove());
@@ -136,7 +136,7 @@ function renderScene() {
     const el = document.createElement('div');
     el.className = 'scene-turtle ' + posClass;
     // Map position from 16:9 image coords to cover-cropped container
-    const posSet = window.innerWidth <= 768 ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
+    const posSet = ENV.isMobile ? BATTLE_POSITIONS.mobile : BATTLE_POSITIONS.desktop;
     const pos = posSet[slotKey];
     if (pos && cw && ch) {
       const imgX = side === 'left' ? pos.x : (100 - pos.x);
@@ -739,7 +739,7 @@ function showFighterDetail(f) {
 
   document.getElementById('fdpBody').innerHTML = html;
 
-  if (window.innerWidth <= 768) {
+  if (ENV.isMobile) {
     // Mobile: bottom sheet, CSS handles positioning
     panel.style.position = '';
     panel.style.top = '';
@@ -749,7 +749,7 @@ function showFighterDetail(f) {
   } else {
     // Desktop: position near the turtle element
     const turtleEl = document.getElementById(getFighterElId(f));
-    const scene = document.getElementById('battleScene');
+    const scene = ENV.battleField;
     if (turtleEl && scene) {
       const tRect = turtleEl.getBoundingClientRect();
       const sRect = scene.getBoundingClientRect();
@@ -789,7 +789,7 @@ function showFighterDetail(f) {
 
   // Desktop: re-clamp after render
   if (window.innerWidth > 768) {
-    const scene = document.getElementById('battleScene');
+    const scene = ENV.battleField;
     if (scene) {
       const sRect2 = scene.getBoundingClientRect();
       const panelH = panel.offsetHeight;
@@ -826,7 +826,7 @@ function showSkillAnnounce(f, skill) {
     banner = document.createElement('div');
     banner.id = 'skillAnnounceBanner';
     banner.className = 'skill-announce';
-    const scene = document.getElementById('battleScene');
+    const scene = ENV.battleField;
     if (scene) scene.appendChild(banner);
     else document.body.appendChild(banner);
   }
@@ -859,7 +859,7 @@ function renderSummonMiniCard(owner) {
   const ownerElId = getFighterElId(owner);
   const ownerEl = document.getElementById(ownerElId);
   if (!ownerEl) return;
-  const scene = document.getElementById('battleScene');
+  const scene = ENV.battleField;
   if (!scene) return;
 
   const summonElId = 'summon_' + ownerElId;
@@ -876,7 +876,7 @@ function renderSummonMiniCard(owner) {
   mini.dataset.pid = summon.id || '';
   mini.onclick = () => showFighterDetail(summon);
 
-  const spriteSize = window.innerWidth <= 768 ? 36 : 44;
+  const spriteSize = ENV.isMobile ? 36 : 44;
   const spriteHTML = buildPetImgHTML(summon, spriteSize);
   const hpPct = Math.max(0, summon.hp / summon.maxHp * 100);
   const isAlly = gameMode === 'pvp-online' ? (owner.side === onlineSide) : (owner.side === 'left');
@@ -2018,7 +2018,7 @@ function showActionPanel(f) {
 
 function renderActionButtons(f) {
   const box = document.getElementById('actionButtons');
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
 
   box.innerHTML = f.skills.map((s,i) => {
     let ready = s.cdLeft === 0;
@@ -2105,7 +2105,7 @@ function renderActionButtons(f) {
 function toggleBattleLog() {
   const wrapper = document.getElementById('battleLogWrapper');
   if (!wrapper) return;
-  if (window.innerWidth <= 768) {
+  if (ENV.isMobile) {
     const showing = wrapper.classList.toggle('mobile-show');
     // Add close button if not exists
     if (showing && !wrapper.querySelector('.mobile-overlay-close')) {
@@ -2123,7 +2123,7 @@ function toggleBattleLog() {
 function toggleDmgStats() {
   const panel = document.getElementById('dmgStatsPanel');
   if (!panel) return;
-  if (window.innerWidth <= 768) {
+  if (ENV.isMobile) {
     const showing = panel.classList.toggle('mobile-show');
     panel.style.display = showing ? 'block' : 'none';
   } else {
@@ -2520,7 +2520,7 @@ function showPassivePopup(e, fIdx) {
     popup.innerHTML = `<div class="passive-popup-title">${iconHtml} ${f.name} — ${passiveName}</div><div class="passive-popup-desc">${descRendered}</div>`;
   }
   popup.style.display = 'block';
-  if (window.innerWidth <= 768) {
+  if (ENV.isMobile) {
     // Mobile: center on screen (CSS handles via !important)
     popup.style.left = '';
     popup.style.top = '';

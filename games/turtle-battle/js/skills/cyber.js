@@ -64,7 +64,7 @@ async function doCyberBeam(attacker, target, skill) {
   const fEl = document.getElementById(fElId);
   if (!fEl || !target || !target.alive) { await sleep(200); return; }
 
-  const isMobile = window.innerWidth <= 768;
+  const isMobile = ENV.isMobile;
   const droneCount = (attacker._drones || []).length;
   const trueScaleTotal = attacker._cyberEnhanced
     ? (skill.droneTrueScaleEnhanced || 0.07)
@@ -82,7 +82,7 @@ async function doCyberBeam(attacker, target, skill) {
     : [target];
   if (!rowEnemies.length) rowEnemies = [target];
 
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const tEl = document.getElementById(getFighterElId(target));
   const dir = attacker.side === 'left' ? 1 : -1;
   const scale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;

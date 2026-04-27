@@ -10,7 +10,7 @@ async function doNinjaShuriken(attacker, target, skill) {
   // then spawn the shuriken from caster's hand and fly it to target.
   await sleep(260);
 
-  const battleField = document.getElementById('battleScene');
+  const battleField = ENV.battleField;
   const aEl = document.getElementById(aElId);
   const tEl = document.getElementById(tElId);
   const flightMs = 280;
@@ -123,8 +123,8 @@ async function doNinjaImpact(attacker, target, skill) {
 
   const tElId = getFighterElId(target);
   const tEl = document.getElementById(tElId);
-  const battleField = document.getElementById('battleScene');
-  const isMobile = window.innerWidth <= 768;
+  const battleField = ENV.battleField;
+  const isMobile = ENV.isMobile;
   const dir = attacker.side === 'left' ? 1 : -1;
   const sprite = fEl.querySelector('.st-sprite');
   const baseScale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
