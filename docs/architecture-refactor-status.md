@@ -57,6 +57,39 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 
 **实测收益**：5 次 `addBuff` 从 30 次重算降到 5 次（**6× 速度**）。
 
+### Phase 1.3 — 跨文件常量收口（commit `ee6b726`）
+**目标**：把跨文件协调的 hardcoded 数字提到一个地方。
+
+**做了**：
+- 新增 [`js/constants.js`](../games/turtle-battle/js/constants.js)
+- `ATTACK_HOP_TOTAL_MS / ATTACK_HOP_FORWARD_MS / ATTACK_DAMAGE_SYNC_MS`（ui.js + action.js 共用）
+- `RULE_MULT_SHIELD_BUFF / RULE_MULT_MAGIC_DEBUFF`（engine.getShieldMult / getMagicDmgMult 用）
+
+**收益**：调改攻击动画时序或战斗规则倍率，从一处改即可。
+
+### Phase 3.1 — 事件总线 foundation（commit `717b363`）
+**目标**：解耦战斗逻辑与视图/统计/passive 副作用，为 sim mode + 自动化测试打基础。
+
+**做了**：
+- 新增 [`js/bus.js`](../games/turtle-battle/js/bus.js)（mitt-style，72 行）
+- API：`bus.on / off / once / emit / clear`，错误隔离（一个 handler 抛错不影响其他）
+- `combat.applyRawDmg` 末尾 emit `'damage:dealt'`（含 source/target/amount/type/isPierce/hpLoss/shieldAbs/bubbleAbs）
+- `state.checkDeaths` 真正死亡时 emit `'fighter:died'`（含 fighter/killer）
+- 17 项 bus 单元测试
+
+**收益**：additive 阶段 — 事件已发射，目前无消费者，零行为变化，但为 3.2+ 铺路。
+
+### Phase 3.2 — 第一个真正消费 bus 的订阅器（commit `6229ce0`）
+**目标**：把 applyRawDmg 内联的 passive 反应抽出来，证明事件总线在生产路径可用。
+
+**做了**：
+- 新增 [`js/systems/passive_subscribers.js`](../games/turtle-battle/js/systems/passive_subscribers.js)
+- **宝箱龟 chestTreasure**：订阅 `damage:dealt`，source 累积伤害 + 实时更新进度条 UI
+- **熔岩龟 lavaRage**：双订阅（攻击侧 source / 防御侧 target），按 rageDmgPct/rageTakenPct 累积，转化后不再累积
+- `combat.applyRawDmg` 内联 27 行删掉，责任更清晰
+
+**收益**：applyRawDmg 现在只管伤害结算，passive 反应在自己的文件里。后续添加新 passive（如"打出物理伤害时叠层"）= 在 passive_subscribers.js 加一个 `bus.on` 即可。
+
 ### Phase 4 — 技能 dispatch 注册表（commit `3f5a226`）
 **目标**：消除 action.js 1000+ 行 if/else 长链，新加龟不再改 action.js。
 
@@ -89,13 +122,11 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 
 ## 待做阶段
 
-### Phase 1.3 — 战斗常量集中（小，半天）
-`SUDDEN_DEATH_TIME / BURN_INTERVAL / DEF_CONSTANT / SHIELD_MULT` 等数值
-散在 turn.js / combat.js / state.js。集中到 `js/constants.js`。
-
-### Phase 3 — 事件总线（大，1 周）★最大架构收益
-`applyRawDmg` 一个函数干 5 件事（扣血/统计/被动/UI/log）。引入 `bus.emit('damage:dealt', ...)`，
-view 层订阅，逻辑层只 emit。详见 [前面规划](#)。
+### Phase 3 续（剩余 consumer 迁移）
+Phase 3.1+3.2 已完成 foundation + 第一个生产订阅器。下一步：
+- **Stat tracking** 抽到订阅器（doDamage 双轨 / applyRawDmg 主路径 / undeadLock 路径 / hunter execute 路径都做）— 中等复杂度
+- **dot 流派 stat 追踪**（turn.tickDotsOn 内的 curse/poison/bleed 重复代码）也抽到订阅器
+- **addLog 战斗日志** — 当前各 skill 内联调用，可以让 view 层订阅 `damage:dealt` + `skill:cast` 自动生成
 
 ### Phase 4 续（中，1-2 天）
 ✅ Phase 4 主体已完成（74 项注册，覆盖 56% 分支）。
@@ -124,6 +155,8 @@ view 层订阅，逻辑层只 emit。详见 [前面规划](#)。
 | `c:/tmp/dirty_perf.mjs` | 验证 dirty flag 真的省了 work（recompute 计数） |
 | `c:/tmp/camera_test.mjs` | BattleCamera zoom/shake/reset/origin 状态验证 |
 | `c:/tmp/registry_test.mjs` | Skill registry dispatch + targetMode 解析验证 |
+| `c:/tmp/bus_test.mjs` | EventBus on/off/once/emit + handler 错误隔离 |
+| `c:/tmp/passive_subs_test.mjs` | chestTreasure / lavaRage 订阅器累积正确性 |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
