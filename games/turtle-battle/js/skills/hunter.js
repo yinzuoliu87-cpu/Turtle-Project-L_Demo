@@ -1,39 +1,12 @@
-// Spawn a hunter arrow projectile flying from attacker → target.
-// Returns { arrival: Promise } that resolves at the moment the arrow visually
-// reaches the target (i.e. when damage should land). Caller is responsible
-// for applying damage + spawning floating numbers at that moment.
+// Hunter arrow projectile (rotates to face target along flight path).
+// Wrapper around fireProjectile for backward compatibility with existing call sites.
 function spawnHunterArrow(attacker, target, flightMs = 240) {
-  const battleField = ENV.battleField;
-  const aEl = document.getElementById(getFighterElId(attacker));
-  const tEl = document.getElementById(getFighterElId(target));
-  const damageAt = Math.round(flightMs * 0.85);
-  if (!battleField || !aEl || !tEl) {
-    return { arrival: sleep(damageAt) };
-  }
-  const aBody = aEl.querySelector('.st-body') || aEl;
-  const tBody = tEl.querySelector('.st-body') || tEl;
-  const bRect = battleField.getBoundingClientRect();
-  const aRect = aBody.getBoundingClientRect();
-  const tRect = tBody.getBoundingClientRect();
-  const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
-  const aCx = ((aRect.left + aRect.width / 2) - bRect.left) / zoom;
-  const aCy = ((aRect.top  + aRect.height / 2) - bRect.top)  / zoom;
-  const tCx = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
-  const tCy = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
-  const dx = tCx - aCx, dy = tCy - aCy;
-  const angleDeg = Math.atan2(dy, dx) * 180 / Math.PI;
-  const arrow = document.createElement('div');
-  arrow.className = 'hunter-arrow';
-  arrow.style.left = aCx + 'px';
-  arrow.style.top  = aCy + 'px';
-  arrow.style.transform = `translate(-50%,-50%) rotate(${angleDeg}deg)`;
-  battleField.appendChild(arrow);
-  requestAnimationFrame(() => {
-    arrow.style.transition = `transform ${flightMs}ms linear`;
-    arrow.style.transform  = `translate(-50%,-50%) translate(${dx}px, ${dy}px) rotate(${angleDeg}deg)`;
+  return fireProjectile({
+    attacker, target,
+    sprite: 'hunter-arrow',
+    durationMs: flightMs,
+    rotateAlongPath: true,
   });
-  setTimeout(() => arrow.remove(), flightMs + 80);
-  return { arrival: sleep(damageAt) };
 }
 
 async function doHunterShot(attacker, target, skill) {

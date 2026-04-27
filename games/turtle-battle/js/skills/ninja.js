@@ -4,43 +4,17 @@ async function doNinjaShuriken(attacker, target, skill) {
   const isCrit = Math.random() < attacker.crit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
   const tElId = getFighterElId(target);
-  const aElId = getFighterElId(attacker);
 
-  // Wait for the default attack-hop to reach its forward apex (~280ms in),
-  // then spawn the shuriken from caster's hand and fly it to target.
+  // Wait for the default attack-hop to reach its forward apex, then fire
+  // the shuriken (sprite spins via its own CSS keyframe loop).
   await sleep(260);
-
-  const battleField = ENV.battleField;
-  const aEl = document.getElementById(aElId);
-  const tEl = document.getElementById(tElId);
-  const flightMs = 280;
-  const damageAt = 240; // ms into flight when shuriken visually reaches target
-  if (battleField && aEl && tEl) {
-    const aBody = aEl.querySelector('.st-body') || aEl;
-    const tBody = tEl.querySelector('.st-body') || tEl;
-    const bRect = battleField.getBoundingClientRect();
-    const aRect = aBody.getBoundingClientRect();
-    const tRect = tBody.getBoundingClientRect();
-    const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
-    const aCx = ((aRect.left + aRect.width / 2) - bRect.left) / zoom;
-    const aCy = ((aRect.top  + aRect.height / 2) - bRect.top)  / zoom;
-    const tCx = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
-    const tCy = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
-    const dx = tCx - aCx, dy = tCy - aCy;
-    const star = document.createElement('div');
-    star.className = 'ninja-shuriken';
-    star.style.left = aCx + 'px';
-    star.style.top  = aCy + 'px';
-    battleField.appendChild(star);
-    requestAnimationFrame(() => {
-      star.style.transition = `transform ${flightMs}ms linear`;
-      star.style.transform  = `translate(-50%,-50%) translate(${dx}px, ${dy}px)`;
-    });
-    setTimeout(() => star.remove(), flightMs + 80);
-  }
-
-  // Apply damage when the shuriken visually lands.
-  await sleep(damageAt);
+  const { arrival } = fireProjectile({
+    attacker, target,
+    sprite: 'ninja-shuriken',
+    durationMs: 280,
+    damageAtMs: 240,
+  });
+  await arrival;
 
   if (isCrit) {
     const pierceDmg = Math.round(baseDmg * critMult);
@@ -57,6 +31,7 @@ async function doNinjaShuriken(attacker, target, skill) {
     await triggerOnHitEffects(attacker, target, dmg);
   }
 
+  const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
   updateHpBar(target, tElId);
   await sleep(360);
