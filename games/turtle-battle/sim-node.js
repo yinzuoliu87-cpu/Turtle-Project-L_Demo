@@ -10,9 +10,13 @@ const path = require('path');
 // ── DOM/Browser Mock Layer ─────────────────────────────────
 const _noop = () => {};
 const _mockAnimation = { finished: Promise.resolve(), play: _noop, cancel: _noop, pause: _noop, reverse: _noop };
+const _mockStyle = new Proxy({}, {
+  get: (t, k) => k === 'setProperty' || k === 'removeProperty' || k === 'getPropertyValue' ? _noop : t[k],
+  set: (t, k, v) => { t[k] = v; return true; },
+});
 const _mockEl = {
   classList: { add:_noop, remove:_noop, toggle:_noop, contains:()=>false },
-  style: {}, querySelector: () => _mockEl, querySelectorAll: () => [],
+  style: _mockStyle, querySelector: () => _mockEl, querySelectorAll: () => [],
   appendChild:_noop, insertBefore:_noop, remove:_noop, setAttribute:_noop,
   addEventListener:_noop, removeEventListener:_noop,
   getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50}),
@@ -27,7 +31,8 @@ global.document = {
   querySelectorAll: () => [],
   createElement: () => ({...JSON.parse(JSON.stringify(_mockEl)),
     classList:{add:_noop,remove:_noop,toggle:_noop,contains:()=>false},
-    style:{}, querySelector:()=>_mockEl, appendChild:_noop, remove:_noop,
+    style:new Proxy({}, { get:(t,k)=>k==='setProperty'||k==='removeProperty'||k==='getPropertyValue'?_noop:t[k], set:(t,k,v)=>{t[k]=v;return true;} }),
+    querySelector:()=>_mockEl, appendChild:_noop, remove:_noop,
     insertBefore:_noop, setAttribute:_noop,
     addEventListener:_noop, removeEventListener:_noop,
     getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50}),
@@ -46,6 +51,7 @@ global.requestAnimationFrame = (fn) => { return 0; }; // don't execute — visua
 global.performance = { now: () => Date.now() };
 global.AudioContext = global.webkitAudioContext = function(){};
 global.Image = function(){ this.src=''; this.onload=null; this.onerror=null; };
+global.getComputedStyle = () => ({ getPropertyValue: () => '', transform:'none' });
 const _realSetTimeout = global.setTimeout;
 const _realClearTimeout = global.clearTimeout;
 // Override setTimeout to be instant for game sleep() calls, but keep real one for internals

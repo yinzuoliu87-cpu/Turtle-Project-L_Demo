@@ -225,7 +225,10 @@ async function doDamage(attacker, target, skill) {
       const bonus = Math.round(totalDirect * 0.2);
       if (bonus > 0) {
         applyRawDmg(attacker, target, bonus, false, false, 'true');
-        spawnFloatingNum(tElId, `-${bonus}🔴`, isCrit ? 'crit-true' : 'true-dmg', 100, 0, { atkSide: attacker.side, amount: bonus });
+        // isCrit was loop-scoped above; here prismBonus runs after the loop.
+        // Use totalCrits to color the bonus floater consistently with the hits.
+        const anyCrit = totalCrits > 0;
+        spawnFloatingNum(tElId, `-${bonus}🔴`, anyCrit ? 'crit-true' : 'true-dmg', 100, 0, { atkSide: attacker.side, amount: bonus });
         updateHpBar(target, tElId);
       }
     } else if (attacker._prismColor === 1) {
