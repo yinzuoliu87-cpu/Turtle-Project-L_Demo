@@ -105,6 +105,17 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 - 添加新龟 = 在 `registry.js` 加 1 行 + 在 `skills/<turtle>.js` 加 doX 函数
 - 21 项 registry 单元测试 + 与现有 4 套测试合计 **86 项断言全过**
 
+### Phase 6 — VFX 投射物流水线（commit `69ae880`）
+**目标**：消除"spawn-fly-impact"模式在多个 skill 文件的重复（hunter-arrow / ninja-shuriken / 未来还有更多）。
+
+**做了**：
+- 新增 [`js/vfx/projectile.js`](../games/turtle-battle/js/vfx/projectile.js)
+- API：`fireProjectile({ attacker, target, sprite, durationMs, rotateAlongPath, damageAtMs })`
+- 返回 `{ arrival: Promise, el: HTMLElement|null }`，DOM 缺失时降级
+- `spawnHunterArrow` 37 行 → 5 行 wrapper；`doNinjaShuriken` inline spawn 24 行 → 6 行调用
+
+**收益**：下次添加新投射物（火球/水箭/能量弹）= 写 CSS sprite + 一行 `fireProjectile`。
+
 ### Phase 5 — BattleCamera（commit `aa499d7`）
 **目标**：消除 zoom + shake 互相覆盖 transform 的 bug 类。
 
@@ -134,9 +145,12 @@ Phase 3.1+3.2 已完成 foundation + 第一个生产订阅器。下一步：
 - 把内联逻辑抽成 `doX` 函数 → 加注册条目
 - 或扩展 `targetMode` 支持更复杂的目标解析（如 `random-low-hp` / `target-and-row` 等）
 
-### Phase 6 — VFX 流水线（中，1-2 周）
-统一抽象 `fireProjectile({from, to, sprite, durationMs, onArrive})`。
-现在飞镖/箭矢/能量弹各自写一遍 spawn-fly-impact 模板。
+### Phase 6 续（投射物之外的 VFX 收口）
+✅ 投射物（fireProjectile）已完成。
+后续可做：
+- **击中震屏** + **击退轨迹** 模板（基础龟气波 / 忍者冲击 / 钻石撞击 都各写一份）
+- **buff aura 粒子** 收口（curse / burn / chilled 视觉提示）
+- 长期：把所有 VFX 改用 motion.dev timeline 替代手写 keyframes
 
 ### Phase 7 — Sim / View 完全分离（大，2-3 周）
 所有逻辑代码不依赖 DOM。`sim/` 路径不 import `getFighterElId` / `spawnFloatingNum`。
@@ -157,6 +171,7 @@ Phase 3.1+3.2 已完成 foundation + 第一个生产订阅器。下一步：
 | `c:/tmp/registry_test.mjs` | Skill registry dispatch + targetMode 解析验证 |
 | `c:/tmp/bus_test.mjs` | EventBus on/off/once/emit + handler 错误隔离 |
 | `c:/tmp/passive_subs_test.mjs` | chestTreasure / lavaRage 订阅器累积正确性 |
+| `c:/tmp/projectile_test.mjs` | fireProjectile spawn/timing/rotation/cleanup |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
