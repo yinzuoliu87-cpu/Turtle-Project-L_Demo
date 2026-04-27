@@ -1168,8 +1168,8 @@ function playAttackAnimation(f) {
   // Always do the hop animation — swap CSS lunge for hop
   card.classList.remove('attack-anim');
   card.classList.add('attack-hop');
-  const hopDuration = 1200;
-  const spriteDelay = 240;
+  const hopDuration = ATTACK_HOP_TOTAL_MS;
+  const spriteDelay = ATTACK_HOP_FORWARD_MS;
   // Schedule class cleanup
   setTimeout(() => card.classList.remove('attack-hop'), hopDuration + 50);
   // If no attackAnim config, just hop (idle sprite plays the whole time)

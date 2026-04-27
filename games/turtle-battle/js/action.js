@@ -463,10 +463,9 @@ async function executeAction(action) {
   } else if (atkEl) {
     atkEl.classList.add('attack-anim');  // fallback short lunge
   }
-  // Sync damage with attack sprite "strike frame" for turtles with attackAnim
-  // Hop: 0-240 forward, 240-1040 sprite plays, 1040-1200 hop back
-  // Strike happens around mid-sprite (t ≈ 500ms from start)
-  if (_hasAttackAnim) await sleep(400);
+  // Sync damage with attack sprite "strike frame" for turtles with attackAnim.
+  // Strike happens around mid-sprite, ATTACK_DAMAGE_SYNC_MS ms into the hop arc.
+  if (_hasAttackAnim) await sleep(ATTACK_DAMAGE_SYNC_MS);
 
   // Phase 4: Try registry-based dispatch first. Skills registered in
   // js/skills/registry.js bypass the if/else chain below.
