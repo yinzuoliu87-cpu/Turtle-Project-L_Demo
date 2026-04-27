@@ -570,6 +570,17 @@ async function tickDotsOn(f) {
     spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
     tickHurt(elId, 'hit-magic');
     updateHpBar(f, elId);
+    // Stats tracking: poison = magic
+    const pSrc = (p.sourceIdx !== undefined && p.sourceIdx >= 0) ? allFighters[p.sourceIdx] : null;
+    if (pSrc && pSrc._dmgDealt !== undefined) {
+      pSrc._dmgDealt += poisonDmg;
+      pSrc._magicDmgDealt = (pSrc._magicDmgDealt || 0) + poisonDmg;
+    }
+    if (f._dmgTaken !== undefined) {
+      f._dmgTaken += poisonDmg;
+      f._magicDmgTaken = (f._magicDmgTaken || 0) + poisonDmg;
+    }
+    if (typeof updateDmgStats === 'function') updateDmgStats();
     addLog(`${f.emoji}${f.name} 受到 <span style="color:#6b8e23">${poisonDmg}中毒伤害</span>（剩余${p.turns-1}回合）`);
     if (f.hp <= 0) break;
   }
@@ -583,6 +594,17 @@ async function tickDotsOn(f) {
     spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
     tickHurt(elId, 'hit-physical');
     updateHpBar(f, elId);
+    // Stats tracking: bleed = physical
+    const blSrc = (bl.sourceIdx !== undefined && bl.sourceIdx >= 0) ? allFighters[bl.sourceIdx] : null;
+    if (blSrc && blSrc._dmgDealt !== undefined) {
+      blSrc._dmgDealt += bleedDmg;
+      blSrc._physDmgDealt = (blSrc._physDmgDealt || 0) + bleedDmg;
+    }
+    if (f._dmgTaken !== undefined) {
+      f._dmgTaken += bleedDmg;
+      f._physDmgTaken = (f._physDmgTaken || 0) + bleedDmg;
+    }
+    if (typeof updateDmgStats === 'function') updateDmgStats();
     addLog(`${f.emoji}${f.name} 受到 <span style="color:#cc3333">${bleedDmg}流血伤害</span>（剩余${bl.turns-1}回合）`);
     if (f.hp <= 0) break;
   }

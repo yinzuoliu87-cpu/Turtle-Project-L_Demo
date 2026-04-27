@@ -36,8 +36,8 @@ async function doGamblerDraw(caster, target, skill) {
       { type:'defDown', value:20, turns:3, label:'⬇20%护甲' },
       { type:'mrDown',  value:20, turns:3, label:'⬇20%魔抗' },
       { type:'healReduce', value:50, turns:3, label:'⬇50%治疗' },
-      { type:'poison', value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, label:'🟢中毒' },
-      { type:'bleed',  value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, label:'🩸流血' },
+      { type:'poison', value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, sourceIdx: allFighters.indexOf(caster), label:'🟢中毒' },
+      { type:'bleed',  value:Math.round(caster.atk * 0.15), turns:3, sourceSide: caster.side, sourceIdx: allFighters.indexOf(caster), label:'🩸流血' },
       { type:'phoenixBurnDot', value:Math.round(caster.atk * 0.15), hpPct:4, turns:3, sourceSide: caster.side, sourceIdx: allFighters.indexOf(caster), label:'🔥灼烧' },
       { type:'chilled', value:1, turns:2, label:'❄冰寒' },
     ];
