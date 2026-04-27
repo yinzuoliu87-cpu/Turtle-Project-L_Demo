@@ -228,6 +228,9 @@ function checkDeaths(attacker) {
       }
 
       f.alive = false; f.hp = 0; f._deathProcessed = true; f._pendingDeath = false;
+      // Phase 3.1: emit death event for any subscribers. Fires AFTER all
+      // revive/rebirth branches have been considered, only on actual finalized death.
+      if (typeof bus !== 'undefined') bus.emit('fighter:died', { fighter: f, killer: attacker || null });
       const elId = getFighterElId(f);
       const deadEl = document.getElementById(elId);
       if (deadEl) {

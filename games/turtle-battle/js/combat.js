@@ -807,6 +807,17 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     }
     updateDmgStats();
     _applyInkBonus(source, target, amount, _isInkBonus);
+    if (typeof bus !== 'undefined') {
+      bus.emit('damage:dealt', {
+        source, target, amount,
+        type: dmgType || 'physical',
+        isPierce: !!isPierce,
+        hpLoss: hpLoss2,
+        shieldAbs: shieldAbs2,
+        bubbleAbs: bubbleAbs2,
+        undeadLocked: true,
+      });
+    }
     return { hpLoss: hpLoss2, shieldAbs: shieldAbs2, bubbleAbs: bubbleAbs2 };
   }
   let rem = amount, bubbleAbs = 0, shieldAbs = 0;
@@ -909,6 +920,18 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     playHurtAnimation(target);
   }
   _applyInkBonus(source, target, amount, _isInkBonus);
+  // Phase 3.1: emit damage event for any subscribers (sim mode, tests, future
+  // view-layer extraction). Currently no consumers — additive only.
+  if (typeof bus !== 'undefined') {
+    bus.emit('damage:dealt', {
+      source, target, amount,
+      type: dmgType || 'physical',
+      isPierce: !!isPierce,
+      hpLoss: rem,
+      shieldAbs,
+      bubbleAbs,
+    });
+  }
   return { hpLoss: rem, shieldAbs, bubbleAbs };
 }
 
