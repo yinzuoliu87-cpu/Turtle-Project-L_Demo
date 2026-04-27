@@ -468,7 +468,15 @@ async function executeAction(action) {
   // Strike happens around mid-sprite (t ≈ 500ms from start)
   if (_hasAttackAnim) await sleep(400);
 
-  if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor' && skill.type !== 'lineInkBomb' && skill.type !== 'candyBomb' && skill.type !== 'fortuneGoldRain' && skill.type !== 'lightningSurge' && skill.type !== 'stoneQuake' && skill.type !== 'volcanoStomp' && skill.type !== 'bambooSpikes' && skill.type !== 'headlessStorm' && skill.type !== 'shellAuraBurst' && skill.type !== 'starShieldBreak') {
+  // Phase 4: Try registry-based dispatch first. Skills registered in
+  // js/skills/registry.js bypass the if/else chain below.
+  const _handledByRegistry = (typeof dispatchSkill === 'function')
+    ? await dispatchSkill(f, action, skill)
+    : false;
+
+  if (_handledByRegistry) {
+    // handled — fall through to post-skill cleanup at the bottom of executeAction
+  } else if (action.aoe && skill.type !== 'pirateCannonBarrage' && skill.type !== 'rainbowStorm' && skill.type !== 'chestStorm' && skill.type !== 'lavaQuake' && skill.type !== 'volcanoErupt' && skill.type !== 'candyBarrage' && skill.type !== 'soulReap' && skill.type !== 'crystalBurst' && skill.type !== 'starMeteor' && skill.type !== 'lineInkBomb' && skill.type !== 'candyBomb' && skill.type !== 'fortuneGoldRain' && skill.type !== 'lightningSurge' && skill.type !== 'stoneQuake' && skill.type !== 'volcanoStomp' && skill.type !== 'bambooSpikes' && skill.type !== 'headlessStorm' && skill.type !== 'shellAuraBurst' && skill.type !== 'starShieldBreak') {
     // AOE: hit all alive enemies (including summons)
     const enemies = getAliveEnemiesWithSummons(f.side);
     for (const enemy of enemies) {
