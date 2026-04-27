@@ -4,29 +4,64 @@ async function doNinjaShuriken(attacker, target, skill) {
   const isCrit = Math.random() < attacker.crit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
   const tElId = getFighterElId(target);
+  const aElId = getFighterElId(attacker);
+
+  // Wait for the default attack-hop to reach its forward apex (~280ms in),
+  // then spawn the shuriken from caster's hand and fly it to target.
+  await sleep(260);
+
+  const battleField = document.getElementById('battleScene');
+  const aEl = document.getElementById(aElId);
+  const tEl = document.getElementById(tElId);
+  const flightMs = 280;
+  const damageAt = 240; // ms into flight when shuriken visually reaches target
+  if (battleField && aEl && tEl) {
+    const aBody = aEl.querySelector('.st-body') || aEl;
+    const tBody = tEl.querySelector('.st-body') || tEl;
+    const bRect = battleField.getBoundingClientRect();
+    const aRect = aBody.getBoundingClientRect();
+    const tRect = tBody.getBoundingClientRect();
+    const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    const aCx = ((aRect.left + aRect.width / 2) - bRect.left) / zoom;
+    const aCy = ((aRect.top  + aRect.height / 2) - bRect.top)  / zoom;
+    const tCx = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
+    const tCy = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
+    const dx = tCx - aCx, dy = tCy - aCy;
+    const star = document.createElement('div');
+    star.className = 'ninja-shuriken';
+    star.style.left = aCx + 'px';
+    star.style.top  = aCy + 'px';
+    battleField.appendChild(star);
+    requestAnimationFrame(() => {
+      star.style.transition = `transform ${flightMs}ms linear`;
+      star.style.transform  = `translate(-50%,-50%) translate(${dx}px, ${dy}px)`;
+    });
+    setTimeout(() => star.remove(), flightMs + 80);
+  }
+
+  // Apply damage when the shuriken visually lands.
+  await sleep(damageAt);
 
   if (isCrit) {
     const pierceDmg = Math.round(baseDmg * critMult);
     applyRawDmg(attacker, target, pierceDmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0);
+    spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0, {atkSide: attacker.side, amount: pierceDmg});
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}真实</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
     const effectiveDef = calcEffDef(attacker, target);
-        const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 100, 0);
+    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 100, 0, {atkSide: attacker.side, amount: dmg});
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
     await triggerOnHitEffects(attacker, target, dmg);
   }
 
-  const tEl = document.getElementById(tElId);
-  tEl.classList.add('hit-shake');
+  if (tEl) tEl.classList.add('hit-shake');
   updateHpBar(target, tElId);
-  await sleep(450);
-  tEl.classList.remove('hit-shake');
-  // Trap triggers when the buffed ally is attacked, not here
-  await sleep(80);
+  await sleep(360);
+  if (tEl) tEl.classList.remove('hit-shake');
+  await sleep(60);
 }
 
 // ─────────────────────────────────────────────────────────
