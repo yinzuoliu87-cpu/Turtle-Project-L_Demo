@@ -421,9 +421,9 @@
    element itself is translated by JS from caster to target. */
 .ninja-shuriken{
   position:absolute;
-  width:80px;height:80px;
+  width:60px;height:60px;
   background:url('../assets/vfx/ninja-shuriken.png') 0 0 no-repeat;
-  background-size:320px 80px;   /* 4 frames × 80 */
+  background-size:240px 60px;   /* 4 frames × 60 */
   transform:translate(-50%,-50%);
   image-rendering:pixelated;
   pointer-events:none;
@@ -433,13 +433,13 @@
 }
 @keyframes ninjaShurikenSpin{
   from{background-position:0 0}
-  to  {background-position:-320px 0}
+  to  {background-position:-240px 0}
 }
 @media (max-width:768px){
-  .ninja-shuriken{width:56px;height:56px;background-size:224px 56px}
+  .ninja-shuriken{width:42px;height:42px;background-size:168px 42px}
   @keyframes ninjaShurikenSpin{
     from{background-position:0 0}
-    to  {background-position:-224px 0}
+    to  {background-position:-168px 0}
   }
 }
 
