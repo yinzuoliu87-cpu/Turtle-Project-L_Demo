@@ -706,7 +706,7 @@ const ALL_PETS = [
     ], defaultSkills:[0,1,2], skills:[]
   },
   // SS级
-  { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:426,  atk:39,  def:25, mr:24,crit:0.25,
+  { id:'hiding',    name:'缩头乌龟', emoji:'🫣🐢',    rarity:'SS',  hp:415,  atk:37,  def:20, mr:21,crit:0.25,
     img:'../../assets/pets/缩头乌龟v1.png', sprite:{frames:14,frameW:500,frameH:500,duration:1400},
     passive:{ type:'summonAlly', name:'喊龟', hpPct:40, maxRarity:'A',
               brief:'缩头乌龟在战斗开始时随机召唤一只A级及以下的乌龟作为随从（随从拥有 <span class="val-atk">40%</span> 常规最大生命值）。随从在每回合结束时自动释放技能，并躲在缩头乌龟身后，使敌方单体技能无法选中随从。',
