@@ -79,6 +79,13 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 
 **收益**：additive 阶段 — 事件已发射，目前无消费者，零行为变化，但为 3.2+ 铺路。
 
+### Phase 3 续续 — DoT/Poison/Bleed tick 走 bus（commit `f61c9ca`）
+**做了**：`turn.tickDotsOn` 三段 DoT 删除内联 stats 累加（27 行），统一改 emit `'damage:dealt'`，由 `stats_tracker` 订阅器处理。`phoenixBurnDot` 不动（已通过 applyRawDmg 走 emit）。
+
+### Phase 3 续 — Stats Tracker 订阅器（commit `46ba62c`）
+**做了**：新增 [`js/systems/stats_tracker.js`](../games/turtle-battle/js/systems/stats_tracker.js)，订阅 `damage:dealt` 自动累加 source/target 的 `_dmgDealt/_physDmgDealt/_magicDmgDealt/_trueDmgDealt` 系列。`combat.applyRawDmg` 删除主路径 + undeadLock 路径的内联累加（27 行）。`doDamage` 路径通过 `source=null` 在 emit 时跳过订阅器，自管追踪不变。
+- 17 项 stats_tracker 单元测试
+
 ### Phase 3.2 — 第一个真正消费 bus 的订阅器（commit `6229ce0`）
 **目标**：把 applyRawDmg 内联的 passive 反应抽出来，证明事件总线在生产路径可用。
 
@@ -133,11 +140,12 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 
 ## 待做阶段
 
-### Phase 3 续（剩余 consumer 迁移）
-Phase 3.1+3.2 已完成 foundation + 第一个生产订阅器。下一步：
-- **Stat tracking** 抽到订阅器（doDamage 双轨 / applyRawDmg 主路径 / undeadLock 路径 / hunter execute 路径都做）— 中等复杂度
-- **dot 流派 stat 追踪**（turn.tickDotsOn 内的 curse/poison/bleed 重复代码）也抽到订阅器
-- **addLog 战斗日志** — 当前各 skill 内联调用，可以让 view 层订阅 `damage:dealt` + `skill:cast` 自动生成
+### Phase 3 final（剩余 consumer 迁移）
+✅ stat tracking 主路径/undeadLock + dot/poison/bleed 已迁移。
+未做：
+- **hunter execute 路径**（mark.sourceIdx → execAmt 累加）— 因事件 payload 不含 execAmt，留下 inline 12 行
+- **addLog 战斗日志** — 各 skill 内联调用 ~80 处，可以渐进让 view 层订阅 + 自动生成
+- **buff:applied / buff:removed** 事件 — addBuff helper 内可顺手 emit，留待新需求
 
 ### Phase 4 续（中，1-2 天）
 ✅ Phase 4 主体已完成（74 项注册，覆盖 56% 分支）。
@@ -172,6 +180,7 @@ Phase 3.1+3.2 已完成 foundation + 第一个生产订阅器。下一步：
 | `c:/tmp/bus_test.mjs` | EventBus on/off/once/emit + handler 错误隔离 |
 | `c:/tmp/passive_subs_test.mjs` | chestTreasure / lavaRage 订阅器累积正确性 |
 | `c:/tmp/projectile_test.mjs` | fireProjectile spawn/timing/rotation/cleanup |
+| `c:/tmp/stats_tracker_test.mjs` | stats_tracker 订阅器累加 / null source 处理 |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
