@@ -622,7 +622,7 @@ async function doBasicSlam(attacker, target, skill) {
     casterShiftY = ((tRect.top + tRect.height / 2) - (fRect.top + fRect.height / 2)) / zoom;
   }
 
-  // ── Camera zoom ──
+  // ── Camera zoom (BattleCamera handles --cam-scale sync for shake later) ──
   if (battleField && fEl && tEl) {
     const bRect = battleField.getBoundingClientRect();
     const fRect = fEl.getBoundingClientRect();
@@ -631,9 +631,7 @@ async function doBasicSlam(attacker, target, skill) {
     const midY = tRect.top + tRect.height / 2;
     const ox = (midX - bRect.left) / bRect.width * 100;
     const oy = (midY - bRect.top) / bRect.height * 100;
-    battleField.style.transformOrigin = `${ox}% ${oy}%`;
-    battleField.style.transition = 'transform 380ms ease-out';
-    battleField.style.transform = 'scale(1.22)';
+    battleCamera.zoomTo(1.22, 380, { x: ox, y: oy });
   }
 
   // ── Caster dashes to target ──
@@ -731,11 +729,7 @@ async function doBasicSlam(attacker, target, skill) {
     battleField.appendChild(impact);
     setTimeout(() => impact.remove(), 760);
 
-    battleField.style.setProperty('--cam-scale', '1.22');
-    battleField.classList.remove('battle-scene-shake');
-    void battleField.offsetWidth;
-    battleField.classList.add('battle-scene-shake');
-    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 260);
+    battleCamera.shake(260);
   }
 
   // Main damage + splash (both at slam instant)
@@ -790,22 +784,16 @@ async function doBasicSlam(attacker, target, skill) {
   }
   fEl.style.transition = 'transform 340ms cubic-bezier(.35,.9,.4,1)';
   fEl.style.transform = `translate(0px, 0px) scale(${scale})`;
-  if (battleField) battleField.style.transform = 'scale(1)';
+  battleCamera.zoomReset(340);
   // Wait only long enough for the caster to reach home visually; don't hold
   // the function for the trailing tail — the next-turn UI should appear
   // the moment visuals are in place, not 80ms after.
   await sleep(340);
 
-  // Cleanup (fires as the function returns; inline styles clear to their
-  // CSS defaults with no visible snap because animation end-states match).
+  // Cleanup caster transform; battleCamera.zoomReset already clears the field.
   fEl.style.transition = '';
   fEl.style.transform = '';
   fEl.style.zIndex = '';
-  if (battleField) {
-    battleField.style.transition = '';
-    battleField.style.transform = '';
-    battleField.style.transformOrigin = '';
-  }
 }
 
 // ── ICE TURTLE SKILLS ─────────────────────────────────────
