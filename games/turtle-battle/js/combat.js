@@ -793,19 +793,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
       const tElId = getFighterElId(target);
       spawnFloatingNum(tElId, '<img src="assets/passive/undead-rage-icon.png" style="width:16px;height:16px;vertical-align:middle">无法死亡', 'crit-label', 0, -25);
     }
-    if (source && source._dmgDealt !== undefined) {
-      source._dmgDealt += amount;
-      if (dmgType === 'magic') source._magicDmgDealt = (source._magicDmgDealt||0) + amount;
-      else if (dmgType === 'true' || isPierce) source._trueDmgDealt = (source._trueDmgDealt||0) + amount;
-      else source._physDmgDealt = (source._physDmgDealt||0) + amount;
-    }
-    if (target._dmgTaken !== undefined) {
-      target._dmgTaken += amount;
-      if (dmgType === 'magic') target._magicDmgTaken = (target._magicDmgTaken||0) + amount;
-      else if (dmgType === 'true' || isPierce) target._trueDmgTaken = (target._trueDmgTaken||0) + amount;
-      else target._physDmgTaken = (target._physDmgTaken||0) + amount;
-    }
-    updateDmgStats();
+    // Stats tracking moved to systems/stats_tracker.js (subscribes to damage:dealt below).
     _applyInkBonus(source, target, amount, _isInkBonus);
     if (typeof bus !== 'undefined') {
       bus.emit('damage:dealt', {
@@ -860,22 +848,9 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
       addLog(`${target.emoji}${target.name} <span class="log-passive">🎯猎杀印记触发！HP<${mark.value}% 被斩杀！</span>`);
     }
   }
-  // Real-time tracking by damage type
-  if (source && source._dmgDealt !== undefined) {
-    source._dmgDealt += amount;
-    if (dmgType === 'magic') source._magicDmgDealt = (source._magicDmgDealt||0) + amount;
-    else if (dmgType === 'true' || isPierce) source._trueDmgDealt = (source._trueDmgDealt||0) + amount;
-    else source._physDmgDealt = (source._physDmgDealt||0) + amount;
-  }
-  if (target._dmgTaken !== undefined) {
-    target._dmgTaken += amount;
-    if (dmgType === 'magic') target._magicDmgTaken = (target._magicDmgTaken||0) + amount;
-    else if (dmgType === 'true' || isPierce) target._trueDmgTaken = (target._trueDmgTaken||0) + amount;
-    else target._physDmgTaken = (target._physDmgTaken||0) + amount;
-  }
-  // chestTreasure / lavaRage accumulators moved to systems/passive_subscribers.js
-  // (they subscribe to bus 'damage:dealt' below).
-  updateDmgStats();
+  // Stats tracking moved to systems/stats_tracker.js.
+  // chestTreasure / lavaRage accumulators moved to systems/passive_subscribers.js.
+  // Both subscribe to 'damage:dealt' emitted at the bottom of this function.
   // Ink link transfer: damage dealt to linked target transfers X% to partner.
   // Type follows _inkLink.dmgType (set when 连笔 is cast). Magic by default,
   // 真实 if line turtle has 速写/lineRapid passive.
