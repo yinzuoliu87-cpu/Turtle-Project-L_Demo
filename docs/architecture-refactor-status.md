@@ -112,6 +112,22 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 - 添加新龟 = 在 `registry.js` 加 1 行 + 在 `skills/<turtle>.js` 加 doX 函数
 - 21 项 registry 单元测试 + 与现有 4 套测试合计 **86 项断言全过**
 
+### Phase 7.0 — sim-node 复活 + 修真实 bug（commits `92e95b8` / `6d7d2ab`）
+**目标**：让 Node 端 sim 引擎重新可用，提供轻量级回归工具。
+
+**做了**：
+- sim-node.js 文件加载列表对齐 index.html（之前还引用早就不存在的 `skills.js`）
+- 补 mock：`Image / getComputedStyle / duckBgm / unduckBgm / setProperty / animate / offsetWidth`
+- `style: {}` 改 Proxy（处理任意 CSS 变量 set/get/setProperty）
+- simBattle 调用从 2 龟/边 → 3 龟/边（real `autoAssignPositions` 假设 3 槽位）
+
+**附带发现并修真实 bug**：
+- [`combat.js:228`](../games/turtle-battle/js/combat.js#L228) `prismBonus` 块引用 `isCrit`，但 `isCrit` 是 for 循环里 const 声明
+- 浏览器里被 try/catch 吞掉，🔴 prism 真实伤害飘字暴击着色丢失
+- 修复：改用 `totalCrits > 0` 判断本次是否有暴击
+
+**结果**：sim-node 跑 27 龟全矩阵 351 场战斗，**0 runtime 错误**。新增 `c:/tmp/sim_node_test.mjs` 作为第 10 套回归。每次重构后跑一次（~30 秒）就能确认无新 DOM 泄漏。
+
 ### Phase 6 — VFX 投射物流水线（commit `69ae880`）
 **目标**：消除"spawn-fly-impact"模式在多个 skill 文件的重复（hunter-arrow / ninja-shuriken / 未来还有更多）。
 
@@ -160,9 +176,15 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 - **buff aura 粒子** 收口（curse / burn / chilled 视觉提示）
 - 长期：把所有 VFX 改用 motion.dev timeline 替代手写 keyframes
 
-### Phase 7 — Sim / View 完全分离（大，2-3 周）
-所有逻辑代码不依赖 DOM。`sim/` 路径不 import `getFighterElId` / `spawnFloatingNum`。
-`sim-node.js` 直接 import sim/，跟主代码完全一致（不再漂移）。
+### Phase 7 续 — 物理分文件（大，2-3 周）
+✅ Phase 7.0 已完成 (sim-node 通过 DOM mock 复活, 整套引擎在 Node 跑通).
+真正的 sim/view 完全分离还差:
+- 把 combat/state/turn/action/skills 的所有 `getFighterElId` / `spawnFloatingNum` /
+  `document.*` / `classList` / `style.*` 调用抽到 view 订阅器
+- `js/sim/` 目录纯逻辑, `js/view/` 目录订阅事件做渲染
+- sim-node 不再需要 DOM mock — 直接 require sim/ 就跑
+
+(目前 sim-node 通过 mock 已经验证逻辑层是 sound 的, 物理迁移可以慢慢做)
 
 ---
 
@@ -181,6 +203,7 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 | `c:/tmp/passive_subs_test.mjs` | chestTreasure / lavaRage 订阅器累积正确性 |
 | `c:/tmp/projectile_test.mjs` | fireProjectile spawn/timing/rotation/cleanup |
 | `c:/tmp/stats_tracker_test.mjs` | stats_tracker 订阅器累加 / null source 处理 |
+| `c:/tmp/sim_node_test.mjs` | Node 端跑 27 龟全矩阵 351 场, 断言 0 runtime 错误 |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
