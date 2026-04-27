@@ -57,6 +57,21 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 
 **实测收益**：5 次 `addBuff` 从 30 次重算降到 5 次（**6× 速度**）。
 
+### Phase 4 — 技能 dispatch 注册表（commit `3f5a226`）
+**目标**：消除 action.js 1000+ 行 if/else 长链，新加龟不再改 action.js。
+
+**做了**：
+- 新增 [`js/skills/registry.js`](../games/turtle-battle/js/skills/registry.js)
+- `SKILL_HANDLERS` 表 74 项映射，`dispatchSkill()` 按 `targetMode` 派发
+- 5 种 targetMode：`single` / `no-target` / `aoe-enemies` / `aoe-allies` / `shield-flex`
+- 字符串 fn 名 + window[] 查找，与 skills/*.js 加载顺序解耦
+- `action.js executeAction` 顶部加 dispatchSkill 早返回
+
+**收益**：
+- 覆盖 133 个 if/else 分支中的 56%（74 项）
+- 添加新龟 = 在 `registry.js` 加 1 行 + 在 `skills/<turtle>.js` 加 doX 函数
+- 21 项 registry 单元测试 + 与现有 4 套测试合计 **86 项断言全过**
+
 ### Phase 5 — BattleCamera（commit `aa499d7`）
 **目标**：消除 zoom + shake 互相覆盖 transform 的 bug 类。
 
@@ -82,9 +97,11 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 `applyRawDmg` 一个函数干 5 件事（扣血/统计/被动/UI/log）。引入 `bus.emit('damage:dealt', ...)`，
 view 层订阅，逻辑层只 emit。详见 [前面规划](#)。
 
-### Phase 4 — 技能 dispatch 表（中，2-3 天）
-`action.js` 1000+ 行 `if (skill.type === 'X') ... else if ...`。改为
-`SKILL_HANDLERS[skill.type]` 注册表 + 每个 skills 文件 `registerSkill('X', doX)`。
+### Phase 4 续（中，1-2 天）
+✅ Phase 4 主体已完成（74 项注册，覆盖 56% 分支）。
+剩余 59 个 inline 复杂分支可以渐进迁移：
+- 把内联逻辑抽成 `doX` 函数 → 加注册条目
+- 或扩展 `targetMode` 支持更复杂的目标解析（如 `random-low-hp` / `target-and-row` 等）
 
 ### Phase 6 — VFX 流水线（中，1-2 周）
 统一抽象 `fireProjectile({from, to, sprite, durationMs, onArrive})`。
@@ -106,6 +123,7 @@ view 层订阅，逻辑层只 emit。详见 [前面规划](#)。
 | `c:/tmp/skill_e2e.mjs` | 实际触发 4 个迁移技能, 断言 buff/stats 变化 |
 | `c:/tmp/dirty_perf.mjs` | 验证 dirty flag 真的省了 work（recompute 计数） |
 | `c:/tmp/camera_test.mjs` | BattleCamera zoom/shake/reset/origin 状态验证 |
+| `c:/tmp/registry_test.mjs` | Skill registry dispatch + targetMode 解析验证 |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
