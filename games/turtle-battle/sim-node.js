@@ -9,6 +9,7 @@ const path = require('path');
 
 // ── DOM/Browser Mock Layer ─────────────────────────────────
 const _noop = () => {};
+const _mockAnimation = { finished: Promise.resolve(), play: _noop, cancel: _noop, pause: _noop, reverse: _noop };
 const _mockEl = {
   classList: { add:_noop, remove:_noop, toggle:_noop, contains:()=>false },
   style: {}, querySelector: () => _mockEl, querySelectorAll: () => [],
@@ -16,6 +17,9 @@ const _mockEl = {
   addEventListener:_noop, removeEventListener:_noop,
   getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50}),
   innerHTML:'', textContent:'', id:'mock',
+  // Web Animations API mock — skill VFX use el.animate(...).finished
+  animate: () => _mockAnimation,
+  offsetWidth: 100, offsetHeight: 50,
 };
 global.document = {
   getElementById: () => _mockEl,
@@ -26,7 +30,8 @@ global.document = {
     style:{}, querySelector:()=>_mockEl, appendChild:_noop, remove:_noop,
     insertBefore:_noop, setAttribute:_noop,
     addEventListener:_noop, removeEventListener:_noop,
-    getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50})}),
+    getBoundingClientRect:()=>({left:0,top:0,width:100,height:50,right:100,bottom:50}),
+    animate:()=>_mockAnimation, offsetWidth:100, offsetHeight:50}),
   head: { appendChild:_noop },
   body: { appendChild:_noop },
   addEventListener: _noop,
@@ -40,6 +45,7 @@ global.fetch = () => Promise.resolve({ json: () => Promise.resolve([]) });
 global.requestAnimationFrame = (fn) => { return 0; }; // don't execute — visual only
 global.performance = { now: () => Date.now() };
 global.AudioContext = global.webkitAudioContext = function(){};
+global.Image = function(){ this.src=''; this.onload=null; this.onerror=null; };
 const _realSetTimeout = global.setTimeout;
 const _realClearTimeout = global.clearTimeout;
 // Override setTimeout to be instant for game sleep() calls, but keep real one for internals
@@ -59,6 +65,8 @@ global.clearTimeout = (id) => { if (id) _realClearTimeout(id); };
 global.playBgm = _noop;
 global.stopBgm = _noop;
 global.setBgmVolume = _noop;
+global.duckBgm = _noop;
+global.unduckBgm = _noop;
 // Mock battle rule/equip functions
 global._battleRule = { id:'normal', icon:'🎲', name:'正常对局', desc:'', apply:_noop };
 global.showRuleBanner = (r, cb) => { if (cb) cb(); };
@@ -68,8 +76,24 @@ global.showFighterDetail = _noop;
 global.autoAssignPositions = function(team) { team.forEach((f,i) => { f._position = i < 2 ? 'front' : 'back'; }); };
 
 // ── Load Real Engine Code ──────────────────────────────────
+// Mirrors index.html script-tag order. Keep in sync if new files added.
 const dir = path.join(__dirname, 'js');
-const files = ['pets.js', 'engine.js', 'skills.js', 'ui.js', 'main.js'];
+const files = [
+  'env.js', 'constants.js', 'bus.js',
+  'systems/passive_subscribers.js', 'systems/stats_tracker.js',
+  'camera.js', 'vfx/projectile.js', 'skills/registry.js',
+  'pets.js', 'engine.js', 'fighter.js', 'combat.js', 'state.js', 'turn.js',
+  'action.js', 'ai.js',
+  'skills/common.js', 'skills/basic.js', 'skills/bamboo.js', 'skills/angel.js',
+  'skills/ice.js', 'skills/ninja.js', 'skills/two_head.js', 'skills/ghost.js',
+  'skills/diamond.js', 'skills/fortune.js', 'skills/dice.js', 'skills/rainbow.js',
+  'skills/gambler.js', 'skills/hunter.js', 'skills/pirate.js', 'skills/candy.js',
+  'skills/bubble.js', 'skills/line.js', 'skills/lightning.js', 'skills/phoenix.js',
+  'skills/lava.js', 'skills/volcano.js', 'skills/cyber.js', 'skills/crystal.js',
+  'skills/star.js', 'skills/chest.js', 'skills/hiding.js', 'skills/headless.js',
+  'skills/shell.js',
+  'ui.js', 'tutorial.js', 'main.js',
+];
 const combined = files.map(f => fs.readFileSync(path.join(dir, f), 'utf8')).join('\n');
 
 // Replace const/let with var for global scope in vm
@@ -579,12 +603,14 @@ async function runMatrix(N) {
     for (let j = i + 1; j < ids.length; j++) {
       let aw = 0;
       for (let k = 0; k < N; k++) {
-        const r = await simBattle([ids[i], ids[i]], [ids[j], ids[j]]);
+        // Real engine's autoAssignPositions expects 3-fighter teams
+        // (front-0/front-1/back-1 layout). Mirror the same id 3× per side.
+        const r = await simBattle([ids[i], ids[i], ids[i]], [ids[j], ids[j], ids[j]]);
         if (r.winner === 'left') aw++;
-        st[ids[i]].dd += r.left[0].dd + r.left[1].dd;
-        st[ids[i]].dt += r.left[0].dt + r.left[1].dt;
-        st[ids[j]].dd += r.right[0].dd + r.right[1].dd;
-        st[ids[j]].dt += r.right[0].dt + r.right[1].dt;
+        st[ids[i]].dd += (r.left[0]?.dd || 0) + (r.left[1]?.dd || 0) + (r.left[2]?.dd || 0);
+        st[ids[i]].dt += (r.left[0]?.dt || 0) + (r.left[1]?.dt || 0) + (r.left[2]?.dt || 0);
+        st[ids[j]].dd += (r.right[0]?.dd || 0) + (r.right[1]?.dd || 0) + (r.right[2]?.dd || 0);
+        st[ids[j]].dt += (r.right[0]?.dt || 0) + (r.right[1]?.dt || 0) + (r.right[2]?.dt || 0);
       }
       st[ids[i]].w += aw; st[ids[i]].g += N;
       st[ids[j]].w += (N - aw); st[ids[j]].g += N;
