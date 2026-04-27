@@ -330,9 +330,9 @@ const ALL_PETS = [
       { name:'真正的赌徒', type:'diceGamblerConvert', passiveSkill:true, hits:0, power:0, pierce:0, cd:0,
         brief:'登场时将全部 <span class="val-def">护甲</span> 与 <span class="val-magic">魔抗</span> 转化为 <span class="val-atk">穿甲</span>（护甲→穿甲，魔抗→穿甲）',
         detail:'骰子龟化身为真正的赌徒。\n\n登场时将全部 <span class="val-def">护甲</span>({DEF}) 与 <span class="val-magic">魔抗</span>({MR}) 转化为 <span class="val-atk">穿甲</span>。\n自身护甲/魔抗变为0，但穿甲大增。\n对方护甲被穿透为负数时，受到的物理伤害反而增加！' },
-      { name:'稳定骰子', type:'diceFlashStrike', hits:0, power:0, pierce:0, cd:5, perHitScale:1.0, falloffPct:5,
-        brief:'掷出 1~6 点，按点数闪现到随机敌人前，每段造成（{N:1.0*ATK}）物理伤害，后续每段 -5%',
-        detail:'骰子龟掷出一个骰子（点数 1~6）。\n按点数次数闪现到随机敌人面前，每段造成 100%×攻击力({ATK}) = {N:1.0*ATK} 物理伤害。\n后续每段伤害递减 <span class="val-atk">5%</span>（第1段100%、第2段95%、第3段90%……第6段75%）。\n点数越高段数越多，最多 6 段。\n冷却{cd}回合。' },
+      { name:'稳定骰子', type:'diceFlashStrike', hits:0, power:0, pierce:0, cd:5, perHitScale:1.0, falloffPct:7,
+        brief:'掷出 1~6 点，按点数闪现到随机敌人前，每段造成（{N:1.0*ATK}）物理伤害，后续每段 -7%',
+        detail:'骰子龟掷出一个骰子（点数 1~6）。\n按点数次数闪现到随机敌人面前，每段造成 100%×攻击力({ATK}) = {N:1.0*ATK} 物理伤害。\n后续每段伤害递减 <span class="val-atk">7%</span>（第1段100%、第2段93%、第3段86%、第4段79%、第5段72%、第6段65%）。\n点数越高段数越多，最多 6 段。\n冷却{cd}回合。' },
     ], defaultSkills:[0,1,2], skills:[]
   },
   // A级
