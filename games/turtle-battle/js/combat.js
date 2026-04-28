@@ -27,7 +27,7 @@ function triggerThunderShell(attacker) {
     const reducedDmg = Math.max(1, Math.round(dmg * calcDmgMult(calcEffDef(attacker, e, 'magic'))));
     applyRawDmg(attacker, e, reducedDmg, false, false, 'magic', false, true);
     const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${reducedDmg}⚡`, 'magic-dmg', 0, 0, { atkSide: attacker.side, amount: reducedDmg });
+    spawnFloatingNum(eElId, `${reducedDmg}⚡`, 'magic-dmg', 0, 0, { atkSide: attacker.side, amount: reducedDmg });
     updateHpBar(e, eElId);
   }
   addLog(`${attacker.emoji}${attacker.name} <b>雷鸣贝壳</b>：全体敌人 <span class="log-magic">${dmg}魔法伤害</span>`);
@@ -53,7 +53,7 @@ async function doDamage(attacker, target, skill) {
       if (dodgeCounterBuff && attacker.alive) {
         const cDmg = dodgeCounterBuff.value;
         applyRawDmg(target, attacker, cDmg, false, false, dodgeCounterBuff.dmgType || 'magic', true);
-        spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 100, yOff);
+        spawnFloatingNum(getFighterElId(attacker), `${cDmg}`, 'counter-dmg', 100, yOff);
         updateHpBar(attacker, getFighterElId(attacker));
         if (attacker.hp <= 0) attacker.alive = false;
       }
@@ -159,19 +159,19 @@ async function doDamage(attacker, target, skill) {
     // Shields below the actual damage so info hierarchy matches: big hits up top.
     const NUM_GAP = 22;
     let ySlot = 0;
-    if (bubbleAbs > 0) { spawnFloatingNum(tElId, `-${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: bubbleAbs }); ySlot += NUM_GAP; }
-    if (shieldAbs > 0) { spawnFloatingNum(tElId, `-${shieldAbs}`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: shieldAbs }); ySlot += NUM_GAP; }
+    if (bubbleAbs > 0) { spawnFloatingNum(tElId, `${bubbleAbs}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: bubbleAbs }); ySlot += NUM_GAP; }
+    if (shieldAbs > 0) { spawnFloatingNum(tElId, `${shieldAbs}`, 'shield-dmg', 0, ySlot, { atkSide: attacker.side, amount: shieldAbs }); ySlot += NUM_GAP; }
     if (hpLoss > 0 && truePart > 0) {
       const mainHp = Math.min(mainPart, hpLoss);
       const trueHp = hpLoss - mainHp;
       // main first (lower), then true on top
-      if (mainHp > 0) { spawnFloatingNum(tElId, `-${mainHp}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: mainHp }); ySlot += NUM_GAP; }
-      if (trueHp > 0) { spawnFloatingNum(tElId, `-${trueHp}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: trueHp }); }
+      if (mainHp > 0) { spawnFloatingNum(tElId, `${mainHp}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: mainHp }); ySlot += NUM_GAP; }
+      if (trueHp > 0) { spawnFloatingNum(tElId, `${trueHp}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: trueHp }); }
     } else if (hpLoss > 0) {
-      spawnFloatingNum(tElId, `-${hpLoss}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: hpLoss });
+      spawnFloatingNum(tElId, `${hpLoss}`, mainCls, 0, ySlot, { atkSide: attacker.side, amount: hpLoss });
     }
     if (truePart > 0 && shieldAbs >= totalHit) {
-      spawnFloatingNum(tElId, `-${truePart}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: truePart });
+      spawnFloatingNum(tElId, `${truePart}`, trueCls, 0, ySlot, { atkSide: attacker.side, amount: truePart });
     }
 
     // All on-hit effects (trap, reflect, bubble, lightning, etc.)
@@ -191,7 +191,7 @@ async function doDamage(attacker, target, skill) {
       // Larger yOffset = higher on screen, so use ySlot+NUM_GAP to sit above
       // whatever physical/true main number was just spawned. (Was -20 = 20px
       // BELOW main hit, contradicting both the canonical order and the comment.)
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, ySlot + NUM_GAP, { atkSide: attacker.side, amount: judgeReduced });
+      spawnFloatingNum(tElId, `${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, ySlot + NUM_GAP, { atkSide: attacker.side, amount: judgeReduced });
       updateHpBar(target, tElId);
       await sleep(200);
     }
@@ -209,7 +209,7 @@ async function doDamage(attacker, target, skill) {
         const splashAmt = Math.max(1, Math.round(totalHit * attacker._equipSplash / 100));
         applyRawDmg(attacker, splashTarget, splashAmt, false, false, dmgType, false, true);
         const sElId = getFighterElId(splashTarget);
-        spawnFloatingNum(sElId, `-${splashAmt}💦`, isCrit ? 'crit-dmg' : 'direct-dmg', 100, 0, { atkSide: attacker.side, amount: splashAmt });
+        spawnFloatingNum(sElId, `${splashAmt}💦`, isCrit ? 'crit-dmg' : 'direct-dmg', 100, 0, { atkSide: attacker.side, amount: splashAmt });
         updateHpBar(splashTarget, sElId);
       }
     }
@@ -231,7 +231,7 @@ async function doDamage(attacker, target, skill) {
         // isCrit was loop-scoped above; here prismBonus runs after the loop.
         // Use totalCrits to color the bonus floater consistently with the hits.
         const anyCrit = totalCrits > 0;
-        spawnFloatingNum(tElId, `-${bonus}🔴`, anyCrit ? 'crit-true' : 'true-dmg', 100, 0, { atkSide: attacker.side, amount: bonus });
+        spawnFloatingNum(tElId, `${bonus}🔴`, anyCrit ? 'crit-true' : 'true-dmg', 100, 0, { atkSide: attacker.side, amount: bonus });
         updateHpBar(target, tElId);
       }
     } else if (attacker._prismColor === 1) {
@@ -264,7 +264,7 @@ async function doDamage(attacker, target, skill) {
       const counterDmg = Math.round(target.baseAtk * 0.5);
       attacker.hp = Math.max(0, attacker.hp - counterDmg);
       const aElId = getFighterElId(attacker);
-      spawnFloatingNum(aElId, `-${counterDmg}`, 'counter-dmg', 0, 0);
+      spawnFloatingNum(aElId, `${counterDmg}`, 'counter-dmg', 0, 0);
       updateHpBar(attacker, aElId);
       addLog(`${target.emoji}${target.name} <span class="log-passive">反击！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${counterDmg}物理</span>`);
       if (attacker.hp <= 0) attacker.alive = false;
@@ -505,7 +505,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       target.mr -= loss;
       bindBuff.lossUsed = used + loss;
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${loss}甲/抗`, 'debuff-num', 150, 14);
+      spawnFloatingNum(tElId, `${loss}甲/抗`, 'debuff-num', 150, 14);
       updateFighterStats(target, tElId);
     }
   }
@@ -549,7 +549,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const tDmg = Math.max(1, Math.round(trapB.value * calcDmgMult(attacker.def)));
     attacker.hp = Math.max(0, attacker.hp - tDmg);
     const aElId = getFighterElId(attacker);
-    spawnFloatingNum(aElId, `-${tDmg}`, 'counter-dmg', 0, 0);
+    spawnFloatingNum(aElId, `${tDmg}`, 'counter-dmg', 0, 0);
     spawnFloatingNum(aElId, '夹子!', 'crit-label', 0, -20);
     updateHpBar(attacker, aElId);
     try { sfxTrap(); } catch(e) {}
@@ -562,7 +562,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflectDmg = Math.round(dmg * reflectPct / 100);
     if (reflectDmg > 0) {
       applyRawDmg(target, attacker, reflectDmg, false, false, undefined, true);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflectDmg}`, 'counter-dmg', 250, 0);
+      spawnFloatingNum(getFighterElId(attacker), `${reflectDmg}`, 'counter-dmg', 250, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
@@ -573,7 +573,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflDmg = Math.round(dmg * reflectBuff.value / 100);
     if (reflDmg > 0) {
       applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
+      spawnFloatingNum(getFighterElId(attacker), `${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
@@ -583,7 +583,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   if (target._lavaShieldTurns > 0 && target._lavaShieldCounter > 0 && target.shield > 0 && attacker.alive) {
     const cDmg = Math.round(target.atk * target._lavaShieldCounter);
     applyRawDmg(target, attacker, cDmg, false, false, undefined, true);
-    spawnFloatingNum(getFighterElId(attacker), `-${cDmg}`, 'counter-dmg', 300, 0);
+    spawnFloatingNum(getFighterElId(attacker), `${cDmg}`, 'counter-dmg', 300, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
   }
@@ -591,7 +591,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
   const counterBuff = target.buffs ? target.buffs.find(b => b.type === 'counter') : null;
   if (counterBuff && target.shield > 0 && attacker && attacker.alive && dmg > 0) {
     applyRawDmg(target, attacker, counterBuff.value, false, false, undefined, true);
-    spawnFloatingNum(getFighterElId(attacker), `-${counterBuff.value}`, 'counter-dmg', 350, 0);
+    spawnFloatingNum(getFighterElId(attacker), `${counterBuff.value}`, 'counter-dmg', 350, 0);
     updateHpBar(attacker, getFighterElId(attacker));
     if (attacker.hp <= 0) attacker.alive = false;
   }
@@ -638,7 +638,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflDmg = Math.round(dmg * target._auraReflect);
     if (reflDmg > 0) {
       applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 400, 0);
+      spawnFloatingNum(getFighterElId(attacker), `${reflDmg}`, 'counter-dmg', 400, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
@@ -664,7 +664,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const eDef = calcEffDef(attacker, target);
     const finalDmg = Math.max(1, Math.round(extraDmg * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, finalDmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${finalDmg}🐙`, 'direct-dmg', 200, 0, {atkSide:attacker.side, amount:finalDmg});
+    spawnFloatingNum(tElId, `${finalDmg}🐙`, 'direct-dmg', 200, 0, {atkSide:attacker.side, amount:finalDmg});
     updateHpBar(target, tElId);
   }
   // Equipment: reflect
@@ -672,7 +672,7 @@ async function triggerOnHitEffects(attacker, target, dmg) {
     const reflDmg = Math.round(dmg * target._equipReflect / 100);
     if (reflDmg > 0) {
       applyRawDmg(target, attacker, reflDmg, false, false, undefined, true);
-      spawnFloatingNum(getFighterElId(attacker), `-${reflDmg}`, 'counter-dmg', 300, 0);
+      spawnFloatingNum(getFighterElId(attacker), `${reflDmg}`, 'counter-dmg', 300, 0);
       updateHpBar(attacker, getFighterElId(attacker));
       if (attacker.hp <= 0) attacker.alive = false;
     }
@@ -732,7 +732,7 @@ async function doGamblerCards(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg);
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -819,7 +819,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
   target.hp = Math.max(0, target.hp - rem);
   // Surface aura absorption visually (keeps bubble/shield numbers separate)
-  if (auraAbs > 0) spawnFloatingNum(getFighterElId(target), `-${auraAbs}⚡`, 'shield-dmg', 0, 14, { atkSide: source && source.side, amount: auraAbs });
+  if (auraAbs > 0) spawnFloatingNum(getFighterElId(target), `${auraAbs}⚡`, 'shield-dmg', 0, 14, { atkSide: source && source.side, amount: auraAbs });
   // Undead passive: first death triggers lock — HP stays at 1 but still takes damage visually
   if (target.hp <= 0 && target.passive && target.passive.type === 'undeadRage' && !target._undeadLockUsed) {
     target._undeadLockUsed = true;
@@ -870,7 +870,7 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
       applyRawDmg(source, partner, transferAmt, false, true, linkType); // _skipLink=true to prevent infinite loop
       const pElId = getFighterElId(partner);
       const floatCls = linkType === 'true' ? 'pierce-dmg' : 'magic-dmg';
-      spawnFloatingNum(pElId, `-${transferAmt}🔗`, floatCls, 0, 0);
+      spawnFloatingNum(pElId, `${transferAmt}🔗`, floatCls, 0, 0);
       updateHpBar(partner, pElId);
     }
   }
@@ -913,6 +913,6 @@ function _applyInkBonus(source, target, originalAmount, _isInkBonus) {
   applyRawDmg(source, target, bonus, false, true, bonusType, true, false, true);
   const tElId = getFighterElId(target);
   const cls = bonusType === 'true' ? 'pierce-dmg' : 'magic-dmg';
-  spawnFloatingNum(tElId, `-${bonus}`, cls, 60, 24);
+  spawnFloatingNum(tElId, `${bonus}`, cls, 60, 24);
   updateHpBar(target, tElId);
 }

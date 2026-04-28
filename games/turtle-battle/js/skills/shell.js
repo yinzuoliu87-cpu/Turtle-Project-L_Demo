@@ -41,14 +41,14 @@ async function doShellStrike(attacker, target, skill) {
       totalNormal += dmg;
       totalShieldDmg += shieldAbs;
 
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, yOff);
     } else {
       dmg = Math.max(1, Math.round(raw * critMult)); // pierce ignores DEF
       const { shieldAbs } = applyRawDmg(attacker, target, dmg, true, false, 'true');
       totalPierce += dmg;
       totalShieldDmg += shieldAbs;
 
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff, {atkSide: attacker.side, amount: dmg});
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, yOff, {atkSide: attacker.side, amount: dmg});
     }
     totalDmgDealt += dmg;
 
@@ -78,7 +78,7 @@ async function doShellStrike(attacker, target, skill) {
           const cls = isNormal
             ? (sIsCrit ? 'crit-dmg' : 'direct-dmg')
             : (sIsCrit ? 'crit-pierce' : 'pierce-dmg');
-          spawnFloatingNum(eElId, `-${splashDmg}`, cls, 0, yOff, {atkSide: attacker.side, amount: splashDmg});
+          spawnFloatingNum(eElId, `${splashDmg}`, cls, 0, yOff, {atkSide: attacker.side, amount: splashDmg});
           updateHpBar(e, eElId);
           await triggerOnHitEffects(attacker, e, splashDmg);
         }

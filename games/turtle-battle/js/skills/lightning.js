@@ -15,7 +15,7 @@ async function doLightningStrike(attacker, mainTarget, skill) {
         const dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, mainTarget, dmg, false, false, 'magic');
     totalMain += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
     await triggerOnHitEffects(attacker, mainTarget, dmg);
     // Splash to secondary
     if (secondaryTarget && secondaryTarget.alive) {
@@ -23,7 +23,7 @@ async function doLightningStrike(attacker, mainTarget, skill) {
       applyRawDmg(attacker, secondaryTarget, splashDmg, false, false, 'magic');
       totalSplash += splashDmg;
       const sElId = getFighterElId(secondaryTarget);
-      spawnFloatingNum(sElId, `-${splashDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 200, 0);
+      spawnFloatingNum(sElId, `${splashDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 200, 0);
       updateHpBar(secondaryTarget, sElId);
       await triggerOnHitEffects(attacker, secondaryTarget, splashDmg);
     }
@@ -70,7 +70,7 @@ async function doLightningBarrage(attacker, skill) {
         const dmg = Math.max(1, Math.round(perHitDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'magic', false, true);
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);

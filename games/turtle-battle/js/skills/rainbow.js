@@ -24,8 +24,8 @@ async function doRainbowStorm(attacker, skill) {
       // Stack order: true on top, magic below (larger yOffset = higher on screen)
       const magicCls = isCrit ? 'crit-magic' : 'magic-dmg';
       const trueCls = isCrit ? 'crit-true' : 'true-dmg';
-      spawnFloatingNum(eElId, `-${magicDmg}`, magicCls, 0, 0, { atkSide: attacker.side, amount: magicDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, trueCls, 0, 22, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `${magicDmg}`, magicCls, 0, 0, { atkSide: attacker.side, amount: magicDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `${trueDmg}`, trueCls, 0, 22, { atkSide: attacker.side, amount: trueDmg });
 
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       const eEl = document.getElementById(eElId);

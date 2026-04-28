@@ -30,7 +30,7 @@ async function doCandyBarrage(attacker, skill) {
       applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
       totalAll += dmg;
       const eElId = getFighterElId(enemy);
-      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+      spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
       await triggerOnHitEffects(attacker, enemy, dmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);

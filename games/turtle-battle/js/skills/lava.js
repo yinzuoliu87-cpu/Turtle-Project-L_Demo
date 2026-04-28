@@ -7,7 +7,7 @@ async function doLavaBolt(attacker, target, skill) {
   const dmg = mainDmg + hpBonusDmg;
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -30,7 +30,7 @@ async function doLavaQuake(attacker, skill) {
     applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
-    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+    spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
     updateHpBar(enemy, eElId);
     if (skill.mrDown && enemy.alive) {
       const existing = enemy.buffs.find(b => b.type === 'mrDown');
@@ -52,7 +52,7 @@ async function doLavaSurge(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
   await triggerOnHitEffects(attacker, target, dmg);
   updateHpBar(target, tElId);
   // Shield

@@ -6,7 +6,7 @@ async function doPhoenixBurn(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');
@@ -61,12 +61,12 @@ async function doPhoenixScald(attacker, target, skill) {
     if (target.bubbleShieldVal > 0) {
       const broken = Math.round(target.bubbleShieldVal * breakPct);
       target.bubbleShieldVal -= broken;
-      spawnFloatingNum(tElId, `-${broken}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, -15);
+      spawnFloatingNum(tElId, `${broken}<img src="assets/passive/bubble-store-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'shield-dmg', 0, -15);
     }
     if (target.shield > 0) {
       const broken = Math.round(target.shield * breakPct);
       target.shield -= broken;
-      spawnFloatingNum(tElId, `-${broken}`, 'shield-dmg', 100, -15);
+      spawnFloatingNum(tElId, `${broken}`, 'shield-dmg', 100, -15);
     }
     addLog(`${attacker.emoji}${attacker.name} 烫伤破盾！<span class="log-debuff">破坏${skill.shieldBreak}%护盾</span>`);
     updateHpBar(target, tElId);
@@ -79,7 +79,7 @@ async function doPhoenixScald(attacker, target, skill) {
   const effectiveDef = calcEffDef(attacker, target, 'magic');
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'magic');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');

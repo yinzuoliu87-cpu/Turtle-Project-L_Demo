@@ -17,7 +17,7 @@ async function doDiceAttack(attacker, target, skill) {
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
 
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -46,7 +46,7 @@ async function doDiceAllIn(attacker, skill) {
     totalDmg += dmg;
     const eElId = getFighterElId(e);
     const cls = dmgType === 'magic' ? (isCrit ? 'crit-magic' : 'magic-dmg') : dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-    spawnFloatingNum(eElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(eElId, `${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
     updateHpBar(e, eElId);
     await triggerOnHitEffects(attacker, e, dmg);
     await sleep(300);
@@ -89,7 +89,7 @@ async function doDiceFlashStrike(caster, skill) {
     const hitScale = Math.max(0, perHitScale - falloff * i);
     const dmg = Math.max(1, Math.round(caster.atk * hitScale * critMult * calcDmgMult(eDef)));
     applyRawDmg(caster, target, dmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: caster.side, amount: dmg});
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: caster.side, amount: dmg});
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');

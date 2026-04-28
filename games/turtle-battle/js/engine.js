@@ -342,7 +342,7 @@ function spawnHitStack(elId, parts, opts) {
   if (mag.amt  > 0) items.push({ cls:isCrit?'crit-magic':'magic-dmg', amt:mag.amt,  suffix:mag.suffix  || '' });
   if (pier.amt > 0) items.push({ cls:isCrit?'crit-pierce':'pierce-dmg', amt:pier.amt, suffix:pier.suffix || '' });
   items.forEach((it, idx) => {
-    spawnFloatingNum(elId, `-${it.amt}${it.suffix}`, it.cls, delayMs, idx * GAP,
+    spawnFloatingNum(elId, `${it.amt}${it.suffix}`, it.cls, delayMs, idx * GAP,
       { atkSide, amount: it.amt });
   });
 }

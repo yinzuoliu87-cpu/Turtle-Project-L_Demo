@@ -11,7 +11,7 @@ async function doGamblerDraw(caster, target, skill) {
       const critMult = isCrit ? (1.5 + (caster._extraCritDmg || 0) + (caster._extraCritDmgPerm || 0)) : 1;
       const dmg = Math.max(1, Math.round(perHit * critMult * calcDmgMult(eDef)));
       applyRawDmg(caster, target, dmg, false, false, 'physical');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 180, 0, {atkSide: caster.side, amount: dmg});
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 180, 0, {atkSide: caster.side, amount: dmg});
       updateHpBar(target, tElId);
       await triggerOnHitEffects(caster, target, dmg);
       await sleep(220);
@@ -66,7 +66,7 @@ async function doGamblerBet(attacker, target, skill) {
   const hpCost = Math.round(attacker.hp * skill.hpCostPct / 100);
   attacker.hp -= hpCost;
   const fElId = getFighterElId(attacker);
-  spawnFloatingNum(fElId, `-${hpCost}HP`, 'direct-dmg', 0, 0);
+  spawnFloatingNum(fElId, `${hpCost}HP`, 'direct-dmg', 0, 0);
   updateHpBar(attacker, fElId);
   addLog(`${attacker.emoji}${attacker.name} <b>赌注！</b>消耗 <span class="log-direct">${hpCost}HP</span>！`);
   await sleep(500);
@@ -86,7 +86,7 @@ async function doGamblerBet(attacker, target, skill) {
         const dmg = Math.max(1, Math.round(dmgPer * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
     const tEl = document.getElementById(tElId);
     tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);

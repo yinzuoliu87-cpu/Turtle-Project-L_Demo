@@ -16,8 +16,8 @@ async function doGhostTouch(attacker, target, skill) {
   if (pierceDmg > 0) applyRawDmg(attacker, target, pierceDmg, false, false, 'true');
   // Canonical stack: pierce (white) above physical (red). yOffset=+22 pushes
   // pierce higher on screen per the "true > magic > physical" rule.
-  if (normalDmg > 0) spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
-  if (pierceDmg > 0) spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 22, {atkSide: attacker.side, amount: pierceDmg});
+  if (normalDmg > 0) spawnFloatingNum(tElId, `${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
+  if (pierceDmg > 0) spawnFloatingNum(tElId, `${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 100, 22, {atkSide: attacker.side, amount: pierceDmg});
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);
@@ -57,7 +57,7 @@ async function doGhostStorm(attacker, target, skill) {
 
     applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
     totalPierce += pierceDmg;
-    spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${pierceDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, pierceDmg);
 
     const tEl = document.getElementById(tElId);

@@ -9,7 +9,7 @@ async function doBambooLeaf(attacker, target, skill) {
         const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -135,7 +135,7 @@ async function doBambooChargeAttack(attacker, target) {
   try { sfxBambooHit(); } catch(e) {}
   spawnLeafBurst(tElId);
   spawnFloatingNum(tElId, '<img src="assets/passive/bamboo-charge-icon.png" style="width:16px;height:16px;vertical-align:middle">充能!', 'crit-label', 0, -20);
-  spawnFloatingNum(tElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
+  spawnFloatingNum(tElId, `${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide: attacker.side, amount: magicDmg});
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
   await triggerOnHitEffects(attacker, target, magicDmg);

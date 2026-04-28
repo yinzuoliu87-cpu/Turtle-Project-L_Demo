@@ -71,7 +71,7 @@ async function doTurtleShieldBash(attacker, target, skill) {
     setTimeout(() => burst.remove(), 280);
   }
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0);
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, dmg);
 
@@ -200,7 +200,7 @@ async function doBasicBarrage(attacker, skill) {
       }
       applyRawDmg(attacker, target, dmg, false, false, 'physical', false, true);
       totals.dmg += dmg;
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0,
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0,
         { atkSide: attacker.side, amount: dmg });
       updateHpBar(target, tElId);
       await triggerOnHitEffects(attacker, target, dmg);
@@ -534,7 +534,7 @@ async function doBasicChiWave(attacker, target, skill) {
         tNode.classList.add('chi-hit-flash');
         setTimeout(() => tNode.classList.remove('chi-hit-flash'), 140);
       }
-      spawnFloatingNum(tId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
+      spawnFloatingNum(tId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', i * 40, i * 18, { atkSide: attacker.side, amount: dmg });
       updateHpBar(tgt, tId);
       await triggerOnHitEffects(attacker, tgt, dmg);
       if (i < hits - 1) await sleep(220);
@@ -735,7 +735,7 @@ async function doBasicSlam(attacker, target, skill) {
   // Main damage + splash (both at slam instant)
   const mainDmg = Math.round(attacker.atk * (skill.atkScale || 1)) + Math.round(target.maxHp * (skill.targetHpPct || 0) / 100);
   const mainResult = applyRawDmg(attacker, target, mainDmg, false, false, 'physical');
-  spawnFloatingNum(getFighterElId(target), `-${mainResult.hpLoss || mainDmg}`, 'direct-dmg', 0, 0,
+  spawnFloatingNum(getFighterElId(target), `${mainResult.hpLoss || mainDmg}`, 'direct-dmg', 0, 0,
     { atkSide: attacker.side, amount: mainDmg });
   updateHpBar(target, getFighterElId(target));
   if (tEl) {
@@ -760,7 +760,7 @@ async function doBasicSlam(attacker, target, skill) {
       oEl.classList.add('chi-hit-flash');
       setTimeout(() => oEl.classList.remove('chi-hit-flash'), 140);
     }
-    spawnFloatingNum(getFighterElId(o), `-${splashDmg}`, 'direct-dmg', 0, 0,
+    spawnFloatingNum(getFighterElId(o), `${splashDmg}`, 'direct-dmg', 0, 0,
       { atkSide: attacker.side, amount: splashDmg });
     updateHpBar(o, getFighterElId(o));
     addLog(`  溅射 ${o.emoji}${o.name} ${splashDmg} 物理`);

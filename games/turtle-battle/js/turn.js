@@ -34,7 +34,7 @@ async function beginTurn() {
       const finalDmg = Math.max(1, Math.round(dmg * calcDmgMult(eDef)));
       applyRawDmg(f, target, finalDmg, false, false, 'physical');
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
+      spawnFloatingNum(tElId, `${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
       updateHpBar(target, tElId);
       addLog(`海盗船 开炮 → ${target.emoji}${target.name}：<span class="log-direct">${finalDmg}物理</span>`);
       await triggerOnHitEffects(f, target, finalDmg);
@@ -181,7 +181,7 @@ async function beginTurn() {
         const tElId = getFighterElId(target);
         // Single floating number on the target only — true-damage style with candy icon.
         // HP bar + maxHp scale visually convey the dual loss; no extra clutter on caster.
-        spawnFloatingNum(tElId, `-${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: f.side, amount: stealAmt });
+        spawnFloatingNum(tElId, `${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: f.side, amount: stealAmt });
         updateHpBar(target, tElId);
         updateFighterStats(target, tElId);
         // Caster: gains stealAmt in both (symmetric transfer) — no floating numbers on caster.
@@ -414,7 +414,7 @@ async function beginTurn() {
         target.hp = Math.max(1, target.hp - stealAmt);
         target.hp = Math.min(target.hp, target.maxHp);
         const tElId = getFighterElId(target);
-        spawnFloatingNum(tElId, `-${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: s.side, amount: stealAmt });
+        spawnFloatingNum(tElId, `${stealAmt}🍬`, 'true-dmg', 0, 0, { atkSide: s.side, amount: stealAmt });
         updateHpBar(target, tElId);
         s.maxHp += stealAmt; s.hp += stealAmt;
         updateSummonHpBar(s);
@@ -528,7 +528,7 @@ async function tickDotsOn(f) {
   const dots = f.buffs.filter(b => b.type === 'dot');
   for (const d of dots) {
     f.hp = Math.max(0, f.hp - d.value);
-    spawnFloatingNum(elId, `-${d.value}`, d.floatCls || 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
+    spawnFloatingNum(elId, `${d.value}`, d.floatCls || 'dot-dmg', 0, 0, {atkSide: d.sourceSide, amount: d.value});
     tickHurt(elId, d.floatCls === 'true-dmg' ? 'hit-true' : 'hit-magic');
     updateHpBar(f, elId);
     // Curse/generic dot = true damage. Emit so stats_tracker logs it.
@@ -547,8 +547,8 @@ async function tickDotsOn(f) {
     const burnDmg = Math.max(1, Math.round(rawBurn * calcDmgMult(f.mr)));
     const burnSource = (pb.sourceIdx !== undefined && pb.sourceIdx >= 0) ? allFighters[pb.sourceIdx] : null;
     const { hpLoss, shieldAbs } = applyRawDmg(burnSource, f, burnDmg, false, true, 'magic');
-    if (shieldAbs > 0) spawnFloatingNum(elId, `-${shieldAbs}`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
-    if (hpLoss > 0) spawnFloatingNum(elId, `-${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
+    if (shieldAbs > 0) spawnFloatingNum(elId, `${shieldAbs}`, 'shield-dmg', 0, 0, {atkSide: pb.sourceSide, amount: shieldAbs});
+    if (hpLoss > 0) spawnFloatingNum(elId, `${hpLoss}`, 'magic-dmg', 50, 0, {atkSide: pb.sourceSide, amount: hpLoss});
     tickHurt(elId, 'hit-magic');
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} 受到 <span class="log-dot">${burnDmg}灼烧</span>${shieldAbs>0?' (护盾吸收'+shieldAbs+')':''}（剩余${pb.turns-1}回合）`);
@@ -561,7 +561,7 @@ async function tickDotsOn(f) {
     const poisonRaw = p.value || 10;
     const poisonDmg = Math.max(1, Math.round(poisonRaw * calcDmgMult(f.mr)));
     f.hp = Math.max(0, f.hp - poisonDmg);
-    spawnFloatingNum(elId, `-${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
+    spawnFloatingNum(elId, `${poisonDmg}`, 'magic-dmg', 0, 14, {atkSide: p.sourceSide, amount: poisonDmg});
     tickHurt(elId, 'hit-magic');
     updateHpBar(f, elId);
     // Poison = magic; emit so stats_tracker logs it.
@@ -579,7 +579,7 @@ async function tickDotsOn(f) {
     const bleedRaw = bl.value || 10;
     const bleedDmg = Math.max(1, Math.round(bleedRaw * calcDmgMult(f.def)));
     f.hp = Math.max(0, f.hp - bleedDmg);
-    spawnFloatingNum(elId, `-${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
+    spawnFloatingNum(elId, `${bleedDmg}`, 'direct-dmg', 0, 14, {atkSide: bl.sourceSide, amount: bleedDmg});
     tickHurt(elId, 'hit-physical');
     updateHpBar(f, elId);
     // Bleed = physical; emit so stats_tracker logs it.
@@ -599,7 +599,7 @@ async function tickDotsOn(f) {
     const comboDmg = Math.round(f.maxHp * 0.3);
     const finalDmg = Math.max(1, Math.round(comboDmg * calcDmgMult(f.mr)));
     f.hp = Math.max(0, f.hp - finalDmg);
-    spawnFloatingNum(elId, `-${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
+    spawnFloatingNum(elId, `${finalDmg}❄️🔥`, 'magic-dmg', 0, 0);
     updateHpBar(f, elId);
     addLog(`${f.emoji}${f.name} <span style="color:#4dabf7">❄️🔥冰火联动！</span>消耗冰寒+灼烧，造成 ${finalDmg} 魔法伤害`);
     if (f.hp <= 0) f.alive = false;
@@ -646,7 +646,7 @@ async function processCyberDrones(side) {
       applyRawDmg(f, target, finalDmg, false, false, 'physical');
       totalDroneDmg += finalDmg;
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
+      spawnFloatingNum(tElId, `${finalDmg}`, 'direct-dmg', 0, 0, {atkSide:f.side, amount:finalDmg});
       const tEl = document.getElementById(tElId);
       if (tEl) tEl.classList.add('hit-shake');
       updateHpBar(target, tElId);
@@ -697,7 +697,7 @@ async function tickHotsOn(f) {
           const finalDmg = Math.max(1, Math.round(dmgAmt * calcDmgMult(effMr)));
           applyRawDmg(f, target, finalDmg, false, false, 'magic');
           const tElId = getFighterElId(target);
-          spawnFloatingNum(tElId, `-${finalDmg}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
+          spawnFloatingNum(tElId, `${finalDmg}<img src="assets/passive/bubble-store-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 100, 0, { atkSide: f.side, amount: finalDmg });
           updateHpBar(target, tElId);
         }
       }
@@ -791,7 +791,7 @@ async function processRoundEndBuffs() {
           for (const e of enemies) {
             e.hp = Math.max(0, e.hp - burstDmg);
             const eId = getFighterElId(e);
-            spawnFloatingNum(eId, `-${burstDmg}`, 'bubble-burst', 0, 0);
+            spawnFloatingNum(eId, `${burstDmg}`, 'bubble-burst', 0, 0);
             updateHpBar(e, eId);
             try { sfxExplosion(); } catch(e2) {}
             if (e.hp <= 0) e.alive = false;
@@ -859,7 +859,7 @@ async function processRoundEndBuffs() {
         for (let h = 0; h < ps.hits; h++) {
           const dmg = Math.round(f.atk * ps.atkScale);
           applyRawDmg(f, target, dmg, false, false, 'true');
-          spawnFloatingNum(getFighterElId(target), `-${dmg}`, 'true-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
+          spawnFloatingNum(getFighterElId(target), `${dmg}`, 'true-dmg', h * 80, 0, {atkSide:f.side, amount:dmg});
         }
         updateHpBar(target, getFighterElId(target));
         const totalDmg = Math.round(f.atk * ps.atkScale * ps.hits);

@@ -21,14 +21,14 @@ async function doNinjaShuriken(attacker, target, skill) {
     // 描述: 暴击时全部转真实伤害. dmgType 必须传 'true' (之前误传 'physical'
     // 导致 stats 算到 _physDmgDealt, 与飘字/log 的 "真实" 标识不一致).
     applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
-    spawnFloatingNum(tElId, `-${pierceDmg}`, 'crit-pierce', 100, 0, {atkSide: attacker.side, amount: pierceDmg});
+    spawnFloatingNum(tElId, `${pierceDmg}`, 'crit-pierce', 100, 0, {atkSide: attacker.side, amount: pierceDmg});
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}真实</span>`);
     await triggerOnHitEffects(attacker, target, pierceDmg);
   } else {
     const effectiveDef = calcEffDef(attacker, target);
     const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 100, 0, {atkSide: attacker.side, amount: dmg});
+    spawnFloatingNum(tElId, `${dmg}`, 'direct-dmg', 100, 0, {atkSide: attacker.side, amount: dmg});
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
     await triggerOnHitEffects(attacker, target, dmg);
   }
@@ -230,7 +230,7 @@ async function doNinjaImpact(attacker, target, skill) {
     const eElId = getFighterElId(enemy);
     const eNode = document.getElementById(eElId);
     applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
-    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
     updateHpBar(enemy, eElId);
     await triggerOnHitEffects(attacker, enemy, dmg);
     const tBody = eNode ? eNode.querySelector('.st-body') : null;
@@ -310,7 +310,7 @@ async function doNinjaBomb(attacker, skill) {
         const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, e, dmg, false, false, 'physical');
     const eId = getFighterElId(e);
-    spawnFloatingNum(eId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    spawnFloatingNum(eId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     updateHpBar(e, eId);
     await triggerOnHitEffects(attacker, e, dmg);
 

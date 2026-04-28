@@ -18,7 +18,7 @@ async function doCrystalSpike(attacker, target, skill) {
     target._pendingCrystalBoom = 0;
     const shown = dmg + boom;
     totalDmg += boom;
-    spawnFloatingNum(tElId, `-${shown}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shown});
+    spawnFloatingNum(tElId, `${shown}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shown});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);
@@ -82,8 +82,8 @@ async function doCrystalBurst(attacker, skill) {
       totalAll += boom;
       const shownMagic = magicDmg + boom;
       // Stack order: true on top, magic below (larger yOffset = higher on screen)
-      spawnFloatingNum(eElId, `-${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shownMagic});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `${shownMagic}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:shownMagic});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');

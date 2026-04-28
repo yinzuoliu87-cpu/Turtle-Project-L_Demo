@@ -37,7 +37,7 @@ async function doIceSpike(attacker, target, skill) {
       }
       applyRawDmg(attacker, target, dmg, false, false, 'physical');
       totalNormal += dmg;
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
     } else {
       const effMr = calcEffDef(attacker, target, 'magic');
             dmg = Math.max(1, Math.round(raw * critMult * calcDmgMult(effMr)));
@@ -46,7 +46,7 @@ async function doIceSpike(attacker, target, skill) {
       }
       applyRawDmg(attacker, target, dmg, false, false, 'magic');
       totalPierce += dmg;
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff, {atkSide: attacker.side, amount: dmg});
     }
 
     await triggerOnHitEffects(attacker, target, dmg);
@@ -59,7 +59,7 @@ async function doIceSpike(attacker, target, skill) {
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalNormal += judgeReduced;
       // Canonical stack: judgement magic sits ABOVE the main physical hit (rule: blue > red).
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: judgeReduced});
+      spawnFloatingNum(tElId, `${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: judgeReduced});
       updateHpBar(target, tElId);
     }
 
@@ -117,7 +117,7 @@ async function doIceFrost(attacker, skill) {
       applyRawDmg(attacker, enemy, dmg, false, false, 'magic');
       totalDmg += dmg;
       const eElId = getFighterElId(enemy);
-      spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (h % 3) * 28, {atkSide: attacker.side, amount: dmg});
+      spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, (h % 3) * 28, {atkSide: attacker.side, amount: dmg});
       await triggerOnHitEffects(attacker, enemy, dmg);
       const eEl = document.getElementById(eElId);
       if (eEl) eEl.classList.add('hit-shake');

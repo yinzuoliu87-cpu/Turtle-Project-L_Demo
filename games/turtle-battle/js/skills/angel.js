@@ -48,7 +48,7 @@ async function doAngelEquality(attacker, target, skill) {
   totalDmgDealt += normalDmg;
 
 
-  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0, {atkSide: attacker.side, amount: normalDmg});
+  spawnFloatingNum(tElId, `${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0, {atkSide: attacker.side, amount: normalDmg});
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, normalDmg);
 
@@ -61,7 +61,7 @@ async function doAngelEquality(attacker, target, skill) {
     totalDmgDealt += judgeReduced;
     skill._judgeTotal += judgeReduced;
     // Canonical stack: magic (blue) above physical (red) — yOffset=+22
-    spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 22, {atkSide: attacker.side, amount: judgeReduced});
+    spawnFloatingNum(tElId, `${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 22, {atkSide: attacker.side, amount: judgeReduced});
     updateHpBar(target, tElId);
   }
 
@@ -79,7 +79,7 @@ async function doAngelEquality(attacker, target, skill) {
     totalDmgDealt += pierceDmg;
 
 
-    spawnFloatingNum(tElId, `-${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, 24, {atkSide: attacker.side, amount: pierceDmg});
+    spawnFloatingNum(tElId, `${pierceDmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 80, 24, {atkSide: attacker.side, amount: pierceDmg});
     updateHpBar(target, tElId);
     await triggerOnHitEffects(attacker, target, pierceDmg);
 
@@ -91,7 +91,7 @@ async function doAngelEquality(attacker, target, skill) {
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic');
       totalDmgDealt += judgeReduced;
       skill._judgeTotal += judgeReduced;
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 4, {atkSide: attacker.side, amount: judgeReduced});
+      spawnFloatingNum(tElId, `${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 4, {atkSide: attacker.side, amount: judgeReduced});
       updateHpBar(target, tElId);
     }
 

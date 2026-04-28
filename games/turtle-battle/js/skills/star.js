@@ -18,7 +18,7 @@ async function fireStarPassive(f, target) {
   if (fireDmg <= 0) return;
   applyRawDmg(f, target, fireDmg, false, false, 'true');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${fireDmg}<img src="assets/passive/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
+  spawnFloatingNum(tElId, `${fireDmg}<img src="assets/passive/star-energy-bar-icon.png" style="width:14px;height:14px;vertical-align:middle">`, 'true-dmg', 200, 0, {atkSide:f.side, amount:fireDmg});
   updateHpBar(target, tElId);
   // Passive true damage also charges star energy
   addStarEnergy(f, fireDmg);
@@ -40,7 +40,7 @@ async function starMeteorBurst(f) {
     const finalDmg = wh ? Math.round(burstDmg * (1 + wh.pierceBonusPct / 100)) : burstDmg;
     applyRawDmg(f, e, finalDmg, false, false, 'true');
     const eElId = getFighterElId(e);
-    spawnFloatingNum(eElId, `-${finalDmg}<img src="assets/passive/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'crit-true', 300, 0, {atkSide:f.side, amount:finalDmg});
+    spawnFloatingNum(eElId, `${finalDmg}<img src="assets/passive/star-energy-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'crit-true', 300, 0, {atkSide:f.side, amount:finalDmg});
     updateHpBar(e, eElId);
   }
   renderStatusIcons(f);
@@ -67,7 +67,7 @@ async function doStarBeam(attacker, target, skill) {
 
     applyRawDmg(attacker, target, dmg, false, false, 'magic');
     totalDmg += dmg;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
 
     // Accumulate star energy
@@ -130,7 +130,7 @@ async function doStarMeteor(attacker, skill) {
         const normalDmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
     applyRawDmg(attacker, e, normalDmg, false, false, 'magic');
     const eId = getFighterElId(e);
-    spawnFloatingNum(eId, `-${normalDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:normalDmg});
+    spawnFloatingNum(eId, `${normalDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:normalDmg});
     updateHpBar(e, eId);
     await triggerOnHitEffects(attacker, e, normalDmg);
     addStarEnergy(attacker, normalDmg);

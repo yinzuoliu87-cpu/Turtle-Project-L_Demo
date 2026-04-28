@@ -6,7 +6,7 @@ async function doVolcanoSmash(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effDef)));
   const tElId = getFighterElId(target);
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -73,8 +73,8 @@ async function doVolcanoErupt(attacker, skill) {
       if (trueDmg > 0) applyRawDmg(attacker, enemy, trueDmg, false, false, 'true');
       totalAll += magicDmg + trueDmg;
       // Stack order: true on top, magic below
-      spawnFloatingNum(eElId, `-${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:magicDmg});
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
+      spawnFloatingNum(eElId, `${magicDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 0, {atkSide:attacker.side, amount:magicDmg});
+      if (trueDmg > 0) spawnFloatingNum(eElId, `${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, {atkSide:attacker.side, amount:trueDmg});
       await triggerOnHitEffects(attacker, enemy, magicDmg + trueDmg);
       updateHpBar(enemy, eElId);
       const eEl = document.getElementById(eElId);

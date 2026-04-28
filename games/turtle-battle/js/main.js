@@ -1411,7 +1411,7 @@ function startBattle(seed) {
         const tElId = getFighterElId(target);
         const tEl = document.getElementById(tElId);
         if (tEl) tEl.classList.add('hit-shake');
-        spawnFloatingNum(tElId, `-${dmg}`, 'true-dmg', 0, 0, { atkSide: f.side, amount: dmg });
+        spawnFloatingNum(tElId, `${dmg}`, 'true-dmg', 0, 0, { atkSide: f.side, amount: dmg });
         updateHpBar(target, tElId);
         await triggerOnHitEffects(f, target, dmg);
         addLog(`${f.emoji}${f.name} 被动「掠夺」：<span class="log-passive">🏴‍☠️开局轰击${target.emoji}${target.name}！${dmg}真实伤害</span>`);

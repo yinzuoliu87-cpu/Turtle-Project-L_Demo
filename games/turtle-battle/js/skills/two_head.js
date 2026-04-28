@@ -10,7 +10,7 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
     if (isPierceHit) {
       dmg = Math.round(baseDmg * critMult); // pierce: no DEF reduction
       applyRawDmg(attacker, target, dmg, true, false, 'true');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
     } else {
       // 奇数段 (1st, 3rd / i=0, 2) per pets.js detail: 物理伤害 with DEF reduction.
       // calcEffDef defaults to physical → DEF, dmgType 'physical' matches the
@@ -18,7 +18,7 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
       const eDef = calcEffDef(attacker, target);
       dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
       applyRawDmg(attacker, target, dmg, false, false, 'physical');
-      spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+      spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     }
     totalDmg += dmg;
     await triggerOnHitEffects(attacker, target, dmg);
@@ -84,7 +84,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
                 const dmg = Math.max(1, Math.round(switchDmg * calcDmgMult(eDef)));
         applyRawDmg(caster, switchTarget, dmg, false, false, 'physical');
         const tElId = getFighterElId(switchTarget);
-        spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0, { atkSide: caster.side, amount: dmg });
+        spawnFloatingNum(tElId, `${dmg}`, 'direct-dmg', 0, 0, { atkSide: caster.side, amount: dmg });
         await triggerOnHitEffects(caster, switchTarget, dmg);
         updateHpBar(switchTarget, tElId);
         addLog(`→ ${switchTarget.emoji}${switchTarget.name}：<span class="log-direct">${dmg}物理伤害</span>`);
@@ -120,7 +120,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
             const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(eDef)));
       applyRawDmg(caster, target, dmg, false, false, 'physical');
       const tElId = getFighterElId(target);
-      spawnFloatingNum(tElId, `-${dmg}`, 'direct-dmg', 0, 0);
+      spawnFloatingNum(tElId, `${dmg}`, 'direct-dmg', 0, 0);
       await triggerOnHitEffects(caster, target, dmg);
       updateHpBar(target, tElId);
       addLog(`→ ${target.emoji}${target.name}：<span class="log-direct">${dmg}物理伤害</span>`);
@@ -130,7 +130,7 @@ async function doTwoHeadSwitch(caster, target, skill) {
         const existing = target.buffs.find(b => b.type === 'defDown');
         if (existing) { existing.value = Math.max(existing.value, defRedVal); existing.turns = Math.max(existing.turns, skill.defReductionTurns); }
         else target.buffs.push({ type:'defDown', value:defRedVal, turns:skill.defReductionTurns });
-        spawnFloatingNum(tElId, `-${defRedVal}防`, 'debuff-label', 200, 0);
+        spawnFloatingNum(tElId, `${defRedVal}防`, 'debuff-label', 200, 0);
         renderStatusIcons(target);
         recalcStats();
         addLog(`→ 减少 ${target.emoji}${target.name} {D:${defRedVal}}防御 ${skill.defReductionTurns}回合`);
@@ -150,7 +150,7 @@ async function doTwoHeadHammer(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -175,7 +175,7 @@ async function doTwoHeadAbsorb(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
@@ -206,7 +206,7 @@ async function doTwoHeadFear(attacker, target, skill) {
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
   const tElId = getFighterElId(target);
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   tEl.classList.add('hit-shake');

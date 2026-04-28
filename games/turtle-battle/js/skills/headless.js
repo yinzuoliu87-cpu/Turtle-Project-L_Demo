@@ -12,7 +12,7 @@ async function doSoulReap(attacker, skill) {
     applyRawDmg(attacker, enemy, dmg, false, false, 'physical');
     totalDmg += dmg;
     const eElId = getFighterElId(enemy);
-    spawnFloatingNum(eElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
+    spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide:attacker.side, amount:dmg});
     await triggerOnHitEffects(attacker, enemy, dmg);
     const eEl = document.getElementById(eElId);
     if (eEl) eEl.classList.add('hit-shake');

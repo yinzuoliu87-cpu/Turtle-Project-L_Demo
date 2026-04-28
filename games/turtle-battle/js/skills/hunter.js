@@ -39,7 +39,7 @@ async function doHunterShot(attacker, target, skill) {
     applyRawDmg(attacker, target, dmg, false, false, 'physical');
     totalDmg += dmg;
     if (isCrit) totalCrits++;
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: dmg});
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: dmg});
     updateHpBar(target, tElId);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
@@ -77,7 +77,7 @@ async function doHunterBarrage(attacker, skill) {
     applyRawDmg(attacker, target, arrowDmg, true, false, 'true');
     totalDmg += arrowDmg;
     const tElId = getFighterElId(target);
-    spawnFloatingNum(tElId, `-${arrowDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0, {atkSide: attacker.side, amount: arrowDmg});
+    spawnFloatingNum(tElId, `${arrowDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 0, {atkSide: attacker.side, amount: arrowDmg});
     await triggerOnHitEffects(attacker, target, arrowDmg);
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');

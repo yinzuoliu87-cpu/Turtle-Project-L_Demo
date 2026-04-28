@@ -52,8 +52,8 @@ async function doFortuneAllIn(attacker, target, skill) {
     totalNormal += normalDmg;
     const yOff = 0;
     // Canonical stack: TRUE (white) on top — larger yOffset pushes higher on screen.
-    spawnFloatingNum(tElId, `-${normalDmg}`, 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: normalDmg});
-    spawnFloatingNum(tElId, `-${piercePer}`, 'true-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: piercePer});
+    spawnFloatingNum(tElId, `${normalDmg}`, 'direct-dmg', 0, yOff, {atkSide: attacker.side, amount: normalDmg});
+    spawnFloatingNum(tElId, `${piercePer}`, 'true-dmg', 0, yOff + 22, {atkSide: attacker.side, amount: piercePer});
     const tEl = document.getElementById(tElId);
     if (tEl) tEl.classList.add('hit-shake');
     updateHpBar(target, tElId);

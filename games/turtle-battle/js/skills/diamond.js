@@ -26,7 +26,7 @@ async function doDiamondCollide(attacker, target, skill) {
   const eDef = calcEffDef(attacker, target);
     const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
   applyRawDmg(attacker, target, dmg, false, false, 'physical');
-  spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg);
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');

@@ -43,7 +43,7 @@ async function doLineSketch(attacker, target, skill) {
     totalDmg += dmg;
     addInkStack(target, 1, attacker);
 
-    spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, target, dmg);
 
     const tEl = document.getElementById(tElId);
@@ -67,7 +67,7 @@ async function doLineLink(attacker, target, skill) {
 
   applyRawDmg(attacker, target, dmg1, false, false, 'physical');
   addInkStack(target, 1);
-  spawnFloatingNum(tElId, `-${dmg1}`, isCrit1 ? 'crit-dmg' : 'direct-dmg', 0, 0);
+  spawnFloatingNum(tElId, `${dmg1}`, isCrit1 ? 'crit-dmg' : 'direct-dmg', 0, 0);
   await triggerOnHitEffects(attacker, target, dmg1);
   updateHpBar(target, tElId);
 
@@ -82,7 +82,7 @@ async function doLineLink(attacker, target, skill) {
 
     applyRawDmg(attacker, second, dmg2, false, false, 'physical');
     addInkStack(second, 1);
-    spawnFloatingNum(sElId, `-${dmg2}`, isCrit2 ? 'crit-dmg' : 'direct-dmg', 0, 0);
+    spawnFloatingNum(sElId, `${dmg2}`, isCrit2 ? 'crit-dmg' : 'direct-dmg', 0, 0);
     await triggerOnHitEffects(attacker, second, dmg2);
     updateHpBar(second, sElId);
 
@@ -132,8 +132,8 @@ async function doLineFinish(attacker, target, skill) {
 
   // Floating numbers: physical (red) bottom, burst (magic blue / true white) top
   if (stacks > 0) spawnFloatingNum(tElId, `墨迹×${stacks}引爆!`, 'crit-label', 0, -20);
-  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
-  if (burstDmg > 0) spawnFloatingNum(tElId, `-${burstDmg}`, burstFloatCls, 0, 22, {atkSide: attacker.side, amount: burstDmg});
+  spawnFloatingNum(tElId, `${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, {atkSide: attacker.side, amount: normalDmg});
+  if (burstDmg > 0) spawnFloatingNum(tElId, `${burstDmg}`, burstFloatCls, 0, 22, {atkSide: attacker.side, amount: burstDmg});
   await triggerOnHitEffects(attacker, target, totalDmg);
 
   const tEl = document.getElementById(tElId);

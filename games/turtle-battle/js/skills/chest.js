@@ -21,7 +21,7 @@ async function doChestSmash(attacker, target, skill) {
     applyRawDmg(attacker, target, dmg, false, false, dmgType);
     totalDmg += dmg;
     const cls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-    spawnFloatingNum(tElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
+    spawnFloatingNum(tElId, `${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
     await triggerOnHitEffects(attacker, target, dmg);
     // Thunder equip: stack per hit
     if (hasThunder && target.alive) {
@@ -32,7 +32,7 @@ async function doChestSmash(attacker, target, skill) {
         spawnLightningStrike(tElId);
         const thunderDmg = Math.round(attacker.atk * 1.0);
         applyRawDmg(attacker, target, thunderDmg, false, false, 'true');
-        spawnFloatingNum(tElId, `-${thunderDmg}⚡`, 'true-dmg', 150, 0, { atkSide: attacker.side, amount: thunderDmg });
+        spawnFloatingNum(tElId, `${thunderDmg}⚡`, 'true-dmg', 150, 0, { atkSide: attacker.side, amount: thunderDmg });
         updateHpBar(target, tElId);
       }
       renderStatusIcons(target);
@@ -46,7 +46,7 @@ async function doChestSmash(attacker, target, skill) {
         applyRawDmg(attacker, secondary, chainDmg, false, false, dmgType);
         const sElId = getFighterElId(secondary);
         const chainCls = dmgType === 'true' ? 'true-dmg' : 'direct-dmg';
-        spawnFloatingNum(sElId, `-${chainDmg}🔗`, chainCls, 60, 0, { atkSide: attacker.side, amount: chainDmg });
+        spawnFloatingNum(sElId, `${chainDmg}🔗`, chainCls, 60, 0, { atkSide: attacker.side, amount: chainDmg });
         updateHpBar(secondary, sElId);
         if (hasThunder && secondary.alive) {
           secondary._goldLightning = (secondary._goldLightning || 0) + 1;
@@ -56,7 +56,7 @@ async function doChestSmash(attacker, target, skill) {
             spawnLightningStrike(sElId);
             const thunderDmg = Math.round(attacker.atk * 1.0);
             applyRawDmg(attacker, secondary, thunderDmg, false, false, 'true');
-            spawnFloatingNum(sElId, `-${thunderDmg}⚡`, 'true-dmg', 200, 0, { atkSide: attacker.side, amount: thunderDmg });
+            spawnFloatingNum(sElId, `${thunderDmg}⚡`, 'true-dmg', 200, 0, { atkSide: attacker.side, amount: thunderDmg });
             updateHpBar(secondary, sElId);
           }
         }
@@ -145,8 +145,8 @@ async function doChestStorm(attacker, skill) {
       totalAll += physDmg + trueDmg;
       // Stack order: true on top, physical below
       const physCls = dmgType === 'true' ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg');
-      spawnFloatingNum(eElId, `-${physDmg}`, physCls, 0, 0, { atkSide: attacker.side, amount: physDmg });
-      if (trueDmg > 0) spawnFloatingNum(eElId, `-${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, { atkSide: attacker.side, amount: trueDmg });
+      spawnFloatingNum(eElId, `${physDmg}`, physCls, 0, 0, { atkSide: attacker.side, amount: physDmg });
+      if (trueDmg > 0) spawnFloatingNum(eElId, `${trueDmg}`, isCrit ? 'crit-true' : 'true-dmg', 0, 22, { atkSide: attacker.side, amount: trueDmg });
       await triggerOnHitEffects(attacker, enemy, physDmg + trueDmg);
       // Thunder equip: stack per hit
       if (hasThunder && enemy.alive) {
@@ -157,7 +157,7 @@ async function doChestStorm(attacker, skill) {
           spawnLightningStrike(eElId);
           const thunderDmg = Math.round(attacker.atk * 1.0);
           applyRawDmg(attacker, enemy, thunderDmg, false, false, 'true');
-          spawnFloatingNum(eElId, `-${thunderDmg}⚡`, 'true-dmg', 100, 0, { atkSide: attacker.side, amount: thunderDmg });
+          spawnFloatingNum(eElId, `${thunderDmg}⚡`, 'true-dmg', 100, 0, { atkSide: attacker.side, amount: thunderDmg });
           updateHpBar(enemy, eElId);
         }
         renderStatusIcons(enemy);
@@ -231,7 +231,7 @@ async function processEnergyWave() {
     for (const e of enemies) {
       applyRawDmg(f, e, waveDmg, false, false, 'physical');
       const eElId = getFighterElId(e);
-      spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'direct-dmg', 0, 0, { atkSide: f.side, amount: waveDmg });
+      spawnFloatingNum(eElId, `${waveDmg}⚡`, 'direct-dmg', 0, 0, { atkSide: f.side, amount: waveDmg });
       updateHpBar(e, eElId);
     }
     // 气场护盾 — uses dedicated _auraShield slot (decays over next 2 caster actions)

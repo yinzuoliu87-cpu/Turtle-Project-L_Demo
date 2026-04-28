@@ -269,7 +269,7 @@ function checkDeaths(attacker) {
         const dmg = Math.round(f.maxHp * f.passive.pct / 100);
         attacker.hp = Math.max(0, attacker.hp - dmg);
         const aElId = getFighterElId(attacker);
-        spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
+        spawnFloatingNum(aElId, `${dmg}`, 'death-explode', 200, 0);
         updateHpBar(attacker, aElId);
         try { sfxExplosion(); } catch(e) {}
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">死亡爆炸！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-direct">${dmg}物理</span>`);
@@ -283,7 +283,7 @@ function checkDeaths(attacker) {
         const dmg = Math.round(f.maxHp * hookPct / 100);
         applyRawDmg(f, attacker, dmg, true, false, 'true');
         const aElId = getFighterElId(attacker);
-        spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
+        spawnFloatingNum(aElId, `${dmg}`, 'pierce-dmg', 200, 0);
         updateHpBar(attacker, aElId);
         try { triggerOnHitEffects(f, attacker, dmg); } catch(e) {}
         addLog(`${f.emoji}${f.name} 被动：<span class="log-passive">钩锁！</span>对 ${attacker.emoji}${attacker.name} 造成 <span class="log-pierce">${dmg}真实伤害</span>`);
@@ -385,7 +385,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
       const dmg = Math.round(summon.maxHp * summon.passive.pct / 100);
       attacker.hp = Math.max(0, attacker.hp - dmg);
       const aElId = getFighterElId(attacker);
-      spawnFloatingNum(aElId, `-${dmg}`, 'death-explode', 200, 0);
+      spawnFloatingNum(aElId, `${dmg}`, 'death-explode', 200, 0);
       updateHpBar(attacker, aElId);
       try { sfxExplosion(); } catch(e) {}
       addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">死亡爆炸！${dmg}伤害</span>`);
@@ -398,7 +398,7 @@ function processSummonDeath(summon, attacker, extraMsg) {
       const dmg = Math.round(summon.maxHp * hookPct / 100);
       applyRawDmg(summon, attacker, dmg, true, false, 'true');
       const aElId = getFighterElId(attacker);
-      spawnFloatingNum(aElId, `-${dmg}`, 'pierce-dmg', 200, 0);
+      spawnFloatingNum(aElId, `${dmg}`, 'pierce-dmg', 200, 0);
       updateHpBar(attacker, aElId);
       try { triggerOnHitEffects(summon, attacker, dmg); } catch(e) {}
       addLog(`${summon.emoji}${summon.name}(随从) 被动：<span class="log-passive">钩锁！${dmg}真实伤害</span>`);
@@ -539,7 +539,7 @@ async function processLavaTransform() {
         const dmg = Math.max(1, Math.round(aoeDmg * calcDmgMult(effMr)));
         applyRawDmg(f, e, dmg, false, false, 'magic');
         const eElId = getFighterElId(e);
-        spawnFloatingNum(eElId, `-${dmg}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
+        spawnFloatingNum(eElId, `${dmg}<img src="assets/battle/lava-shield-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'magic-dmg', 0, 0, {atkSide:f.side, amount:dmg});
         updateHpBar(e, eElId);
         if (!(e.passive && e.passive.burnImmune)) {
           applySkillDebuffs({burn:true}, e, f);

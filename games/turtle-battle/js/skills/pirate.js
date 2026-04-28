@@ -33,7 +33,7 @@ async function doPirateCannonBarrage(attacker, skill) {
       const eElId = getFighterElId(enemy);
       applyRawDmg(attacker, enemy, dmg, false, false, dmgType);
       const cls = isCrit ? 'crit-dmg' : 'direct-dmg';
-      spawnFloatingNum(eElId, `-${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
+      spawnFloatingNum(eElId, `${dmg}`, cls, 0, 0, { atkSide: attacker.side, amount: dmg });
       updateHpBar(enemy, eElId);
       totalDmgAll += dmg;
     }

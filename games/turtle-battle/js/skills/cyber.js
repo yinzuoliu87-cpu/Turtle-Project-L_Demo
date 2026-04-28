@@ -221,11 +221,11 @@ async function doCyberBeam(attacker, target, skill) {
       const eDef = calcEffDef(attacker, enemy);
       const physDmg = Math.max(1, Math.round(physBase * critMult * calcDmgMult(eDef)));
       applyRawDmg(attacker, enemy, physDmg, false, false, 'physical');
-      spawnFloatingNum(eElId, `-${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: physDmg });
+      spawnFloatingNum(eElId, `${physDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: physDmg });
       physTotal += physDmg;
       if (trueDmgPerSeg > 0) {
         applyRawDmg(attacker, enemy, trueDmgPerSeg, false, false, 'true');
-        spawnFloatingNum(eElId, `-${trueDmgPerSeg}`, 'true-dmg', 0, 24, { atkSide: attacker.side, amount: trueDmgPerSeg });
+        spawnFloatingNum(eElId, `${trueDmgPerSeg}`, 'true-dmg', 0, 24, { atkSide: attacker.side, amount: trueDmgPerSeg });
         trueTotal += trueDmgPerSeg;
       }
       if (eNode) {
