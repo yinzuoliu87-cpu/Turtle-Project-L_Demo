@@ -34,21 +34,21 @@ async function doAngelEquality(attacker, target, skill) {
   const isCrit = forceCrit || Math.random() < effectiveCrit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
 
-  // Hit 1 is magic (description says "魔法伤害"), so reduce by MR not DEF.
-  const effectiveMr = calcEffDef(attacker, target, 'magic');
+  // Hit 1: 物理伤害 (per pets.js detail), reduced by DEF.
+  const effectiveDef = calcEffDef(attacker, target);
 
-  // ── Hit 1: magic damage ──
+  // ── Hit 1: physical damage ──
   const normalRaw = Math.round(attacker.atk * skill.normalScale);
-  let normalDmg = Math.max(1, Math.round(normalRaw * critMult * calcDmgMult(effectiveMr)));
+  let normalDmg = Math.max(1, Math.round(normalRaw * critMult * calcDmgMult(effectiveDef)));
   // Passive bonusDmgAbove60
   if (attacker.passive && attacker.passive.type === 'bonusDmgAbove60' && target.hp / target.maxHp > 0.6) {
     normalDmg = Math.round(normalDmg * (1 + attacker.passive.pct / 100));
   }
-  applyRawDmg(attacker, target, normalDmg, false, false, 'magic');
+  applyRawDmg(attacker, target, normalDmg, false, false, 'physical');
   totalDmgDealt += normalDmg;
 
 
-  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 80, 0, {atkSide: attacker.side, amount: normalDmg});
+  spawnFloatingNum(tElId, `-${normalDmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 80, 0, {atkSide: attacker.side, amount: normalDmg});
   updateHpBar(target, tElId);
   await triggerOnHitEffects(attacker, target, normalDmg);
 
@@ -104,7 +104,7 @@ async function doAngelEquality(attacker, target, skill) {
 
   // Log
   const parts = [];
-  parts.push(`<span class="log-magic">魔法${Math.round(attacker.atk * skill.normalScale)}</span>`);
+  parts.push(`<span class="log-direct">物理${Math.round(attacker.atk * skill.normalScale)}</span>`);
   parts.push(`<span class="log-pierce">真实${Math.round(attacker.atk * skill.pierceScale)}</span>`);
   if (skill._judgeTotal > 0) parts.push(`<span class="log-passive">⚖裁决${skill._judgeTotal}</span>`);
   if (isCrit) parts.push(`<span class="log-crit">暴击</span>`);

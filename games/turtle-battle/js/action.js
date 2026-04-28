@@ -1088,7 +1088,20 @@ async function executeAction(action) {
     await sleep(400);
   } else if (skill.type === 'angelSmite') {
     const target = allFighters[action.targetId];
-    if (target && target.alive) { const rarityOrder = ['D','C','B','A','S']; const targetRarityIdx = rarityOrder.indexOf(target.rarity); const threshIdx = rarityOrder.indexOf(skill.convertTrueBelow || 'A'); const dmgType = (targetRarityIdx >= 0 && targetRarityIdx <= threshIdx) ? 'true' : (skill.dmgType || 'physical'); const {isCrit, critMult} = calcCrit(f); const baseRaw = Math.round(f.atk * (skill.atkScale||1.0)); const hpDmg = Math.round(target.maxHp * (skill.hpPct||8) / 100); const rawTotal = baseRaw + hpDmg; const totalDmg = (dmgType === 'true') ? Math.round(rawTotal * critMult) : Math.max(1, Math.round(rawTotal * critMult * calcDmgMult(calcEffDef(f, target)))); applyRawDmg(f, target, totalDmg, false, false, dmgType); const floatCls = (dmgType === 'true') ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg'); spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, floatCls, 0, 0, {atkSide:f.side, amount:totalDmg}); updateHpBar(target, getFighterElId(target)); if (dmgType === 'true') spawnFloatingNum(getFighterElId(target), `神罚`, 'debuff-num', 200, 0); addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${totalDmg} ${dmgType==='true'?'真实':'物理'}伤害${isCrit?' <span class="log-crit">暴击!</span>':''}`); await triggerOnHitEffects(f, target, totalDmg); } await sleep(400);
+    if (target && target.alive) { const rarityOrder = ['D','C','B','A','S']; const targetRarityIdx = rarityOrder.indexOf(target.rarity); const threshIdx = rarityOrder.indexOf(skill.convertTrueBelow || 'A'); const dmgType = (targetRarityIdx >= 0 && targetRarityIdx <= threshIdx) ? 'true' : (skill.dmgType || 'physical'); const {isCrit, critMult} = calcCrit(f); const baseRaw = Math.round(f.atk * (skill.atkScale||1.0)); const hpDmg = Math.round(target.maxHp * (skill.hpPct||8) / 100); const rawTotal = baseRaw + hpDmg; const totalDmg = (dmgType === 'true') ? Math.round(rawTotal * critMult) : Math.max(1, Math.round(rawTotal * critMult * calcDmgMult(calcEffDef(f, target)))); applyRawDmg(f, target, totalDmg, false, false, dmgType); const floatCls = (dmgType === 'true') ? (isCrit ? 'crit-true' : 'true-dmg') : (isCrit ? 'crit-dmg' : 'direct-dmg'); spawnFloatingNum(getFighterElId(target), `-${totalDmg}`, floatCls, 0, 0, {atkSide:f.side, amount:totalDmg}); updateHpBar(target, getFighterElId(target)); if (dmgType === 'true') spawnFloatingNum(getFighterElId(target), `神罚`, 'debuff-num', 200, 0);
+      // Judgement passive: extra magic damage based on target's current HP.
+      // doDamage triggers this automatically; angelSmite uses applyRawDmg directly,
+      // so we trigger it manually here to stay consistent with 裁决/平等.
+      let judgeDmg = 0;
+      if (f.passive && f.passive.type === 'judgement' && target.alive) {
+        const judgeRaw = Math.round(target.hp * f.passive.hpPct / 100);
+        const jMr = calcEffDef(f, target, 'magic');
+        judgeDmg = Math.max(1, Math.round(judgeRaw * calcDmgMult(jMr) * critMult));
+        applyRawDmg(f, target, judgeDmg, false, false, 'magic');
+        spawnFloatingNum(getFighterElId(target), `-${judgeDmg}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, 22, {atkSide:f.side, amount:judgeDmg});
+        updateHpBar(target, getFighterElId(target));
+      }
+      addLog(`${f.emoji}${f.name} <b>${skill.name}</b> → ${target.emoji}${target.name}：${totalDmg} ${dmgType==='true'?'真实':'物理'}伤害${judgeDmg>0?' + <span class="log-magic">'+judgeDmg+'裁决</span>':''}${isCrit?' <span class="log-crit">暴击!</span>':''}`); await triggerOnHitEffects(f, target, totalDmg); } await sleep(400);
   } else if (skill.type === 'headlessStorm') {
     const origLifesteal = f._lifestealPct || 0; f._lifestealPct = origLifesteal + (skill.tempLifesteal||22);
     const enemies = getAliveEnemiesWithSummons(f.side);
