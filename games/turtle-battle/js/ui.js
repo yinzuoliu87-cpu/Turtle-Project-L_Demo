@@ -1163,17 +1163,18 @@ function buildPetImgHTML(pet, size) {
     var s = pet.sprite, sc = size / s.frameH;
     var fw = Math.round(s.frameW * sc);          // single frame display width
     var tw = Math.round(s.frameW * s.frames * sc); // total sheet width
+    var lastFw = (s.frames - 1) * fw;            // last frame's bg-pos (avoid OOB at iteration end)
     var kfName = 'sprKF_' + pet.id + '_' + size;
     if (!_spriteKF[kfName]) {
       var st = document.createElement('style');
-      st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+      st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
       document.head.appendChild(st);
       _spriteKF[kfName] = true;
     }
     return '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
       + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
       + 'background-image:url(\'' + pet.img + '\');background-size:' + tw + 'px ' + size + 'px;'
-      + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ') infinite;"></div></div>';
+      + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ', jump-none) infinite;"></div></div>';
   }
   if (pet.img) {
     return '<img src="' + pet.img + '" alt="' + pet.name + '" loading="lazy" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
@@ -1221,10 +1222,11 @@ function playAttackAnimation(f) {
   const sc = size / anim.frameH;
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
+  const lastFw = (anim.frames - 1) * fw;
   const kfName = 'atkKF_' + f.id;
   if (!_attackAnimKF[kfName]) {
     const st = document.createElement('style');
-    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
     document.head.appendChild(st);
     _attackAnimKF[kfName] = true;
   }
@@ -1247,7 +1249,7 @@ function playAttackAnimation(f) {
     // Restart attack animation from frame 0
     overlayInner.style.animation = 'none';
     void overlayInner.offsetWidth;
-    overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
+    overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ', jump-none) 1 forwards';
   }, spriteDelay);
   // Phase 2: fade back to idle right when attack animation finishes (not after hop-back)
   // This way idle plays during hop-back, no last-frame freeze
@@ -1279,10 +1281,17 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   const sc = size / frameH;
   const fw = Math.round(frameW * sc);
   const tw = Math.round(frameW * frames * sc);
+  // Last frame position (NOT one past end of source). Animating from 0 → -tw
+  // with steps(N) overshoots: at time=1.0 bg-pos = -tw which is one frame past
+  // the source's right edge → blank. Using -lastFw with steps(N, jump-none)
+  // makes 100% time land exactly on frame N-1 (last visible frame). For
+  // looping: clean seam to next iteration's frame 0. For 1-shot: forwards fill
+  // holds the last frame correctly.
+  const lastFw = (frames - 1) * fw;
   const kfName = 'spriteOnce_' + src.replace(/[^a-z0-9]/gi, '_');
   if (!_spriteOnceKF[kfName]) {
     const st = document.createElement('style');
-    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
     document.head.appendChild(st);
     _spriteOnceKF[kfName] = true;
   }
@@ -1299,13 +1308,9 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   overlay.className = 'sprite-once-overlay';
   overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
   const iter = looping ? 'infinite' : '1 forwards';
-  // background-repeat: looping uses repeat-x so the ~16ms render frame at the
-  // iteration boundary (where bg-pos = -tw, one frame past source) shows the
-  // wrapped frame 0 instead of blank. Without this, looping animations flash
-  // blank every iteration. One-shot animations stay no-repeat (otherwise the
-  // forwards fill at -tw would show frame 0 instead of last frame).
-  const bgRepeat = looping ? 'repeat-x' : 'no-repeat';
-  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:' + bgRepeat + ';animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') ' + iter + '"></div>';
+  // steps(N, jump-none) over keyframes from 0 to -(N-1)*fw maps time perfectly
+  // to N frame stops (0, -fw, -2fw, ..., -(N-1)fw). No OOB position rendered.
+  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter + '"></div>';
   spriteEl.appendChild(overlay);
   // Now remove any leftover overlay from previous call (after new is in DOM)
   const old = spriteEl.querySelector('.sprite-once-overlay:not(:last-child)');
@@ -1348,10 +1353,11 @@ function playDeathAnimation(f) {
   const sc = size / anim.frameH;
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
+  const lastFw = (anim.frames - 1) * fw;
   const kfName = 'deathKF_' + f.id;
   if (!_deathAnimKF[kfName]) {
     const st = document.createElement('style');
-    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
     document.head.appendChild(st);
     _deathAnimKF[kfName] = true;
   }
@@ -1370,7 +1376,7 @@ function playDeathAnimation(f) {
   overlay.style.opacity = '1';
   overlayInner.style.animation = 'none';
   void overlayInner.offsetWidth;
-  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
+  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ', jump-none) 1 forwards';
   // Death anim stays on last frame (no restore) — fighter stays dead
 }
 
@@ -1399,10 +1405,11 @@ function playHurtAnimation(f) {
   const sc = size / anim.frameH;
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
+  const lastFw = (anim.frames - 1) * fw;
   const kfName = 'hurtKF_' + f.id;
   if (!_hurtAnimKF[kfName]) {
     const st = document.createElement('style');
-    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
     document.head.appendChild(st);
     _hurtAnimKF[kfName] = true;
   }
@@ -1425,7 +1432,7 @@ function playHurtAnimation(f) {
   overlay.style.opacity = '1';
   overlayInner.style.animation = 'none';
   void overlayInner.offsetWidth;
-  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ') 1 forwards';
+  overlayInner.style.animation = kfName + ' ' + (anim.duration / 1000) + 's steps(' + anim.frames + ', jump-none) 1 forwards';
   // Fade back to idle slightly before anim ends
   f._hurtRestoreTimer = setTimeout(() => {
     overlay.style.opacity = '0';
