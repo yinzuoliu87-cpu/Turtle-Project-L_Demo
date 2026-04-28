@@ -198,7 +198,7 @@ const PET_ninja = { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rar
     skills:[]
   };
 
-const PET_two_head = { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:302,  atk:50,  def:11, mr:12,crit:0.25,
+const PET_two_head = { id:'two_head',  name:'双头龟',   emoji:'🐢🐢',    rarity:'B',   hp:315,  atk:50,  def:11, mr:12,crit:0.25,
     img:'../../assets/pets/双头龟.png',
     passive:{ type:'twoHeadDual', name:'双生', hpScale:1.5, defScale:0.25, atkLossScale:0.3, shieldScale:1.1,
               brief:'双头龟拥有远程和近战两种形态与技能组。近战形态增加生命值和护甲，远程形态拥有更高攻击力。',
