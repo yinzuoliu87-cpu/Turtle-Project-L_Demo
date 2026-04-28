@@ -175,13 +175,33 @@ async function doNinjaImpact(attacker, target, skill) {
 
   fEl.style.zIndex = '60';
 
+  // ── Phase 0: hop to target's row Y (idle sprite continues, parabolic arc) ──
+  // Track animations so we can .cancel() them on teleport (WAAPI fill:forwards
+  // locks transform via composite — style.transform='' alone won't release it).
+  let rowHopAnim = null, flightAnim = null;
+  if (Math.abs(casterYShift) > 4) {
+    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25) / baseScale;
+    const N = 10; const kfHop = [];
+    for (let i = 0; i <= N; i++) {
+      const t = i / N;
+      const y = lyShift * t + apexLift * 4 * t * (1 - t);
+      kfHop.push({ transform: `translate(0, ${y}px)`, offset: t });
+    }
+    rowHopAnim = fBody.animate(kfHop, { duration: 280, easing: 'linear', fill: 'forwards' });
+    await sleep(290);
+  }
+
+  // ── Brief planted windup pause at target's row before dash sprite kicks in ──
+  // (lets player register "ninja arrived, now charging dash")
+  await sleep(120);
+
   // ── Start the 18-frame dash sprite (1800ms total). Plays continuously
-  // through all phases as a single unbroken animation. ──
+  // through windup → flight → planting → recovery as one unbroken animation. ──
   if (typeof playFighterSpriteOnce === 'function') {
     playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
   }
 
-  // ── Phase 1: F1-3 windup (300ms) — stay at origin ──
+  // ── Phase 1: F1-3 windup at target row (300ms) — stay at row Y, no X move ──
   await sleep(300);
 
   // ── Phase 2: F4-8 flight (500ms) — body flies to dest + dash trail VFX ──
@@ -193,8 +213,8 @@ async function doNinjaImpact(attacker, target, skill) {
     trail.style.top  = '50%';
     fBody.appendChild(trail);
   }
-  fBody.animate([
-    { transform: `translate(0, 0)` },
+  flightAnim = fBody.animate([
+    { transform: `translate(0, ${lyShift}px)` },
     { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 1 },
   ], { duration: 500, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
 
@@ -251,6 +271,10 @@ async function doNinjaImpact(attacker, target, skill) {
   await sleep(100);
 
   // ── Phase 5: TELEPORT back home, F15-18 recovery plays at home (400ms) ──
+  // Cancel any active WAAPI anims first — fill:'forwards' locks transform via
+  // composite layer, plain style.transform='' won't release it.
+  if (rowHopAnim) { try { rowHopAnim.cancel(); } catch(e) {} }
+  if (flightAnim) { try { flightAnim.cancel(); } catch(e) {} }
   fBody.style.transition = 'none';
   fBody.style.transform = '';
   void fBody.offsetWidth;
