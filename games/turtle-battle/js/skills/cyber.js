@@ -292,18 +292,23 @@ async function doCyberBeam(attacker, target, skill) {
   }
 }
 
-async function doCyberDeploy(caster, _skill) {
+async function doCyberDeploy(caster, skill) {
   if (!caster.passive || caster.passive.type !== 'cyberDrone') { await sleep(500); return; }
-  if (caster._drones.length >= caster.passive.maxDrones) {
-    addLog(`${caster.emoji}${caster.name} 浮游炮已满（${caster.passive.maxDrones}个）！`);
+  const max = caster.passive.maxDrones;
+  if (caster._drones.length >= max) {
+    addLog(`${caster.emoji}${caster.name} 浮游炮已满（${max}个）！`);
     await sleep(500);
     return;
   }
-  caster._drones.push({ age: 0 });
+  // Spawn deployCount drones, clamped to available slots before cap.
+  const wanted = (skill && skill.deployCount) || 1;
+  const slots = max - caster._drones.length;
+  const actual = Math.min(wanted, slots);
+  for (let i = 0; i < actual; i++) caster._drones.push({ age: 0 });
   const elId = getFighterElId(caster);
-  spawnFloatingNum(elId, `+<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
+  spawnFloatingNum(elId, `+${actual}×<img src="assets/passive/cyber-drone-icon.png" style="width:16px;height:16px;vertical-align:middle">`, 'passive-num', 0, 0);
   renderStatusIcons(caster);
-  addLog(`${caster.emoji}${caster.name} 部署浮游炮！（${caster._drones.length}/${caster.passive.maxDrones}）`);
+  addLog(`${caster.emoji}${caster.name} 部署 ${actual} 个浮游炮！（${caster._drones.length}/${max}）${actual < wanted ? ' [上限]' : ''}`);
   await sleep(800);
 }
 
