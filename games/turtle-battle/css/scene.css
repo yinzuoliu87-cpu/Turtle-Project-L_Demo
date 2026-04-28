@@ -387,8 +387,15 @@
   to  {background-position:-3840px 0}
 }
 @media (max-width:768px){
-  .basic-chiwave{width:180px;height:180px;background-size:2700px 180px}
-  @keyframes basicChiwaveLife{
+  /* Different keyframe NAME for mobile — nested same-name @keyframes inside
+     @media has flaky cross-browser behavior (Chrome/Safari sometimes use
+     desktop's -3840px target with mobile's 2700×180 background-size, sprite
+     plays into blank area → "气波消失"). Separate name forces clean swap. */
+  .basic-chiwave{
+    width:180px;height:180px;background-size:2700px 180px;
+    animation:basicChiwaveLifeMobile 1500ms steps(15) forwards;
+  }
+  @keyframes basicChiwaveLifeMobile{
     from{background-position:0 0}
     to  {background-position:-2700px 0}
   }
