@@ -45,17 +45,21 @@ async function doNinjaShuriken(attacker, target, skill) {
 // Single-impulse knockup juggle for ninja's 冲击.
 // One strong vertical knockup, ballistic flight, ground slam, brief lie,
 // recover. Total ~1100ms. Returns { kf, totalMs } for tBody.animate().
-function buildNinjaKnockupJuggle(knockX, isMobile) {
+function buildNinjaKnockupJuggle(knockX, isMobile, opts) {
+  // opts.noRotation = true: skip body rotation entirely (used when target has
+  // a knockupAnim sprite — the sprite itself draws the lying pose, so rotating
+  // .st-body would tilt the sprite too and look wrong).
+  const noRot = opts && opts.noRotation;
   const totalMs = isMobile ? 1900 : 1800;     // long enough for flight + lie + recover
   const g = isMobile ? 800 : 1300;
   const liftVy = isMobile ? -520 : -640;
   const liftVx = knockX;
-  const slamRot = -82;
+  const slamRot = noRot ? 0 : -82;
   const liePoseMs = isMobile ? 320 : 280;
   const recoverMs = isMobile ? 240 : 220;
   const steps = 56;
   const dt = totalMs / steps / 1000;
-  const s = { x:0, y:0, rot:0, vx: liftVx, vy: liftVy, vrot: -100 };
+  const s = { x:0, y:0, rot:0, vx: liftVx, vy: liftVy, vrot: noRot ? 0 : -100 };
   let slamT = null, slamPose = null, recoverT = null;
   const kf = [];
   for (let i = 0; i <= steps; i++) {
@@ -233,16 +237,24 @@ async function doNinjaImpact(attacker, target, skill) {
     spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
     updateHpBar(enemy, eElId);
     await triggerOnHitEffects(attacker, enemy, dmg);
-    // Knockup juggle on target (Step 5 will swap to knockup.png 2-frame flow)
+    // Knockup juggle on target. If target has a knockupAnim sprite, suppress
+    // body rotation (sprite F2 already draws the lying pose) and play the
+    // sprite overlay alongside the body translate.
     const tBody = eNode ? eNode.querySelector('.st-body') : null;
     if (tBody) {
+      const ePet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === enemy.id) : null;
+      const hasKnockupAnim = !!(ePet && ePet.knockupAnim);
       const knockX = (isMobile ? 30 : 56) * dir;
-      const built = buildNinjaKnockupJuggle(knockX, isMobile);
+      const built = buildNinjaKnockupJuggle(knockX, isMobile, { noRotation: hasKnockupAnim });
       const j = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       eNode.classList.add('basic-chiwave-launched');
+      let stopKnockupSprite = null;
+      if (hasKnockupAnim && typeof playKnockupAnimation === 'function') {
+        stopKnockupSprite = playKnockupAnimation(enemy);
+      }
       j.finished
-        .then(() => { tBody.style.transform = ''; eNode.classList.remove('basic-chiwave-launched'); })
-        .catch(() => { eNode.classList.remove('basic-chiwave-launched'); });
+        .then(() => { tBody.style.transform = ''; eNode.classList.remove('basic-chiwave-launched'); if (stopKnockupSprite) stopKnockupSprite(); })
+        .catch(() => { eNode.classList.remove('basic-chiwave-launched'); if (stopKnockupSprite) stopKnockupSprite(); });
     }
     if (eNode) {
       eNode.classList.remove('chi-hit-flash');

@@ -1419,6 +1419,50 @@ function playHurtAnimation(f) {
   }, anim.duration - 50);
 }
 
+// Per-pet knockup sprite — 2-frame sheet (F1=airborne, F2=lying-on-ground).
+// Manually swaps frame at airborneMs to avoid uniform-step timing of CSS
+// animation; returns a stop() function so caller can collapse cleanup when
+// the body bounce-back finishes (avoids late-tail flash).
+function playKnockupAnimation(f) {
+  const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
+  const anim = pet && pet.knockupAnim;
+  if (!anim) return null;
+  const card = document.getElementById(getFighterElId(f));
+  if (!card) return null;
+  const spriteEl = card.querySelector('.st-sprite');
+  if (!spriteEl) return null;
+  if (!_attackImgPreload[anim.src]) {
+    const preImg = new Image(); preImg.src = anim.src;
+    _attackImgPreload[anim.src] = preImg;
+  }
+  const size = 80;
+  const sc = size / anim.frameH;
+  const fw = Math.round(anim.frameW * sc);
+  const tw = Math.round(anim.frameW * 2 * sc);  // 2 frames wide
+  const overlay = document.createElement('div');
+  overlay.className = 'knockup-sprite-overlay';
+  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;background-position:0 0';
+  spriteEl.style.position = 'relative';
+  // Remove any prior knockup overlay (defensive — back-to-back launches)
+  const prior = spriteEl.querySelector('.knockup-sprite-overlay');
+  if (prior) prior.remove();
+  spriteEl.appendChild(overlay);
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  if (idleWrap) idleWrap.style.opacity = '0';
+  const airborneMs = anim.airborneMs || 600;
+  const lyingMs    = anim.lyingMs    || 1100;
+  const swapId = setTimeout(() => {
+    overlay.style.backgroundPosition = '-' + fw + 'px 0';
+  }, airborneMs);
+  const cleanup = () => {
+    clearTimeout(swapId);
+    if (overlay.parentNode) overlay.remove();
+    if (idleWrap) idleWrap.style.opacity = '';
+  };
+  const cleanupId = setTimeout(cleanup, airborneMs + lyingMs);
+  return () => { clearTimeout(cleanupId); cleanup(); };
+}
+
 function updateHpBar(f, elId) {
   // Summon: use dedicated mini-card HP bar
   if (f._isSummon) { updateSummonHpBar(f); return; }

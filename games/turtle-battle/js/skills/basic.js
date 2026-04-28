@@ -238,7 +238,10 @@ async function doBasicBarrage(attacker, skill) {
 // Sampled at 60fps, handed to WAAPI with linear easing so the browser
 // only interpolates between adjacent samples (never introduces its own
 // velocity curves that would clash with the physics).
-function buildJuggleKeyframes(knockX, isMobile) {
+function buildJuggleKeyframes(knockX, isMobile, opts) {
+  // opts.noRotation = true: skip rotation (target has knockupAnim sprite —
+  // F2 already draws the lying pose; rotating .st-body would tilt sprite too).
+  const noRot = opts && opts.noRotation;
   // Mobile gravity is lighter so the target hangs in the air longer.
   // Budget must cover: ballistic-to-slam (~1100ms mobile) + lie + recover.
   // Previously totalMs=1850 truncated recovery at ~90% → target froze
@@ -248,10 +251,10 @@ function buildJuggleKeyframes(knockX, isMobile) {
   const hits = isMobile
     ? [{ t: 0, vy: -180, vx: knockX * 1.7 }, { t: 220, vy: -220, vx: knockX * 1.4 }, { t: 440, vy: -250, vx: knockX * 0.9 }]
     : [{ t: 0, vy: -260, vx: knockX * 1.6 }, { t: 220, vy: -310, vx: knockX * 1.3 }, { t: 440, vy: -360, vx: knockX * 0.9 }];
-  const rotImpulses = [-45, 70, -95];
+  const rotImpulses = noRot ? [0, 0, 0] : [-45, 70, -95];
   const liePoseMs = isMobile ? 520 : 560;
   const recoverMs = isMobile ? 300 : 330;
-  const slamRot = -82;
+  const slamRot = noRot ? 0 : -82;
   const steps = 64;
   const dt = totalMs / steps / 1000;
 
@@ -513,12 +516,18 @@ async function doBasicChiWave(attacker, target, skill) {
     // drives transforms — JS handles that now.
     const tBody = tNode ? tNode.querySelector('.st-body') : null;
     let juggleAnim = null;
+    let stopKnockupSprite = null;
     if (tBody) {
       const isMobile = ENV.isMobile;
       const knockX = isMobile ? dir * 30 : dir * 55;
-      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile);
+      const tPet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === tgt.id) : null;
+      const hasKnockupAnim = !!(tPet && tPet.knockupAnim);
+      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile, { noRotation: hasKnockupAnim });
       juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
       tNode.classList.add('basic-chiwave-launched');
+      if (hasKnockupAnim && typeof playKnockupAnimation === 'function') {
+        stopKnockupSprite = playKnockupAnimation(tgt);
+      }
     }
     // Hits land at t=0 / 220 / 440ms — matches the physics hit-impulse
     // timings. Each hit re-launches the target upward (aerial juggle).
@@ -549,13 +558,16 @@ async function doBasicChiWave(attacker, target, skill) {
         .then(() => {
           if (tBody) tBody.style.transform = '';
           if (tNode) tNode.classList.remove('basic-chiwave-launched');
+          if (stopKnockupSprite) stopKnockupSprite();
         })
         .catch(() => {
           if (tNode) tNode.classList.remove('basic-chiwave-launched');
+          if (stopKnockupSprite) stopKnockupSprite();
         });
     } else {
       setTimeout(() => {
         if (tNode) tNode.classList.remove('basic-chiwave-launched');
+        if (stopKnockupSprite) stopKnockupSprite();
       }, 1560);
     }
   });

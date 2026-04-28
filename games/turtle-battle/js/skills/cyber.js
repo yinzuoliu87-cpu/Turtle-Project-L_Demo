@@ -3,17 +3,19 @@
 // 能量大炮's two beam segments. Adapted from buildJuggleKeyframes (3-hit
 // chi-wave version). Returns { kf, totalMs, segMs[] } so callers can
 // time their damage/float spawns to each in-air hit moment.
-function buildCyberBeamJuggle(knockX, isMobile) {
+function buildCyberBeamJuggle(knockX, isMobile, opts) {
+  // opts.noRotation = true: skip rotation (target has knockupAnim sprite).
+  const noRot = opts && opts.noRotation;
   const totalMs = isMobile ? 1700 : 1600;
   const g = isMobile ? 900 : 1500;
   // 2 launch impulses spaced ~280ms apart
   const hits = isMobile
     ? [{ t: 0, vy: -200, vx: knockX * 1.5 }, { t: 280, vy: -250, vx: knockX * 1.0 }]
     : [{ t: 0, vy: -280, vx: knockX * 1.5 }, { t: 280, vy: -340, vx: knockX * 1.0 }];
-  const rotImpulses = [-50, 90];
+  const rotImpulses = noRot ? [0, 0] : [-50, 90];
   const liePoseMs = isMobile ? 480 : 500;
   const recoverMs = isMobile ? 280 : 300;
-  const slamRot = -82;
+  const slamRot = noRot ? 0 : -82;
   const steps = 56;
   const dt = totalMs / steps / 1000;
   const s = { x:0, y:0, rot:0, vx:0, vy:0, vrot:0 };
@@ -202,12 +204,18 @@ async function doCyberBeam(attacker, target, skill) {
     // Launch 2-hit juggle on this target's body
     let juggleAnim = null;
     let segTimes = [0, 280];
+    let stopKnockupSprite = null;
     if (tBody) {
       const knockX = isMobile ? dir * 28 : dir * 50;
-      const built = buildCyberBeamJuggle(knockX, isMobile);
+      const ePet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === enemy.id) : null;
+      const hasKnockupAnim = !!(ePet && ePet.knockupAnim);
+      const built = buildCyberBeamJuggle(knockX, isMobile, { noRotation: hasKnockupAnim });
       juggleAnim = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       segTimes = built.segHits;
       eNode.classList.add('basic-chiwave-launched');  // pause sprite-sheet during airtime
+      if (hasKnockupAnim && typeof playKnockupAnimation === 'function') {
+        stopKnockupSprite = playKnockupAnimation(enemy);
+      }
     }
 
     let physTotal = 0, trueTotal = 0;
@@ -248,8 +256,12 @@ async function doCyberBeam(attacker, target, skill) {
         .then(() => {
           if (tBody) tBody.style.transform = '';
           if (eNode) eNode.classList.remove('basic-chiwave-launched');
+          if (stopKnockupSprite) stopKnockupSprite();
         })
-        .catch(() => { if (eNode) eNode.classList.remove('basic-chiwave-launched'); });
+        .catch(() => {
+          if (eNode) eNode.classList.remove('basic-chiwave-launched');
+          if (stopKnockupSprite) stopKnockupSprite();
+        });
     }
     return { enemy, physTotal, trueTotal };
   })());
