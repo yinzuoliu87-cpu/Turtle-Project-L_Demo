@@ -1,3 +1,15 @@
+// ── 龟壳气场储能上限计算 ──
+// passive: { energyMaxStorePct, perLevelPct }, fighter: { _level, maxHp }
+// Lv.1 = 45% maxHp, Lv.10 = 54% maxHp. Used by HUD bars + detail panel +
+// state inspection — single source of truth so balance changes flow.
+function getAuraEnergyCap(f) {
+  if (!f || !f.passive) return Math.round((f && f.maxHp) || 1);
+  const lvl = Math.max(1, f._level || 1);
+  const perLv = f.passive.perLevelPct || 0.01;
+  const capPct = (f.passive.energyMaxStorePct || 0.45) + (lvl - 1) * perLv;
+  return Math.round((f.maxHp || 0) * capPct);
+}
+
 // ── BATTLE POSITION CONFIG ─────────────────────────────────
 // Positions defined on the 16:9 BACKGROUND IMAGE coordinate system.
 // x = % from left edge of image, y = % from top edge of image.
@@ -435,12 +447,12 @@ function updateSceneHp(f) {
     energyBar.style.width = ePct + '%';
   }
 
-  // ── Aura energy bar (龟壳 stored energy, cap 150% maxHp) ──
+  // ── Aura energy bar (龟壳 stored energy, cap = energyMaxStorePct × maxHp) ──
   if (f.passive && f.passive.type === 'auraAwaken' && f.passive.energyStore) {
     const allEBars = el.querySelectorAll('.st-energy-fill');
     const auraBar = allEBars[allEBars.length - 1]; // last energy bar is aura's
     if (auraBar) {
-      const maxVisual = f.maxHp * 1.5;  // cap is 150% maxHp
+      const maxVisual = getAuraEnergyCap(f);
       const storePct = Math.min(100, (f._storedEnergy || 0) / maxVisual * 100);
       auraBar.style.width = storePct + '%';
     }
@@ -696,7 +708,7 @@ function showFighterDetail(f) {
     if (f.passive.type === 'gamblerBlood') { const oc = Math.max(0, (f.crit||0) - 1.0); st.push(`<img src="assets/passive/gambler-blood-icon.png" style="width:14px;height:14px;vertical-align:middle"> 暴击溢出：<span class="val-atk">${oc > 0 ? Math.round(oc*100)+'%→+'+Math.round(oc*f.passive.overflowMult*100)+'%爆伤' : '无'}</span>`); }
     if (f.passive.type === 'crystalResonance') st.push(`💎 结晶层数：<span class="val-atk">${f._crystallizeStacks||0}</span> / ${f.passive.crystallizeMax}`);
     if (f.passive.type === 'undeadRage') st.push(`💀 攻击加成：<span class="val-atk">+${Math.round(Math.min(f.passive.atkMaxBonus, (1 - f.hp/f.maxHp) * 100 * f.passive.atkPerLostPct))}%</span>　吸血：<span class="val-atk">${f.passive.lifestealBase}%</span>`);
-    if (f.passive.type === 'auraAwaken' && f.passive.energyStore) { const cap = Math.round(f.maxHp * 1.5); st.push(`⚡ 储能：<span class="val-atk">${Math.round(f._storedEnergy||0)}</span> / ${cap}`); }
+    if (f.passive.type === 'auraAwaken' && f.passive.energyStore) { const cap = getAuraEnergyCap(f); st.push(`⚡ 储能：<span class="val-atk">${Math.round(f._storedEnergy||0)}</span> / ${cap}`); }
     if (st.length) html += `<div class="fdp-passive-state">${st.join('<br>')}</div>`;
 
     html += `</div>`;
@@ -1485,10 +1497,10 @@ function updateHpBar(f, elId) {
       eBar.innerHTML = '<div class="energy-store-fill"></div>';
       card.querySelector('.hp-bar').parentNode.insertBefore(eBar, card.querySelector('.hp-text'));
     }
-    const maxVisual = f.maxHp * 2; // visual cap for bar width
+    const maxVisual = getAuraEnergyCap(f);
     const storePct = Math.min((f._storedEnergy || 0) / maxVisual * 100, 100);
     eBar.querySelector('.energy-store-fill').style.width = storePct + '%';
-    eBar.setAttribute('title', `储能: ${Math.round(f._storedEnergy || 0)} (每${f.passive.energyReleaseTurn}回合释放波击)`);
+    eBar.setAttribute('title', `储能: ${Math.round(f._storedEnergy || 0)} / ${maxVisual} (每${f.passive.energyReleaseTurn}回合释放波击)`);
     let label = eBar.querySelector('.energy-store-label');
     if (!label) { label = document.createElement('span'); label.className = 'energy-store-label'; eBar.appendChild(label); }
     label.textContent = `⚡ ${Math.round(f._storedEnergy || 0)}`;
