@@ -204,6 +204,7 @@ V3.1 锚点：`origin/v3.1` 分支保留改动前的版本。
 | `c:/tmp/projectile_test.mjs` | fireProjectile spawn/timing/rotation/cleanup |
 | `c:/tmp/stats_tracker_test.mjs` | stats_tracker 订阅器累加 / null source 处理 |
 | `c:/tmp/sim_node_test.mjs` | Node 端跑 27 龟全矩阵 351 场, 断言 0 runtime 错误 |
+| `c:/tmp/skill_audit_test.mjs` | Skill type ↔ dispatch 一致性: 0 orphan 活跃技能, 24 已知 dead handler 基线 |
 | `c:/tmp/pets_verify.js` | 数据等价性深度对比（重构前/后 ALL_PETS） |
 
 跑法（在 repo 根目录）：
