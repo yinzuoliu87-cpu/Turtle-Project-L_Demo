@@ -1269,7 +1269,8 @@ function playAttackAnimation(f) {
 // initial HTML so animation starts cleanly without restart-trick edge cases).
 // Always rebuilds overlay fresh — avoids stale animation state from prior calls.
 const _spriteOnceKF = {};
-function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs) {
+const _spriteOnceCleanups = new WeakMap();
+function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, looping) {
   const card = document.getElementById(getFighterElId(f));
   if (!card) return;
   const spriteEl = card.querySelector('.st-sprite');
@@ -1285,22 +1286,31 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs) {
     document.head.appendChild(st);
     _spriteOnceKF[kfName] = true;
   }
+  // Cancel pending cleanup from previous call — otherwise the OLD overlay's
+  // setTimeout fires mid-NEW-anim and restores idle opacity (visible flash).
+  const prevId = _spriteOnceCleanups.get(spriteEl);
+  if (prevId) clearTimeout(prevId);
   // Remove any leftover overlay from a previous call (cleanest restart)
   const old = spriteEl.querySelector('.sprite-once-overlay');
   if (old) old.remove();
-  // Build fresh overlay with ALL styles baked in (no JS-driven restart needed)
+  // Build fresh overlay with ALL styles baked in
   const overlay = document.createElement('div');
   overlay.className = 'sprite-once-overlay';
   overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
-  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') 1 forwards"></div>';
+  const iter = looping ? 'infinite' : '1 forwards';
+  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') ' + iter + '"></div>';
   spriteEl.style.position = 'relative';
   spriteEl.appendChild(overlay);
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   if (idleWrap) idleWrap.style.opacity = '0';
-  setTimeout(() => {
+  // Cleanup at end (looping callers should chain into another play* call to
+  // avoid this firing mid-skill).
+  const cleanupId = setTimeout(() => {
     overlay.remove();
     if (idleWrap) idleWrap.style.opacity = '';
+    _spriteOnceCleanups.delete(spriteEl);
   }, durationMs + 30);
+  _spriteOnceCleanups.set(spriteEl, cleanupId);
 }
 
 // Play death animation for a fighter (overlay sprite if available, CSS hop-back+fade always)

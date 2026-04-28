@@ -175,28 +175,27 @@ async function doNinjaImpact(attacker, target, skill) {
 
   fEl.style.zIndex = '60';
 
-  // ── Phase 0: hop to target's row Y (idle sprite continues, parabolic arc) ──
+  // ── Phase 0: RUN to target's row Y (run.png 4 frames looping while body
+  // translates linearly, so it reads as actually running not teleporting) ──
   // Track animations so we can .cancel() them on teleport (WAAPI fill:forwards
   // locks transform via composite — style.transform='' alone won't release it).
   let rowHopAnim = null, flightAnim = null;
+  const RUN_MS = 400;
   if (Math.abs(casterYShift) > 4) {
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25) / baseScale;
-    const N = 10; const kfHop = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const y = lyShift * t + apexLift * 4 * t * (1 - t);
-      kfHop.push({ transform: `translate(0, ${y}px)`, offset: t });
+    if (typeof playFighterSpriteOnce === 'function') {
+      playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/run.png', 4, 64, 64, RUN_MS, true);
     }
-    rowHopAnim = fBody.animate(kfHop, { duration: 280, easing: 'linear', fill: 'forwards' });
-    await sleep(290);
+    rowHopAnim = fBody.animate([
+      { transform: `translate(0, 0)` },
+      { transform: `translate(0, ${lyShift}px)`, offset: 1 },
+    ], { duration: RUN_MS, easing: 'linear', fill: 'forwards' });
+    await sleep(RUN_MS);
   }
 
-  // ── Brief planted windup pause at target's row before dash sprite kicks in ──
-  // (lets player register "ninja arrived, now charging dash")
-  await sleep(120);
-
   // ── Start the 18-frame dash sprite (1800ms total). Plays continuously
-  // through windup → flight → planting → recovery as one unbroken animation. ──
+  // through windup → flight → planting → recovery as one unbroken animation.
+  // Switching from run overlay to dash overlay happens in same frame (cleanup
+  // timer cancellation in playFighterSpriteOnce — no flash). ──
   if (typeof playFighterSpriteOnce === 'function') {
     playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
   }
