@@ -10,17 +10,20 @@ function buildCyberBeamJuggle(knockX, isMobile, opts) {
   if (noRot && opts && opts.knockupAnim) {
     const k = opts.knockupAnim;
     const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
+    const lyingMs  = k.lyingMs   || 0;
     const runBackMs = k.runBackMs || 400;
-    const totalMs  = airMs + runBackMs;
+    const totalMs  = airMs + lyingMs + runBackMs;
     const peakY    = isMobile ? -58 : -84;
     const slamX    = knockX * 1.3;
     const peakOff  = (airMs/2)/totalMs;
     const landOff  = airMs/totalMs;
+    const lieEndOff= (airMs + lyingMs)/totalMs;
     return {
       kf: [
-        { transform: 'translate(0px, 0px)',                              offset: 0,       easing: 'cubic-bezier(0, .55, .45, 1)' },
-        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: peakOff, easing: 'cubic-bezier(.55, 0, 1, .45)' },
-        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: landOff, easing: 'linear' },
+        { transform: 'translate(0px, 0px)',                              offset: 0,         easing: 'cubic-bezier(0, .55, .45, 1)' },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: peakOff,   easing: 'cubic-bezier(.55, 0, 1, .45)' },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: landOff,   easing: 'linear' },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: lieEndOff, easing: 'linear' },
         { transform: 'translate(0px, 0px)',                              offset: 1 }
       ],
       totalMs,

@@ -1299,7 +1299,13 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   overlay.className = 'sprite-once-overlay';
   overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
   const iter = looping ? 'infinite' : '1 forwards';
-  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') ' + iter + '"></div>';
+  // background-repeat: looping uses repeat-x so the ~16ms render frame at the
+  // iteration boundary (where bg-pos = -tw, one frame past source) shows the
+  // wrapped frame 0 instead of blank. Without this, looping animations flash
+  // blank every iteration. One-shot animations stay no-repeat (otherwise the
+  // forwards fill at -tw would show frame 0 instead of last frame).
+  const bgRepeat = looping ? 'repeat-x' : 'no-repeat';
+  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:' + bgRepeat + ';animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') ' + iter + '"></div>';
   spriteEl.appendChild(overlay);
   // Now remove any leftover overlay from previous call (after new is in DOM)
   const old = spriteEl.querySelector('.sprite-once-overlay:not(:last-child)');
@@ -1429,14 +1435,11 @@ function playHurtAnimation(f) {
 }
 
 // Per-pet knockup sequence — 2-frame knockup sheet (F1=lying-on-ground,
-// F2=airborne), then chains into runAnim sprite for the run-back-home phase.
-// User spec: 第一帧躺着，第二帧击飞。Sequence:
-//   0           → airborneMs           : F2 (going up — sprite shows airborne pose)
-//   airborneMs  → airborneMs+descentMs : F2 (still airborne while falling)
-//   +runBackMs  → end                  : runAnim looping (running home)
-// Note: F1 (lying) is currently unused — kept in sheet for future "stay-on-
-// ground" follow-up animations. The user's design shows ninja getting up and
-// running, not lying.
+// F2=airborne), then chains into runAnim for the run-back-home phase.
+// Sequence (user spec: F2 全程空中，落地 F1 躺 0.7s，再用 run.png 跑回家):
+//   0                                 → airborneMs+descentMs : F2 (airborne)
+//   +airborneMs+descentMs             → +lyingMs              : F1 (lying)
+//   +runBackMs                        → end                   : runAnim looping
 // Returns stop() so caller can collapse cleanup when body anim finishes.
 function playKnockupAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
@@ -1472,10 +1475,16 @@ function playKnockupAnimation(f) {
   if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = '0'; }
   const airborneMs = k.airborneMs || 300;
   const descentMs  = k.descentMs  || 300;
+  const lyingMs    = k.lyingMs    || 0;
   const runBackMs  = k.runBackMs  || 400;
   const r = pet && pet.runAnim;
-  // After airtime (airborne+descent), chain into runAnim for run-back. Append
-  // the run overlay BEFORE removing knockup (atomic swap, no flash gap).
+  // At land (airborneMs+descentMs): swap F2 → F1 (lying). bg-pos goes from
+  // -fw (column 1) → 0 (column 0).
+  const swapToF1 = lyingMs > 0 ? setTimeout(() => {
+    overlay.style.backgroundPosition = '0 0';
+  }, airborneMs + descentMs) : null;
+  // After lying ends, chain into runAnim. Append run BEFORE removing knockup
+  // (atomic swap, no flash gap).
   let runStop = null;
   const swapToRun = setTimeout(() => {
     if (r && typeof playFighterSpriteOnce === 'function') {
@@ -1483,15 +1492,16 @@ function playKnockupAnimation(f) {
     }
     if (overlay.parentNode) overlay.remove();
     if (!r && idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
-  }, airborneMs + descentMs);
+  }, airborneMs + descentMs + lyingMs);
   // Final cleanup at total end
-  const totalMs = airborneMs + descentMs + (r ? runBackMs : 0);
+  const totalMs = airborneMs + descentMs + lyingMs + (r ? runBackMs : 0);
   const cleanupId = setTimeout(() => {
     if (runStop) runStop();
     if (overlay.parentNode) overlay.remove();
     if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
   }, totalMs);
   return () => {
+    if (swapToF1) clearTimeout(swapToF1);
     clearTimeout(swapToRun);
     clearTimeout(cleanupId);
     if (runStop) runStop();

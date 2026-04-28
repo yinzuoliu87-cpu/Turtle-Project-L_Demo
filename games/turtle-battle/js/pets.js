@@ -179,7 +179,7 @@ const PET_ninja = { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rar
     attackAnim:{ src:'assets/pets/animations/ninja/throw.png', frames:5, frameW:64, frameH:64, duration:500 },
     hurtAnim:{ src:'assets/pets/animations/ninja/hurt.png', frames:5, frameW:64, frameH:64, duration:500 },
     deathAnim:{ src:'assets/pets/animations/ninja/death.png', frames:7, frameW:64, frameH:64, duration:700 },
-    knockupAnim:{ src:'assets/pets/animations/ninja/knockup.png', frames:2, frameW:64, frameH:64, airborneMs:400, descentMs:400, runBackMs:500 },
+    knockupAnim:{ src:'assets/pets/animations/ninja/knockup.png', frames:2, frameW:64, frameH:64, airborneMs:400, descentMs:400, lyingMs:700, runBackMs:500 },
     runAnim:{ src:'assets/pets/animations/ninja/run.png', frames:4, frameW:64, frameH:64 },
     passive:{ type:'ninjaInstinct', name:'忍术', critBonus:30, critDmgBonus:20, armorPen:8,
               brief:'忍者龟天生忍术精通。开局永久获得暴击率 <span class="val-atk">+30%</span>、暴击伤害 <span class="val-atk">+20%</span>、护甲穿透 <span class="val-atk">+8</span>。',
