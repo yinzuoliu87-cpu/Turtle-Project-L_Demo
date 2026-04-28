@@ -345,8 +345,6 @@ async function doNinjaBackstab(attacker, target, skill) {
 
   fEl.style.zIndex = '60';
 
-  // Pre-roll buff log (穿甲 already added by action.js handler before this call)
-
   // ── Start the 18-frame backstab sprite (1800ms). Single overlay covers
   // windup → teleport → 3 stabs → teleport-home → recovery. ──
   let stopBackstab = null;
@@ -354,20 +352,37 @@ async function doNinjaBackstab(attacker, target, skill) {
     stopBackstab = playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/backstab.png', 18, 64, 64, 1800);
   }
 
+  // ── Body teleport: ONE WAAPI animation drives all body movement.
+  // Inline `style.transform = translate(...)` doesn't work here because
+  // any prior fill:'forwards' WAAPI animation on this .st-body (e.g. from
+  // a previous knockup juggle or attack hop) leaves a composite layer
+  // effect that overrides inline styles. WAAPI .animate() with fill:
+  // 'forwards' overrides the prior fill via composition. We .cancel() at
+  // the end to release the layer. ──
+  // Keyframe stops (1800ms total):
+  //   0%        F1   home (0,0)
+  //   16.6%     F4   home → snap to behind (next stop is +0.001 later)
+  //   77.7%     F14  still at behind
+  //   77.8%     F15  snap back home
+  //   100%      F18  home
+  const TOTAL_MS = 1800;
+  const teleportAnim = fBody.animate([
+    { transform: 'translate(0px, 0px)',                                     offset: 0 },
+    { transform: 'translate(0px, 0px)',                                     offset: 300 / TOTAL_MS },
+    { transform: `translate(${lxShift}px, ${lyShift}px)`,                   offset: 300 / TOTAL_MS + 0.001 },
+    { transform: `translate(${lxShift}px, ${lyShift}px)`,                   offset: 1400 / TOTAL_MS },
+    { transform: 'translate(0px, 0px)',                                     offset: 1400 / TOTAL_MS + 0.001 },
+    { transform: 'translate(0px, 0px)',                                     offset: 1 },
+  ], { duration: TOTAL_MS, easing: 'linear', fill: 'forwards' });
+
   // ── Phase 1: F1-3 windup at home (300ms) ──
   await sleep(300);
 
-  // ── Phase 2: F4 teleport to behind target (snap, no animation) ──
-  fBody.style.transition = 'none';
-  fBody.style.transform = `translate(${lxShift}px, ${lyShift}px)`;
-  void fBody.offsetWidth;
-  fBody.style.transition = '';
+  // ── Phase 2: F4 teleport snap (handled by keyframe; nothing to do here) ──
 
   // ── Phase 3: F5-14, stab hits land at 500/800/1100ms (relative to start)
-  // From here we are at +400ms; schedule 3 hits at +100/+400/+700ms locally. ──
-  const hitOffsets = [100, 400, 700];  // 500ms, 800ms, 1100ms global
-  const baseHitMs = 400;
-  // Pre-compute 3 hit damages (each: own crit roll, scale 0.5)
+  // From here we are at +300ms; schedule 3 hits at +200/+500/+800ms locally. ──
+  const hitOffsets = [200, 500, 800];  // 500ms, 800ms, 1100ms global
   const hits = [];
   for (let i = 0; i < (skill.hits || 3); i++) {
     const { isCrit, critMult } = calcCrit(attacker);
@@ -394,17 +409,12 @@ async function doNinjaBackstab(attacker, target, skill) {
   };
   for (let i = 0; i < hits.length; i++) hitTask(i);
 
-  // Wait remaining time of Phase 3 (F5-14 ends at 1400ms global = +1000ms local)
-  await sleep(1000);
+  // Wait Phase 3 + Phase 4 (snap home at 1400ms) + Phase 5 recovery (300ms) ──
+  await sleep(1500);  // 300ms windup already passed; total 1800ms = 300+1500
 
-  // ── Phase 4: F15 teleport home (snap back) ──
-  fBody.style.transition = 'none';
+  // Cancel the WAAPI fill so subsequent skills can set transform freely
+  try { teleportAnim.cancel(); } catch(e) {}
   fBody.style.transform = '';
-  void fBody.offsetWidth;
-  fBody.style.transition = '';
-
-  // ── Phase 5: F16-18 recovery at home (300ms) ──
-  await sleep(300);
 
   if (stopBackstab) stopBackstab();
   fEl.style.zIndex = '';

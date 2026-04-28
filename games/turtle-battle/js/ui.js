@@ -1375,6 +1375,11 @@ function playHurtAnimation(f) {
   if (!card) return;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) return;
+  // Defer to knockup sprite if it's currently showing — playing hurt overlay
+  // on top would double-stack visually, and hurt's idle-restore timer would
+  // pop the idle wrap back at ~450ms while knockup sprite still has 1250ms+
+  // to go (visible flash + idle showing through knockup overlay).
+  if (spriteEl.querySelector('.knockup-sprite-overlay')) return;
   // Preload
   if (!_attackImgPreload[anim.src]) {
     const preImg = new Image(); preImg.src = anim.src;
@@ -1447,6 +1452,13 @@ function playKnockupAnimation(f) {
   const prior = spriteEl.querySelector('.knockup-sprite-overlay');
   if (prior) prior.remove();
   spriteEl.appendChild(overlay);
+  // Cancel any pending hurt-anim restore — applyRawDmg above us in the call
+  // chain triggers playHurtAnimation, which schedules a +450ms timer that
+  // would re-show idle while knockup is still mid-flight (visible flash +
+  // idle-through-knockup double-sprite). Also force-hide the hurt overlay.
+  if (f._hurtRestoreTimer) { clearTimeout(f._hurtRestoreTimer); f._hurtRestoreTimer = null; }
+  const hurtOverlay = spriteEl.querySelector('.hurt-sprite-overlay');
+  if (hurtOverlay) hurtOverlay.style.opacity = '0';
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   if (idleWrap) idleWrap.style.opacity = '0';
   const airborneMs = anim.airborneMs || 600;
