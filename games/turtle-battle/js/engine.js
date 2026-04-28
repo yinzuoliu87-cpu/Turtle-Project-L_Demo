@@ -218,9 +218,12 @@ function spawnFloatingNum(elId, text, cls, delayMs, yOffset, opts) {
         try { const r = parent.getBoundingClientRect(); dir = r.left > window.innerWidth / 2 ? 1 : -1; } catch(e) {}
       }
       const jumpX = dir * (12 + _vr() * 14);
-      const jumpY = -(10 + _vr() * 8);
-      const gravity = 200;
       const isCrit = cls.startsWith('crit');
+      // Non-crit jumps higher than crit: crits hold a moment then drift, but
+      // normal hits pop straight up so they need extra initial velocity to
+      // arc visibly above start point before gravity (200) wins.
+      const jumpY = isCrit ? -(10 + _vr() * 8) : -(22 + _vr() * 10);
+      const gravity = 200;
       // LoL-style: crits POP then HOLD for 300ms before flying away. Normal
       // damage skips the hold and flies away immediately. The hold ends at
       // holdEnd; movement time = elapsed - holdEnd.
