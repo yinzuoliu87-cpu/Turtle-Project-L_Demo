@@ -196,8 +196,11 @@ async function doNinjaImpact(attacker, target, skill) {
   // through windup → flight → planting → recovery as one unbroken animation.
   // Switching from run overlay to dash overlay happens in same frame (cleanup
   // timer cancellation in playFighterSpriteOnce — no flash). ──
+  // Capture the stop() return so we can explicitly collapse the 30ms grace
+  // window at end-of-dash (otherwise F18 lingers → idle restore visible flash).
+  let stopDash = null;
   if (typeof playFighterSpriteOnce === 'function') {
-    playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
+    stopDash = playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
   }
 
   // ── Phase 1: F1-3 windup at target row (300ms) — stay at row Y, no X move ──
@@ -280,6 +283,9 @@ async function doNinjaImpact(attacker, target, skill) {
   fBody.style.transition = '';
   await sleep(400);
 
+  // Explicitly stop the dash overlay — collapses the 30ms cleanup grace
+  // window so F18 doesn't linger after duration ends → no idle-restore flash.
+  if (stopDash) stopDash();
   fEl.style.zIndex = '';
 
   const behindNote = behind ? ` + ${behind.emoji}${behind.name} <span class="log-direct">${behindDmg}物理</span>` : '';

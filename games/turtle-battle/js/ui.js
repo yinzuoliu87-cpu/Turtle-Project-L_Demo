@@ -1290,27 +1290,33 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   // setTimeout fires mid-NEW-anim and restores idle opacity (visible flash).
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
-  // Remove any leftover overlay from a previous call (cleanest restart)
-  const old = spriteEl.querySelector('.sprite-once-overlay');
-  if (old) old.remove();
-  // Build fresh overlay with ALL styles baked in
+  spriteEl.style.position = 'relative';
+  // ── Atomic swap: APPEND new overlay FIRST, then remove old. ──
+  // Reverse order would leave a 1-frame gap where browser paints with no
+  // overlay (idle still hidden) → visible flash. With this order the new
+  // sprite is rendered before the old is gone — visual continuity.
   const overlay = document.createElement('div');
   overlay.className = 'sprite-once-overlay';
   overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
   const iter = looping ? 'infinite' : '1 forwards';
   overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') ' + iter + '"></div>';
-  spriteEl.style.position = 'relative';
   spriteEl.appendChild(overlay);
+  // Now remove any leftover overlay from previous call (after new is in DOM)
+  const old = spriteEl.querySelector('.sprite-once-overlay:not(:last-child)');
+  if (old) old.remove();
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   if (idleWrap) idleWrap.style.opacity = '0';
-  // Cleanup at end (looping callers should chain into another play* call to
-  // avoid this firing mid-skill).
-  const cleanupId = setTimeout(() => {
-    overlay.remove();
+  // Cleanup function (used by both setTimeout fallback and explicit stop)
+  const doCleanup = () => {
+    if (overlay.parentNode) overlay.remove();
     if (idleWrap) idleWrap.style.opacity = '';
     _spriteOnceCleanups.delete(spriteEl);
-  }, durationMs + 30);
+  };
+  const cleanupId = setTimeout(doCleanup, durationMs + 30);
   _spriteOnceCleanups.set(spriteEl, cleanupId);
+  // Return a stop function — caller can collapse cleanup explicitly
+  // (avoids the 30ms grace window that may show stale dash F18 → idle flash).
+  return () => { clearTimeout(cleanupId); doCleanup(); };
 }
 
 // Play death animation for a fighter (overlay sprite if available, CSS hop-back+fade always)
