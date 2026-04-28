@@ -18,6 +18,7 @@ function buildStateSync() {
       _inkStacks: f._inkStacks, _shockStacks: f._shockStacks,
       _starEnergy: f._starEnergy, _goldCoins: f._goldCoins,
       _storedEnergy: f._storedEnergy || 0, // shell energy
+      _auraShield: f._auraShield || 0, _auraShieldGainTurn: f._auraShieldGainTurn || 0, _auraShieldDecayCount: f._auraShieldDecayCount || 0, // shell aura shield decay state
       _lavaRage: f._lavaRage || 0, _lavaTransformed: f._lavaTransformed || false,
       _lavaTransformTurns: f._lavaTransformTurns || 0, _lavaSpent: f._lavaSpent || false,
       _chestTreasure: f._chestTreasure || 0, _chestTier: f._chestTier || 0,
@@ -60,6 +61,9 @@ function applyStateSync(state) {
     f._inkStacks = sf._inkStacks; f._shockStacks = sf._shockStacks;
     f._starEnergy = sf._starEnergy; f._goldCoins = sf._goldCoins;
     f._storedEnergy = sf._storedEnergy || 0;
+    f._auraShield = sf._auraShield || 0;
+    f._auraShieldGainTurn = sf._auraShieldGainTurn || 0;
+    f._auraShieldDecayCount = sf._auraShieldDecayCount || 0;
     f._lavaRage = sf._lavaRage || 0; f._lavaTransformed = sf._lavaTransformed || false;
     f._lavaTransformTurns = sf._lavaTransformTurns || 0; f._lavaSpent = sf._lavaSpent || false;
     f._chestTreasure = sf._chestTreasure || 0; f._chestTier = sf._chestTier || 0;

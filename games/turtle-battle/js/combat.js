@@ -619,12 +619,9 @@ async function triggerOnHitEffects(attacker, target, dmg) {
       updateHpBar(attacker, getFighterElId(attacker));
     }
   }
-  // AuraAwaken: energy store — target stores received damage as energy (capped at 150% maxHp)
-  if (target.passive && target.passive.type === 'auraAwaken' && target.passive.energyStore && target.alive) {
-    const cap = Math.round(target.maxHp * 1.5);
-    target._storedEnergy = Math.min(cap, (target._storedEnergy || 0) + dmg);
-    updateHpBar(target, tElId); // refresh energy bar in real-time
-  }
+  // AuraAwaken energy storage moved to systems/passive_subscribers.js
+  // (subscribes to damage:dealt so all damage paths trigger storage, not just
+  // the doDamage hot path).
   // AuraAwaken: lifesteal — attacker heals from damage dealt
   if (attacker._auraLifesteal > 0 && attacker.alive && dmg > 0) {
     const auraHeal = Math.round(dmg * attacker._auraLifesteal);
@@ -814,10 +811,15 @@ function applyRawDmg(source, target, amount, isPierce, _skipLink, dmgType, _noHu
     }
     return { hpLoss: hpLoss2, shieldAbs: shieldAbs2, bubbleAbs: bubbleAbs2 };
   }
-  let rem = amount, bubbleAbs = 0, shieldAbs = 0;
+  let rem = amount, bubbleAbs = 0, shieldAbs = 0, auraAbs = 0;
   if (target.bubbleShieldVal > 0) { bubbleAbs = Math.min(target.bubbleShieldVal, rem); target.bubbleShieldVal -= bubbleAbs; rem -= bubbleAbs; }
+  // Shell turtle's aura shield (decays over 2 of its own actions). Sits between
+  // bubble and regular shield: temporary, so consume before permanent.
+  if (target._auraShield > 0 && rem > 0) { auraAbs = Math.min(target._auraShield, rem); target._auraShield -= auraAbs; rem -= auraAbs; }
   if (target.shield > 0 && rem > 0) { shieldAbs = Math.min(target.shield, rem); target.shield -= shieldAbs; rem -= shieldAbs; }
   target.hp = Math.max(0, target.hp - rem);
+  // Surface aura absorption visually (keeps bubble/shield numbers separate)
+  if (auraAbs > 0) spawnFloatingNum(getFighterElId(target), `-${auraAbs}⚡`, 'shield-dmg', 0, 14, { atkSide: source && source.side, amount: auraAbs });
   // Undead passive: first death triggers lock — HP stays at 1 but still takes damage visually
   if (target.hp <= 0 && target.passive && target.passive.type === 'undeadRage' && !target._undeadLockUsed) {
     target._undeadLockUsed = true;

@@ -234,14 +234,16 @@ async function processEnergyWave() {
       spawnFloatingNum(eElId, `-${waveDmg}⚡`, 'direct-dmg', 0, 0, { atkSide: f.side, amount: waveDmg });
       updateHpBar(e, eElId);
     }
-    // Shield for self
+    // 气场护盾 — uses dedicated _auraShield slot (decays over next 2 caster actions)
     const shieldAmt = Math.round(stored * shieldPct);
-    f.shield += shieldAmt;
+    f._auraShield = (f._auraShield || 0) + shieldAmt;
+    f._auraShieldGainTurn = (typeof turnNum !== 'undefined') ? turnNum : 0;
+    f._auraShieldDecayCount = 0;
     const fElId = getFighterElId(f);
-    spawnFloatingNum(fElId, `+${shieldAmt}`, 'shield-num', 0, 0);
+    spawnFloatingNum(fElId, `+${shieldAmt}⚡`, 'shield-num', 0, 0);
     updateHpBar(f, fElId);
     // Log
-    addLog(`${f.emoji}${f.name} <span class="log-passive">⚡储能波击！储存${stored}能量 → 全体${waveDmg}伤害 + ${shieldAmt}护盾</span>`);
+    addLog(`${f.emoji}${f.name} <span class="log-passive">⚡储能波击！储存${stored}能量 → 全体${waveDmg}伤害 + ${shieldAmt}气场护盾</span>`);
     // Clear stored energy
     f._storedEnergy = 0;
     checkDeaths(f);

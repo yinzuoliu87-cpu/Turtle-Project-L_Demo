@@ -93,6 +93,9 @@ function createFighter(petId, side, equippedIdxs, levelOverride) {
     _auraAwakened: false,     // 龟壳气场觉醒标记
     _auraLifesteal: 0,        // 龟壳觉醒生命偷取
     _auraReflect: 0,          // 龟壳觉醒反伤
+    _auraShield: 0,           // 龟壳气场护盾值 (decays over caster's next 2 actions)
+    _auraShieldGainTurn: 0,   // 获得回合 (用于衰减判定)
+    _auraShieldDecayCount: 0, // 已衰减次数 (0/1/2)
     _bambooCharged: false,    // 竹叶龟竹编充能状态
     _bambooCounter: 0,       // 竹叶龟充能计数器
     _bambooGainedHp: 0,      // 竹叶龟被动累计获得HP

@@ -1265,6 +1265,19 @@ async function executeAction(action) {
     sendOnline({ type:'action', action });
   }
 
+  // 龟壳气场护盾衰减: shell's first action after gaining → halve, second → clear.
+  // 触发条件: 当前回合 > 获得回合 (排除同一回合内多次行动). 每次 decay 推进一档.
+  if (f && f._auraShield > 0 && f.passive && f.passive.type === 'auraAwaken'
+      && f._auraShieldGainTurn && turnNum > f._auraShieldGainTurn) {
+    f._auraShieldDecayCount = (f._auraShieldDecayCount || 0) + 1;
+    if (f._auraShieldDecayCount === 1) {
+      f._auraShield = Math.round(f._auraShield / 2);
+    } else {
+      f._auraShield = 0;
+    }
+    if (typeof updateHpBar === 'function') updateHpBar(f, getFighterElId(f));
+  }
+
   // Drain queued actions (online opponent sent action while we were animating)
   if (_actionQueue.length > 0) {
     const next = _actionQueue.shift();

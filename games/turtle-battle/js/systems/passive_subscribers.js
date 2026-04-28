@@ -65,4 +65,22 @@
       updateHpBar(target, getFighterElId(target));
     }
   });
+
+  // ── 龟壳: auraAwaken energy storage ────────────────────────
+  // Cap = (energyMaxStorePct + (level-1) × perLevelPct) × maxHp
+  // Lv.1 = 45% maxHp, Lv.10 = 54% maxHp. Was inline in doDamage so only
+  // doDamage paths fed energy; via bus subscriber, ALL damage routes feed it.
+  bus.on('damage:dealt', ({ target, amount }) => {
+    if (!target || !target.passive || target.passive.type !== 'auraAwaken') return;
+    if (!target.passive.energyStore) return;
+    if (!target.alive || !(amount > 0)) return;
+    const lvl = Math.max(1, target._level || 1);
+    const perLv = target.passive.perLevelPct || 0.01;
+    const capPct = (target.passive.energyMaxStorePct || 0.45) + (lvl - 1) * perLv;
+    const cap = Math.round(target.maxHp * capPct);
+    target._storedEnergy = Math.min(cap, (target._storedEnergy || 0) + amount);
+    if (typeof updateHpBar === 'function' && typeof getFighterElId === 'function') {
+      updateHpBar(target, getFighterElId(target));
+    }
+  });
 })();
