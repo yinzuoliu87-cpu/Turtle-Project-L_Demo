@@ -4,8 +4,27 @@
 // chi-wave version). Returns { kf, totalMs, segMs[] } so callers can
 // time their damage/float spawns to each in-air hit moment.
 function buildCyberBeamJuggle(knockX, isMobile, opts) {
-  // opts.noRotation = true: skip rotation (target has knockupAnim sprite).
+  // opts.noRotation + opts.knockupAnim: simple ascent → descent → run-back
+  // (no lie/rot) so body keyframes sync with knockup sprite + runAnim chain.
   const noRot = opts && opts.noRotation;
+  if (noRot && opts && opts.knockupAnim) {
+    const k = opts.knockupAnim;
+    const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
+    const runBackMs = k.runBackMs || 400;
+    const totalMs  = airMs + runBackMs;
+    const peakY    = isMobile ? -46 : -66;
+    const slamX    = knockX * 1.3;
+    return {
+      kf: [
+        { transform: 'translate(0px, 0px)',                              offset: 0 },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: (airMs/2)/totalMs },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: airMs/totalMs },
+        { transform: 'translate(0px, 0px)',                              offset: 1 }
+      ],
+      totalMs,
+      segHits: [0, Math.round(airMs * 0.4)]
+    };
+  }
   const totalMs = isMobile ? 1700 : 1600;
   const g = isMobile ? 900 : 1500;
   // 2 launch impulses spaced ~280ms apart
@@ -209,7 +228,7 @@ async function doCyberBeam(attacker, target, skill) {
       const knockX = isMobile ? dir * 28 : dir * 50;
       const ePet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === enemy.id) : null;
       const hasKnockupAnim = !!(ePet && ePet.knockupAnim);
-      const built = buildCyberBeamJuggle(knockX, isMobile, { noRotation: hasKnockupAnim });
+      const built = buildCyberBeamJuggle(knockX, isMobile, { noRotation: hasKnockupAnim, knockupAnim: hasKnockupAnim ? ePet.knockupAnim : null });
       juggleAnim = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       segTimes = built.segHits;
       eNode.classList.add('basic-chiwave-launched');  // pause sprite-sheet during airtime

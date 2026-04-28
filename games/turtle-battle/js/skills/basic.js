@@ -239,9 +239,26 @@ async function doBasicBarrage(attacker, skill) {
 // only interpolates between adjacent samples (never introduces its own
 // velocity curves that would clash with the physics).
 function buildJuggleKeyframes(knockX, isMobile, opts) {
-  // opts.noRotation = true: skip rotation (target has knockupAnim sprite —
-  // F2 already draws the lying pose; rotating .st-body would tilt sprite too).
+  // opts.noRotation + opts.knockupAnim: simple ascent → descent → run-back
+  // keyframes (no lie/rot physics) so body sync with knockup F1/F2 + runAnim.
   const noRot = opts && opts.noRotation;
+  if (noRot && opts && opts.knockupAnim) {
+    const k = opts.knockupAnim;
+    const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
+    const runBackMs = k.runBackMs || 400;
+    const totalMs  = airMs + runBackMs;
+    const peakY    = isMobile ? -50 : -72;
+    const slamX    = knockX * 1.4;
+    return {
+      kf: [
+        { transform: 'translate(0px, 0px)',                              offset: 0 },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: (airMs/2)/totalMs },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: airMs/totalMs },
+        { transform: 'translate(0px, 0px)',                              offset: 1 }
+      ],
+      totalMs
+    };
+  }
   // Mobile gravity is lighter so the target hangs in the air longer.
   // Budget must cover: ballistic-to-slam (~1100ms mobile) + lie + recover.
   // Previously totalMs=1850 truncated recovery at ~90% → target froze
@@ -522,7 +539,7 @@ async function doBasicChiWave(attacker, target, skill) {
       const knockX = isMobile ? dir * 30 : dir * 55;
       const tPet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === tgt.id) : null;
       const hasKnockupAnim = !!(tPet && tPet.knockupAnim);
-      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile, { noRotation: hasKnockupAnim });
+      const { kf, totalMs } = buildJuggleKeyframes(knockX, isMobile, { noRotation: hasKnockupAnim, knockupAnim: hasKnockupAnim ? tPet.knockupAnim : null });
       juggleAnim = tBody.animate(kf, { duration: totalMs, easing: 'linear', fill: 'forwards' });
       tNode.classList.add('basic-chiwave-launched');
       if (hasKnockupAnim && typeof playKnockupAnimation === 'function') {

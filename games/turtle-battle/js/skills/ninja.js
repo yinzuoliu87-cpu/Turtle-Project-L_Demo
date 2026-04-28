@@ -46,10 +46,28 @@ async function doNinjaShuriken(attacker, target, skill) {
 // One strong vertical knockup, ballistic flight, ground slam, brief lie,
 // recover. Total ~1100ms. Returns { kf, totalMs } for tBody.animate().
 function buildNinjaKnockupJuggle(knockX, isMobile, opts) {
-  // opts.noRotation = true: skip body rotation entirely (used when target has
-  // a knockupAnim sprite — the sprite itself draws the lying pose, so rotating
-  // .st-body would tilt the sprite too and look wrong).
+  // opts.noRotation = true: skip body rotation entirely (target has knockupAnim
+  // sprite; rotating the body would tilt the sprite). With opts.knockupAnim
+  // provided, also skip the lie/recover physics and produce simple ascent →
+  // descent → run-back keyframes that sync with knockup F1/F2 + runAnim.
   const noRot = opts && opts.noRotation;
+  if (noRot && opts && opts.knockupAnim) {
+    const k = opts.knockupAnim;
+    const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
+    const runBackMs = k.runBackMs || 400;
+    const totalMs  = airMs + runBackMs;
+    const peakY    = isMobile ? -42 : -64;
+    const slamX    = knockX * 1.4;
+    return {
+      kf: [
+        { transform: 'translate(0px, 0px)',                              offset: 0 },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: (airMs/2)/totalMs },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: airMs/totalMs },
+        { transform: 'translate(0px, 0px)',                              offset: 1 }
+      ],
+      totalMs
+    };
+  }
   const totalMs = isMobile ? 1900 : 1800;     // long enough for flight + lie + recover
   const g = isMobile ? 800 : 1300;
   const liftVy = isMobile ? -520 : -640;
@@ -181,9 +199,7 @@ async function doNinjaImpact(attacker, target, skill) {
 
   // ── Phase 0: RUN to target's row Y (run.png 4 frames looping while body
   // translates linearly, so it reads as actually running not teleporting) ──
-  // Track animations so we can .cancel() them on teleport (WAAPI fill:forwards
-  // locks transform via composite — style.transform='' alone won't release it).
-  let rowHopAnim = null, flightAnim = null;
+  let rowHopAnim = null;
   const RUN_MS = 400;
   if (Math.abs(casterYShift) > 4) {
     if (typeof playFighterSpriteOnce === 'function') {
@@ -197,20 +213,39 @@ async function doNinjaImpact(attacker, target, skill) {
   }
 
   // ── Start the 18-frame dash sprite (1800ms total). Plays continuously
-  // through windup → flight → planting → recovery as one unbroken animation.
-  // Switching from run overlay to dash overlay happens in same frame (cleanup
-  // timer cancellation in playFighterSpriteOnce — no flash). ──
-  // Capture the stop() return so we can explicitly collapse the 30ms grace
-  // window at end-of-dash (otherwise F18 lingers → idle restore visible flash).
+  // through windup → flight → planting → recovery. ──
   let stopDash = null;
   if (typeof playFighterSpriteOnce === 'function') {
     stopDash = playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
   }
 
-  // ── Phase 1: F1-3 windup at target row (300ms) — stay at row Y, no X move ──
+  // ── Body movement: ONE WAAPI animation drives the entire dash (1800ms).
+  // Previously we used a separate flightAnim + JS-sleep teleport, which drifts
+  // a few ms relative to the CSS sprite frame timing → visible flash at the
+  // F14→F15 boundary (sprite snaps to recovery while body is still at dest, or
+  // body teleports while sprite is still F14). One WAAPI on the same browser
+  // clock keeps body and sprite frames frame-synced. ──
+  // Keyframes (offsets relative to 1800ms total):
+  //   0           F1   start at row (0, lyShift)            windup
+  //   300/1800    F4   stay at row (0, lyShift)             windup end → flight start
+  //   800/1800    F8   reach dest (dashX, lyShift)          flight (eased segment)
+  //   1400/1800   F14  stay at dest (dashX, lyShift)        planting
+  //   +0.001      F15  snap to home (0, 0)                  teleport
+  //   1           F18  stay at home (0, 0)                  recovery
+  const DASH_MS = 1800;
+  const dashAnim = fBody.animate([
+    { transform: `translate(0px, ${lyShift}px)`,         offset: 0 },
+    { transform: `translate(0px, ${lyShift}px)`,         offset: 300/DASH_MS,  easing: 'cubic-bezier(.2,.8,.4,1)' },
+    { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 800/DASH_MS },
+    { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 1400/DASH_MS },
+    { transform: 'translate(0px, 0px)',                  offset: 1400/DASH_MS + 0.001 },
+    { transform: 'translate(0px, 0px)',                  offset: 1 }
+  ], { duration: DASH_MS, easing: 'linear', fill: 'forwards' });
+
+  // ── Phase 1: F1-3 windup at target row (300ms) ──
   await sleep(300);
 
-  // ── Phase 2: F4-8 flight (500ms) — body flies to dest + dash trail VFX ──
+  // ── Phase 2: F4-8 flight (500ms) — dash trail VFX, hits land mid-flight ──
   let trail = null;
   if (fBody) {
     trail = document.createElement('div');
@@ -219,10 +254,6 @@ async function doNinjaImpact(attacker, target, skill) {
     trail.style.top  = '50%';
     fBody.appendChild(trail);
   }
-  flightAnim = fBody.animate([
-    { transform: `translate(0, ${lyShift}px)` },
-    { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 1 },
-  ], { duration: 500, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
 
   // Mid-flight hits (fire-and-forget — each hit fires when ninja passes its X)
   const hitTask = async (enemy, dmg, isCrit, hitX) => {
@@ -245,7 +276,7 @@ async function doNinjaImpact(attacker, target, skill) {
       const ePet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === enemy.id) : null;
       const hasKnockupAnim = !!(ePet && ePet.knockupAnim);
       const knockX = (isMobile ? 30 : 56) * dir;
-      const built = buildNinjaKnockupJuggle(knockX, isMobile, { noRotation: hasKnockupAnim });
+      const built = buildNinjaKnockupJuggle(knockX, isMobile, { noRotation: hasKnockupAnim, knockupAnim: hasKnockupAnim ? ePet.knockupAnim : null });
       const j = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       eNode.classList.add('basic-chiwave-launched');
       let stopKnockupSprite = null;
@@ -278,25 +309,18 @@ async function doNinjaImpact(attacker, target, skill) {
     setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
   }
 
-  // ── Phase 3: F9-13 planting at destination (500ms) ──
-  await sleep(500);
+  // ── Phase 3-5: planting (500ms) + still (100ms) + teleport-home + recovery
+  // (400ms) — body teleport at 1400ms is already encoded in dashAnim keyframes,
+  // so we just wait out the remaining time. ──
+  await sleep(1000);
 
-  // ── Phase 4: F14 still at destination (100ms) ──
-  await sleep(100);
-
-  // ── Phase 5: TELEPORT back home, F15-18 recovery plays at home (400ms) ──
-  // Cancel any active WAAPI anims first — fill:'forwards' locks transform via
-  // composite layer, plain style.transform='' won't release it.
+  // Cancel WAAPI fills so subsequent skills can set transform freely.
   if (rowHopAnim) { try { rowHopAnim.cancel(); } catch(e) {} }
-  if (flightAnim) { try { flightAnim.cancel(); } catch(e) {} }
-  fBody.style.transition = 'none';
+  try { dashAnim.cancel(); } catch(e) {}
   fBody.style.transform = '';
-  void fBody.offsetWidth;
-  fBody.style.transition = '';
-  await sleep(400);
 
   // Explicitly stop the dash overlay — collapses the 30ms cleanup grace
-  // window so F18 doesn't linger after duration ends → no idle-restore flash.
+  // window so F18 doesn't linger after duration ends.
   if (stopDash) stopDash();
   fEl.style.zIndex = '';
 

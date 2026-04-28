@@ -1424,55 +1424,74 @@ function playHurtAnimation(f) {
   }, anim.duration - 50);
 }
 
-// Per-pet knockup sprite — 2-frame sheet (F1=airborne, F2=lying-on-ground).
-// Manually swaps frame at airborneMs to avoid uniform-step timing of CSS
-// animation; returns a stop() function so caller can collapse cleanup when
-// the body bounce-back finishes (avoids late-tail flash).
+// Per-pet knockup sequence — 2-frame knockup sheet (F1=ascent, F2=descent),
+// then chains into runAnim sprite for the run-back-home phase. Total flow:
+//   0           → airborneMs           : F1 (going up)
+//   airborneMs  → airborneMs+descentMs : F2 (falling down)
+//   +runBackMs  → end                  : runAnim sprite looping (running home)
+// Returns stop() so caller can collapse cleanup when body anim finishes.
 function playKnockupAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
-  const anim = pet && pet.knockupAnim;
-  if (!anim) return null;
+  const k = pet && pet.knockupAnim;
+  if (!k) return null;
   const card = document.getElementById(getFighterElId(f));
   if (!card) return null;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) return null;
-  if (!_attackImgPreload[anim.src]) {
-    const preImg = new Image(); preImg.src = anim.src;
-    _attackImgPreload[anim.src] = preImg;
+  if (!_attackImgPreload[k.src]) {
+    const pre = new Image(); pre.src = k.src;
+    _attackImgPreload[k.src] = pre;
   }
   const size = 80;
-  const sc = size / anim.frameH;
-  const fw = Math.round(anim.frameW * sc);
-  const tw = Math.round(anim.frameW * 2 * sc);  // 2 frames wide
+  const sc = size / k.frameH;
+  const fw = Math.round(k.frameW * sc);
+  const tw = Math.round(k.frameW * 2 * sc);  // 2 frames wide
   const overlay = document.createElement('div');
   overlay.className = 'knockup-sprite-overlay';
-  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2;background-image:url(\'' + anim.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;background-position:0 0';
+  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2;background-image:url(\'' + k.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;background-position:0 0';
   spriteEl.style.position = 'relative';
-  // Remove any prior knockup overlay (defensive — back-to-back launches)
   const prior = spriteEl.querySelector('.knockup-sprite-overlay');
   if (prior) prior.remove();
   spriteEl.appendChild(overlay);
-  // Cancel any pending hurt-anim restore — applyRawDmg above us in the call
-  // chain triggers playHurtAnimation, which schedules a +450ms timer that
-  // would re-show idle while knockup is still mid-flight (visible flash +
-  // idle-through-knockup double-sprite). Also force-hide the hurt overlay.
+  // Cancel pending hurt-anim restore — would re-show idle mid-flight.
   if (f._hurtRestoreTimer) { clearTimeout(f._hurtRestoreTimer); f._hurtRestoreTimer = null; }
   const hurtOverlay = spriteEl.querySelector('.hurt-sprite-overlay');
   if (hurtOverlay) hurtOverlay.style.opacity = '0';
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   if (idleWrap) idleWrap.style.opacity = '0';
-  const airborneMs = anim.airborneMs || 600;
-  const lyingMs    = anim.lyingMs    || 1100;
-  const swapId = setTimeout(() => {
+  const airborneMs = k.airborneMs || 300;
+  const descentMs  = k.descentMs  || 300;
+  const runBackMs  = k.runBackMs  || 400;
+  const r = pet && pet.runAnim;
+  // F1 → F2 swap at apex (airborneMs)
+  const swapToF2 = setTimeout(() => {
     overlay.style.backgroundPosition = '-' + fw + 'px 0';
   }, airborneMs);
-  const cleanup = () => {
-    clearTimeout(swapId);
+  // After F2 ends (slam), chain into runAnim for run-back. Append the run
+  // overlay BEFORE removing knockup (atomic swap, no flash gap).
+  let runStop = null;
+  const swapToRun = setTimeout(() => {
+    if (r && typeof playFighterSpriteOnce === 'function') {
+      runStop = playFighterSpriteOnce(f, r.src, r.frames, r.frameW, r.frameH, runBackMs, true);
+    }
+    if (overlay.parentNode) overlay.remove();
+    if (!r && idleWrap) idleWrap.style.opacity = '';
+  }, airborneMs + descentMs);
+  // Final cleanup at total end
+  const totalMs = airborneMs + descentMs + (r ? runBackMs : 0);
+  const cleanupId = setTimeout(() => {
+    if (runStop) runStop();
+    if (overlay.parentNode) overlay.remove();
+    if (idleWrap) idleWrap.style.opacity = '';
+  }, totalMs);
+  return () => {
+    clearTimeout(swapToF2);
+    clearTimeout(swapToRun);
+    clearTimeout(cleanupId);
+    if (runStop) runStop();
     if (overlay.parentNode) overlay.remove();
     if (idleWrap) idleWrap.style.opacity = '';
   };
-  const cleanupId = setTimeout(cleanup, airborneMs + lyingMs);
-  return () => { clearTimeout(cleanupId); cleanup(); };
 }
 
 function updateHpBar(f, elId) {
