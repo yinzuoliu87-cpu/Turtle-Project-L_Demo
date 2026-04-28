@@ -145,6 +145,14 @@
 .status-bubble{color:#4cc9f0;background:rgba(76,201,240,.12);padding:1px 5px;border-radius:6px}
 .status-dodge{color:#a0e8ff;background:rgba(160,232,255,.12);padding:1px 5px;border-radius:6px}
 
+/* m6x11 — chunky pixel font by managore (Daniel Linssen, free commercial).
+   File path: assets/fonts/m6x11.ttf — graceful fallback to Impact if missing. */
+@font-face{
+  font-family:'m6x11';
+  src:url('../assets/fonts/m6x11.ttf') format('truetype');
+  font-display:swap;
+}
+
 /* ═══════════════════════════════════════
    FLOATING DAMAGE / HEAL / SHIELD NUMBERS
    persistent 2.5s, color-coded
@@ -152,14 +160,19 @@
 .floating-num{
   position:absolute;
   left:50%;top:50%;
-  font-family:Impact,'Arial Black','Helvetica Neue',system-ui,sans-serif;
-  font-weight:900;font-size:24px;
-  letter-spacing:.5px;
+  font-family:'m6x11',Impact,'Arial Black','Helvetica Neue',system-ui,sans-serif;
+  font-weight:900;font-size:28px;
+  letter-spacing:1px;
   pointer-events:none;z-index:50;
   white-space:nowrap;
-  text-shadow:0 2px 8px rgba(0,0,0,.9),0 0 4px rgba(0,0,0,.7);
+  /* Chunky pixel-art outline: 4-direction stroke + soft drop shadow */
+  text-shadow:
+    -2px 0 0 #000, 2px 0 0 #000, 0 -2px 0 #000, 0 2px 0 #000,
+    -2px -2px 0 #000, 2px -2px 0 #000, -2px 2px 0 #000, 2px 2px 0 #000,
+    0 3px 4px rgba(0,0,0,.6);
+  image-rendering:pixelated;
   will-change:transform,opacity;
-  -webkit-font-smoothing:antialiased;
+  -webkit-font-smoothing:none;
 }
 /* Physical damage — RED */
 .floating-num.direct-dmg{color:#ff4444;font-size:22px}
