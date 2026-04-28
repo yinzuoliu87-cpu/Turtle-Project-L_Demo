@@ -292,6 +292,114 @@ async function doNinjaImpact(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>冲击</b> → ${target.emoji}${target.name}：<span class="log-direct">${mainDmg}物理</span>${behindNote}`);
 }
 
+// 背刺 — 18-frame backstab.png drives timing. Phases (1-indexed, 100ms/frame):
+//   F1-3   (0-300ms)     蓄力     caster stays at home, sprite plays
+//   F4     (300-400ms)   闪现至背后    body teleports to behind target
+//   F5-14  (400-1400ms)  3 段背刺   3 hits land at F6/F9/F12 (500/800/1100ms)
+//   F15    (1400-1500ms) 闪现回家    body teleports back home
+//   F16-18 (1500-1800ms) 收招      recovery at home
+async function doNinjaBackstab(attacker, target, skill) {
+  const fElId = getFighterElId(attacker);
+  const fEl = document.getElementById(fElId);
+  if (!fEl || !target || !target.alive) { await sleep(200); return; }
+
+  const tElId = getFighterElId(target);
+  const tEl = document.getElementById(tElId);
+  const battleField = ENV.battleField;
+  const dir = attacker.side === 'left' ? 1 : -1;
+  const baseScale = ENV.baseScale;
+  const fBody = fEl.querySelector('.st-body') || fEl;
+
+  // ── Compute teleport offset to "behind" target (further along attack dir) ──
+  let casterYShift = 0, behindXShift = 0;
+  if (battleField && fEl && tEl) {
+    const bRect = battleField.getBoundingClientRect();
+    const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    const fBodyEl = fEl.querySelector('.st-body') || fEl;
+    const tBodyEl = tEl.querySelector('.st-body') || tEl;
+    const fRect = fBodyEl.getBoundingClientRect();
+    const tRect = tBodyEl.getBoundingClientRect();
+    const fCx = ((fRect.left + fRect.width / 2) - bRect.left) / zoom;
+    const fCy = ((fRect.top  + fRect.height / 2) - bRect.top)  / zoom;
+    const tCx = ((tRect.left + tRect.width / 2) - bRect.left) / zoom;
+    const tCy = ((tRect.top  + tRect.height / 2) - bRect.top)  / zoom;
+    casterYShift = tCy - fCy;
+    behindXShift = (tCx - fCx) + dir * 50;  // 50px past target along dir
+  } else {
+    behindXShift = dir * 260;
+  }
+  const lyShift = casterYShift / baseScale;
+  const lxShift = behindXShift / baseScale;
+
+  fEl.style.zIndex = '60';
+
+  // Pre-roll buff log (穿甲 already added by action.js handler before this call)
+
+  // ── Start the 18-frame backstab sprite (1800ms). Single overlay covers
+  // windup → teleport → 3 stabs → teleport-home → recovery. ──
+  let stopBackstab = null;
+  if (typeof playFighterSpriteOnce === 'function') {
+    stopBackstab = playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/backstab.png', 18, 64, 64, 1800);
+  }
+
+  // ── Phase 1: F1-3 windup at home (300ms) ──
+  await sleep(300);
+
+  // ── Phase 2: F4 teleport to behind target (snap, no animation) ──
+  fBody.style.transition = 'none';
+  fBody.style.transform = `translate(${lxShift}px, ${lyShift}px)`;
+  void fBody.offsetWidth;
+  fBody.style.transition = '';
+
+  // ── Phase 3: F5-14, stab hits land at 500/800/1100ms (relative to start)
+  // From here we are at +400ms; schedule 3 hits at +100/+400/+700ms locally. ──
+  const hitOffsets = [100, 400, 700];  // 500ms, 800ms, 1100ms global
+  const baseHitMs = 400;
+  // Pre-compute 3 hit damages (each: own crit roll, scale 0.5)
+  const hits = [];
+  for (let i = 0; i < (skill.hits || 3); i++) {
+    const { isCrit, critMult } = calcCrit(attacker);
+    const eff = calcEffDef(attacker, target);
+    const dmg = Math.max(1, Math.round(attacker.atk * (skill.atkScale || 0.5) * critMult * calcDmgMult(eff)));
+    hits.push({ isCrit, dmg });
+  }
+  let totalDmg = 0;
+  const hitTask = async (i) => {
+    await sleep(hitOffsets[i]);
+    if (!target.alive) return;
+    const h = hits[i];
+    applyRawDmg(attacker, target, h.dmg, false, false, 'physical');
+    spawnFloatingNum(tElId, `${h.dmg}`, h.isCrit ? 'crit-dmg' : 'direct-dmg', (i - 1) * 18, 0, { atkSide: attacker.side, amount: h.dmg });
+    updateHpBar(target, tElId);
+    totalDmg += h.dmg;
+    await triggerOnHitEffects(attacker, target, h.dmg);
+    if (tEl) {
+      tEl.classList.remove('chi-hit-flash');
+      void tEl.offsetWidth;
+      tEl.classList.add('chi-hit-flash');
+      setTimeout(() => { if (tEl) tEl.classList.remove('chi-hit-flash'); }, 140);
+    }
+  };
+  for (let i = 0; i < hits.length; i++) hitTask(i);
+
+  // Wait remaining time of Phase 3 (F5-14 ends at 1400ms global = +1000ms local)
+  await sleep(1000);
+
+  // ── Phase 4: F15 teleport home (snap back) ──
+  fBody.style.transition = 'none';
+  fBody.style.transform = '';
+  void fBody.offsetWidth;
+  fBody.style.transition = '';
+
+  // ── Phase 5: F16-18 recovery at home (300ms) ──
+  await sleep(300);
+
+  if (stopBackstab) stopBackstab();
+  fEl.style.zIndex = '';
+
+  addLog(`${attacker.emoji}${attacker.name} <b>背刺</b> → ${target.emoji}${target.name}：<span class="log-direct">3段共${totalDmg}物理</span>`);
+}
+
 async function doNinjaBomb(attacker, skill) {
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);

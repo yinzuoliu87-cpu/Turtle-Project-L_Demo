@@ -772,14 +772,14 @@ async function executeAction(action) {
     const target = allFighters[action.targetId];
     await doBasicSlam(f, target, skill);
   } else if (skill.type === 'ninjaBackstab') {
-    // 背刺: +穿甲 then 3 hits
+    // 背刺: +穿甲 then teleport-stab 3 hits (custom sprite-driven anim)
     const target = allFighters[action.targetId];
     if (skill.armorPenBuff) {
       f.armorPen += skill.armorPenBuff;
       spawnFloatingNum(getFighterElId(f), `+${skill.armorPenBuff}穿甲`, 'passive-num', 0, -20);
       addLog(`${f.emoji}${f.name} 获得 +${skill.armorPenBuff} 穿甲`);
     }
-    await doDamage(f, target, skill);
+    await doNinjaBackstab(f, target, skill);
     // Remove temp armor pen after
     if (skill.armorPenBuff) f.armorPen -= skill.armorPenBuff;
 
