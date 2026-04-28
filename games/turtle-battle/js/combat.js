@@ -187,8 +187,11 @@ async function doDamage(attacker, target, skill) {
       applyRawDmg(attacker, target, judgeReduced, false, false, 'magic', false, true);
       totalDirect += judgeReduced;
       if (skill._judgeTotal !== undefined) skill._judgeTotal += judgeReduced;
-      // Blue number above the main hit
-      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, -20, { atkSide: attacker.side, amount: judgeReduced });
+      // Blue number above the main hit (canonical: TRUE > MAGIC > PHYSICAL).
+      // Larger yOffset = higher on screen, so use ySlot+NUM_GAP to sit above
+      // whatever physical/true main number was just spawned. (Was -20 = 20px
+      // BELOW main hit, contradicting both the canonical order and the comment.)
+      spawnFloatingNum(tElId, `-${judgeReduced}`, isCrit ? 'crit-magic' : 'magic-dmg', 0, ySlot + NUM_GAP, { atkSide: attacker.side, amount: judgeReduced });
       updateHpBar(target, tElId);
       await sleep(200);
     }
