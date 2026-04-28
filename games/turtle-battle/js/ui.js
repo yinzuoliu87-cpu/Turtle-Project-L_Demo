@@ -1259,11 +1259,15 @@ function playAttackAnimation(f) {
   // Hop class cleanup is scheduled at the top of the function
 }
 
-// Generic: play a sprite sheet ONCE on a fighter's idle sprite layer, overriding
+// Generic: play a sprite sheet ONCE on a fighter's sprite layer, overriding
 // the default idle. Used by skills that drive their own animation timing
 // (e.g. ninja Impact / Backstab where the sprite plays continuously across
 // windup → flight → planting → recovery phases). Fire-and-forget;
 // auto-restores idle after durationMs.
+//
+// Mirrors playAttackAnimation's overlay pattern (with all styles baked into
+// initial HTML so animation starts cleanly without restart-trick edge cases).
+// Always rebuilds overlay fresh — avoids stale animation state from prior calls.
 const _spriteOnceKF = {};
 function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs) {
   const card = document.getElementById(getFighterElId(f));
@@ -1281,29 +1285,20 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs) {
     document.head.appendChild(st);
     _spriteOnceKF[kfName] = true;
   }
-  let overlay = spriteEl.querySelector('.sprite-once-overlay');
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.className = 'sprite-once-overlay';
-    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;';
-    overlay.innerHTML = '<div class="sprite-once-inner" style="background-repeat:no-repeat"></div>';
-    spriteEl.style.position = 'relative';
-    spriteEl.appendChild(overlay);
-  }
-  overlay.style.width = fw + 'px';
-  overlay.style.height = size + 'px';
-  overlay.style.display = '';
-  const inner = overlay.querySelector('.sprite-once-inner');
-  inner.style.width = '100%'; inner.style.height = '100%';
-  inner.style.backgroundImage = 'url(\'' + src + '\')';
-  inner.style.backgroundSize = tw + 'px ' + size + 'px';
+  // Remove any leftover overlay from a previous call (cleanest restart)
+  const old = spriteEl.querySelector('.sprite-once-overlay');
+  if (old) old.remove();
+  // Build fresh overlay with ALL styles baked in (no JS-driven restart needed)
+  const overlay = document.createElement('div');
+  overlay.className = 'sprite-once-overlay';
+  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
+  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') 1 forwards"></div>';
+  spriteEl.style.position = 'relative';
+  spriteEl.appendChild(overlay);
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   if (idleWrap) idleWrap.style.opacity = '0';
-  inner.style.animation = 'none';
-  void inner.offsetWidth;
-  inner.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') 1 forwards';
   setTimeout(() => {
-    overlay.style.display = 'none';
+    overlay.remove();
     if (idleWrap) idleWrap.style.opacity = '';
   }, durationMs + 30);
 }
