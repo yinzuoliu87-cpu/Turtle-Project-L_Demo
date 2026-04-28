@@ -12,9 +12,12 @@ async function doTwoHeadMagicWave(attacker, target, skill) {
       applyRawDmg(attacker, target, dmg, true, false, 'true');
       spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-pierce' : 'pierce-dmg', 0, 0);
     } else {
+      // 奇数段 (1st, 3rd / i=0, 2) per pets.js detail: 物理伤害 with DEF reduction.
+      // calcEffDef defaults to physical → DEF, dmgType 'physical' matches the
+      // direct-dmg (red) floater. (Was 'magic' → stats mis-bucketed into magic.)
       const eDef = calcEffDef(attacker, target);
-            dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
-      applyRawDmg(attacker, target, dmg, false, false, 'magic');
+      dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(eDef)));
+      applyRawDmg(attacker, target, dmg, false, false, 'physical');
       spawnFloatingNum(tElId, `-${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     }
     totalDmg += dmg;
