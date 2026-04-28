@@ -93,6 +93,12 @@ function buildNinjaKnockupJuggle(knockX, isMobile) {
 // 冲击: ninja hops to target's row → pauses → FAST dash through column,
 // flinging enemies high → holds at far end → TURNS AROUND → runs back to
 // origin → turns back to original facing.
+// 冲击 — Step 3: 18-frame dash sprite drives timing. Phases:
+//   F1-3   (0-300ms)     蓄力     caster stays at origin, sprite plays
+//   F4-8   (300-800ms)   飞行    body translates to dest, dash trail VFX
+//   F9-13  (800-1300ms)  站脚    held at destination
+//   F14    (1300-1400ms)          last frame at destination
+//   teleport home → F15-18 (1400-1800ms) 落地恢复
 async function doNinjaImpact(attacker, target, skill) {
   const fElId = getFighterElId(attacker);
   const fEl = document.getElementById(fElId);
@@ -103,17 +109,10 @@ async function doNinjaImpact(attacker, target, skill) {
   const battleField = ENV.battleField;
   const isMobile = ENV.isMobile;
   const dir = attacker.side === 'left' ? 1 : -1;
-  const sprite = fEl.querySelector('.st-sprite');
-  const baseScale = parseFloat(getComputedStyle(fEl).getPropertyValue('--base-scale')) || 1;
-  // The default sprite transform that .pos-left/.pos-right give .st-sprite.
-  // We need to override + restore this for the "turn around" effect.
-  const defaultSpriteTransform = (attacker.side === 'left')
-    ? `scaleX(-1) scale(${baseScale})`   // pos-left: flipped to face right
-    : `scale(${baseScale})`;             // pos-right: natural (faces left)
-  const flippedSpriteTransform = (attacker.side === 'left')
-    ? `scale(${baseScale})`              // facing left (back toward origin)
-    : `scaleX(-1) scale(${baseScale})`;  // facing right
+  const baseScale = ENV.baseScale;
+  const fBody = fEl.querySelector('.st-body') || fEl;
 
+  // ── Pre-compute damage values ──
   const behind = (typeof fighterBehind === 'function') ? fighterBehind(target) : null;
   const mainScale = skill.atkScale || 1.2;
   const behindScale = skill.behindScale || 0.8;
@@ -129,8 +128,7 @@ async function doNinjaImpact(attacker, target, skill) {
     behindDmg = Math.max(1, Math.round(attacker.atk * behindScale * critMult2 * calcDmgMult(bDef)));
   }
 
-  // ── Geometry: row Y diff + dash X to past BACK-ROW (always, even if
-  // back slot is empty — look up via BATTLE_POSITIONS, not DOM elements) ──
+  // ── Compute geometry: dash X to past target's column back row + Y row shift ──
   let casterYShift = 0, dashX = 0, mainHitX = 0, behindHitX = 0;
   if (battleField && fEl && tEl) {
     const bRect = battleField.getBoundingClientRect();
@@ -152,8 +150,6 @@ async function doNinjaImpact(attacker, target, skill) {
         behindHitX = ((bb.left + bb.width/2) - bRect.left) / zoom - fCx;
       }
     }
-    // Always dash to PAST the back-row position of target's column,
-    // regardless of whether anyone's standing there.
     let backSlotX = null;
     const targetCol = target._slotKey ? target._slotKey.split('-')[1] : null;
     if (targetCol != null && typeof BATTLE_POSITIONS !== 'undefined' && typeof mapCoverPos === 'function') {
@@ -163,50 +159,32 @@ async function doNinjaImpact(attacker, target, skill) {
       if (backPos) {
         const imgX = enemySide === 'left' ? backPos.x : (100 - backPos.x);
         const mapped = mapCoverPos(imgX, backPos.y, battleField.offsetWidth, battleField.offsetHeight);
-        backSlotX = mapped.px - fCx;  // delta from caster body center
+        backSlotX = mapped.px - fCx;
       }
     }
-    // Fallback if BATTLE_POSITIONS unavailable: behind-enemy if alive, else main + 60
-    const farX = backSlotX != null ? backSlotX
-               : (behind ? behindHitX : mainHitX);
+    const farX = backSlotX != null ? backSlotX : (behind ? behindHitX : mainHitX);
     dashX = farX + dir * 60;
   } else {
     dashX = dir * 280; mainHitX = dir * 200; behindHitX = dir * 240;
   }
 
-  const fBody = fEl.querySelector('.st-body') || fEl;
-  fEl.style.zIndex = '60';
-
-  // .scene-turtle has CSS transform: scale(var(--base-scale)). fBody is its
-  // child, so any translate(N) applied to fBody is in PRE-parent-scale local
-  // units → the visual movement is N × baseScale screen pixels. Divide our
-  // screen-pixel deltas by baseScale to get the local-pixel value to use.
+  // .scene-turtle has CSS transform: scale(baseScale). fBody is its child →
+  // translate(N) on fBody = N × baseScale screen pixels. Divide for local px.
   const lyShift = casterYShift / baseScale;
   const ldashX  = dashX / baseScale;
 
-  // ── Phase 1: hop to target row Y (~280ms) ──
-  if (Math.abs(casterYShift) > 4) {
-    const apexLift = -Math.min(40, 22 + Math.abs(casterYShift) * 0.25) / baseScale;
-    const N = 10; const kfHop = [];
-    for (let i = 0; i <= N; i++) {
-      const t = i / N;
-      const y = lyShift * t + apexLift * 4 * t * (1 - t);
-      kfHop.push({ transform: `translate(0, ${y}px)`, offset: t });
-    }
-    fBody.animate(kfHop, { duration: 280, easing: 'linear', fill: 'forwards' });
-    await sleep(290);
+  fEl.style.zIndex = '60';
+
+  // ── Start the 18-frame dash sprite (1800ms total). Plays continuously
+  // through all phases as a single unbroken animation. ──
+  if (typeof playFighterSpriteOnce === 'function') {
+    playFighterSpriteOnce(attacker, 'assets/pets/animations/ninja/dash.png', 18, 64, 64, 1800);
   }
 
-  // ── Phase 2: pause / windup (200ms) ──
-  fBody.animate([
-    { transform: `translate(0, ${lyShift}px) scaleY(1)` },
-    { transform: `translate(0, ${lyShift + 4 / baseScale}px) scaleY(.9)`, offset: 0.5 },
-    { transform: `translate(0, ${lyShift}px) scaleY(1)`, offset: 1 },
-  ], { duration: 200, easing: 'ease-out', fill: 'forwards' });
-  await sleep(220);
+  // ── Phase 1: F1-3 windup (300ms) — stay at origin ──
+  await sleep(300);
 
-  // ── Phase 3: FAST dash forward (180ms) — spawn dash trail ──
-  const dashMs = 180;
+  // ── Phase 2: F4-8 flight (500ms) — body flies to dest + dash trail VFX ──
   let trail = null;
   if (fBody) {
     trail = document.createElement('div');
@@ -216,15 +194,15 @@ async function doNinjaImpact(attacker, target, skill) {
     fBody.appendChild(trail);
   }
   fBody.animate([
-    { transform: `translate(0, ${lyShift}px)` },
+    { transform: `translate(0, 0)` },
     { transform: `translate(${ldashX}px, ${lyShift}px)`, offset: 1 },
-  ], { duration: dashMs, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
+  ], { duration: 500, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
 
-  // Per-enemy hits triggered as ninja passes their X
+  // Mid-flight hits (fire-and-forget — each hit fires when ninja passes its X)
   const hitTask = async (enemy, dmg, isCrit, hitX) => {
     if (!enemy || !enemy.alive) return;
     const passFraction = Math.abs(hitX) / Math.abs(dashX);
-    const triggerMs = Math.max(40, Math.round(dashMs * passFraction));
+    const triggerMs = Math.max(40, Math.round(500 * passFraction));
     await sleep(triggerMs);
     if (!enemy.alive) return;
     const eElId = getFighterElId(enemy);
@@ -233,9 +211,10 @@ async function doNinjaImpact(attacker, target, skill) {
     spawnFloatingNum(eElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0, { atkSide: attacker.side, amount: dmg });
     updateHpBar(enemy, eElId);
     await triggerOnHitEffects(attacker, enemy, dmg);
+    // Knockup juggle on target (Step 5 will swap to knockup.png 2-frame flow)
     const tBody = eNode ? eNode.querySelector('.st-body') : null;
     if (tBody) {
-      const knockX = (isMobile ? 30 : 56) * dir;  // ~75% wider knockback
+      const knockX = (isMobile ? 30 : 56) * dir;
       const built = buildNinjaKnockupJuggle(knockX, isMobile);
       const j = tBody.animate(built.kf, { duration: built.totalMs, easing: 'linear', fill: 'forwards' });
       eNode.classList.add('basic-chiwave-launched');
@@ -250,12 +229,13 @@ async function doNinjaImpact(attacker, target, skill) {
       setTimeout(() => { if (eNode) eNode.classList.remove('chi-hit-flash'); }, 140);
     }
   };
-  await Promise.all([
-    hitTask(target, mainDmg, isCrit1, mainHitX),
-    behind && behind.alive ? hitTask(behind, behindDmg, isCrit2, behindHitX) : Promise.resolve(),
-  ]);
+  hitTask(target, mainDmg, isCrit1, mainHitX);
+  if (behind && behind.alive) hitTask(behind, behindDmg, isCrit2, behindHitX);
+  await sleep(500);  // wait for flight to complete
 
-  // Camera shake right after impacts
+  if (trail) { trail.remove(); trail = null; }
+
+  // Camera shake on arrival
   if (battleField) {
     battleField.style.setProperty('--cam-scale', '1');
     battleField.classList.remove('battle-scene-shake');
@@ -264,40 +244,23 @@ async function doNinjaImpact(attacker, target, skill) {
     setTimeout(() => battleField.classList.remove('battle-scene-shake'), 240);
   }
 
-  // ── Phase 4: hold at far end (wait for enemies to land) ──
-  await sleep(900);  // longer hold so enemies fly higher and farther before landing
+  // ── Phase 3: F9-13 planting at destination (500ms) ──
+  await sleep(500);
 
-  if (trail) { trail.remove(); trail = null; }
+  // ── Phase 4: F14 still at destination (100ms) ──
+  await sleep(100);
 
-  // ── Phase 5: TURN AROUND (flip sprite scaleX to face return direction) ──
-  if (sprite) sprite.style.transform = flippedSpriteTransform;
-  await sleep(120);
-
-  // ── Phase 6: dash directly back to ORIGIN (combine X-back + Y-back into
-  // one straight motion — no extra hop after, per user "不用拐两下") ──
-  if (fBody) {
-    trail = document.createElement('div');
-    trail.className = 'ninja-dash-trail' + (dir === 1 ? ' flip-x' : '');
-    trail.style.left = '50%';
-    trail.style.top  = '50%';
-    fBody.appendChild(trail);
-  }
-  fBody.animate([
-    { transform: `translate(${ldashX}px, ${lyShift}px)` },
-    { transform: `translate(0, 0)`,                            offset: 1 },
-  ], { duration: 240, easing: 'cubic-bezier(.2,.8,.4,1)', fill: 'forwards' });
-  await sleep(260);
-
-  if (trail) trail.remove();
-
-  // ── Phase 7: restore original facing ──
-  if (sprite) sprite.style.transform = '';
+  // ── Phase 5: TELEPORT back home, F15-18 recovery plays at home (400ms) ──
+  fBody.style.transition = 'none';
   fBody.style.transform = '';
+  void fBody.offsetWidth;
+  fBody.style.transition = '';
+  await sleep(400);
+
   fEl.style.zIndex = '';
 
   const behindNote = behind ? ` + ${behind.emoji}${behind.name} <span class="log-direct">${behindDmg}物理</span>` : '';
   addLog(`${attacker.emoji}${attacker.name} <b>冲击</b> → ${target.emoji}${target.name}：<span class="log-direct">${mainDmg}物理</span>${behindNote}`);
-  await sleep(80);
 }
 
 async function doNinjaBomb(attacker, skill) {

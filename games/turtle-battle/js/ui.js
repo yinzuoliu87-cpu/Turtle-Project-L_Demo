@@ -1259,6 +1259,55 @@ function playAttackAnimation(f) {
   // Hop class cleanup is scheduled at the top of the function
 }
 
+// Generic: play a sprite sheet ONCE on a fighter's idle sprite layer, overriding
+// the default idle. Used by skills that drive their own animation timing
+// (e.g. ninja Impact / Backstab where the sprite plays continuously across
+// windup → flight → planting → recovery phases). Fire-and-forget;
+// auto-restores idle after durationMs.
+const _spriteOnceKF = {};
+function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs) {
+  const card = document.getElementById(getFighterElId(f));
+  if (!card) return;
+  const spriteEl = card.querySelector('.st-sprite');
+  if (!spriteEl) return;
+  const size = 80;
+  const sc = size / frameH;
+  const fw = Math.round(frameW * sc);
+  const tw = Math.round(frameW * frames * sc);
+  const kfName = 'spriteOnce_' + src.replace(/[^a-z0-9]/gi, '_');
+  if (!_spriteOnceKF[kfName]) {
+    const st = document.createElement('style');
+    st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + tw + 'px 0}}';
+    document.head.appendChild(st);
+    _spriteOnceKF[kfName] = true;
+  }
+  let overlay = spriteEl.querySelector('.sprite-once-overlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'sprite-once-overlay';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;';
+    overlay.innerHTML = '<div class="sprite-once-inner" style="background-repeat:no-repeat"></div>';
+    spriteEl.style.position = 'relative';
+    spriteEl.appendChild(overlay);
+  }
+  overlay.style.width = fw + 'px';
+  overlay.style.height = size + 'px';
+  overlay.style.display = '';
+  const inner = overlay.querySelector('.sprite-once-inner');
+  inner.style.width = '100%'; inner.style.height = '100%';
+  inner.style.backgroundImage = 'url(\'' + src + '\')';
+  inner.style.backgroundSize = tw + 'px ' + size + 'px';
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  if (idleWrap) idleWrap.style.opacity = '0';
+  inner.style.animation = 'none';
+  void inner.offsetWidth;
+  inner.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ') 1 forwards';
+  setTimeout(() => {
+    overlay.style.display = 'none';
+    if (idleWrap) idleWrap.style.opacity = '';
+  }, durationMs + 30);
+}
+
 // Play death animation for a fighter (overlay sprite if available, CSS hop-back+fade always)
 const _deathAnimKF = {};
 function playDeathAnimation(f) {

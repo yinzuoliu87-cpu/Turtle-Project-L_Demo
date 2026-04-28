@@ -458,14 +458,19 @@ async function executeAction(action) {
   const atkEl = document.getElementById(getFighterElId(f));
   const _atkPet = typeof ALL_PETS !== 'undefined' ? ALL_PETS.find(p => p.id === f.id) : null;
   const _hasAttackAnim = !!(_atkPet && _atkPet.attackAnim);
-  if (typeof playAttackAnimation === 'function') {
+  // Skills that drive their own caster animation (sprite override + custom
+  // body movement) MUST skip the default attack-hop, otherwise the hop CSS
+  // fights the skill's own translate/transform.
+  const SKIP_DEFAULT_HOP = new Set(['ninjaImpact', 'ninjaBackstab']);
+  const _skipHop = SKIP_DEFAULT_HOP.has(skill.type);
+  if (typeof playAttackAnimation === 'function' && !_skipHop) {
     playAttackAnimation(f);  // handles hop + sprite (if any)
-  } else if (atkEl) {
+  } else if (atkEl && !_skipHop) {
     atkEl.classList.add('attack-anim');  // fallback short lunge
   }
   // Sync damage with attack sprite "strike frame" for turtles with attackAnim.
   // Strike happens around mid-sprite, ATTACK_DAMAGE_SYNC_MS ms into the hop arc.
-  if (_hasAttackAnim) await sleep(ATTACK_DAMAGE_SYNC_MS);
+  if (_hasAttackAnim && !_skipHop) await sleep(ATTACK_DAMAGE_SYNC_MS);
 
   // Phase 4: Try registry-based dispatch first. Skills registered in
   // js/skills/registry.js bypass the if/else chain below.
