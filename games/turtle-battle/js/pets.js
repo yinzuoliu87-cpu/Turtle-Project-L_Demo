@@ -768,17 +768,17 @@ const PET_headless = { id:'headless',  name:'无头龟',   emoji:'💀🐢',    
     ], defaultSkills:[0,1,2], skills:[]
   };
 
-const PET_shell = { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:414,  atk:48,  def:21, mr:21,crit:0.25,
+const PET_shell = { id:'shell',     name:'龟壳',     emoji:'🐚',      rarity:'SSS', hp:410,  atk:44,  def:17, mr:18,crit:0.25,
     img:'../../assets/pets/龟壳v1.png', sprite:{frames:20,frameW:500,frameH:500,duration:2000},
     passive:{ type:'auraAwaken', name:'气场觉醒',
               awakenTurn:4,
               atkPct:12, defPct:12, hpPct:12,
               lifestealPct:12, reflectPct:12, armorPenPct:12,
               energyStore:true, energyReleaseTurn:4,
-              energyDmgPct:0.50, energyShieldPct:0.80, perLevelPct:0.01,
-              energyMaxStorePct:0.45,
-              brief:'龟壳涌动强大的能量，在第4回合全面觉醒，使攻击力/护甲/生命值/生命偷取/反伤/穿甲各提升 <span class="val-atk">12%</span>。受伤时储存能量（上限 <span class="val-atk">45%</span>+每级1% 最大HP），每4回合消耗全部储能：对全体敌方造成 储能×<span class="val-atk">50%</span>（+1%/级）物理伤害，并获得 储能×<span class="val-atk">80%</span>（+1%/级）的<span class="val-shield">气场护盾</span>（两回合内逐渐流失）。',
-              desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n· 攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n· 护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n· 最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n· 生命偷取 <span class="val-heal">+12%</span>\n· 反伤 <span class="val-atk">+12%</span>\n· 护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值，上限为最大生命值的 <span class="val-atk">45%+每级1%</span>。\n每4回合消耗全部储能，对全体敌方造成 储能×(50%+每级1%) 的物理伤害，并获得 储能×(80%+每级1%) 的<span class="val-shield">气场护盾</span>。\n\n气场护盾在 2 回合内逐渐流失：龟壳后续第 1 次行动结束消失一半，第 2 次行动结束完全消失。' },
+              energyDmgPct:0.30, energyShieldPct:0.80, perLevelPct:0.01,
+              energyMaxStorePct:0.35,
+              brief:'龟壳涌动强大的能量，在第4回合全面觉醒，使攻击力/护甲/生命值/生命偷取/反伤/穿甲各提升 <span class="val-atk">12%</span>。受伤时储存能量（上限 <span class="val-atk">35%</span>+每级1% 最大HP），每4回合消耗全部储能：对全体敌方造成 储能×<span class="val-atk">30%</span>（+1%/级）物理伤害，并获得 储能×<span class="val-atk">80%</span>（+1%/级）的<span class="val-shield">气场护盾</span>（两回合内逐渐流失）。',
+              desc:'龟壳蕴含远古气场之力。\n\n<b>气场觉醒</b>（第4回合触发）：\n· 攻击力 <span class="val-atk">+12%</span>（+{N:ATK*0.12}）\n· 护甲 <span class="val-atk">+12%</span>（+{D:DEF*0.12}）\n· 最大生命值 <span class="val-atk">+12%</span>（+{H:HP*0.12}）\n· 生命偷取 <span class="val-heal">+12%</span>\n· 反伤 <span class="val-atk">+12%</span>\n· 护甲穿透 <span class="val-atk">+12%</span>\n\n<b>储能波击</b>（每4回合释放）：\n受到的伤害转化为储能值，上限为最大生命值的 <span class="val-atk">35%+每级1%</span>。\n每4回合消耗全部储能，对全体敌方造成 储能×(30%+每级1%) 的物理伤害，并获得 储能×(80%+每级1%) 的<span class="val-shield">气场护盾</span>。\n\n气场护盾在 2 回合内逐渐流失：龟壳后续第 1 次行动结束消失一半，第 2 次行动结束完全消失。' },
     skillPool:[
       { name:'攻击', type:'shellStrike', hits:6, power:0, pierce:0, cd:0, totalScale:1.2, splashAdjacent:25, isolatedBonus:1.5,
         brief:'龟壳打击6段，物理/真实交替，共（{N:1.2*ATK}）混合伤害，每段对<span class="val-atk">相邻</span>目标（上下/前后）溅射 <span class="val-atk">25%</span>；无相邻目标时主伤害 <span class="val-atk">×1.5</span>',

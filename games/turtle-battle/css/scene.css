@@ -132,6 +132,8 @@
 .scene-turtle .st-hp-fill.hp-flash{filter:brightness(2) saturate(0.5);transition:filter 0s}
 .scene-turtle .st-shield-fill{position:absolute;top:0;height:100%;background:linear-gradient(180deg,rgba(255,255,255,.55) 40%,rgba(200,200,220,.35) 60%);transition:width .35s ease,left .35s ease;pointer-events:none;z-index:2}
 .scene-turtle .st-bubble-shield{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(76,201,240,.4),rgba(76,201,240,.6),rgba(76,201,240,.4));background-size:200% 100%;animation:bubbleShimmer 2s ease-in-out infinite;transition:width .35s ease,left .35s ease;pointer-events:none;z-index:3}
+/* 龟壳气场护盾 — 金色光泽, 区别于普通 shield (白) 和 bubble (青) */
+.scene-turtle .st-aura-shield{position:absolute;top:0;height:100%;background:linear-gradient(90deg,rgba(255,200,80,.55),rgba(255,170,60,.75),rgba(255,200,80,.55));background-size:200% 100%;animation:bubbleShimmer 1.6s ease-in-out infinite;transition:width .35s ease,left .35s ease;pointer-events:none;z-index:3;box-shadow:inset 0 0 4px rgba(255,180,40,.6)}
 /* Tick layer — now drawn as two stacked repeating-linear-gradients on
    .st-hp-ticks itself (set via inline style in JS). Avoids the sub-pixel
    blur you get when scaling parents transform a 1px-wide child div.

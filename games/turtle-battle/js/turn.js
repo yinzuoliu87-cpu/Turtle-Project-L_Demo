@@ -1154,6 +1154,14 @@ async function finishSide() {
       if (battleOver) { _processingEndOfRound = false; return; }
       // processLightningStorm now fires per-side-end in processSideEnd — no round-end call.
       if (typeof processEnergyWave === 'function') { await processEnergyWave(); if (battleOver) { _processingEndOfRound = false; return; } }
+      // Any of the above (summonAutoAction / fortuneGold / energyWave) may have
+      // killed a 赛博龟 → checkDeaths set _pendingMech but no executeAction
+      // ran afterward. Drain pending mech transforms here so the boss doesn't
+      // stay stuck in zombie state (alive=true hp=1) until next round.
+      if (typeof processPendingMechTransforms === 'function') {
+        await processPendingMechTransforms();
+        if (checkBattleEnd()) { _processingEndOfRound = false; return; }
+      }
     }
     _processingEndOfRound = false;
     isFirstRound = false;

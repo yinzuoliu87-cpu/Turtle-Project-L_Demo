@@ -330,7 +330,7 @@ function updateSceneHp(f) {
   }
 
   const isAlly = gameMode === 'pvp-online' ? (f.side === onlineSide) : (f.side === 'left');
-  const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0);
+  const totalEff = f.hp + f.shield + (f.bubbleShieldVal || 0) + (f._auraShield || 0);
   const barMax = Math.max(f.maxHp, totalEff);
   const hpPct = Math.max(0, f.hp / barMax * 100);
   const hpGrad = isAlly
@@ -399,13 +399,33 @@ function updateSceneHp(f) {
     }
   }
 
+  // ── Aura shield fill (龟壳气场护盾, 介于普通 shield 和 bubble 之间) ──
+  const auraPct = (f._auraShield || 0) / barMax * 100;
+  let auraEl = el.querySelector('.st-aura-shield');
+  if (!auraEl && f._auraShield > 0) {
+    // Lazy-create the aura shield segment if not in template
+    auraEl = document.createElement('div');
+    auraEl.className = 'st-aura-shield';
+    const hpBarWrap = el.querySelector('.st-shield-fill');
+    if (hpBarWrap && hpBarWrap.parentNode) hpBarWrap.parentNode.appendChild(auraEl);
+  }
+  if (auraEl) {
+    if (f._auraShield > 0) {
+      auraEl.style.display = '';
+      auraEl.style.left = (hpPct + shieldPct) + '%';
+      auraEl.style.width = auraPct + '%';
+    } else {
+      auraEl.style.display = 'none';
+    }
+  }
+
   // ── Bubble shield fill ──
   const bsPct = (f.bubbleShieldVal || 0) / barMax * 100;
   let bsEl = el.querySelector('.st-bubble-shield');
   if (bsEl) {
     if (f.bubbleShieldVal > 0) {
       bsEl.style.display = '';
-      bsEl.style.left = (hpPct + shieldPct) + '%';
+      bsEl.style.left = (hpPct + shieldPct + auraPct) + '%';
       bsEl.style.width = bsPct + '%';
     } else {
       bsEl.style.display = 'none';
