@@ -247,13 +247,15 @@ function buildJuggleKeyframes(knockX, isMobile, opts) {
     const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
     const runBackMs = k.runBackMs || 400;
     const totalMs  = airMs + runBackMs;
-    const peakY    = isMobile ? -50 : -72;
+    const peakY    = isMobile ? -64 : -92;
     const slamX    = knockX * 1.4;
+    const peakOff  = (airMs/2)/totalMs;
+    const landOff  = airMs/totalMs;
     return {
       kf: [
-        { transform: 'translate(0px, 0px)',                              offset: 0 },
-        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: (airMs/2)/totalMs },
-        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: airMs/totalMs },
+        { transform: 'translate(0px, 0px)',                              offset: 0,       easing: 'cubic-bezier(0, .55, .45, 1)' },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: peakOff, easing: 'cubic-bezier(.55, 0, 1, .45)' },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: landOff, easing: 'linear' },
         { transform: 'translate(0px, 0px)',                              offset: 1 }
       ],
       totalMs

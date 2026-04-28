@@ -1305,11 +1305,15 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   const old = spriteEl.querySelector('.sprite-once-overlay:not(:last-child)');
   if (old) old.remove();
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
-  if (idleWrap) idleWrap.style.opacity = '0';
+  // Force-clear any lingering transition (hurt/attack anims set
+  // 'opacity .08s linear' on idleWrap) — without override, hiding/restoring
+  // opacity fades over 80ms instead of snapping → visible blank between
+  // sprite swaps.
+  if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = '0'; }
   // Cleanup function (used by both setTimeout fallback and explicit stop)
   const doCleanup = () => {
     if (overlay.parentNode) overlay.remove();
-    if (idleWrap) idleWrap.style.opacity = '';
+    if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
     _spriteOnceCleanups.delete(spriteEl);
   };
   const cleanupId = setTimeout(doCleanup, durationMs + 30);
@@ -1424,11 +1428,15 @@ function playHurtAnimation(f) {
   }, anim.duration - 50);
 }
 
-// Per-pet knockup sequence — 2-frame knockup sheet (F1=ascent, F2=descent),
-// then chains into runAnim sprite for the run-back-home phase. Total flow:
-//   0           → airborneMs           : F1 (going up)
-//   airborneMs  → airborneMs+descentMs : F2 (falling down)
-//   +runBackMs  → end                  : runAnim sprite looping (running home)
+// Per-pet knockup sequence — 2-frame knockup sheet (F1=lying-on-ground,
+// F2=airborne), then chains into runAnim sprite for the run-back-home phase.
+// User spec: 第一帧躺着，第二帧击飞。Sequence:
+//   0           → airborneMs           : F2 (going up — sprite shows airborne pose)
+//   airborneMs  → airborneMs+descentMs : F2 (still airborne while falling)
+//   +runBackMs  → end                  : runAnim looping (running home)
+// Note: F1 (lying) is currently unused — kept in sheet for future "stay-on-
+// ground" follow-up animations. The user's design shows ninja getting up and
+// running, not lying.
 // Returns stop() so caller can collapse cleanup when body anim finishes.
 function playKnockupAnimation(f) {
   const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
@@ -1448,7 +1456,8 @@ function playKnockupAnimation(f) {
   const tw = Math.round(k.frameW * 2 * sc);  // 2 frames wide
   const overlay = document.createElement('div');
   overlay.className = 'knockup-sprite-overlay';
-  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2;background-image:url(\'' + k.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;background-position:0 0';
+  // F2 (airborne) is at column 1 → background-position: -fw 0
+  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2;background-image:url(\'' + k.src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;background-position:-' + fw + 'px 0';
   spriteEl.style.position = 'relative';
   const prior = spriteEl.querySelector('.knockup-sprite-overlay');
   if (prior) prior.remove();
@@ -1458,39 +1467,36 @@ function playKnockupAnimation(f) {
   const hurtOverlay = spriteEl.querySelector('.hurt-sprite-overlay');
   if (hurtOverlay) hurtOverlay.style.opacity = '0';
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
-  if (idleWrap) idleWrap.style.opacity = '0';
+  // Force-clear lingering transition from hurt/attack anim, otherwise hiding
+  // idle fades over 80-100ms → visible blank during sprite handoff.
+  if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = '0'; }
   const airborneMs = k.airborneMs || 300;
   const descentMs  = k.descentMs  || 300;
   const runBackMs  = k.runBackMs  || 400;
   const r = pet && pet.runAnim;
-  // F1 → F2 swap at apex (airborneMs)
-  const swapToF2 = setTimeout(() => {
-    overlay.style.backgroundPosition = '-' + fw + 'px 0';
-  }, airborneMs);
-  // After F2 ends (slam), chain into runAnim for run-back. Append the run
-  // overlay BEFORE removing knockup (atomic swap, no flash gap).
+  // After airtime (airborne+descent), chain into runAnim for run-back. Append
+  // the run overlay BEFORE removing knockup (atomic swap, no flash gap).
   let runStop = null;
   const swapToRun = setTimeout(() => {
     if (r && typeof playFighterSpriteOnce === 'function') {
       runStop = playFighterSpriteOnce(f, r.src, r.frames, r.frameW, r.frameH, runBackMs, true);
     }
     if (overlay.parentNode) overlay.remove();
-    if (!r && idleWrap) idleWrap.style.opacity = '';
+    if (!r && idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
   }, airborneMs + descentMs);
   // Final cleanup at total end
   const totalMs = airborneMs + descentMs + (r ? runBackMs : 0);
   const cleanupId = setTimeout(() => {
     if (runStop) runStop();
     if (overlay.parentNode) overlay.remove();
-    if (idleWrap) idleWrap.style.opacity = '';
+    if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
   }, totalMs);
   return () => {
-    clearTimeout(swapToF2);
     clearTimeout(swapToRun);
     clearTimeout(cleanupId);
     if (runStop) runStop();
     if (overlay.parentNode) overlay.remove();
-    if (idleWrap) idleWrap.style.opacity = '';
+    if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
   };
 }
 

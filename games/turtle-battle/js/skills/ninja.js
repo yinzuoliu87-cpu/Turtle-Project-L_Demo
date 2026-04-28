@@ -56,13 +56,19 @@ function buildNinjaKnockupJuggle(knockX, isMobile, opts) {
     const airMs    = (k.airborneMs || 300) + (k.descentMs || 300);
     const runBackMs = k.runBackMs || 400;
     const totalMs  = airMs + runBackMs;
-    const peakY    = isMobile ? -42 : -64;
+    const peakY    = isMobile ? -54 : -82;
     const slamX    = knockX * 1.4;
+    const peakOff  = (airMs/2)/totalMs;
+    const landOff  = airMs/totalMs;
+    // Gravity-style easing per segment:
+    //   up   (0 → peak):  ease-out — starts fast (initial vy), decelerates
+    //   down (peak → land): ease-in — starts slow at apex, accelerates
+    //   home (land → 0):  linear — steady run-back
     return {
       kf: [
-        { transform: 'translate(0px, 0px)',                              offset: 0 },
-        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: (airMs/2)/totalMs },
-        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: airMs/totalMs },
+        { transform: 'translate(0px, 0px)',                              offset: 0,       easing: 'cubic-bezier(0, .55, .45, 1)' },
+        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: peakOff, easing: 'cubic-bezier(.55, 0, 1, .45)' },
+        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: landOff, easing: 'linear' },
         { transform: 'translate(0px, 0px)',                              offset: 1 }
       ],
       totalMs
