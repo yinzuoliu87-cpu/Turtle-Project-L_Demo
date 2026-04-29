@@ -1313,12 +1313,6 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   }
 
   // Find or lazy-create the sprite-frame for THIS src.
-  // dataset.key per src; each src gets ONE persistent frame.
-  // Uses OPACITY (0/1) instead of visibility (hidden/visible) — visibility:
-  // hidden elements are NOT painted by the browser, so GPU texture is never
-  // uploaded → first time we toggle to visible, we get the upload-lag flash.
-  // opacity:0 elements ARE painted (just invisible), forcing texture upload
-  // on first paint. After that, swapping opacity 0↔1 is GPU-side only.
   const safeKey = src.replace(/[^a-z0-9]/gi, '_');
   let frameEl = wrap.querySelector('.sprite-frame[data-key="' + safeKey + '"]');
   const isNewFrame = !frameEl;
@@ -1332,27 +1326,37 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
       'background-repeat:no-repeat;background-position:0 0;' +
       'image-rendering:pixelated;opacity:0;pointer-events:none';
     wrap.appendChild(frameEl);
-    // Force layout to paint NOW. With opacity:0 the browser still rasterizes
-    // and uploads the bg-image texture (unlike visibility:hidden).
     void frameEl.offsetWidth;
   } else {
     frameEl.style.backgroundPosition = '0 0';
   }
 
-  // Cancel pending cleanup from previous call.
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
 
-  // Hide ALL sprite-frames + idle (opacity:0). Then show this one (opacity:1).
-  const allFrames = wrap.querySelectorAll('.sprite-frame');
-  allFrames.forEach(el => { el.style.opacity = '0'; el.style.animation = 'none'; });
-  idleInner.style.opacity = '0';
-
-  // Apply animation + show THIS frame. Different kfName per src means the
-  // browser sees a fresh animation property and starts at t=0 each call.
   const iter = looping ? 'infinite' : '1 forwards';
-  frameEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
-  frameEl.style.opacity = '1';
+
+  // The actual swap (hide all, show this) — wrapped so we can defer if needed.
+  const doShow = () => {
+    const allFrames = wrap.querySelectorAll('.sprite-frame');
+    allFrames.forEach(el => { el.style.opacity = '0'; el.style.animation = 'none'; });
+    idleInner.style.opacity = '0';
+    frameEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
+    frameEl.style.opacity = '1';
+  };
+
+  if (isNewFrame) {
+    // First creation: defer show by ONE animation frame so the browser has
+    // time to paint frameEl (opacity:0) and upload its bg-image texture to
+    // GPU. Without this, the SAME paint that creates the frame and shows it
+    // happens before texture upload completes → empty flash.
+    // The previous sprite (e.g. run when transitioning to dash) stays visible
+    // for ~16ms longer, which is imperceptible.
+    requestAnimationFrame(doShow);
+  } else {
+    // Frame already in DOM with texture cached — show synchronously.
+    doShow();
+  }
 
   // Cleanup: hide the frame, restore idle.
   const doCleanup = () => {
