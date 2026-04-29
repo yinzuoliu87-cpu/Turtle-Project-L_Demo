@@ -224,6 +224,23 @@ async function doNinjaImpact(attacker, target, skill) {
 
   fEl.style.zIndex = '60';
 
+  // ── DEBUG: colored borders at each DOM level. If a border stays solid
+  // during the flash but the sprite goes transparent, the issue is on the
+  // bg-image render of that inner element, not on the container hierarchy.
+  // Cleanup at end of skill.
+  const _dbgEls = {
+    scene:  fEl,                                   // red — outermost
+    body:   fEl.querySelector('.st-body'),         // blue
+    sprite: fEl.querySelector('.st-sprite'),       // lime
+    wrap:   fEl.querySelector('.sprite-wrap'),     // yellow (dashed)
+    inner:  fEl.querySelector('.sprite-inner'),    // magenta (dashed)
+  };
+  if (_dbgEls.scene)  _dbgEls.scene.style.outline  = '4px solid red';
+  if (_dbgEls.body)   _dbgEls.body.style.outline   = '3px solid blue';
+  if (_dbgEls.sprite) _dbgEls.sprite.style.outline = '2px solid lime';
+  if (_dbgEls.wrap)   _dbgEls.wrap.style.outline   = '2px dashed yellow';
+  if (_dbgEls.inner)  _dbgEls.inner.style.outline  = '2px dashed magenta';
+
   // ── Phase 0: RUN to target's row Y (run.png 4 frames looping while body
   // translates linearly, so it reads as actually running not teleporting) ──
   // Cancel any prior WAAPI animations on fBody (e.g. lingering knockup juggle
@@ -356,6 +373,9 @@ async function doNinjaImpact(attacker, target, skill) {
   // window so F18 doesn't linger after duration ends.
   if (stopDash) stopDash();
   fEl.style.zIndex = '';
+
+  // DEBUG: clear borders
+  for (const el of Object.values(_dbgEls)) { if (el) el.style.outline = ''; }
 
   const behindNote = behind ? ` + ${behind.emoji}${behind.name} <span class="log-direct">${behindDmg}物理</span>` : '';
   addLog(`${attacker.emoji}${attacker.name} <b>冲击</b> → ${target.emoji}${target.name}：<span class="log-direct">${mainDmg}物理</span>${behindNote}`);
