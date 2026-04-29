@@ -1285,19 +1285,20 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   if (!card) return;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) return;
+  // ── Inner-swap strategy: instead of creating an overlay div, we modify
+  // the EXISTING .sprite-inner (built by buildPetImgHTML for the idle anim).
+  // No new DOM, no opacity hide/show, no swap point → no transparent flash.
+  // The same div just gets new bg-image / bg-size / animation properties.
+  // Cleanup restores the idle sprite (read from pet definition).
+  const innerEl = spriteEl.querySelector('.sprite-wrap .sprite-inner');
+  if (!innerEl) return;
+  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+
   const size = 80;
   const sc = size / frameH;
   const fw = Math.round(frameW * sc);
   const tw = Math.round(frameW * frames * sc);
-  // Last frame position (NOT one past end of source). Animating from 0 → -tw
-  // with steps(N) overshoots: at time=1.0 bg-pos = -tw which is one frame past
-  // the source's right edge → blank. Using -lastFw with steps(N, jump-none)
-  // makes 100% time land exactly on frame N-1 (last visible frame). For
-  // looping: clean seam to next iteration's frame 0. For 1-shot: forwards fill
-  // holds the last frame correctly.
   const lastFw = (frames - 1) * fw;
-  // Cache kfName by lastFw so changes to the to-value force a new @keyframes
-  // rule (avoid stale CSS surviving hot reloads).
   const kfName = 'spriteOnce_' + src.replace(/[^a-z0-9]/gi, '_') + '_v' + lastFw;
   if (!_spriteOnceKF[kfName]) {
     const st = document.createElement('style');
@@ -1305,85 +1306,49 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
     document.head.appendChild(st);
     _spriteOnceKF[kfName] = true;
   }
-  // Cancel pending cleanup from previous call — otherwise the OLD overlay's
-  // setTimeout fires mid-NEW-anim and restores idle opacity (visible flash).
+  // Cancel pending cleanup from previous call.
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
-  spriteEl.style.position = 'relative';
-  // ── Persistent overlay strategy: keep ONE .sprite-once-overlay in DOM,
-  // reuse it across calls by swapping bg-image / bg-size / animation in place.
-  // Eliminates the appendChild + remove cycle that caused visible "transparent
-  // flash" between idle→run and run→冲击 (each DOM mutation triggered a paint
-  // that briefly painted with neither old nor new fully ready).
-  // ──────────────────────────────────────────────────────────────────────
-  let overlay = spriteEl.querySelector('.sprite-once-overlay');
-  let inner;
-  if (!overlay) {
-    overlay = document.createElement('div');
-    overlay.className = 'sprite-once-overlay';
-    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;z-index:2';
-    inner = document.createElement('div');
-    inner.className = 'sprite-once-inner';
-    inner.style.cssText = 'width:100%;height:100%;background-repeat:no-repeat;background-position:0 0';
-    overlay.appendChild(inner);
-    spriteEl.appendChild(overlay);
-  } else {
-    inner = overlay.querySelector('.sprite-once-inner');
-  }
-  // Size depends on current sprite's frame width
-  overlay.style.width  = fw + 'px';
-  overlay.style.height = size + 'px';
-  // Atomic style swap — all properties applied in single JS task, browser
-  // paints once at task end with the new sprite & animation. No reflow break
-  // needed because each call uses a DIFFERENT kfName (run vs dash etc.) →
-  // browser sees a different animation property and restarts from t=0.
-  // Removed previous "animation:'none' → reflow → animation:new" pattern
-  // which may have caused user-reported transparent flash if the browser
-  // briefly painted between the 'none' assignment and the new one.
-  const iter = looping ? 'infinite' : '1 forwards';
-  inner.style.backgroundImage = "url('" + src + "')";
-  inner.style.backgroundSize = tw + 'px ' + size + 'px';
-  inner.style.backgroundPosition = '0 0';
-  inner.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
-  const idleWrap = spriteEl.querySelector('.sprite-wrap');
-  // Force-clear any lingering transition (hurt/attack anims set
-  // 'opacity .08s linear' on idleWrap) — without override, hiding/restoring
-  // opacity fades over 80ms instead of snapping.
-  if (idleWrap) idleWrap.style.transition = 'none';
-  // ── Defer idle hiding by ONE frame ──
-  // If we hide idle in the SAME frame as setting overlay's bg-image, and the
-  // browser hasn't finished GPU-uploading the new texture by paint time, the
-  // overlay paints empty → user sees through (transparent character flash).
-  // Keeping idle visible for one extra frame means idle covers any blank
-  // moment. Frame N: idle + overlay both visible (overlay opaque silhouette
-  // covers idle in same area). Frame N+1: idle hidden, only overlay shows.
-  // The transition is invisible because overlay is already opaque at Frame N.
+  // Ensure idle wrap is visible (in case some other anim hid it). Force-clear
+  // any lingering opacity transition from hurt/attack anims.
   if (idleWrap) {
-    requestAnimationFrame(() => {
-      // Re-check: if a NEWER playFighterSpriteOnce already restored idle,
-      // don't re-hide. We track that by checking idle's current opacity.
-      // (If a cleanup fired before this rAF, opacity is '' → don't override.)
-      // Simplest robust check: hide unconditionally — if cleanup fires after
-      // this rAF, it'll restore again.
-      idleWrap.style.opacity = '0';
-    });
+    idleWrap.style.transition = 'none';
+    idleWrap.style.opacity = '';
   }
-  // Cleanup: hide the persistent overlay (don't remove from DOM — keep for
-  // reuse on next call). Clear bg-image so a stale sprite isn't visible if
-  // visibility ever leaks. Restore idle.
+  // Atomic style swap on the SAME element. No new DOM, no opacity toggle.
+  // Each call uses a different kfName so animation auto-restarts from t=0.
+  const iter = looping ? 'infinite' : '1 forwards';
+  innerEl.style.backgroundImage = "url('" + src + "')";
+  innerEl.style.backgroundSize = tw + 'px ' + size + 'px';
+  innerEl.style.backgroundPosition = '0 0';
+  innerEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
+
+  // Cleanup: restore the idle sprite by re-applying pet.img + pet.sprite anim.
   const doCleanup = () => {
-    inner.style.animation = 'none';
-    inner.style.backgroundImage = '';
-    overlay.style.visibility = 'hidden';
-    if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
+    const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
+    if (pet && pet.sprite && pet.img) {
+      const s = pet.sprite;
+      const idleSc = size / s.frameH;
+      const idleFw = Math.round(s.frameW * idleSc);
+      const idleTw = Math.round(s.frameW * s.frames * idleSc);
+      const idleLastFw = (s.frames - 1) * idleFw;
+      const idleKf = 'sprKF_' + pet.id + '_' + size + '_v' + idleLastFw;
+      if (!_spriteKF[idleKf]) {
+        const st2 = document.createElement('style');
+        st2.textContent = '@keyframes ' + idleKf + '{from{background-position:0 0}to{background-position:-' + idleLastFw + 'px 0}}';
+        document.head.appendChild(st2);
+        _spriteKF[idleKf] = true;
+      }
+      innerEl.style.backgroundImage = "url('" + pet.img + "')";
+      innerEl.style.backgroundSize = idleTw + 'px ' + size + 'px';
+      innerEl.style.backgroundPosition = '0 0';
+      innerEl.style.animation = idleKf + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ', jump-none) infinite';
+    }
     _spriteOnceCleanups.delete(spriteEl);
   };
-  // Make sure overlay is visible (in case prior cleanup hid it)
-  overlay.style.visibility = '';
+
   const cleanupId = setTimeout(doCleanup, durationMs + 30);
   _spriteOnceCleanups.set(spriteEl, cleanupId);
-  // Return a stop function — caller can collapse cleanup explicitly
-  // (avoids the 30ms grace window that may show stale dash F18 → idle flash).
   return () => { clearTimeout(cleanupId); doCleanup(); };
 }
 
