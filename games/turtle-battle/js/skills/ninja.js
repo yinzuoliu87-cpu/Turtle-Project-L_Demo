@@ -461,9 +461,10 @@ async function doNinjaBackstab(attacker, target, skill) {
 }
 
 // 炸弹 — 12-frame bomb.png (64×64 each, 100ms/frame, 1200ms total)
-//   F1-4   (0-400ms)    bomb flies from attacker → enemy team center
-//   F5-12  (400-1200ms) explosion + mushroom cloud at enemy center
-// Damage + armor break + camera shake fire at explosion start (~400ms).
+//   F1-4   (0-400ms)     bomb flies from attacker → enemy team center
+//   F5-8   (400-800ms)   bomb landed, fuse — held at center, no damage yet
+//   F9-12  (800-1200ms)  explosion + mushroom cloud, damage fires at F9 start
+// Per user spec: damage + armor break + camera shake fire on F9 (800ms).
 const _ninjaBombKF = {};
 async function doNinjaBomb(attacker, skill) {
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
@@ -494,9 +495,10 @@ async function doNinjaBomb(attacker, skill) {
   // ── Bomb sprite: 12 frames, scaled up to 160×160 so the mushroom cloud is visible. ──
   const FRAMES = 12;
   const FRAME_W = 64, FRAME_H = 64;
-  const BOMB_SIZE = 160;            // displayed size — F5+ explosion looks big
+  const BOMB_SIZE = 160;            // displayed size — F9-12 explosion looks big
   const TOTAL_MS = 1200;
-  const FLY_MS   = 400;             // F1-4
+  const FLY_MS    = 400;            // F1-4: bomb travel
+  const DETONATE_MS = 800;          // F9 starts at 800ms — damage triggers here
   const sc = BOMB_SIZE / FRAME_H;
   const fw = Math.round(FRAME_W * sc);
   const tw = Math.round(FRAME_W * FRAMES * sc);
@@ -526,10 +528,10 @@ async function doNinjaBomb(attacker, skill) {
     ], { duration: TOTAL_MS, easing: 'linear', fill: 'forwards' });
   }
 
-  // ── Wait for bomb to reach center (F1-4 = 400ms) ──
-  await sleep(FLY_MS);
+  // ── Wait until F9 (800ms) — bomb travels F1-4 then sits on ground F5-8 ──
+  await sleep(DETONATE_MS);
 
-  // Camera shake on detonation
+  // Camera shake on detonation (F9)
   if (battleField) {
     battleField.classList.remove('battle-scene-shake');
     void battleField.offsetWidth;
@@ -570,8 +572,8 @@ async function doNinjaBomb(attacker, skill) {
   recalcStats();
   addLog(`${attacker.emoji}${attacker.name} <b>炸弹</b> → 全体敌方：<span class="log-direct">${baseDmg}伤害</span> + <span class="log-debuff">破甲${skill.armorBreak.pct}% ${skill.armorBreak.turns}回合</span>`);
 
-  // Wait for mushroom cloud to finish (F5-12 = 800ms)
-  await sleep(TOTAL_MS - FLY_MS);
+  // Wait for mushroom cloud to finish (F9-12 = 400ms after detonation)
+  await sleep(TOTAL_MS - DETONATE_MS);
   if (wrap && wrap.parentNode) wrap.remove();
 }
 

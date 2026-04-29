@@ -1025,10 +1025,15 @@ async function nextSideAction() {
     canAct = sideTeam.filter(f => f.alive && !actedThisSide.has(allFighters.indexOf(f)));
   }
 
-  // First round: left only sends 1
-  const totalAlive = sideTeam.filter(f => f.alive).length;
+  // First round: left only sends 2 (or fewer if alive count low).
+  // totalAlive must exclude SUMMON / PIRATE SHIP — they don't count toward
+  // the action limit (player can't pick them; they auto-fire). Without this,
+  // adding a hidden-summon to leftTeam causes alreadyActed to start at 1
+  // (summon pre-marked acted) and first round caps at 1 turtle action.
+  const totalAlive = sideTeam.filter(f => f.alive && !f._isSummon && !f._isPirateShip).length;
   const maxActions = (isFirstRound && activeSide === 'left') ? Math.min(2, totalAlive) : (isBossSide ? 2 : totalAlive);
-  const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.length);
+  // alreadyActed: count actable fighters that are no longer in canAct.
+  const alreadyActed = isBossSide ? _bossActionsThisRound : (totalAlive - canAct.filter(f => !f._isSummon && !f._isPirateShip).length);
 
   if (canAct.length === 0 || alreadyActed >= maxActions) {
     // This side is done, switch to other side or end round
