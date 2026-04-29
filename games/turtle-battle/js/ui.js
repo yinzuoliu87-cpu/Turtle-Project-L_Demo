@@ -247,9 +247,11 @@ function renderScene() {
     renderTurtle(f, `pos-${f.side}-${slot} pirate-ship-turtle`, f.side, slot);
   });
 
-  // Summons
+  // Summons — skip if summon has _slotKey (it's now a regular team member
+  // rendered via assignPos above as a scene-turtle). Mini-card path kept as
+  // legacy fallback for any summon spawned without a slot (shouldn't happen).
   allFighters.forEach(f => {
-    if (f._summon && f._summon.alive) {
+    if (f._summon && f._summon.alive && !f._summon._slotKey) {
       renderSummonMiniCard(f);
     }
   });
@@ -1095,7 +1097,9 @@ const PASSIVE_ICONS = {
 };
 
 function updateFighterStats(f, elId) {
-  if (f._isSummon) { updateSummonStats(f); return; }
+  // Summon with _slotKey is rendered as a regular scene-turtle, fall through
+  // to normal stats update. Mini-card summons (legacy) still hit updateSummonStats.
+  if (f._isSummon && !f._slotKey) { updateSummonStats(f); return; }
   const card = document.getElementById(elId);
   if (!card) return;
   const statsEl = card.querySelector('.fighter-stats');
@@ -1525,7 +1529,7 @@ function playKnockupAnimation(f) {
 
 function updateHpBar(f, elId) {
   // Summon: use dedicated mini-card HP bar
-  if (f._isSummon) { updateSummonHpBar(f); return; }
+  if (f._isSummon && !f._slotKey) { updateSummonHpBar(f); return; }
   // Scene-based: update floating HP bar
   updateSceneHp(f);
   renderSceneBuffs(f);
@@ -1697,7 +1701,7 @@ function updateHpBar(f, elId) {
 // Get all alive enemies including summons (for AOE)
 
 function renderStatusIcons(f) {
-  if (f._isSummon) { renderSummonStatusIcons(f); return; }
+  if (f._isSummon && !f._slotKey) { renderSummonStatusIcons(f); return; }
   // Scene-based: update buff icons
   renderSceneBuffs(f);
   const elId = getFighterElId(f);

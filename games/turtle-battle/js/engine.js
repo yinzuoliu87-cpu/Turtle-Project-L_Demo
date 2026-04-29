@@ -83,9 +83,11 @@ function getFighterElId(f) {
 function getAliveEnemiesWithSummons(side) {
   const team = side === 'left' ? rightTeam : leftTeam;
   const targets = team.filter(e => e.alive);
-  // Add enemy summons
+  // Add enemy summons IF NOT already in team (legacy summons without _slotKey).
+  // New-style hiding-summon is added to leftTeam/rightTeam directly, so it's
+  // already counted. Skip it here to avoid double-targeting.
   team.forEach(e => {
-    if (e._summon && e._summon.alive) targets.push(e._summon);
+    if (e._summon && e._summon.alive && !targets.includes(e._summon)) targets.push(e._summon);
   });
   return targets;
 }

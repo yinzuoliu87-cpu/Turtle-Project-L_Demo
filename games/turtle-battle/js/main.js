@@ -1009,12 +1009,16 @@ function showPetPassive(e, petId) {
 }
 
 function _buildTeamFromSlots(side, loadoutMap) {
-  return FG_SLOT_KEYS.filter(k => _fgSlots[k]).map(k => {
+  // Skip summon marker (it's not a real pet); save its slot on the hiding
+  // fighter so battle init can spawn the summon at that position.
+  const summonSlot = FG_SLOT_KEYS.find(k => _fgSlots[k] === SUMMON_MARK);
+  return FG_SLOT_KEYS.filter(k => _fgSlots[k] && _fgSlots[k] !== SUMMON_MARK).map(k => {
     const petId = _fgSlots[k];
     const idxs = (loadoutMap && loadoutMap[petId]) || getSavedLoadout(petId) || null;
     const f = createFighter(petId, side, idxs);
     f._position = k.startsWith('front') ? 'front' : 'back';
     f._slotKey = k; // e.g. 'front-0', 'back-2'
+    if (petId === 'hiding' && summonSlot) f._savedSummonSlot = summonSlot;
     return f;
   });
 }
@@ -1416,6 +1420,16 @@ function startBattle(seed) {
           skills: (pick.skillPool || pick.skills || []).filter(s => !s.passiveSkill).slice(0, 3).map(s => ({ ...s, cdLeft:0 })),
         };
         f._summon = summon;
+        // NEW: position summon at the slot user picked during formation.
+        // If found, also add to leftTeam/rightTeam so it's rendered as a regular
+        // scene-turtle (not a mini-card) and can be targeted by single-target skills.
+        const slotKey = f._savedSummonSlot;
+        if (slotKey) {
+          summon._slotKey = slotKey;
+          summon._position = slotKey.startsWith('front') ? 'front' : 'back';
+          const team = f.side === 'left' ? leftTeam : rightTeam;
+          team.push(summon);
+        }
         // Add summon to allFighters so passives/buffs process correctly
         allFighters.push(summon);
         // Apply one-time passives on summon

@@ -460,21 +460,95 @@ async function doNinjaBackstab(attacker, target, skill) {
   addLog(`${attacker.emoji}${attacker.name} <b>背刺</b> → ${target.emoji}${target.name}：<span class="log-direct">3段共${totalDmg}物理</span>`);
 }
 
+// 炸弹 — 12-frame bomb.png (64×64 each, 100ms/frame, 1200ms total)
+//   F1-4   (0-400ms)    bomb flies from attacker → enemy team center
+//   F5-12  (400-1200ms) explosion + mushroom cloud at enemy center
+// Damage + armor break + camera shake fire at explosion start (~400ms).
+const _ninjaBombKF = {};
 async function doNinjaBomb(attacker, skill) {
   const enemies = (attacker.side === 'left' ? rightTeam : leftTeam).filter(e => e.alive);
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
+  const battleField = ENV.battleField;
 
+  // ── Geometry: attacker center + enemy team center ──
+  const fEl = document.getElementById(getFighterElId(attacker));
+  let aCx = 0, aCy = 0, cCx = 0, cCy = 0;
+  if (battleField && fEl) {
+    const bRect = battleField.getBoundingClientRect();
+    const zoom = battleField.offsetWidth ? bRect.width / battleField.offsetWidth : 1;
+    const aR = (fEl.querySelector('.st-body') || fEl).getBoundingClientRect();
+    aCx = ((aR.left + aR.width/2) - bRect.left) / zoom;
+    aCy = ((aR.top  + aR.height/2) - bRect.top)  / zoom;
+    let n = 0;
+    for (const e of enemies) {
+      const eEl = document.getElementById(getFighterElId(e));
+      if (!eEl) continue;
+      const eR = (eEl.querySelector('.st-body') || eEl).getBoundingClientRect();
+      cCx += ((eR.left + eR.width/2) - bRect.left) / zoom;
+      cCy += ((eR.top  + eR.height/2) - bRect.top)  / zoom;
+      n++;
+    }
+    if (n > 0) { cCx /= n; cCy /= n; }
+  }
+
+  // ── Bomb sprite: 12 frames, scaled up to 160×160 so the mushroom cloud is visible. ──
+  const FRAMES = 12;
+  const FRAME_W = 64, FRAME_H = 64;
+  const BOMB_SIZE = 160;            // displayed size — F5+ explosion looks big
+  const TOTAL_MS = 1200;
+  const FLY_MS   = 400;             // F1-4
+  const sc = BOMB_SIZE / FRAME_H;
+  const fw = Math.round(FRAME_W * sc);
+  const tw = Math.round(FRAME_W * FRAMES * sc);
+  const lastFw = (FRAMES - 1) * fw;
+  const kfName = '_ninjaBombKF_v' + lastFw;
+  if (!_ninjaBombKF[kfName]) {
+    const st = document.createElement('style');
+    st.textContent = `@keyframes ${kfName}{from{background-position:0 0}to{background-position:-${lastFw}px 0}}`;
+    document.head.appendChild(st);
+    _ninjaBombKF[kfName] = true;
+  }
+
+  let wrap = null;
+  if (battleField) {
+    wrap = document.createElement('div');
+    wrap.style.cssText = `position:absolute;left:${aCx}px;top:${aCy}px;width:0;height:0;pointer-events:none;z-index:50`;
+    const sprite = document.createElement('div');
+    sprite.style.cssText = `position:absolute;left:50%;top:50%;width:${BOMB_SIZE}px;height:${BOMB_SIZE}px;transform:translate(-50%,-50%);background-image:url('assets/pets/animations/ninja/bomb.png');background-size:${tw}px ${BOMB_SIZE}px;background-repeat:no-repeat;animation:${kfName} ${TOTAL_MS/1000}s steps(${FRAMES}, jump-none) 1 forwards;image-rendering:pixelated`;
+    wrap.appendChild(sprite);
+    battleField.appendChild(wrap);
+    // Translate wrapper from attacker → center over FLY_MS, hold during explosion
+    const dx = cCx - aCx, dy = cCy - aCy;
+    wrap.animate([
+      { transform: 'translate(0px, 0px)', offset: 0 },
+      { transform: `translate(${dx}px, ${dy}px)`, offset: FLY_MS / TOTAL_MS, easing: 'cubic-bezier(.3,.6,.4,1)' },
+      { transform: `translate(${dx}px, ${dy}px)`, offset: 1 }
+    ], { duration: TOTAL_MS, easing: 'linear', fill: 'forwards' });
+  }
+
+  // ── Wait for bomb to reach center (F1-4 = 400ms) ──
+  await sleep(FLY_MS);
+
+  // Camera shake on detonation
+  if (battleField) {
+    battleField.classList.remove('battle-scene-shake');
+    void battleField.offsetWidth;
+    battleField.classList.add('battle-scene-shake');
+    setTimeout(() => battleField.classList.remove('battle-scene-shake'), 300);
+  }
+
+  // Apply damage + armor break to all enemies in parallel (visually simultaneous)
   for (const e of enemies) {
     const {isCrit, critMult} = calcCrit(attacker);
     const effectiveDef = calcEffDef(attacker, e);
-        const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
+    const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
     applyRawDmg(attacker, e, dmg, false, false, 'physical');
     const eId = getFighterElId(e);
     spawnFloatingNum(eId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 0, 0);
     updateHpBar(e, eId);
-    await triggerOnHitEffects(attacker, e, dmg);
+    triggerOnHitEffects(attacker, e, dmg);
 
-    // Apply armor break (defDown by %)
+    // Armor break (defDown by %)
     if (skill.armorBreak) {
       const ab = skill.armorBreak;
       const existing = e.buffs.find(b => b.type === 'defDown');
@@ -483,10 +557,22 @@ async function doNinjaBomb(attacker, skill) {
       spawnFloatingNum(eId, `破甲${ab.pct}%`, 'debuff-label', 200, 0);
       renderStatusIcons(e);
     }
+
+    // Hit flash
+    const eNode = document.getElementById(eId);
+    if (eNode) {
+      eNode.classList.remove('chi-hit-flash');
+      void eNode.offsetWidth;
+      eNode.classList.add('chi-hit-flash');
+      setTimeout(() => { if (eNode) eNode.classList.remove('chi-hit-flash'); }, 140);
+    }
   }
   recalcStats();
   addLog(`${attacker.emoji}${attacker.name} <b>炸弹</b> → 全体敌方：<span class="log-direct">${baseDmg}伤害</span> + <span class="log-debuff">破甲${skill.armorBreak.pct}% ${skill.armorBreak.turns}回合</span>`);
-  await sleep(1000);
+
+  // Wait for mushroom cloud to finish (F5-12 = 800ms)
+  await sleep(TOTAL_MS - FLY_MS);
+  if (wrap && wrap.parentNode) wrap.remove();
 }
 
 // ── HUNTER SKILLS ─────────────────────────────────────────

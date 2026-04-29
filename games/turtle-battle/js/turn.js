@@ -1050,8 +1050,13 @@ async function nextSideAction() {
   canAct.filter(f => f._isPirateShip).forEach(f => actedThisSide.add(allFighters.indexOf(f)));
   canAct = canAct.filter(f => !f._isPirateShip);
 
-  // If the only remaining "actors" were pirate ships, this side is done.
-  // (All real fighters dead, only the pirate ship companion alive → hang.)
+  // Skip summons (缩头乌龟随从) — player can't pick them; they auto-act
+  // via summonAutoAction at end of THIS side's turn (in finishSide).
+  canAct.filter(f => f._isSummon).forEach(f => actedThisSide.add(allFighters.indexOf(f)));
+  canAct = canAct.filter(f => !f._isSummon);
+
+  // If the only remaining "actors" were pirate ships / summons, this side is done.
+  // (All real fighters dead, only ship/summon companions alive → hang.)
   if (canAct.length === 0) {
     await finishSide();
     return;
@@ -1128,6 +1133,22 @@ async function finishSide() {
   await processSideEnd(activeSide);
   if (checkBattleEnd()) return;
 
+  // Summon auto-action — fires AFTER the side that just acted's turtles all
+  // moved. Per user spec: 排进我方最后出手的龟 (summon goes last in our side).
+  // Filter to summons whose owner is on activeSide (so each side's summon
+  // auto-acts at end of its own turn, not symmetrically at end of round).
+  for (const f of allFighters) {
+    if (battleOver) break;
+    if (!f.alive || !f.passive || f.passive.type !== 'summonAlly') continue;
+    if (f.side !== activeSide) continue;
+    if (f._summon && f._summon.alive) {
+      addLog(`${f._summon.emoji}${f._summon.name}(随从) 自动出招！`);
+      await sleep(400);
+      await summonAutoAction(f._summon, f);
+      if (checkBattleEnd()) return;
+    }
+  }
+
   sidesActedThisRound++;
   if (sidesActedThisRound >= 2) {
     // Prevent re-entry (summon executeAction could trigger finishSide again)
@@ -1139,17 +1160,8 @@ async function finishSide() {
     await processRoundEndBuffs();
     if (checkBattleEnd()) { _processingEndOfRound = false; return; }
     {
-      // Summon auto-action at end of turn (once per summon)
-      for (const f of allFighters) {
-        if (battleOver) break;
-        if (!f.alive || !f.passive || f.passive.type !== 'summonAlly') continue;
-        if (f._summon && f._summon.alive) {
-          addLog(`${f._summon.emoji}${f._summon.name}(随从) 回合末自动出招！`);
-          await sleep(400);
-          await summonAutoAction(f._summon, f);
-          if (checkBattleEnd()) { _processingEndOfRound = false; return; }
-        }
-      }
+      // Summon auto-action moved to finishSide (per-side end). End-of-round
+      // now only handles non-summon end-of-round bookkeeping.
       await processFortuneGold();
       if (battleOver) { _processingEndOfRound = false; return; }
       // processLightningStorm now fires per-side-end in processSideEnd — no round-end call.
