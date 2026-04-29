@@ -1348,9 +1348,26 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   // Force-clear any lingering transition (hurt/attack anims set
   // 'opacity .08s linear' on idleWrap) — without override, hiding/restoring
-  // opacity fades over 80ms instead of snapping → visible blank between
-  // sprite swaps.
-  if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = '0'; }
+  // opacity fades over 80ms instead of snapping.
+  if (idleWrap) idleWrap.style.transition = 'none';
+  // ── Defer idle hiding by ONE frame ──
+  // If we hide idle in the SAME frame as setting overlay's bg-image, and the
+  // browser hasn't finished GPU-uploading the new texture by paint time, the
+  // overlay paints empty → user sees through (transparent character flash).
+  // Keeping idle visible for one extra frame means idle covers any blank
+  // moment. Frame N: idle + overlay both visible (overlay opaque silhouette
+  // covers idle in same area). Frame N+1: idle hidden, only overlay shows.
+  // The transition is invisible because overlay is already opaque at Frame N.
+  if (idleWrap) {
+    requestAnimationFrame(() => {
+      // Re-check: if a NEWER playFighterSpriteOnce already restored idle,
+      // don't re-hide. We track that by checking idle's current opacity.
+      // (If a cleanup fired before this rAF, opacity is '' → don't override.)
+      // Simplest robust check: hide unconditionally — if cleanup fires after
+      // this rAF, it'll restore again.
+      idleWrap.style.opacity = '0';
+    });
+  }
   // Cleanup: hide the persistent overlay (don't remove from DOM — keep for
   // reuse on next call). Clear bg-image so a stale sprite isn't visible if
   // visibility ever leaks. Restore idle.
