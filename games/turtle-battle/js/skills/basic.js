@@ -250,19 +250,20 @@ function buildJuggleKeyframes(knockX, isMobile, opts) {
     const totalMs  = airMs + lyingMs + runBackMs;
     const peakY    = isMobile ? -64 : -92;
     const slamX    = knockX * 1.4;
-    const peakOff  = (airMs/2)/totalMs;
-    const landOff  = airMs/totalMs;
-    const lieEndOff= (airMs + lyingMs)/totalMs;
-    return {
-      kf: [
-        { transform: 'translate(0px, 0px)',                              offset: 0,         easing: 'cubic-bezier(0, .55, .45, 1)' },
-        { transform: `translate(${(slamX/2).toFixed(1)}px, ${peakY}px)`, offset: peakOff,   easing: 'cubic-bezier(.55, 0, 1, .45)' },
-        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: landOff,   easing: 'linear' },
-        { transform: `translate(${slamX.toFixed(1)}px, 0px)`,            offset: lieEndOff, easing: 'linear' },
-        { transform: 'translate(0px, 0px)',                              offset: 1 }
-      ],
-      totalMs
-    };
+    const kf = [];
+    const airSteps = 8;
+    for (let i = 0; i <= airSteps; i++) {
+      const t = i / airSteps;
+      const x = slamX * t;
+      const y = peakY * (1 - Math.pow(2*t - 1, 2));
+      const off = (t * airMs) / totalMs;
+      kf.push({ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, offset: +off.toFixed(4) });
+    }
+    if (lyingMs > 0) {
+      kf.push({ transform: `translate(${slamX.toFixed(1)}px, 0px)`, offset: +((airMs + lyingMs)/totalMs).toFixed(4) });
+    }
+    kf.push({ transform: 'translate(0px, 0px)', offset: 1 });
+    return { kf, totalMs };
   }
   // Mobile gravity is lighter so the target hangs in the air longer.
   // Budget must cover: ballistic-to-slam (~1100ms mobile) + lie + recover.
