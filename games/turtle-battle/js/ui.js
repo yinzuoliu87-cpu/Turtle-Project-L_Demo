@@ -1316,11 +1316,12 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   // sprite is rendered before the old is gone — visual continuity.
   const overlay = document.createElement('div');
   overlay.className = 'sprite-once-overlay';
-  // translateZ(0) + will-change: transform forces a GPU compositing layer so
-  // body's WAAPI translate doesn't trigger full repaint of the bg-image at
-  // each subpixel shift (which can show as flicker, especially with
-  // image-rendering:pixelated stair-stepping during smooth motion).
-  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%) translateZ(0);will-change:transform;width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
+  // NO translateZ/will-change here — forcing GPU layer requires re-rasterizing
+  // the layer on every bg-position jump (steps animation), and the layer is
+  // briefly empty during rasterize → user sees "整个角色变透明" at each frame
+  // transition. Standard transform-only is fine for our case (body translate
+  // does not subpixel-jitter the sprite enough to matter).
+  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
   const iter = looping ? 'infinite' : '1 forwards';
   // steps(N, jump-none) over keyframes from 0 to -(N-1)*fw maps time perfectly
   // to N frame stops (0, -fw, -2fw, ..., -(N-1)fw). No OOB position rendered.

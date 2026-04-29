@@ -1,5 +1,5 @@
 async function doNinjaShuriken(attacker, target, skill) {
-  // 1.5×ATK damage. On crit: split into true + physical with truePct based on level.
+  // 1.5×ATK physical damage. Normal crit (no special split).
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const isCrit = Math.random() < attacker.crit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
@@ -16,39 +16,12 @@ async function doNinjaShuriken(attacker, target, skill) {
   });
   await arrival;
 
-  if (isCrit) {
-    // Crit: total raw damage = baseDmg × critMult. truePct = 40% + 2% per level
-    // (lv1=42%, lv5=50%, lv10=60%). True portion bypasses DEF; physical portion
-    // goes through DEF normally.
-    const critTotalRaw = Math.round(baseDmg * critMult);
-    const lv = attacker._level || 1;
-    const truePct = Math.min(100, 40 + 2 * lv);
-    const trueRaw = Math.round(critTotalRaw * truePct / 100);
-    const physRaw = critTotalRaw - trueRaw;
-
-    // Stacking rule: TRUE (white) on top, PHYSICAL (red) below.
-    // spawnFloatingNum uses y0 = -(yOffset + jitter) so LARGER yOffset = HIGHER.
-    // → physical at yOffset 0 (lower), true at yOffset 22 (higher).
-    const effectiveDef = calcEffDef(attacker, target);
-    const physDmg = physRaw > 0 ? Math.max(1, Math.round(physRaw * calcDmgMult(effectiveDef))) : 0;
-    if (physDmg > 0) {
-      applyRawDmg(attacker, target, physDmg, false, false, 'physical');
-      spawnFloatingNum(tElId, `${physDmg}`, 'crit-dmg', 100, 0, {atkSide: attacker.side, amount: physDmg});
-    }
-    if (trueRaw > 0) {
-      applyRawDmg(attacker, target, trueRaw, true, false, 'true');
-      spawnFloatingNum(tElId, `${trueRaw}`, 'crit-true', 100, 22, {atkSide: attacker.side, amount: trueRaw});
-    }
-    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${trueRaw}真实</span> + <span class="log-direct">${physDmg}物理</span>`);
-    await triggerOnHitEffects(attacker, target, trueRaw + physDmg);
-  } else {
-    const effectiveDef = calcEffDef(attacker, target);
-    const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
-    applyRawDmg(attacker, target, dmg, false, false, 'physical');
-    spawnFloatingNum(tElId, `${dmg}`, 'direct-dmg', 100, 0, {atkSide: attacker.side, amount: dmg});
-    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-direct">${dmg}伤害</span>`);
-    await triggerOnHitEffects(attacker, target, dmg);
-  }
+  const effectiveDef = calcEffDef(attacker, target);
+  const dmg = Math.max(1, Math.round(baseDmg * critMult * calcDmgMult(effectiveDef)));
+  applyRawDmg(attacker, target, dmg, false, false, 'physical');
+  spawnFloatingNum(tElId, `${dmg}`, isCrit ? 'crit-dmg' : 'direct-dmg', 100, 0, {atkSide: attacker.side, amount: dmg});
+  addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：${isCrit ? '<span class="log-crit">暴击!</span> ' : ''}<span class="log-direct">${dmg}物理</span>`);
+  await triggerOnHitEffects(attacker, target, dmg);
 
   const tEl = document.getElementById(tElId);
   if (tEl) tEl.classList.add('hit-shake');
