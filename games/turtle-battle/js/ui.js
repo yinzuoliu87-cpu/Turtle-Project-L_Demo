@@ -1310,38 +1310,57 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
   spriteEl.style.position = 'relative';
-  // ── Atomic swap: APPEND new overlay FIRST, then remove old. ──
-  // Reverse order would leave a 1-frame gap where browser paints with no
-  // overlay (idle still hidden) → visible flash. With this order the new
-  // sprite is rendered before the old is gone — visual continuity.
-  const overlay = document.createElement('div');
-  overlay.className = 'sprite-once-overlay';
-  // NO translateZ/will-change here — forcing GPU layer requires re-rasterizing
-  // the layer on every bg-position jump (steps animation), and the layer is
-  // briefly empty during rasterize → user sees "整个角色变透明" at each frame
-  // transition. Standard transform-only is fine for our case (body translate
-  // does not subpixel-jitter the sprite enough to matter).
-  overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);width:' + fw + 'px;height:' + size + 'px;pointer-events:none;z-index:2';
+  // ── Persistent overlay strategy: keep ONE .sprite-once-overlay in DOM,
+  // reuse it across calls by swapping bg-image / bg-size / animation in place.
+  // Eliminates the appendChild + remove cycle that caused visible "transparent
+  // flash" between idle→run and run→冲击 (each DOM mutation triggered a paint
+  // that briefly painted with neither old nor new fully ready).
+  // ──────────────────────────────────────────────────────────────────────
+  let overlay = spriteEl.querySelector('.sprite-once-overlay');
+  let inner;
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.className = 'sprite-once-overlay';
+    overlay.style.cssText = 'position:absolute;left:50%;top:0;transform:translateX(-50%);pointer-events:none;z-index:2';
+    inner = document.createElement('div');
+    inner.className = 'sprite-once-inner';
+    inner.style.cssText = 'width:100%;height:100%;background-repeat:no-repeat;background-position:0 0';
+    overlay.appendChild(inner);
+    spriteEl.appendChild(overlay);
+  } else {
+    inner = overlay.querySelector('.sprite-once-inner');
+  }
+  // Size depends on current sprite's frame width
+  overlay.style.width  = fw + 'px';
+  overlay.style.height = size + 'px';
+  // Restart animation: clear → reflow → reapply.
+  // Without the reflow break, swapping animation property on the SAME element
+  // doesn't always restart from t=0 (browser may keep the prior cycle's clock).
+  inner.style.animation = 'none';
+  inner.style.backgroundImage = "url('" + src + "')";
+  inner.style.backgroundSize = tw + 'px ' + size + 'px';
+  inner.style.backgroundPosition = '0 0';
+  void inner.offsetWidth;
   const iter = looping ? 'infinite' : '1 forwards';
-  // steps(N, jump-none) over keyframes from 0 to -(N-1)*fw maps time perfectly
-  // to N frame stops (0, -fw, -2fw, ..., -(N-1)fw). No OOB position rendered.
-  overlay.innerHTML = '<div class="sprite-once-inner" style="width:100%;height:100%;background-image:url(\'' + src + '\');background-size:' + tw + 'px ' + size + 'px;background-repeat:no-repeat;animation:' + kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter + '"></div>';
-  spriteEl.appendChild(overlay);
-  // Now remove any leftover overlay from previous call (after new is in DOM)
-  const old = spriteEl.querySelector('.sprite-once-overlay:not(:last-child)');
-  if (old) old.remove();
+  inner.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   // Force-clear any lingering transition (hurt/attack anims set
   // 'opacity .08s linear' on idleWrap) — without override, hiding/restoring
   // opacity fades over 80ms instead of snapping → visible blank between
   // sprite swaps.
   if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = '0'; }
-  // Cleanup function (used by both setTimeout fallback and explicit stop)
+  // Cleanup: hide the persistent overlay (don't remove from DOM — keep for
+  // reuse on next call). Clear bg-image so a stale sprite isn't visible if
+  // visibility ever leaks. Restore idle.
   const doCleanup = () => {
-    if (overlay.parentNode) overlay.remove();
+    inner.style.animation = 'none';
+    inner.style.backgroundImage = '';
+    overlay.style.visibility = 'hidden';
     if (idleWrap) { idleWrap.style.transition = 'none'; idleWrap.style.opacity = ''; }
     _spriteOnceCleanups.delete(spriteEl);
   };
+  // Make sure overlay is visible (in case prior cleanup hid it)
+  overlay.style.visibility = '';
   const cleanupId = setTimeout(doCleanup, durationMs + 30);
   _spriteOnceCleanups.set(spriteEl, cleanupId);
   // Return a stop function — caller can collapse cleanup explicitly
