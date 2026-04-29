@@ -14,10 +14,10 @@ const ENV = {
   get isMobile() { return window.innerWidth <= 768; },
 
   // Battlefield scene-turtle CSS scale, set on .scene-turtle by scene.css:
-  //   desktop: 1.375 / mobile: 0.85
+  //   desktop: 0.9 / mobile: 0.55  (35% smaller than original 1.375 / 0.85)
   // Children of .scene-turtle live in pre-scale local units, so any translate
   // applied at the JS layer must be divided by baseScale to read in screen px.
-  get baseScale() { return this.isMobile ? 0.85 : 1.375; },
+  get baseScale() { return this.isMobile ? 0.55 : 0.9; },
 
   // The battle scene container. Cached on first access (the element is created
   // once and persists through screen switches).

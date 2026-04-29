@@ -668,8 +668,8 @@
   .battle-scene .team-label{font-size:10px;padding:2px 6px}
 
   /* Scale down turtles via CSS transform — keeps PC layout/positions intact */
-  .scene-turtle{--base-scale:.625;transform-origin:center bottom;padding:10px;margin:-10px}
-  .scene-turtle.is-boss{--base-scale:.75}
+  .scene-turtle{--base-scale:.41;transform-origin:center bottom;padding:10px;margin:-10px}
+  .scene-turtle.is-boss{--base-scale:.49}
   .scene-turtle:hover{transform:scale(var(--base-scale))}
   .scene-turtle.targetable{padding:14px;margin:-14px}
   .scene-turtle.targetable:hover{transform:scale(calc(var(--base-scale) * 1.1))}
