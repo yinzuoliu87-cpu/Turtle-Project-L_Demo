@@ -26,19 +26,18 @@ async function doNinjaShuriken(attacker, target, skill) {
     const trueRaw = Math.round(critTotalRaw * truePct / 100);
     const physRaw = critTotalRaw - trueRaw;
 
-    // True portion: pierce, dmgType 'true', no DEF. Use 'crit-true' class
-    // (white + crit-sized) so crit feel applies to BOTH halves of the float.
-    if (trueRaw > 0) {
-      applyRawDmg(attacker, target, trueRaw, true, false, 'true');
-      spawnFloatingNum(tElId, `${trueRaw}`, 'crit-true', 100, 0, {atkSide: attacker.side, amount: trueRaw});
-    }
-    // Physical portion: goes through DEF (and crit-flagged for floating color)
+    // Stacking rule: TRUE (white) on top, PHYSICAL (red) below.
+    // spawnFloatingNum uses y0 = -(yOffset + jitter) so LARGER yOffset = HIGHER.
+    // → physical at yOffset 0 (lower), true at yOffset 22 (higher).
     const effectiveDef = calcEffDef(attacker, target);
     const physDmg = physRaw > 0 ? Math.max(1, Math.round(physRaw * calcDmgMult(effectiveDef))) : 0;
     if (physDmg > 0) {
       applyRawDmg(attacker, target, physDmg, false, false, 'physical');
-      // Offset Y so true and physical floats don't overlap
-      spawnFloatingNum(tElId, `${physDmg}`, 'crit-dmg', 100, 24, {atkSide: attacker.side, amount: physDmg});
+      spawnFloatingNum(tElId, `${physDmg}`, 'crit-dmg', 100, 0, {atkSide: attacker.side, amount: physDmg});
+    }
+    if (trueRaw > 0) {
+      applyRawDmg(attacker, target, trueRaw, true, false, 'true');
+      spawnFloatingNum(tElId, `${trueRaw}`, 'crit-true', 100, 22, {atkSide: attacker.side, amount: trueRaw});
     }
     addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${trueRaw}真实</span> + <span class="log-direct">${physDmg}物理</span>`);
     await triggerOnHitEffects(attacker, target, trueRaw + physDmg);
