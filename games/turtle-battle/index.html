@@ -107,6 +107,18 @@
   </div>
 </div>
 
+<!-- Loading overlay — shown until critical images preload (preloader.js).
+     Sits above everything (z-index very high) so the user doesn't see
+     half-loaded sprites while we fetch. Auto-removes itself when done. -->
+<div id="loadingOverlay" style="position:fixed;inset:0;background:#0a0e18;display:flex;flex-direction:column;align-items:center;justify-content:center;z-index:99999;color:#ddd;font-family:system-ui,sans-serif">
+  <div style="font-size:36px;margin-bottom:12px">🐢</div>
+  <div style="font-size:14px;color:#888;margin-bottom:14px">资源加载中...</div>
+  <div style="width:240px;height:6px;background:#1a1f2e;border-radius:3px;overflow:hidden;border:1px solid #2a3346">
+    <div id="loadingBar" style="width:0%;height:100%;background:linear-gradient(90deg,#3deb9e,#1fb57f);transition:width .15s linear"></div>
+  </div>
+  <div id="loadingPct" style="font-size:11px;color:#555;margin-top:6px;font-variant-numeric:tabular-nums">0 / 0</div>
+</div>
+
 <!-- ══════ SCREEN: MENU ══════ -->
 <div id="audioGate" class="audio-gate" onclick="this.classList.add('hidden')">
   <div class="audio-gate-inner">
@@ -598,6 +610,7 @@
 <script src="js/ui.js" defer></script>
 <script src="js/tutorial.js" defer></script>
 <script src="js/main.js" defer></script>
+<script src="js/preloader.js" defer></script>
 <script>
 // Re-render scene on resize for cover position recalculation
 window.addEventListener('resize', () => { if (typeof renderScene === 'function' && !battleOver) renderScene(); });
