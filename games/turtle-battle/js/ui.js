@@ -1164,7 +1164,11 @@ function buildPetImgHTML(pet, size) {
     var fw = Math.round(s.frameW * sc);          // single frame display width
     var tw = Math.round(s.frameW * s.frames * sc); // total sheet width
     var lastFw = (s.frames - 1) * fw;            // last frame's bg-pos (avoid OOB at iteration end)
-    var kfName = 'sprKF_' + pet.id + '_' + size;
+    // Include lastFw in kfName — if to-value changes (e.g. after a code update
+    // that fixed an off-by-one frame issue), a NEW keyframe is installed under
+    // a NEW name. Cache by name+value avoids stale @keyframes rules surviving
+    // hot reloads.
+    var kfName = 'sprKF_' + pet.id + '_' + size + '_v' + lastFw;
     if (!_spriteKF[kfName]) {
       var st = document.createElement('style');
       st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
@@ -1223,7 +1227,7 @@ function playAttackAnimation(f) {
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
   const lastFw = (anim.frames - 1) * fw;
-  const kfName = 'atkKF_' + f.id;
+  const kfName = 'atkKF_' + f.id + '_v' + lastFw;
   if (!_attackAnimKF[kfName]) {
     const st = document.createElement('style');
     st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
@@ -1288,7 +1292,9 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   // looping: clean seam to next iteration's frame 0. For 1-shot: forwards fill
   // holds the last frame correctly.
   const lastFw = (frames - 1) * fw;
-  const kfName = 'spriteOnce_' + src.replace(/[^a-z0-9]/gi, '_');
+  // Cache kfName by lastFw so changes to the to-value force a new @keyframes
+  // rule (avoid stale CSS surviving hot reloads).
+  const kfName = 'spriteOnce_' + src.replace(/[^a-z0-9]/gi, '_') + '_v' + lastFw;
   if (!_spriteOnceKF[kfName]) {
     const st = document.createElement('style');
     st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
@@ -1354,7 +1360,7 @@ function playDeathAnimation(f) {
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
   const lastFw = (anim.frames - 1) * fw;
-  const kfName = 'deathKF_' + f.id;
+  const kfName = 'deathKF_' + f.id + '_v' + lastFw;
   if (!_deathAnimKF[kfName]) {
     const st = document.createElement('style');
     st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
@@ -1406,7 +1412,7 @@ function playHurtAnimation(f) {
   const fw = Math.round(anim.frameW * sc);
   const tw = Math.round(anim.frameW * anim.frames * sc);
   const lastFw = (anim.frames - 1) * fw;
-  const kfName = 'hurtKF_' + f.id;
+  const kfName = 'hurtKF_' + f.id + '_v' + lastFw;
   if (!_hurtAnimKF[kfName]) {
     const st = document.createElement('style');
     st.textContent = '@keyframes ' + kfName + '{from{background-position:0 0}to{background-position:-' + lastFw + 'px 0}}';
