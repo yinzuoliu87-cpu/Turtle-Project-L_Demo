@@ -230,6 +230,12 @@ async function doNinjaImpact(attacker, target, skill) {
 
   // ── Phase 0: RUN to target's row Y (run.png 4 frames looping while body
   // translates linearly, so it reads as actually running not teleporting) ──
+  // Cancel any prior WAAPI animations on fBody (e.g. lingering knockup juggle
+  // fill from a previous round) so rowHopAnim's keyframe at translate(0,0) is
+  // the ONLY effect — without this, stale composite fill can fight rowHopAnim
+  // and produce visible jitter/flicker as both apply simultaneously.
+  try { (fBody.getAnimations() || []).forEach(a => a.cancel()); } catch(e) {}
+  fBody.style.transform = '';
   let rowHopAnim = null;
   const RUN_MS = 400;
   if (Math.abs(casterYShift) > 4) {
