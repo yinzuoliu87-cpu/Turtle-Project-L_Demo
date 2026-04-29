@@ -26,10 +26,11 @@ async function doNinjaShuriken(attacker, target, skill) {
     const trueRaw = Math.round(critTotalRaw * truePct / 100);
     const physRaw = critTotalRaw - trueRaw;
 
-    // True portion: pierce, dmgType 'true', no DEF.
+    // True portion: pierce, dmgType 'true', no DEF. Use 'crit-true' class
+    // (white + crit-sized) so crit feel applies to BOTH halves of the float.
     if (trueRaw > 0) {
       applyRawDmg(attacker, target, trueRaw, true, false, 'true');
-      spawnFloatingNum(tElId, `${trueRaw}`, 'true-dmg', 100, 0, {atkSide: attacker.side, amount: trueRaw});
+      spawnFloatingNum(tElId, `${trueRaw}`, 'crit-true', 100, 0, {atkSide: attacker.side, amount: trueRaw});
     }
     // Physical portion: goes through DEF (and crit-flagged for floating color)
     const effectiveDef = calcEffDef(attacker, target);
