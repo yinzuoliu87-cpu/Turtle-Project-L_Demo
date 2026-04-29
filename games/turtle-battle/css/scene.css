@@ -339,6 +339,10 @@
 .fg-slot .fg-turtle{display:flex;flex-direction:column;align-items:center;gap:2px}
 .fg-slot .fg-emoji{font-size:24px}
 .fg-slot .fg-name{font-size:9px;font-weight:600}
+/* Summon placeholder slot — auto-occupied when 缩头乌龟 is placed.
+   Distinct dashed border + ? icon so user knows it's a placeholder. */
+.fg-slot.fg-summon-slot{border-style:dashed;border-color:#ffc850;background:rgba(255,200,80,.08)}
+.fg-slot .fg-summon-icon{width:40px;height:40px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:22px;font-weight:700;color:#ffc850;background:rgba(255,200,80,.15);border:2px dashed #ffc850}
 .fg-skills{font-size:7px;color:var(--fg2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100%;opacity:.7;margin-top:1px}
 .fg-skill-btn{font-size:12px;cursor:pointer;margin-left:4px;opacity:.7}
 .fg-skill-btn:hover{opacity:1;transform:scale(1.2)}

@@ -494,36 +494,61 @@ const FG_SLOT_KEYS_BENCH = ['bench-0','bench-1','bench-2'];
 let FG_SLOT_KEYS = [...FG_SLOT_KEYS_BASE]; // updated when mode changes
 let _fgDragId = null; // pet id being dragged
 
+// Summon slot marker — when 缩头乌龟 (id='hiding') is placed, an extra '_summon'
+// placeholder auto-occupies a slot. The placeholder is draggable but rejects
+// being replaced by other turtles. Removing hiding clears the summon slot.
+const SUMMON_MARK = '_summon';
+function findSummonSlotKey() {
+  return FG_SLOT_KEYS.find(k => _fgSlots[k] === SUMMON_MARK) || null;
+}
+function syncSummonSlot() {
+  const hasHiding = FG_SLOT_KEYS.some(k => _fgSlots[k] === 'hiding');
+  const summonKey = findSummonSlotKey();
+  if (hasHiding && !summonKey) {
+    // Auto-fill: pick first empty front/back slot (skip bench)
+    const emptyKey = FG_SLOT_KEYS_BASE.find(k => FG_SLOT_KEYS.includes(k) && !_fgSlots[k]);
+    if (emptyKey) _fgSlots[emptyKey] = SUMMON_MARK;
+  } else if (!hasHiding && summonKey) {
+    delete _fgSlots[summonKey];
+  }
+}
+
 function togglePet(e, id) {
   if (e && e.target && e.target.closest('.pet-passive-icon')) return;
   // If already placed in a slot, remove it
   for (const key of FG_SLOT_KEYS) {
     if (_fgSlots[key] === id) {
       delete _fgSlots[key];
+      syncSummonSlot();
       renderFgSlots();
       renderPetGrid();
       updateConfirmBtn();
       return;
     }
   }
-  // Check cap
+  // Check cap (exclude summon placeholder from count)
   const maxPets = 3;
-  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
-  // If there's an active slot, place into it
+  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k] && _fgSlots[k] !== SUMMON_MARK).length;
+  // If there's an active slot, place into it (reject if it's the summon slot)
+  if (_fgActiveSlot && _fgSlots[_fgActiveSlot] === SUMMON_MARK) {
+    showToast('随从位不能被替换'); _fgActiveSlot = null; renderFgSlots(); return;
+  }
   if (_fgActiveSlot && !_fgSlots[_fgActiveSlot]) {
     if (placed >= maxPets) { showToast(`已选${maxPets}只`); _fgActiveSlot = null; renderFgSlots(); return; }
     _fgSlots[_fgActiveSlot] = id;
     _fgActiveSlot = null;
+    syncSummonSlot();
     renderFgSlots();
     renderPetGrid();
     updateConfirmBtn();
     return;
   }
   if (placed >= maxPets) { showToast(`已选${maxPets}只，点击龟或格子可移除`); return; }
-  // Place in next empty slot
+  // Place in next empty slot (skip summon-marked slots)
   for (const key of FG_SLOT_KEYS) {
     if (!_fgSlots[key]) {
       _fgSlots[key] = id;
+      syncSummonSlot();
       renderFgSlots();
       renderPetGrid();
       updateConfirmBtn();
@@ -537,21 +562,39 @@ let _fgActiveSlot = null; // click slot first, then click turtle to place
 function fgSlotClick(key) {
   const isMobile = ENV.isMobile;
   if (isMobile && _fgSlots[key]) {
+    // Tap-to-remove for summon slot is forbidden — only the hiding turtle's
+    // presence controls it. User must tap empty target slot in 2nd tap to MOVE.
+    const isSummon = _fgSlots[key] === SUMMON_MARK;
     if (_fgSelectedSlot === null) {
       // First tap: select this slot
       _fgSelectedSlot = key;
       renderFgSlots(); // highlight selected
       return;
     } else if (_fgSelectedSlot === key) {
-      // Tap same slot: deselect and remove turtle
+      // Tap same slot: deselect (and remove if non-summon)
       _fgSelectedSlot = null;
-      delete _fgSlots[key];
+      if (!isSummon) {
+        delete _fgSlots[key];
+        syncSummonSlot();
+      }
       renderFgSlots();
       renderPetGrid();
       updateConfirmBtn();
       return;
     } else {
-      // Tap different slot: swap
+      // Tap different slot: swap. If either side is summon, only allow when
+      // the OTHER side is empty (i.e. summon "moves" rather than "swaps with a turtle").
+      const otherIsSummon = _fgSlots[_fgSelectedSlot] === SUMMON_MARK;
+      if (isSummon || otherIsSummon) {
+        const summonFrom = otherIsSummon ? _fgSelectedSlot : key;
+        const target    = otherIsSummon ? key : _fgSelectedSlot;
+        if (_fgSlots[target]) { showToast('随从位不能被替换'); _fgSelectedSlot = null; renderFgSlots(); return; }
+        _fgSlots[target] = SUMMON_MARK;
+        delete _fgSlots[summonFrom];
+        _fgSelectedSlot = null;
+        renderFgSlots(); renderPetGrid(); updateConfirmBtn();
+        return;
+      }
       const tmp = _fgSlots[_fgSelectedSlot];
       _fgSlots[_fgSelectedSlot] = _fgSlots[key];
       _fgSlots[key] = tmp;
@@ -567,16 +610,19 @@ function fgSlotClick(key) {
     _fgSlots[key] = _fgSlots[_fgSelectedSlot];
     delete _fgSlots[_fgSelectedSlot];
     _fgSelectedSlot = null;
+    syncSummonSlot();
     renderFgSlots();
     renderPetGrid();
     updateConfirmBtn();
     return;
   }
   _fgSelectedSlot = null;
-  // Click occupied slot: remove turtle
+  // Click occupied slot: remove turtle (but reject summon — must remove hiding to clear summon)
   if (_fgSlots[key]) {
+    if (_fgSlots[key] === SUMMON_MARK) { showToast('随从位由缩头乌龟决定，移除缩头才能撤掉随从'); return; }
     _fgActiveSlot = null;
     delete _fgSlots[key];
+    syncSummonSlot();
     renderFgSlots();
     renderPetGrid();
     updateConfirmBtn();
@@ -616,18 +662,34 @@ function fgDrop(e, key) {
   const oldKey = FG_SLOT_KEYS.find(k => _fgSlots[k] === id);
   const existing = _fgSlots[key];
   if (existing === id) return; // dropped on same slot, no-op
+  // Reject dropping a turtle ONTO the summon slot (summon position is locked,
+  // user must drag the summon ITSELF away first).
+  if (existing === SUMMON_MARK && id !== SUMMON_MARK) {
+    showToast('随从位不能被替换'); return;
+  }
+  // Dragging the summon ITSELF: only allow target empty slot (no swap).
+  if (id === SUMMON_MARK) {
+    if (existing) { showToast('随从位只能拖到空格'); return; }
+    delete _fgSlots[oldKey];
+    _fgSlots[key] = SUMMON_MARK;
+    renderFgSlots();
+    renderPetGrid();
+    updateConfirmBtn();
+    return;
+  }
   // Swap: put existing turtle into the dragged turtle's old slot
   if (existing && oldKey) {
     _fgSlots[oldKey] = existing;
   } else if (oldKey) {
     delete _fgSlots[oldKey];
   }
-  // Check cap: if dragging from pet grid (no oldKey) and no existing to replace
+  // Check cap (exclude summon mark from count): dragging from pet grid (no oldKey) into empty slot
   if (!oldKey && !existing) {
-    const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+    const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k] && _fgSlots[k] !== SUMMON_MARK).length;
     if (placed >= 3) { showToast('已选3只，先移除再放置'); return; }
   }
   _fgSlots[key] = id;
+  syncSummonSlot();
   renderFgSlots();
   renderPetGrid();
   updateConfirmBtn();
@@ -710,10 +772,24 @@ function renderFgSlots() {
     // Highlight: mobile swap selection or active slot for placement
     slot.classList.toggle('fg-selected', _fgSelectedSlot === key);
     slot.classList.toggle('fg-active', _fgActiveSlot === key);
-    if (petId) {
+    if (petId === SUMMON_MARK) {
+      // Summon placeholder — draggable to other empty slots, but rejects
+      // any turtle being dropped onto it.
+      slot.innerHTML = `<div class="fg-turtle fg-summon"><div class="fg-summon-icon">?</div><span class="fg-name" style="color:#ffc850">随从</span></div>`;
+      slot.classList.add('filled');
+      slot.classList.add('fg-summon-slot');
+      if (!isMobile) {
+        slot.draggable = true;
+        slot.ondragstart = (e) => { _fgDragId = SUMMON_MARK; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', SUMMON_MARK); };
+        slot.ondragend = fgDragEnd;
+      } else {
+        slot.draggable = false;
+      }
+    } else if (petId) {
       const p = ALL_PETS.find(x => x.id === petId);
       slot.innerHTML = `<div class="fg-turtle">${buildPetAvatarHTML(p, 40)}<span class="fg-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</span></div>`;
       slot.classList.add('filled');
+      slot.classList.remove('fg-summon-slot');
       if (!isMobile) {
         slot.draggable = true;
         slot.ondragstart = (e) => { _fgDragId = petId; e.dataTransfer.effectAllowed = 'move'; e.dataTransfer.setData('text/plain', petId); };
@@ -724,16 +800,18 @@ function renderFgSlots() {
     } else {
       slot.innerHTML = '<span class="fg-empty">空</span>';
       slot.classList.remove('filled');
+      slot.classList.remove('fg-summon-slot');
       slot.draggable = false;
       slot.ondragstart = null;
       slot.ondragend = null;
     }
   }
-  selectedIds = FG_SLOT_KEYS.map(k => _fgSlots[k]).filter(Boolean);
+  // selectedIds excludes the summon placeholder — only real pet ids
+  selectedIds = FG_SLOT_KEYS.map(k => _fgSlots[k]).filter(id => id && id !== SUMMON_MARK);
 }
 
 function updateConfirmBtn() {
-  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k]).length;
+  const placed = FG_SLOT_KEYS.filter(k => _fgSlots[k] && _fgSlots[k] !== SUMMON_MARK).length;
   document.getElementById('btnConfirmTeam').disabled = placed !== 3;
 }
 
