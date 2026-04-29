@@ -580,7 +580,7 @@ function showFighterDetail(f) {
   }
   panel._currentFighter = f;
 
-  document.getElementById('fdpName').innerHTML = petIcon(f, 24) + ' ' + f.name;
+  document.getElementById('fdpName').innerHTML = buildPetAvatarHTML(f, 24) + ' ' + f.name;
   document.getElementById('fdpName').style.color = RARITY_COLORS[f.rarity];
 
   const ic = (name) => `<img src="assets/stats/${name}" class="stat-icon">`;
@@ -2596,7 +2596,7 @@ function updateDmgStats() {
     const side = f.side === 'left' ? 'ds-left' : 'ds-right';
     const dead = f.alive ? '' : 'ds-dead';
     return `<div class="ds-row ${side} ${dead}">
-      <div class="ds-top"><div class="ds-name">${petIcon(f,16)}${f.name}</div><div class="ds-val">${total}</div></div>
+      <div class="ds-top"><div class="ds-name">${buildPetAvatarHTML(f, 16)} ${f.name}</div><div class="ds-val">${total}</div></div>
       <div class="ds-bar-wrap">
         <div class="ds-bar ds-bar-normal" style="width:${physPct}%"></div>
         <div class="ds-bar ds-bar-magic" style="width:${magicPct}%;left:${physPct}%"></div>
