@@ -1313,8 +1313,12 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   }
 
   // Find or lazy-create the sprite-frame for THIS src.
-  // dataset.src acts as the cache key — each src gets ONE persistent frame
-  // with its bg-image pre-uploaded to GPU.
+  // dataset.key per src; each src gets ONE persistent frame.
+  // Uses OPACITY (0/1) instead of visibility (hidden/visible) — visibility:
+  // hidden elements are NOT painted by the browser, so GPU texture is never
+  // uploaded → first time we toggle to visible, we get the upload-lag flash.
+  // opacity:0 elements ARE painted (just invisible), forcing texture upload
+  // on first paint. After that, swapping opacity 0↔1 is GPU-side only.
   const safeKey = src.replace(/[^a-z0-9]/gi, '_');
   let frameEl = wrap.querySelector('.sprite-frame[data-key="' + safeKey + '"]');
   const isNewFrame = !frameEl;
@@ -1322,19 +1326,16 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
     frameEl = document.createElement('div');
     frameEl.className = 'sprite-frame';
     frameEl.dataset.key = safeKey;
-    // Position absolute over the idle, same dimensions. visibility:hidden
-    // until first play (but element IS in DOM so texture uploads on first
-    // paint after creation — no swap lag at play time).
     frameEl.style.cssText = 'position:absolute;top:0;left:0;width:' + fw + 'px;height:' + size + 'px;' +
       "background-image:url('" + src + "');" +
       'background-size:' + tw + 'px ' + size + 'px;' +
       'background-repeat:no-repeat;background-position:0 0;' +
-      'image-rendering:pixelated;visibility:hidden;pointer-events:none';
+      'image-rendering:pixelated;opacity:0;pointer-events:none';
     wrap.appendChild(frameEl);
-    // Force layout/paint NOW so GPU texture uploads while still hidden.
+    // Force layout to paint NOW. With opacity:0 the browser still rasterizes
+    // and uploads the bg-image texture (unlike visibility:hidden).
     void frameEl.offsetWidth;
   } else {
-    // Re-use: reset bg-position so animation starts cleanly from F1 below.
     frameEl.style.backgroundPosition = '0 0';
   }
 
@@ -1342,24 +1343,22 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
 
-  // Hide ALL sprite-frames + idle. Then show this one.
-  // (Avoids two frames being visible simultaneously, which would also
-  // mis-show the wrong sprite.)
+  // Hide ALL sprite-frames + idle (opacity:0). Then show this one (opacity:1).
   const allFrames = wrap.querySelectorAll('.sprite-frame');
-  allFrames.forEach(el => { el.style.visibility = 'hidden'; el.style.animation = 'none'; });
-  idleInner.style.visibility = 'hidden';
+  allFrames.forEach(el => { el.style.opacity = '0'; el.style.animation = 'none'; });
+  idleInner.style.opacity = '0';
 
   // Apply animation + show THIS frame. Different kfName per src means the
   // browser sees a fresh animation property and starts at t=0 each call.
   const iter = looping ? 'infinite' : '1 forwards';
   frameEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
-  frameEl.style.visibility = '';
+  frameEl.style.opacity = '1';
 
   // Cleanup: hide the frame, restore idle.
   const doCleanup = () => {
-    frameEl.style.visibility = 'hidden';
+    frameEl.style.opacity = '0';
     frameEl.style.animation = 'none';
-    idleInner.style.visibility = '';
+    idleInner.style.opacity = '';
     _spriteOnceCleanups.delete(spriteEl);
   };
   const cleanupId = setTimeout(doCleanup, durationMs + 30);

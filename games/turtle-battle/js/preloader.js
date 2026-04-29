@@ -67,11 +67,43 @@
       img.onload = done;
       img.onerror = done;  // don't block on failed loads
       img.src = url;
-    }))).then(() => {
+    }))).then(() => warmGpuTextures(urls)).then(() => {
       if (!overlay) return;
       overlay.style.transition = 'opacity .35s ease-out';
       overlay.style.opacity = '0';
       setTimeout(() => overlay.remove(), 400);
+    });
+  }
+
+  // GPU texture pre-warm: Image() loads + decodes the image but does NOT
+  // upload to GPU. The first time a bg-image is rendered in DOM, the browser
+  // uploads its texture — that upload takes a frame, during which the element
+  // paints empty (visible flash). To avoid mid-game flashes, we render every
+  // sprite once during the loading screen so all textures are GPU-resident
+  // before combat starts. Uses opacity:0.001 (NOT visibility:hidden) — the
+  // latter skips paint, which would defeat the warming.
+  function warmGpuTextures(urls) {
+    const warmer = document.createElement('div');
+    warmer.id = 'gpuTextureWarmer';
+    // Positioned inside loading overlay's z-index range so user can't see
+    // (loading overlay is z:99999, warmer at 99998 is covered).
+    warmer.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:99998;opacity:0.001';
+    for (const url of urls) {
+      const div = document.createElement('div');
+      div.style.cssText = "display:inline-block;width:8px;height:8px;background-image:url('" + url + "');background-size:8px 8px;image-rendering:pixelated";
+      warmer.appendChild(div);
+    }
+    document.body.appendChild(warmer);
+    void warmer.offsetWidth;
+    // Wait 2 animation frames to ensure paint + texture upload complete.
+    return new Promise(resolve => {
+      requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+          // Keep warmer in DOM (off-screen-equivalent via opacity 0.001) so
+          // GPU doesn't evict our textures. Cost is minimal (one fixed div).
+          resolve();
+        });
+      });
     });
   }
 
