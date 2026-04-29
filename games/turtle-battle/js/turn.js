@@ -15,13 +15,11 @@ async function beginTurn() {
   try { sfxTurnStart && sfxTurnStart(); } catch(e) {}
   // Debug: verify seed sync at turn boundaries (can remove in production)
   if (gameMode === 'pvp-online') console.log(`[${onlineSide.toUpperCase()}] T${turnNum} seed=${_rngSeed}`);
-  // Reduce cooldowns
+  // Reduce cooldowns. Summons are in allFighters (added by summonAlly creation),
+  // so they get ticked by the main forEach — DON'T also tick via owner._summon
+  // or CDs decrement TWICE per round.
   allFighters.forEach(f => {
     f.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
-    // Also tick summon CDs
-    if (f._summon && f._summon.alive) {
-      f._summon.skills.forEach(s => { if (s.cdLeft > 0) s.cdLeft--; });
-    }
   });
   // Pirate ship: auto-fire cannon each turn (before passive loop, since ship has no passive)
   for (const f of allFighters) {
