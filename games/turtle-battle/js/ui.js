@@ -1280,19 +1280,24 @@ function playAttackAnimation(f) {
 // Always rebuilds overlay fresh — avoids stale animation state from prior calls.
 const _spriteOnceKF = {};
 const _spriteOnceCleanups = new WeakMap();
+// Multi-frame strategy: instead of swapping bg-image on a single div (which
+// causes GPU texture re-upload lag — visible as transparent flash for one
+// frame), create ONE persistent .sprite-frame div per unique sprite src.
+// Each frame has FIXED bg-image (texture pre-uploaded on first render).
+// Switching sprites = toggle which frame is visible (CSS visibility), no
+// texture swap → no flash.
+//
+// Layout: inside .sprite-wrap, alongside the idle .sprite-inner, we lazily
+// add absolutely-positioned .sprite-frame siblings, one per src. visible=
+// the active sprite; idle .sprite-inner shown only when no overlay active.
 function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, looping) {
   const card = document.getElementById(getFighterElId(f));
   if (!card) return;
   const spriteEl = card.querySelector('.st-sprite');
   if (!spriteEl) return;
-  // ── Inner-swap strategy: instead of creating an overlay div, we modify
-  // the EXISTING .sprite-inner (built by buildPetImgHTML for the idle anim).
-  // No new DOM, no opacity hide/show, no swap point → no transparent flash.
-  // The same div just gets new bg-image / bg-size / animation properties.
-  // Cleanup restores the idle sprite (read from pet definition).
-  const innerEl = spriteEl.querySelector('.sprite-wrap .sprite-inner');
-  if (!innerEl) return;
-  const idleWrap = spriteEl.querySelector('.sprite-wrap');
+  const wrap = spriteEl.querySelector('.sprite-wrap');
+  const idleInner = wrap && wrap.querySelector('.sprite-inner');
+  if (!wrap || !idleInner) return;
 
   const size = 80;
   const sc = size / frameH;
@@ -1306,47 +1311,57 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
     document.head.appendChild(st);
     _spriteOnceKF[kfName] = true;
   }
+
+  // Find or lazy-create the sprite-frame for THIS src.
+  // dataset.src acts as the cache key — each src gets ONE persistent frame
+  // with its bg-image pre-uploaded to GPU.
+  const safeKey = src.replace(/[^a-z0-9]/gi, '_');
+  let frameEl = wrap.querySelector('.sprite-frame[data-key="' + safeKey + '"]');
+  const isNewFrame = !frameEl;
+  if (isNewFrame) {
+    frameEl = document.createElement('div');
+    frameEl.className = 'sprite-frame';
+    frameEl.dataset.key = safeKey;
+    // Position absolute over the idle, same dimensions. visibility:hidden
+    // until first play (but element IS in DOM so texture uploads on first
+    // paint after creation — no swap lag at play time).
+    frameEl.style.cssText = 'position:absolute;top:0;left:0;width:' + fw + 'px;height:' + size + 'px;' +
+      "background-image:url('" + src + "');" +
+      'background-size:' + tw + 'px ' + size + 'px;' +
+      'background-repeat:no-repeat;background-position:0 0;' +
+      'image-rendering:pixelated;visibility:hidden;pointer-events:none';
+    wrap.appendChild(frameEl);
+    // Force layout/paint NOW so GPU texture uploads while still hidden.
+    void frameEl.offsetWidth;
+  } else {
+    // Re-use: reset bg-position so animation starts cleanly from F1 below.
+    frameEl.style.backgroundPosition = '0 0';
+  }
+
   // Cancel pending cleanup from previous call.
   const prevId = _spriteOnceCleanups.get(spriteEl);
   if (prevId) clearTimeout(prevId);
-  // Ensure idle wrap is visible (in case some other anim hid it). Force-clear
-  // any lingering opacity transition from hurt/attack anims.
-  if (idleWrap) {
-    idleWrap.style.transition = 'none';
-    idleWrap.style.opacity = '';
-  }
-  // Atomic style swap on the SAME element. No new DOM, no opacity toggle.
-  // Each call uses a different kfName so animation auto-restarts from t=0.
-  const iter = looping ? 'infinite' : '1 forwards';
-  innerEl.style.backgroundImage = "url('" + src + "')";
-  innerEl.style.backgroundSize = tw + 'px ' + size + 'px';
-  innerEl.style.backgroundPosition = '0 0';
-  innerEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
 
-  // Cleanup: restore the idle sprite by re-applying pet.img + pet.sprite anim.
+  // Hide ALL sprite-frames + idle. Then show this one.
+  // (Avoids two frames being visible simultaneously, which would also
+  // mis-show the wrong sprite.)
+  const allFrames = wrap.querySelectorAll('.sprite-frame');
+  allFrames.forEach(el => { el.style.visibility = 'hidden'; el.style.animation = 'none'; });
+  idleInner.style.visibility = 'hidden';
+
+  // Apply animation + show THIS frame. Different kfName per src means the
+  // browser sees a fresh animation property and starts at t=0 each call.
+  const iter = looping ? 'infinite' : '1 forwards';
+  frameEl.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
+  frameEl.style.visibility = '';
+
+  // Cleanup: hide the frame, restore idle.
   const doCleanup = () => {
-    const pet = (typeof ALL_PETS !== 'undefined') ? ALL_PETS.find(p => p.id === f.id) : null;
-    if (pet && pet.sprite && pet.img) {
-      const s = pet.sprite;
-      const idleSc = size / s.frameH;
-      const idleFw = Math.round(s.frameW * idleSc);
-      const idleTw = Math.round(s.frameW * s.frames * idleSc);
-      const idleLastFw = (s.frames - 1) * idleFw;
-      const idleKf = 'sprKF_' + pet.id + '_' + size + '_v' + idleLastFw;
-      if (!_spriteKF[idleKf]) {
-        const st2 = document.createElement('style');
-        st2.textContent = '@keyframes ' + idleKf + '{from{background-position:0 0}to{background-position:-' + idleLastFw + 'px 0}}';
-        document.head.appendChild(st2);
-        _spriteKF[idleKf] = true;
-      }
-      innerEl.style.backgroundImage = "url('" + pet.img + "')";
-      innerEl.style.backgroundSize = idleTw + 'px ' + size + 'px';
-      innerEl.style.backgroundPosition = '0 0';
-      innerEl.style.animation = idleKf + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ', jump-none) infinite';
-    }
+    frameEl.style.visibility = 'hidden';
+    frameEl.style.animation = 'none';
+    idleInner.style.visibility = '';
     _spriteOnceCleanups.delete(spriteEl);
   };
-
   const cleanupId = setTimeout(doCleanup, durationMs + 30);
   _spriteOnceCleanups.set(spriteEl, cleanupId);
   return () => { clearTimeout(cleanupId); doCleanup(); };
