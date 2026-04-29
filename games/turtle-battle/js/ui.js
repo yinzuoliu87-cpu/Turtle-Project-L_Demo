@@ -1346,13 +1346,12 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   };
 
   if (isNewFrame) {
-    // First creation: defer show by ONE animation frame so the browser has
-    // time to paint frameEl (opacity:0) and upload its bg-image texture to
-    // GPU. Without this, the SAME paint that creates the frame and shows it
-    // happens before texture upload completes → empty flash.
-    // The previous sprite (e.g. run when transitioning to dash) stays visible
-    // for ~16ms longer, which is imperceptible.
-    requestAnimationFrame(doShow);
+    // First creation: defer show by TWO animation frames (~32ms) so the
+    // browser has time to paint frameEl (opacity:0) and upload its bg-image
+    // texture to GPU + establish compositing layer. One rAF was sometimes
+    // not enough to fully eliminate the flash. Previous sprite stays visible
+    // ~32ms longer (imperceptible).
+    requestAnimationFrame(() => requestAnimationFrame(doShow));
   } else {
     // Frame already in DOM with texture cached — show synchronously.
     doShow();
