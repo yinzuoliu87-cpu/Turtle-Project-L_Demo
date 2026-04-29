@@ -928,7 +928,7 @@ function showSkillPickModal(petId, onDone, opts) {
     const titlePrefix = opts.titlePrefix || '';
     overlay.innerHTML = `
       <div class="skill-pick-box">
-        <div class="skill-pick-title">${titlePrefix}${buildPetImgHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
+        <div class="skill-pick-title">${titlePrefix}${buildPetAvatarHTML(pet, 32)} ${pet.name} — 技能装配 <span class="skill-pick-count">(${selected.length}/3)</span></div>
         <div style="font-size:11px;color:var(--fg2);margin-bottom:8px">${opts.skipSave ? '（仅本场生效，不保存到该龟的默认配置）' : '基础攻击技能固定，从剩余技能中选择2个'}</div>
         <div class="skill-pick-grid">${pool.map((s, i) => renderCard(s, i)).join('')}</div>
         <div class="skill-pick-actions">
@@ -1865,7 +1865,7 @@ function renderCodexList() {
     html += `<div class="codex-rarity-label" style="color:${RARITY_COLORS[rarity]}">${rarity}级</div>`;
     for (const p of pets) {
       html += `<div class="codex-item" data-id="${p.id}" onclick="showCodexDetail('${p.id}')">
-        <div class="codex-item-img">${buildPetImgHTML(p, 36)}</div>
+        <div class="codex-item-img">${buildPetAvatarHTML(p, 36)}</div>
         <div class="codex-item-name" style="color:${RARITY_COLORS[p.rarity]}">${p.name}</div>
       </div>`;
     }
@@ -1935,7 +1935,7 @@ function showCodexDetail(petId) {
   detail.innerHTML = `
     <div class="codex-detail-inner">
       <div class="codex-detail-header">
-        <div class="codex-detail-img">${buildPetImgHTML(p, 96)}</div>
+        <div class="codex-detail-img">${buildPetAvatarHTML(p, 96)}</div>
         <div class="codex-detail-info">
           <h2 style="color:${RARITY_COLORS[p.rarity]};margin:0">${p.emoji} ${p.name}</h2>
           <div class="codex-rarity-badge" style="background:${RARITY_COLORS[p.rarity]}">${p.rarity}级</div>
