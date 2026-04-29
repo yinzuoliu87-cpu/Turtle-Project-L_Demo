@@ -181,6 +181,14 @@ const PET_ninja = { id:'ninja',     name:'忍者龟',   emoji:'🥷🐢',    rar
     deathAnim:{ src:'assets/pets/animations/ninja/death.png', frames:7, frameW:64, frameH:64, duration:700 },
     knockupAnim:{ src:'assets/pets/animations/ninja/knockup.png', frames:2, frameW:64, frameH:64, airborneMs:400, descentMs:400, lyingMs:700, runBackMs:500 },
     runAnim:{ src:'assets/pets/animations/ninja/run.png', frames:4, frameW:64, frameH:64 },
+    // Skill sprites pre-rendered into .sprite-wrap at fighter render time so
+    // their bg-image textures + composite layers are GPU-ready before combat.
+    // Without this, first call to playFighterSpriteOnce(...) for each src has
+    // a one-frame "transparent" flash while browser uploads the texture.
+    extraSprites:[
+      { src:'assets/pets/animations/ninja/dash.png',     frames:18, frameW:64, frameH:64 },
+      { src:'assets/pets/animations/ninja/backstab.png', frames:18, frameW:64, frameH:64 },
+    ],
     passive:{ type:'ninjaInstinct', name:'忍术', critBonus:30, critDmgBonus:20, armorPen:8,
               brief:'忍者龟天生忍术精通。开局永久获得暴击率 <span class="val-atk">+30%</span>、暴击伤害 <span class="val-atk">+20%</span>、护甲穿透 <span class="val-atk">+8</span>。',
               desc:'忍者龟天生忍术精通。开局永久获得：暴击率 <span class="val-atk">+30%</span>，暴击伤害 <span class="val-atk">+20%</span>，护甲穿透 <span class="val-atk">+8</span>' },

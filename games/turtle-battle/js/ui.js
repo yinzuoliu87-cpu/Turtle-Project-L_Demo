@@ -1179,10 +1179,40 @@ function buildPetImgHTML(pet, size) {
       document.head.appendChild(st);
       _spriteKF[kfName] = true;
     }
-    return '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;">'
+    // Pre-render skill sprite-frames as siblings of .sprite-inner so their
+    // GPU textures + composite layers are ready BEFORE combat. Each frame is
+    // opacity:0 (still painted, unlike visibility:hidden) and positioned
+    // absolute over the idle. playFighterSpriteOnce just toggles opacity
+    // (zero GPU swap cost, zero flash).
+    // Sources: pet.runAnim, pet.attackAnim, pet.knockupAnim, plus pet.extraSprites array.
+    var skillSprites = [];
+    for (var animField of ['runAnim', 'attackAnim', 'knockupAnim']) {
+      if (pet[animField] && pet[animField].src) skillSprites.push(pet[animField]);
+    }
+    if (Array.isArray(pet.extraSprites)) {
+      for (var es of pet.extraSprites) skillSprites.push(es);
+    }
+    var framesHtml = '';
+    for (var ss of skillSprites) {
+      var ssSc = size / ss.frameH;
+      var ssFw = Math.round(ss.frameW * ssSc);
+      var ssTw = Math.round(ss.frameW * (ss.frames || 1) * ssSc);
+      var ssKey = ss.src.replace(/[^a-z0-9]/gi, '_');
+      framesHtml +=
+        '<div class="sprite-frame" data-key="' + ssKey + '" style="' +
+          'position:absolute;top:0;left:0;width:' + ssFw + 'px;height:' + size + 'px;' +
+          'background-image:url(\'' + ss.src + '\');' +
+          'background-size:' + ssTw + 'px ' + size + 'px;' +
+          'background-repeat:no-repeat;background-position:0 0;' +
+          'image-rendering:pixelated;opacity:0;pointer-events:none' +
+        '"></div>';
+    }
+    return '<div class="sprite-wrap" style="width:' + fw + 'px;height:' + size + 'px;position:relative;">'
       + '<div class="sprite-inner" style="width:' + fw + 'px;height:' + size + 'px;'
       + 'background-image:url(\'' + pet.img + '\');background-size:' + tw + 'px ' + size + 'px;'
-      + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ', jump-none) infinite;"></div></div>';
+      + 'animation:' + kfName + ' ' + (s.duration / 1000) + 's steps(' + s.frames + ', jump-none) infinite;"></div>'
+      + framesHtml
+      + '</div>';
   }
   if (pet.img) {
     return '<img src="' + pet.img + '" alt="' + pet.name + '" loading="lazy" style="width:' + size + 'px;height:' + size + 'px;object-fit:contain;">';
@@ -1312,11 +1342,13 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
     _spriteOnceKF[kfName] = true;
   }
 
-  // Find or lazy-create the sprite-frame for THIS src.
+  // Find pre-rendered sprite-frame (created by buildPetImgHTML at fighter
+  // render time). If not found, fall back to lazy creation (for sprites not
+  // declared in pet's anim/extraSprites — should be rare).
   const safeKey = src.replace(/[^a-z0-9]/gi, '_');
   let frameEl = wrap.querySelector('.sprite-frame[data-key="' + safeKey + '"]');
-  const isNewFrame = !frameEl;
-  if (isNewFrame) {
+  const isLazy = !frameEl;
+  if (isLazy) {
     frameEl = document.createElement('div');
     frameEl.className = 'sprite-frame';
     frameEl.dataset.key = safeKey;
@@ -1336,7 +1368,6 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
 
   const iter = looping ? 'infinite' : '1 forwards';
 
-  // The actual swap (hide all, show this) — wrapped so we can defer if needed.
   const doShow = () => {
     const allFrames = wrap.querySelectorAll('.sprite-frame');
     allFrames.forEach(el => { el.style.opacity = '0'; el.style.animation = 'none'; });
@@ -1345,15 +1376,11 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
     frameEl.style.opacity = '1';
   };
 
-  if (isNewFrame) {
-    // First creation: defer show by TWO animation frames (~32ms) so the
-    // browser has time to paint frameEl (opacity:0) and upload its bg-image
-    // texture to GPU + establish compositing layer. One rAF was sometimes
-    // not enough to fully eliminate the flash. Previous sprite stays visible
-    // ~32ms longer (imperceptible).
+  if (isLazy) {
+    // Lazy-created (sprite not pre-declared) — defer 2 rAF for GPU prep.
     requestAnimationFrame(() => requestAnimationFrame(doShow));
   } else {
-    // Frame already in DOM with texture cached — show synchronously.
+    // Pre-rendered frame, GPU-ready since fighter render → synchronous show.
     doShow();
   }
 
