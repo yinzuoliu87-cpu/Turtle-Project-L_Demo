@@ -552,12 +552,16 @@ async function doNinjaBomb(attacker, skill) {
     const flyFrac = FLY_MS / TOTAL_MS;
     const kf = [];
     const parabola = (peak, t) => peak * (1 - Math.pow(2 * t - 1, 2));
-    // Phase A: throw 0 → 0.5 of FLY (5 samples, 4 segments)
+    // Phase A: throw 0 → 0.5 of FLY (5 samples, 4 segments).
+    // Both X AND Y interpolate linearly from attacker (0,0) → center (dx,dy),
+    // then we add the parabolic arc on top of Y. Earlier bug: I wrote
+    // "dy + y" instead of "dy*t + y", which meant t=0 already used full dy
+    // → bomb spawned at attacker X but enemy Y, not at attacker.
     for (let i = 0; i <= 4; i++) {
       const t = i / 4;
       const x = dx * t;
-      const y = parabola(ARC_PEAK_Y, t);
-      kf.push({ transform: `translate(${x.toFixed(1)}px, ${(dy + y).toFixed(1)}px)`, offset: +(t * 0.5 * flyFrac).toFixed(4) });
+      const y = dy * t + parabola(ARC_PEAK_Y, t);
+      kf.push({ transform: `translate(${x.toFixed(1)}px, ${y.toFixed(1)}px)`, offset: +(t * 0.5 * flyFrac).toFixed(4) });
     }
     // Phase B: bounce 1 from 0.5 → 0.75 of FLY (3 samples, 2 segments)
     // Skip i=0 (matches phase A end at offset 0.5 * flyFrac)
