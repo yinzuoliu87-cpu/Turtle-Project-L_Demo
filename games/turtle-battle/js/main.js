@@ -1935,7 +1935,7 @@ function showCodexDetail(petId) {
   detail.innerHTML = `
     <div class="codex-detail-inner">
       <div class="codex-detail-header">
-        <div class="codex-detail-img">${buildPetAvatarHTML(p, 96)}</div>
+        <div class="codex-detail-img">${buildPetImgHTML(p, 96)}</div>
         <div class="codex-detail-info">
           <h2 style="color:${RARITY_COLORS[p.rarity]};margin:0">${p.emoji} ${p.name}</h2>
           <div class="codex-rarity-badge" style="background:${RARITY_COLORS[p.rarity]}">${p.rarity}级</div>
