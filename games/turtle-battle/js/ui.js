@@ -1333,15 +1333,17 @@ function playFighterSpriteOnce(f, src, frames, frameW, frameH, durationMs, loopi
   // Size depends on current sprite's frame width
   overlay.style.width  = fw + 'px';
   overlay.style.height = size + 'px';
-  // Restart animation: clear → reflow → reapply.
-  // Without the reflow break, swapping animation property on the SAME element
-  // doesn't always restart from t=0 (browser may keep the prior cycle's clock).
-  inner.style.animation = 'none';
+  // Atomic style swap — all properties applied in single JS task, browser
+  // paints once at task end with the new sprite & animation. No reflow break
+  // needed because each call uses a DIFFERENT kfName (run vs dash etc.) →
+  // browser sees a different animation property and restarts from t=0.
+  // Removed previous "animation:'none' → reflow → animation:new" pattern
+  // which may have caused user-reported transparent flash if the browser
+  // briefly painted between the 'none' assignment and the new one.
+  const iter = looping ? 'infinite' : '1 forwards';
   inner.style.backgroundImage = "url('" + src + "')";
   inner.style.backgroundSize = tw + 'px ' + size + 'px';
   inner.style.backgroundPosition = '0 0';
-  void inner.offsetWidth;
-  const iter = looping ? 'infinite' : '1 forwards';
   inner.style.animation = kfName + ' ' + (durationMs / 1000) + 's steps(' + frames + ', jump-none) ' + iter;
   const idleWrap = spriteEl.querySelector('.sprite-wrap');
   // Force-clear any lingering transition (hurt/attack anims set
