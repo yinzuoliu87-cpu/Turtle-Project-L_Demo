@@ -1153,7 +1153,7 @@ function toggleFighterStats(e, fIdx) {
 // Sprite / static image helper — matches pet center (petImgHTML) approach
 // Avatar helper: use headshot image if available
 function buildPetAvatarHTML(pet, size) {
-  return `<img src="assets/avatars/${pet.id}.png" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%" onerror="this.style.display='none'">`;
+  return `<img src="assets/avatars/${pet.id}.png" style="width:${size}px;height:${size}px;object-fit:cover;border-radius:50%;vertical-align:middle" onerror="this.style.display='none'">`;
 }
 
 // Uses background-position animation for sprite sheets
@@ -2159,7 +2159,7 @@ function showTurtlePicker(canAct) {
     const fIdx = allFighters.indexOf(f);
     const color = RARITY_COLORS[f.rarity] || '#fff';
     return `<button class="picker-btn" onclick="selectTurtleToAct(${fIdx})" style="border-color:${color}">
-      <span class="picker-emoji">${petIcon(f, 28)}</span>
+      <span class="picker-emoji">${buildPetAvatarHTML(f, 36)}</span>
       <span class="picker-name" style="color:${color}">${f.name}</span>
     </button>`;
   }).join('');
@@ -2171,8 +2171,9 @@ function showActionPanel(f) {
   const picker = document.getElementById('turtlePicker');
   if (picker) picker.style.display = 'none';
   const panel = document.getElementById('actionPanel');
-  document.getElementById('actingName').textContent = f.name;
-  document.getElementById('actingName').style.color = RARITY_COLORS[f.rarity];
+  const nameEl = document.getElementById('actingName');
+  nameEl.innerHTML = buildPetAvatarHTML(f, 24) + ' ' + f.name;
+  nameEl.style.color = RARITY_COLORS[f.rarity];
   document.querySelectorAll('.fighter-card,.scene-turtle').forEach(c => c.classList.remove('active-turn'));
   const activeEl = document.getElementById(getFighterElId(f));
   if (activeEl) activeEl.classList.add('active-turn');

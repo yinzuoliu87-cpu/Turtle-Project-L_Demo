@@ -251,7 +251,7 @@ function showTargetSelect(targets, srcFighter, skill) {
   box.innerHTML = targets.map(t => {
     const hpPct = Math.round(t.hp/t.maxHp*100);
     return `<button class="btn btn-target" onclick="selectTarget(${allFighters.indexOf(t)})">
-      ${t.emoji} ${t.name} (HP${hpPct}%)
+      ${typeof buildPetAvatarHTML === 'function' ? buildPetAvatarHTML(t, 24) : t.emoji} ${t.name} (HP${hpPct}%)
     </button>`;
   }).join('');
   document.getElementById('targetSelect').style.display = 'flex';
