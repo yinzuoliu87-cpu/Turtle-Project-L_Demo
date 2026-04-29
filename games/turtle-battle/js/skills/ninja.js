@@ -1,5 +1,5 @@
 async function doNinjaShuriken(attacker, target, skill) {
-  // 1.5×ATK damage, if crits → entire damage becomes pierce (ignores DEF)
+  // 1.5×ATK damage. On crit: split into true + physical with truePct based on level.
   const baseDmg = Math.round(attacker.atk * skill.atkScale);
   const isCrit = Math.random() < attacker.crit;
   const critMult = isCrit ? (1.5 + (attacker._extraCritDmg || 0) + (attacker._extraCritDmgPerm || 0)) : 1;
@@ -17,13 +17,30 @@ async function doNinjaShuriken(attacker, target, skill) {
   await arrival;
 
   if (isCrit) {
-    const pierceDmg = Math.round(baseDmg * critMult);
-    // 描述: 暴击时全部转真实伤害. dmgType 必须传 'true' (之前误传 'physical'
-    // 导致 stats 算到 _physDmgDealt, 与飘字/log 的 "真实" 标识不一致).
-    applyRawDmg(attacker, target, pierceDmg, true, false, 'true');
-    spawnFloatingNum(tElId, `${pierceDmg}`, 'crit-pierce', 100, 0, {atkSide: attacker.side, amount: pierceDmg});
-    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${pierceDmg}真实</span>`);
-    await triggerOnHitEffects(attacker, target, pierceDmg);
+    // Crit: total raw damage = baseDmg × critMult. truePct = 40% + 2% per level
+    // (lv1=42%, lv5=50%, lv10=60%). True portion bypasses DEF; physical portion
+    // goes through DEF normally.
+    const critTotalRaw = Math.round(baseDmg * critMult);
+    const lv = attacker._level || 1;
+    const truePct = Math.min(100, 40 + 2 * lv);
+    const trueRaw = Math.round(critTotalRaw * truePct / 100);
+    const physRaw = critTotalRaw - trueRaw;
+
+    // True portion: pierce, dmgType 'true', no DEF.
+    if (trueRaw > 0) {
+      applyRawDmg(attacker, target, trueRaw, true, false, 'true');
+      spawnFloatingNum(tElId, `${trueRaw}`, 'true-dmg', 100, 0, {atkSide: attacker.side, amount: trueRaw});
+    }
+    // Physical portion: goes through DEF (and crit-flagged for floating color)
+    const effectiveDef = calcEffDef(attacker, target);
+    const physDmg = physRaw > 0 ? Math.max(1, Math.round(physRaw * calcDmgMult(effectiveDef))) : 0;
+    if (physDmg > 0) {
+      applyRawDmg(attacker, target, physDmg, false, false, 'physical');
+      // Offset Y so true and physical floats don't overlap
+      spawnFloatingNum(tElId, `${physDmg}`, 'crit-dmg', 100, 24, {atkSide: attacker.side, amount: physDmg});
+    }
+    addLog(`${attacker.emoji}${attacker.name} <b>飞镖</b> → ${target.emoji}${target.name}：<span class="log-crit">暴击!</span> <span class="log-pierce">${trueRaw}真实</span> + <span class="log-direct">${physDmg}物理</span>`);
+    await triggerOnHitEffects(attacker, target, trueRaw + physDmg);
   } else {
     const effectiveDef = calcEffDef(attacker, target);
     const dmg = Math.max(1, Math.round(baseDmg * calcDmgMult(effectiveDef)));
@@ -519,13 +536,45 @@ async function doNinjaBomb(attacker, skill) {
     sprite.style.cssText = `position:absolute;left:50%;top:50%;width:${BOMB_SIZE}px;height:${BOMB_SIZE}px;transform:translate(-50%,-50%);background-image:url('assets/pets/animations/ninja/bomb.png');background-size:${tw}px ${BOMB_SIZE}px;background-repeat:no-repeat;animation:${kfName} ${TOTAL_MS/1000}s steps(${FRAMES}, jump-none) 1 forwards;image-rendering:pixelated`;
     wrap.appendChild(sprite);
     battleField.appendChild(wrap);
-    // Translate wrapper from attacker → center over FLY_MS, hold during explosion
+    // Trajectory: parabolic throw + 2 bounces, all within FLY_MS=400ms.
+    // Phase A throw arc (50% of FLY): attacker → center, peak in middle.
+    // Phase B bounce 1 (25% of FLY): smaller arc at center, peakY ~30%.
+    // Phase C bounce 2 (20% of FLY): tinier arc, peakY ~12%.
+    // Phase D settle (5% of FLY): hold at center.
+    // After FLY: bomb stays at center for fuse F5-8 + explosion F9-12.
+    // Within each arc we use y(t) = peak * (1 - (2t-1)²) sampled at 4 sub-
+    // points so linear interpolation between keyframes traces a smooth parabola.
     const dx = cCx - aCx, dy = cCy - aCy;
-    wrap.animate([
-      { transform: 'translate(0px, 0px)', offset: 0 },
-      { transform: `translate(${dx}px, ${dy}px)`, offset: FLY_MS / TOTAL_MS, easing: 'cubic-bezier(.3,.6,.4,1)' },
-      { transform: `translate(${dx}px, ${dy}px)`, offset: 1 }
-    ], { duration: TOTAL_MS, easing: 'linear', fill: 'forwards' });
+    const ARC_PEAK_Y  = -160;   // throw apex (negative = up)
+    const BOUNCE1_Y   =  -55;
+    const BOUNCE2_Y   =  -22;
+    const flyFrac = FLY_MS / TOTAL_MS;
+    const kf = [];
+    const parabola = (peak, t) => peak * (1 - Math.pow(2 * t - 1, 2));
+    // Phase A: throw 0 → 0.5 of FLY (5 samples, 4 segments)
+    for (let i = 0; i <= 4; i++) {
+      const t = i / 4;
+      const x = dx * t;
+      const y = parabola(ARC_PEAK_Y, t);
+      kf.push({ transform: `translate(${x.toFixed(1)}px, ${(dy + y).toFixed(1)}px)`, offset: +(t * 0.5 * flyFrac).toFixed(4) });
+    }
+    // Phase B: bounce 1 from 0.5 → 0.75 of FLY (3 samples, 2 segments)
+    // Skip i=0 (matches phase A end at offset 0.5 * flyFrac)
+    for (let i = 1; i <= 2; i++) {
+      const t = i / 2;
+      const y = parabola(BOUNCE1_Y, t);
+      kf.push({ transform: `translate(${dx.toFixed(1)}px, ${(dy + y).toFixed(1)}px)`, offset: +((0.5 + t * 0.25) * flyFrac).toFixed(4) });
+    }
+    // Phase C: bounce 2 from 0.75 → 0.95 of FLY
+    for (let i = 1; i <= 2; i++) {
+      const t = i / 2;
+      const y = parabola(BOUNCE2_Y, t);
+      kf.push({ transform: `translate(${dx.toFixed(1)}px, ${(dy + y).toFixed(1)}px)`, offset: +((0.75 + t * 0.20) * flyFrac).toFixed(4) });
+    }
+    // Phase D + hold for fuse + explosion
+    kf.push({ transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`, offset: +flyFrac.toFixed(4) });
+    kf.push({ transform: `translate(${dx.toFixed(1)}px, ${dy.toFixed(1)}px)`, offset: 1 });
+    wrap.animate(kf, { duration: TOTAL_MS, easing: 'linear', fill: 'forwards' });
   }
 
   // ── Wait until F9 (800ms) — bomb travels F1-4 then sits on ground F5-8 ──
